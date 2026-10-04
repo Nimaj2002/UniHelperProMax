@@ -7,7 +7,7 @@ from fastapi import APIRouter, Query
 
 from unihelper.api.deps import CurrentUser, DbSession, IfMatch
 from unihelper.schemas.classes import ScopeResult, SessionEdit, SessionOut
-from unihelper.services import class_service, session_query
+from unihelper.services import class_service, session_folder_service, session_query
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -25,7 +25,8 @@ def list_sessions(
 
 @router.get("/{session_key}", response_model=SessionOut)
 def get_session(session_key: str, user: CurrentUser, db: DbSession) -> Any:
-    return session_query.get_session(db, user, session_key)
+    # scheduled sessions, or (002) unscheduled ones that still have content
+    return session_folder_service.resolve(db, user, session_key).session
 
 
 @router.patch("/{session_key}", response_model=ScopeResult)

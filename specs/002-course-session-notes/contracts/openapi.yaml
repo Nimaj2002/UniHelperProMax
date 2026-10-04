@@ -1,0 +1,313 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 002 additions
+  version: 1.1.0
+  description: |
+    Additive to specs/001-class-schedule-calendar/contracts/openapi.yaml (same conventions:
+    /api/v1, camelCase, cookie auth + X-CSRF-Token on mutations, RFC 9457 problems,
+    If-Match versions, other users' ids → 404).
+    Change to an existing 001 operation (additive): `GET /sessions/{sessionKey}` may return a
+    session that is no longer scheduled but has content, with `scheduled: false`.
+servers:
+  - url: /api/v1
+
+paths:
+  /courses/{courseId}/timeline:
+    parameters: [{ $ref: "#/components/parameters/CourseId" }]
+    get:
+      tags: [timeline]
+      summary: Every session of the course in date order, plus unscheduled sessions with content (FR-001, FR-005, FR-006)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Timeline" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /sessions/{sessionKey}/notes:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [notes]
+      summary: Notes of a session, oldest first (FR-016)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/NoteMeta" } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [notes]
+      summary: Create a note (creates the session folder on first use); optional initial content (used by "Keep both")
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NoteCreate" }
+      responses:
+        "201":
+          description: Created; the empty (or given) Markdown file exists on disk
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Note" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }   # name_taken
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /notes/{noteId}:
+    parameters: [{ $ref: "#/components/parameters/NoteId" }]
+    get:
+      tags: [notes]
+      summary: Note with content; adopts edits made outside the app (bumps version)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Note" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [notes]
+      summary: Rename (file renamed too, FR-021)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties: { name: { type: string, minLength: 1, maxLength: 120 } }
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NoteMeta" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "412": { $ref: "#/components/responses/VersionConflict" }
+        "422": { $ref: "#/components/responses/Validation" }
+    delete:
+      tags: [notes]
+      summary: Delete the note and its file, after the UI's explicit confirmation (FR-021)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "412": { $ref: "#/components/responses/VersionConflict" }
+
+  /notes/{noteId}/content:
+    parameters: [{ $ref: "#/components/parameters/NoteId" }]
+    put:
+      tags: [notes]
+      summary: Autosave the full Markdown text (atomic file write, FR-018–FR-020)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, baseHash]
+              properties:
+                content: { type: string, maxLength: 5242880 }
+                baseHash: { type: string, description: content hash the client's text is based on }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SaveResult" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: "`file_changed_on_disk` or `file_missing` — edited or deleted outside the app; `current` holds the file's state"
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/NoteConflict" }
+        "412":
+          description: "`version_conflict` — saved from another window; `current` holds the latest state"
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/NoteConflict" }
+        "413": { $ref: "#/components/responses/Validation" }
+
+  /workspace/{sessionKey}:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [workspace]
+      summary: Open tabs and active tab for this session (FR-013)
+      responses:
+        "200":
+          description: OK (empty state when never saved)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceState" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [workspace]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WorkspaceState" }
+      responses:
+        "200":
+          description: Saved (unknown note ids dropped)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkspaceState" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /preferences:
+    get:
+      tags: [preferences]
+      responses:
+        "200":
+          description: Per-user UI preferences with defaults filled in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Preferences" }
+    patch:
+      tags: [preferences]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Preferences" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Preferences" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+components:
+  parameters:
+    CourseId: { name: courseId, in: path, required: true, schema: { type: string } }
+    NoteId: { name: noteId, in: path, required: true, schema: { type: string } }
+    SessionKey:
+      name: sessionKey
+      in: path
+      required: true
+      description: "`{lineageId}:{YYYY-MM-DD}`"
+      schema: { type: string }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: { type: string, example: '"3"' }
+
+  responses:
+    NotFound: { description: Not found or not owned, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    Conflict: { description: Name already used, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    VersionConflict: { description: Stale If-Match, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    Validation: { description: Validation failed, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+        errors: { type: array, items: { type: object } }
+
+    NoteMeta:
+      type: object
+      required: [id, sessionKey, name, fileName, version, size, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        sessionKey: { type: string }
+        name: { type: string }
+        fileName: { type: string }
+        version: { type: integer }
+        size: { type: integer }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    Note:
+      allOf:
+        - $ref: "#/components/schemas/NoteMeta"
+        - type: object
+          required: [content, hash, missing]
+          properties:
+            content: { type: string }
+            hash: { type: string }
+            missing: { type: boolean, description: file deleted outside the app }
+
+    NoteCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        content: { type: string, maxLength: 5242880, default: "" }
+
+    SaveResult:
+      type: object
+      required: [version, hash, size, updatedAt]
+      properties:
+        version: { type: integer }
+        hash: { type: string }
+        size: { type: integer }
+        updatedAt: { type: string }
+
+    NoteConflict:
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          required: [current]
+          properties:
+            current:
+              type: object
+              required: [version, hash]
+              properties:
+                version: { type: integer }
+                hash: { type: string }
+                content: { type: [string, "null"], description: null when the file is missing }
+
+    TimelineEntry:
+      type: object
+      required: [key, lineageId, courseId, date, start, end, status, scheduled, noteCount, audioCount]
+      properties:
+        key: { type: string }
+        lineageId: { type: string }
+        courseId: { type: string }
+        date: { type: string, format: date }
+        start: { type: string, description: ISO 8601 with offset }
+        end: { type: string }
+        title: { type: [string, "null"] }
+        location: { type: [string, "null"] }
+        color: { type: string }
+        status: { type: string, enum: [upcoming, past] }
+        scheduled: { type: boolean }
+        noteCount: { type: integer, minimum: 0 }
+        audioCount: { type: integer, minimum: 0 }
+
+    Timeline:
+      type: object
+      required: [courseId, entries]
+      properties:
+        courseId: { type: string }
+        entries: { type: array, items: { $ref: "#/components/schemas/TimelineEntry" } }
+
+    WorkspaceState:
+      type: object
+      required: [openNoteIds]
+      properties:
+        openNoteIds: { type: array, maxItems: 50, items: { type: string } }
+        activeNoteId: { type: [string, "null"] }
+
+    Preferences:
+      type: object
+      additionalProperties: false
+      properties:
+        editorMode: { type: string, enum: [live, raw] }
+        workspaceLeftCollapsed: { type: boolean }
+        workspaceRightCollapsed: { type: boolean }

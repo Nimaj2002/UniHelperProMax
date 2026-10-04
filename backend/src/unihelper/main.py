@@ -11,7 +11,18 @@ from fastapi.staticfiles import StaticFiles
 
 from unihelper.api.deps import csrf_protect
 from unihelper.api.errors import install_error_handlers, problem_response
-from unihelper.api.v1 import admin, auth, classes, health, hierarchy, sessions, setup
+from unihelper.api.v1 import (
+    admin,
+    auth,
+    classes,
+    health,
+    hierarchy,
+    notes,
+    sessions,
+    setup,
+    timeline,
+    workspace,
+)
 from unihelper.config import Settings, load_settings
 from unihelper.db.engine import make_engine, make_sessionmaker
 from unihelper.db.migrate import upgrade_to_head
@@ -23,7 +34,18 @@ API_PREFIX = "/api/v1"
 
 def build_api_router() -> APIRouter:
     api = APIRouter(prefix=API_PREFIX, dependencies=[Depends(csrf_protect)])
-    for module in (health, setup, auth, admin, hierarchy, classes, sessions):
+    for module in (
+        health,
+        setup,
+        auth,
+        admin,
+        hierarchy,
+        classes,
+        sessions,
+        notes,
+        timeline,
+        workspace,
+    ):
         api.include_router(module.router)
     return api
 

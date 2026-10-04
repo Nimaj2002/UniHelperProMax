@@ -13,7 +13,7 @@ function session(i: number, date: string, start = "10:00", end = "11:00"): Sessi
     key: `L${i}:${date}`, lineageId: `L${i}`, seriesId: `S${i}`, seriesVersion: 1, courseId: "c1",
     courseName: `Course ${i}`, title: null, date, start: `${date}T${start}:00+03:00`,
     end: `${date}T${end}:00+03:00`, location: null, color: "blue", links: [],
-    recurrenceSummary: "Weekly", isException: false, exceptionVersion: null, status: "upcoming",
+    recurrenceSummary: "Weekly", isException: false, exceptionVersion: null, status: "upcoming", scheduled: true,
   };
 }
 

@@ -1,0 +1,30 @@
+from __future__ import annotations
+
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy.orm import Mapped, mapped_column
+
+from unihelper.models.base import Base, IdMixin, TimestampMixin, VersionMixin
+
+
+class Note(IdMixin, TimestampMixin, VersionMixin, Base):
+    """Index entry for one Markdown file in a session's notes/ folder (the file is the content)."""
+
+    __tablename__ = "notes"
+    __table_args__ = (
+        UniqueConstraint("session_folder_id", "name_key", name="uq_notes_folder_name"),
+        UniqueConstraint("session_folder_id", "file_key", name="uq_notes_folder_file"),
+        CheckConstraint("length(name) BETWEEN 1 AND 120", name="name_len"),
+    )
+
+    user_id: Mapped[str] = mapped_column(
+        String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    session_folder_id: Mapped[str] = mapped_column(
+        String, ForeignKey("session_folders.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    name_key: Mapped[str] = mapped_column(String, nullable=False)
+    file_name: Mapped[str] = mapped_column(String, nullable=False)
+    file_key: Mapped[str] = mapped_column(String, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    size: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

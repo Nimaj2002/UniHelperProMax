@@ -1,8 +1,8 @@
 # UniHelperProMax
 
 Class schedules, per-class Markdown notes, lecture recordings, and transcription for university
-students. Feature 001 (this release) covers accounts, the calendar, and courses; notes,
-recordings, transcription, and themes follow in features 002–005 (see `specs/`).
+students. Released: 001 accounts, calendar and courses; 002 course timelines and the session
+notes workspace. Recordings, transcription and themes follow in features 003–005 (see `specs/`).
 
 - Python/FastAPI backend with a versioned JSON API (`/api/v1`) over SQLite
 - React + shadcn/ui frontend, light and dark themes, fully keyboard operable
@@ -61,11 +61,27 @@ data/
 └── files/<username>/<Year>/<Semester>/<Course>/<YYYY-MM-DD>/{notes,audios}/
 ```
 
+Each note is a plain Markdown file (`<Note name>.md`) in its session's `notes/` folder; you can
+open and edit it in any editor — the app picks up the change and never overwrites it silently.
+Session folders are created when a session gets its first note.
+
 Folder names follow the names you type (made safe for Windows/macOS/Linux) and are renamed when
 you rename things in the app. Deleting a year, semester, course, class, or account **never**
-deletes files. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
+deletes files; the only file the app ever removes is a note's `.md`, when you delete that note
+and confirm. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
 
 Back up by copying the whole data folder while the app is stopped.
+
+## Notes workspace shortcuts
+
+| Keys | Action |
+|---|---|
+| `Alt+N` | New note |
+| `Alt+W` / `Delete` on a tab | Close tab |
+| `Alt+PageDown` / `Alt+PageUp` | Next / previous tab |
+| `Alt+[` / `Alt+]` | Toggle left / right panel |
+| `Ctrl/Cmd+E` | Live ↔ raw Markdown |
+| `Ctrl/Cmd+Enter` | Open the link under the cursor |
 
 ## Tests and checks
 

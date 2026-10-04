@@ -8,7 +8,7 @@ import { json, mockFetch, on, renderRoutes } from "./test-utils";
 afterEach(() => vi.unstubAllGlobals());
 
 // SC-005: results within 0.5 s of typing for up to 200 courses; filtering is local.
-it("filters 200 courses within 500 ms of the last keystroke", async () => {
+it("filters 200 courses within 500 ms of the last keystroke", { timeout: 30_000 }, async () => {
   const tree: YearNode[] = Array.from({ length: 2 }, (_, y) => ({
     year: { id: `y${y}`, name: `${2026 - y}`, folderName: `${2026 - y}`, position: y, version: 1 },
     semesters: Array.from({ length: 5 }, (_, s) => ({

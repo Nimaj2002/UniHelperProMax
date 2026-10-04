@@ -153,6 +153,7 @@ class SessionOut(ApiModel):
     is_exception: bool
     exception_version: int | None
     status: Literal["upcoming", "past"]
+    scheduled: bool = True
 
 
 class SessionEdit(ClassFields):

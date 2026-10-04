@@ -153,3 +153,27 @@ def test_sessions_list_and_get(owner_client: TestClient) -> None:
     assert_problem(c.get(f"{API}/sessions/garbage"), 404, "not_found")
     lineage = created["lineageId"]
     assert_problem(c.get(f"{API}/sessions/{lineage}:2026-09-29"), 404, "not_found")  # Tuesday
+
+
+def test_unscheduled_session_with_content_is_still_found(owner_client: TestClient) -> None:
+    from tests.contract.notes_helpers import create_note
+
+    c = owner_client
+    cls = c.post(f"{API}/classes", json=new_class_body()).json()
+    key = f"{cls['lineageId']}:2026-09-30"
+    assert c.get(f"{API}/sessions/{key}").json()["scheduled"] is True
+    create_note(c, key, "Notes")
+    c.delete(
+        f"{API}/sessions/{key}",
+        params={"scope": "this"},
+        headers={"If-Match": f'"{cls["version"]}"'},
+    )
+    r = c.get(f"{API}/sessions/{key}")
+    assert r.status_code == 200
+    check(r.json(), "Session")
+    assert r.json()["scheduled"] is False and r.json()["start"].startswith("2026-09-30T10:00")
+    # without content a cancelled session stays gone
+    other = f"{cls['lineageId']}:2026-10-05"
+    v = c.get(f"{API}/sessions/{other}").json()["seriesVersion"]
+    c.delete(f"{API}/sessions/{other}", params={"scope": "this"}, headers={"If-Match": f'"{v}"'})
+    assert_problem(c.get(f"{API}/sessions/{other}"), 404, "not_found")

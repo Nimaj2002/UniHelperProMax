@@ -457,6 +457,113 @@ export interface paths {
         patch: operations["edit_session_api_v1_sessions__session_key__patch"];
         trace?: never;
     };
+    "/api/v1/sessions/{session_key}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Notes */
+        get: operations["list_notes_api_v1_sessions__session_key__notes_get"];
+        put?: never;
+        /** Create Note */
+        post: operations["create_note_api_v1_sessions__session_key__notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Note */
+        get: operations["get_note_api_v1_notes__note_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Note */
+        delete: operations["delete_note_api_v1_notes__note_id__delete"];
+        options?: never;
+        head?: never;
+        /** Rename Note */
+        patch: operations["rename_note_api_v1_notes__note_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/notes/{note_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Save Content */
+        put: operations["save_content_api_v1_notes__note_id__content_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/{course_id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Course Timeline */
+        get: operations["course_timeline_api_v1_courses__course_id__timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/workspace/{session_key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Workspace */
+        get: operations["get_workspace_api_v1_workspace__session_key__get"];
+        /** Put Workspace */
+        put: operations["put_workspace_api_v1_workspace__session_key__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Preferences */
+        get: operations["get_preferences_api_v1_preferences_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Preferences */
+        patch: operations["patch_preferences_api_v1_preferences_patch"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -554,6 +661,13 @@ export interface components {
             recurrence: components["schemas"]["Recurrence"];
             /** Version */
             version: number;
+        };
+        /** ContentSave */
+        ContentSave: {
+            /** Content */
+            content: string;
+            /** Basehash */
+            baseHash: string;
         };
         /** Course */
         Course: {
@@ -701,6 +815,68 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** Note */
+        Note: {
+            /** Id */
+            id: string;
+            /** Sessionkey */
+            sessionKey: string;
+            /** Name */
+            name: string;
+            /** Filename */
+            fileName: string;
+            /** Version */
+            version: number;
+            /** Size */
+            size: number;
+            /** Createdat */
+            createdAt: string;
+            /** Updatedat */
+            updatedAt: string;
+            /** Content */
+            content: string;
+            /** Hash */
+            hash: string;
+            /**
+             * Missing
+             * @default false
+             */
+            missing: boolean;
+        };
+        /** NoteCreate */
+        NoteCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Content
+             * @default
+             */
+            content: string;
+        };
+        /** NoteMeta */
+        NoteMeta: {
+            /** Id */
+            id: string;
+            /** Sessionkey */
+            sessionKey: string;
+            /** Name */
+            name: string;
+            /** Filename */
+            fileName: string;
+            /** Version */
+            version: number;
+            /** Size */
+            size: number;
+            /** Createdat */
+            createdAt: string;
+            /** Updatedat */
+            updatedAt: string;
+        };
+        /** NoteRename */
+        NoteRename: {
+            /** Name */
+            name: string;
+        };
         /** PasswordChange */
         PasswordChange: {
             /** Currentpassword */
@@ -712,6 +888,15 @@ export interface components {
         PasswordReset: {
             /** Newpassword */
             newPassword: string;
+        };
+        /** Preferences */
+        Preferences: {
+            /** Editormode */
+            editorMode?: ("live" | "raw") | null;
+            /** Workspaceleftcollapsed */
+            workspaceLeftCollapsed?: boolean | null;
+            /** Workspacerightcollapsed */
+            workspaceRightCollapsed?: boolean | null;
         };
         /** ProfileUpdate */
         ProfileUpdate: {
@@ -762,6 +947,17 @@ export interface components {
         /** RefNewYear */
         RefNewYear: {
             new: components["schemas"]["NewYear"];
+        };
+        /** SaveResult */
+        SaveResult: {
+            /** Version */
+            version: number;
+            /** Hash */
+            hash: string;
+            /** Size */
+            size: number;
+            /** Updatedat */
+            updatedAt: string;
         };
         /** ScopeResult */
         ScopeResult: {
@@ -887,11 +1083,58 @@ export interface components {
              * @enum {string}
              */
             status: "upcoming" | "past";
+            /**
+             * Scheduled
+             * @default true
+             */
+            scheduled: boolean;
         };
         /** SetupStatus */
         SetupStatus: {
             /** Needsowner */
             needsOwner: boolean;
+        };
+        /** Timeline */
+        Timeline: {
+            /** Courseid */
+            courseId: string;
+            /** Entries */
+            entries: components["schemas"]["TimelineEntry"][];
+        };
+        /** TimelineEntry */
+        TimelineEntry: {
+            /** Key */
+            key: string;
+            /** Lineageid */
+            lineageId: string;
+            /** Courseid */
+            courseId: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Start */
+            start: string;
+            /** End */
+            end: string;
+            /** Title */
+            title: string | null;
+            /** Location */
+            location: string | null;
+            /** Color */
+            color: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "upcoming" | "past";
+            /** Scheduled */
+            scheduled: boolean;
+            /** Notecount */
+            noteCount: number;
+            /** Audiocount */
+            audioCount: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -905,6 +1148,13 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** WorkspaceState */
+        WorkspaceState: {
+            /** Opennoteids */
+            openNoteIds?: string[];
+            /** Activenoteid */
+            activeNoteId?: string | null;
         };
         /** Year */
         Year: {
@@ -2096,6 +2346,358 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScopeResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_notes_api_v1_sessions__session_key__notes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteMeta"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_note_api_v1_sessions__session_key__notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_note_api_v1_notes__note_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_note_api_v1_notes__note_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_note_api_v1_notes__note_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteRename"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteMeta"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_content_api_v1_notes__note_id__content_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaveResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    course_timeline_api_v1_courses__course_id__timeline_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Timeline"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_workspace_api_v1_workspace__session_key__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_workspace_api_v1_workspace__session_key__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkspaceState"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_preferences_api_v1_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+        };
+    };
+    patch_preferences_api_v1_preferences_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Preferences"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
                 };
             };
             /** @description Validation Error */

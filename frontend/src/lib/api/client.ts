@@ -15,9 +15,19 @@ export class ApiError extends Error {
   readonly title: string;
   readonly detail?: string;
   readonly errors: FieldError[];
+  /** The full problem document, including extension members (e.g. `current` on conflicts). */
+  readonly problem: Record<string, unknown>;
 
-  constructor(status: number, code: string, title: string, detail?: string, errors: FieldError[] = []) {
+  constructor(
+    status: number,
+    code: string,
+    title: string,
+    detail?: string,
+    errors: FieldError[] = [],
+    problem: Record<string, unknown> = {},
+  ) {
     super(detail ?? title);
+    this.problem = problem;
     this.name = "ApiError";
     this.status = status;
     this.code = code;
@@ -50,6 +60,8 @@ export interface ApiOptions {
   version?: number;
   query?: Record<string, string | number | undefined | null>;
   signal?: AbortSignal;
+  /** Let the request outlive the page (pagehide flush); body must stay small. */
+  keepalive?: boolean;
 }
 
 export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promise<T> {
@@ -80,6 +92,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
       credentials: "same-origin",
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: options.signal,
+      keepalive: options.keepalive,
     });
   } catch (err) {
     if ((err as Error).name === "AbortError") throw err;
@@ -97,6 +110,7 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
       p.title ?? response.statusText ?? "Request failed",
       p.detail,
       p.errors ?? [],
+      (data ?? {}) as Record<string, unknown>,
     );
   }
   return data as T;

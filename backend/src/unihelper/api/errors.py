@@ -25,8 +25,10 @@ class ApiError(Exception):
         detail: str | None = None,
         errors: list[dict[str, str]] | None = None,
         headers: dict[str, str] | None = None,
+        extra: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(title)
+        self.extra = extra
         self.status = status
         self.code = code
         self.title = title
@@ -54,6 +56,7 @@ def problem_response(
     detail: str | None = None,
     errors: list[dict[str, str]] | None = None,
     headers: dict[str, str] | None = None,
+    extra: dict[str, Any] | None = None,
 ) -> JSONResponse:
     body: dict[str, Any] = {
         "type": f"/problems/{code}",
@@ -65,6 +68,8 @@ def problem_response(
         body["detail"] = detail
     if errors:
         body["errors"] = errors
+    if extra:
+        body.update(extra)
     return JSONResponse(body, status_code=status, media_type=PROBLEM_JSON, headers=headers)
 
 
@@ -79,7 +84,7 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(ApiError)
     async def _api_error(_req: Request, exc: ApiError) -> JSONResponse:
         return problem_response(
-            exc.status, exc.code, exc.title, exc.detail, exc.errors, exc.headers
+            exc.status, exc.code, exc.title, exc.detail, exc.errors, exc.headers, exc.extra
         )
 
     @app.exception_handler(RequestValidationError)
