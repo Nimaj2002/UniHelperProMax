@@ -41,7 +41,14 @@ export function TopBar({ panelVisible, onTogglePanel }: { panelVisible: boolean;
           {panelVisible ? "Hide course panel" : "Show course panel"} <kbd className="ml-1 font-mono">[</kbd>
         </TooltipContent>
       </Tooltip>
-      <span className="mr-2 hidden text-[15px] font-semibold tracking-tight sm:inline">UniHelperProMax</span>
+      <button
+        type="button"
+        className="mr-2 hidden text-[15px] font-semibold tracking-tight sm:inline"
+        onClick={() => navigate("/")}
+        aria-label="Go to home"
+      >
+        UniHelperProMax
+      </button>
       <div className="flex min-w-0 flex-1 items-center gap-2">{toolbar}</div>
       <div className="flex shrink-0 items-center gap-1 sm:gap-2">
         {actions.map(({ id, component: C }) => (
