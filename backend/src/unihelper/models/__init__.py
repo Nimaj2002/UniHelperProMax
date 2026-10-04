@@ -1,0 +1,22 @@
+"""Import every model so Base.metadata is complete (Alembic autogenerate, create_all)."""
+
+from unihelper.models.auth_session import AuthSession
+from unihelper.models.base import Base
+from unihelper.models.class_series import ClassLink, ClassSeries
+from unihelper.models.course import Course
+from unihelper.models.semester import Semester
+from unihelper.models.session_exception import SessionException
+from unihelper.models.user import User
+from unihelper.models.year import Year
+
+__all__ = [
+    "AuthSession",
+    "Base",
+    "ClassLink",
+    "ClassSeries",
+    "Course",
+    "Semester",
+    "SessionException",
+    "User",
+    "Year",
+]

@@ -1,0 +1,70 @@
+[project]
+name = "unihelper"
+version = "0.1.0"
+description = "UniHelperProMax backend: versioned REST JSON API over SQLite metadata and a human-readable file store"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "pydantic>=2.9",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy>=2.0.36",
+    "alembic>=1.14",
+    "python-dateutil>=2.9",
+    "argon2-cffi>=23.1",
+    "uuid-utils>=0.9",
+    "tzdata>=2024.2",
+]
+
+[project.scripts]
+unihelper = "unihelper.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "httpx>=0.28",
+    "ruff>=0.8",
+    "mypy>=1.13",
+    "types-python-dateutil",
+    "types-PyYAML",
+    "pyyaml>=6.0",
+    "jsonschema>=4.23",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/unihelper"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["B008"]  # FastAPI Depends() in defaults
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["src"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["argon2.*", "uuid_utils.*", "dateutil.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
+markers = [
+    "unit: pure unit tests",
+    "contract: API contract tests (one module per router)",
+    "integration: real SQLite + temp storage root",
+]
+filterwarnings = ["ignore::DeprecationWarning:dateutil.*"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/unihelper/db/migrations/versions/*" = ["E501"]

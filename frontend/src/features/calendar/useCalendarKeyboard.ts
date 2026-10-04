@@ -1,0 +1,59 @@
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router";
+import { todayISO } from "@/lib/dates";
+import { hasModifier, isTypingTarget } from "@/lib/shortcuts";
+import { shiftPeriod } from "./navigation";
+import { calendarPath, type CalendarView } from "./state";
+
+export const CALENDAR_SHORTCUTS: [string, string][] = [
+  ["T", "Go to today"],
+  ["D / W / M", "Day, week or month view"],
+  ["← / →  or  K / J", "Previous / next period"],
+  ["N", "New class"],
+  ["/", "Search courses"],
+  ["[", "Show or hide the course panel"],
+  ["Arrow keys", "Move between time slots (inside the calendar grid)"],
+  ["Enter", "Create a class in the focused slot, or open the focused session"],
+  ["Esc", "Close a dialog"],
+  ["?", "Show keyboard shortcuts"],
+];
+
+/** Global calendar shortcuts; ignored while typing, inside dialogs, or inside the time grid. */
+export function useCalendarKeyboard(view: CalendarView, date: string, tz: string, onHelp: () => void) {
+  const navigate = useNavigate();
+  // read the latest view/date at key time: rapid key presses must not use a stale closure
+  const current = useRef({ view, date });
+  useEffect(() => {
+    current.current = { view, date };
+  }, [view, date]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const { view, date } = current.current;
+      if (e.defaultPrevented || hasModifier(e) || isTypingTarget(e.target)) return;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("[role='dialog'],[role='alertdialog'],[role='menu'],[role='listbox']")) return;
+      if (document.querySelector("[role='dialog'][data-state='open'],[role='alertdialog'][data-state='open']")) return;
+      const inGrid = !!target?.closest("[data-calendar-grid]");
+      const go = (d: string, v: CalendarView = view) => {
+        current.current = { view: v, date: d };
+        navigate(calendarPath(v, d));
+      };
+      switch (e.key) {
+        case "t": go(todayISO(tz)); break;
+        case "d": go(date, "day"); break;
+        case "w": go(date, "week"); break;
+        case "m": go(date, "month"); break;
+        case "j": go(shiftPeriod(view, date, 1)); break;
+        case "k": go(shiftPeriod(view, date, -1)); break;
+        case "ArrowRight": if (inGrid) return; go(shiftPeriod(view, date, 1)); break;
+        case "ArrowLeft": if (inGrid) return; go(shiftPeriod(view, date, -1)); break;
+        case "n": navigate("/classes/new"); break;
+        case "?": onHelp(); break;
+        default: return;
+      }
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [tz, navigate, onHelp]);
+}

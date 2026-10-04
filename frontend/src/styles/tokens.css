@@ -1,0 +1,125 @@
+/*
+ * Semantic theme tokens — the ONLY place colour values may appear (Constitution V).
+ * Light and dark are built in; user-created themes (feature 005) override these same
+ * variables. Pairs are verified for WCAG AA by tests/unit/tokens.contrast.test.ts.
+ * Neutral family: cool zinc. Single accent: cobalt. No pure #000 / #fff.
+ */
+
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --surface: #f8f8f9;
+  --surface-elevated: #fdfdfd;
+  --surface-sunken: #efeff1;
+  --surface-hover: #e7e7ea;
+  --text-primary: #18181b;
+  --text-muted: #55555d;
+  --border: #85858d;
+  --divider: #e1e1e5;
+  --grid-line: #e6e6ea;
+  --accent: #2650c9;
+  --accent-foreground: #fafafb;
+  --focus-ring: #2650c9;
+  --danger: #b4231b;
+  --danger-foreground: #fafafb;
+  --success: #1b7339;
+  --warning: #8a5300;
+  --now-line: #c8331f;
+  --shadow-tint: rgb(24 24 27 / 0.08);
+  --overlay: rgb(24 24 27 / 0.45);
+  --event-slate-bg: #e7eaee;
+  --event-slate-fg: #323b48;
+  --event-slate-border: #738296;
+  --event-red-bg: #f9dcdc;
+  --event-red-fg: #681212;
+  --event-red-border: #c94040;
+  --event-orange-bg: #fbe7da;
+  --event-orange-fg: #683512;
+  --event-orange-border: #d37536;
+  --event-amber-bg: #fcf0d9;
+  --event-amber-fg: #684b12;
+  --event-amber-border: #d8a031;
+  --event-lime-bg: #edf7de;
+  --event-lime-fg: #456218;
+  --event-lime-border: #90bf4a;
+  --event-green-bg: #e0f5e8;
+  --event-green-fg: #1f5c35;
+  --event-green-border: #54b678;
+  --event-teal-bg: #dff6f3;
+  --event-teal-fg: #1c5f56;
+  --event-teal-border: #4fbaac;
+  --event-cyan-bg: #ddf3f8;
+  --event-cyan-fg: #155565;
+  --event-cyan-border: #45abc4;
+  --event-blue-bg: #dce7f9;
+  --event-blue-fg: #123368;
+  --event-blue-border: #4075c9;
+  --event-indigo-bg: #dfe1f6;
+  --event-indigo-fg: #1c205f;
+  --event-indigo-border: #4f56ba;
+  --event-violet-bg: #e8dff6;
+  --event-violet-fg: #341c5f;
+  --event-violet-border: #764fba;
+  --event-pink-bg: #f8ddeb;
+  --event-pink-fg: #65153d;
+  --event-pink-border: #c44585;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #131316;
+  --surface-elevated: #1b1b1f;
+  --surface-sunken: #0e0e10;
+  --surface-hover: #26262b;
+  --text-primary: #ececef;
+  --text-muted: #a2a2ab;
+  --border: #6c6c75;
+  --divider: #2a2a30;
+  --grid-line: #232328;
+  --accent: #8ba7ff;
+  --accent-foreground: #0f1320;
+  --focus-ring: #8ba7ff;
+  --danger: #ff8d82;
+  --danger-foreground: #1f0b09;
+  --success: #6fd08c;
+  --warning: #f0c050;
+  --now-line: #ff7362;
+  --shadow-tint: rgb(0 0 0 / 0.4);
+  --overlay: rgb(5 5 7 / 0.6);
+  --event-slate-bg: #33373d;
+  --event-slate-fg: #d5dae2;
+  --event-slate-border: #6d7888;
+  --event-red-bg: #4c2424;
+  --event-red-fg: #f4c2c2;
+  --event-red-border: #ae4747;
+  --event-orange-bg: #4f3422;
+  --event-orange-fg: #f8d6bf;
+  --event-orange-border: #b56f40;
+  --event-amber-bg: #504020;
+  --event-amber-fg: #fae5bd;
+  --event-amber-border: #b98f3c;
+  --event-lime-bg: #3b4927;
+  --event-lime-fg: #e0f1c6;
+  --event-lime-border: #83a64e;
+  --event-green-bg: #2a4634;
+  --event-green-fg: #c9edd7;
+  --event-green-border: #569f71;
+  --event-teal-bg: #294843;
+  --event-teal-fg: #c8efea;
+  --event-teal-border: #52a398;
+  --event-cyan-bg: #26434a;
+  --event-cyan-fg: #c4e9f3;
+  --event-cyan-border: #4b97aa;
+  --event-blue-bg: #24344c;
+  --event-blue-fg: #c2d5f4;
+  --event-blue-border: #476eae;
+  --event-indigo-bg: #292b48;
+  --event-indigo-fg: #c8caef;
+  --event-indigo-border: #5257a3;
+  --event-violet-bg: #342948;
+  --event-violet-fg: #d6c8ef;
+  --event-violet-border: #7052a3;
+  --event-pink-bg: #4a2638;
+  --event-pink-fg: #f3c4db;
+  --event-pink-border: #aa4b7a;
+}

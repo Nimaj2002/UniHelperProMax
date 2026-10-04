@@ -30,3 +30,6 @@ Thumbs.db
 *.swp
 .vscode/
 .idea/
+
+# machine-specific pnpm store location (WSL performance)
+frontend/pnpm-workspace.yaml
