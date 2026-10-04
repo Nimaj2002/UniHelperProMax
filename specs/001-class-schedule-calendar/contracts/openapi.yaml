@@ -1,0 +1,811 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API
+  version: 1.0.0
+  description: |
+    Versioned REST JSON API (Constitution III). Feature 001 endpoints: setup, auth, accounts,
+    years, semesters, courses, classes, sessions.
+    Conventions:
+    - All paths are under /api/v1. JSON uses camelCase.
+    - Auth: session cookie `uh_session` (HttpOnly). State-changing requests (POST/PATCH/PUT/DELETE)
+      require header `X-CSRF-Token` equal to the `uh_csrf` cookie, except /setup/owner and /auth/login.
+    - Errors: application/problem+json (RFC 9457) with a stable `code`.
+    - Optimistic concurrency: mutable resources expose `version`; PATCH/DELETE require
+      `If-Match: "<version>"` and return 412 `version_conflict` on mismatch.
+    - Every resource is owned by the signed-in user; other users' ids return 404 (never 403) to
+      avoid leaking existence.
+servers:
+  - url: /api/v1
+
+tags:
+  - name: setup
+  - name: auth
+  - name: admin
+  - name: hierarchy
+  - name: classes
+  - name: sessions
+  - name: meta
+
+paths:
+  /health:
+    get:
+      tags: [meta]
+      summary: Liveness check (no auth)
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: object, properties: { status: { const: ok } } }
+
+  /setup/status:
+    get:
+      tags: [setup]
+      summary: Whether the owner account still needs to be created (FR-003a)
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [needsOwner]
+                properties: { needsOwner: { type: boolean } }
+
+  /setup/owner:
+    post:
+      tags: [setup]
+      summary: Create the owner account; only allowed while no users exist. Signs the owner in.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NewAccount" }
+      responses:
+        "201":
+          description: Owner created and signed in (sets cookies)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+        "409": { $ref: "#/components/responses/Conflict" }   # owner already exists
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /auth/login:
+    post:
+      tags: [auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username: { type: string }
+                password: { type: string, format: password }
+      responses:
+        "200":
+          description: Signed in (sets `uh_session` and `uh_csrf` cookies)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+        "401":
+          description: Generic `invalid_credentials` (also for disabled/unknown users)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  /auth/logout:
+    post:
+      tags: [auth]
+      responses:
+        "204": { description: Signed out; session revoked, cookies cleared }
+
+  /auth/me:
+    get:
+      tags: [auth]
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  /auth/password:
+    post:
+      tags: [auth]
+      summary: Change own password (required when mustChangePassword is true)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string, format: password }
+                newPassword: { type: string, format: password, minLength: 10 }
+      responses:
+        "204": { description: Changed; other sessions of this user revoked }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /auth/profile:
+    patch:
+      tags: [auth]
+      summary: Update own profile (time zone)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: { timezone: { type: string, example: Europe/Istanbul } }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Me" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /admin/users:
+    get:
+      tags: [admin]
+      summary: List accounts (owner only; account fields only, never user content — FR-003c)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Account" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [admin]
+      summary: Create a member account with an initial password (mustChangePassword = true)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NewAccount" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /admin/users/{userId}:
+    parameters: [{ $ref: "#/components/parameters/UserId" }]
+    patch:
+      tags: [admin]
+      summary: Disable or re-enable a member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [disabled]
+              properties: { disabled: { type: boolean } }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Account" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }  # e.g. owner cannot disable self
+    delete:
+      tags: [admin]
+      summary: Delete a member's account and metadata; their files stay on disk
+      responses:
+        "200":
+          description: Deleted; returns the kept storage folder path
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: { keptFolder: { type: string } }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /admin/users/{userId}/password-reset:
+    parameters: [{ $ref: "#/components/parameters/UserId" }]
+    post:
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newPassword]
+              properties: { newPassword: { type: string, format: password, minLength: 10 } }
+      responses:
+        "204": { description: Reset; user must change it at next sign-in; their sessions revoked }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /course-tree:
+    get:
+      tags: [hierarchy]
+      summary: Years (user order) → semesters (most recent first) → courses for the left panel (FR-022)
+      parameters:
+        - name: q
+          in: query
+          description: Case-insensitive partial course-name filter (FR-023)
+          schema: { type: string, maxLength: 120 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/YearNode" }
+
+  /years:
+    get:
+      tags: [hierarchy]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Year" } }
+    post:
+      tags: [hierarchy]
+      summary: Create a year; an existing same-name year is returned instead (200)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/YearInput" }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Year" } } } }
+        "200": { description: Existing returned, content: { application/json: { schema: { $ref: "#/components/schemas/Year" } } } }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /years/order:
+    put:
+      tags: [hierarchy]
+      summary: Reorder years (FR-022a); body lists ALL of the user's year ids in the new order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [yearIds]
+              properties:
+                yearIds: { type: array, items: { type: string }, uniqueItems: true }
+      responses:
+        "200":
+          description: New order; positions 0..n-1 in the given order
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Year" } } } }
+        "409":
+          description: "`order_mismatch` — the list is not exactly the user's current years (added/removed elsewhere); reload and retry"
+          content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /years/{yearId}:
+    parameters: [{ $ref: "#/components/parameters/YearId" }]
+    patch:
+      tags: [hierarchy]
+      summary: Rename (folder renamed accordingly, FR-025)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/YearInput" } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Year" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "412": { $ref: "#/components/responses/VersionConflict" }
+    delete:
+      tags: [hierarchy]
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "204": { description: Deleted with its semesters, courses and classes; folders kept (FR-019) }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "412": { $ref: "#/components/responses/VersionConflict" }
+
+  /years/{yearId}/deletion-impact:
+    parameters: [{ $ref: "#/components/parameters/YearId" }]
+    get:
+      tags: [hierarchy]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/DeletionImpact" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /semesters:
+    get:
+      tags: [hierarchy]
+      parameters:
+        - { name: yearId, in: query, required: true, schema: { type: string } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Semester" } } } } }
+    post:
+      tags: [hierarchy]
+      summary: Create a semester in a year; existing same-name semester returned (200)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SemesterCreate" } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Semester" } } } }
+        "200": { description: Existing returned, content: { application/json: { schema: { $ref: "#/components/schemas/Semester" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /semesters/{semesterId}:
+    parameters: [{ $ref: "#/components/parameters/SemesterId" }]
+    patch:
+      tags: [hierarchy]
+      summary: Rename and/or change dates; sessions ending "at semester end" follow the new end date
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SemesterUpdate" } } }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Semester" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "412": { $ref: "#/components/responses/VersionConflict" }
+        "422": { $ref: "#/components/responses/Validation" }  # e.g. removing end date used by a series
+    delete:
+      tags: [hierarchy]
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "204": { description: Deleted; folders kept }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "412": { $ref: "#/components/responses/VersionConflict" }
+
+  /semesters/{semesterId}/deletion-impact:
+    parameters: [{ $ref: "#/components/parameters/SemesterId" }]
+    get:
+      tags: [hierarchy]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/DeletionImpact" } } } }
+
+  /courses:
+    get:
+      tags: [hierarchy]
+      parameters:
+        - { name: semesterId, in: query, schema: { type: string } }
+        - { name: q, in: query, schema: { type: string, maxLength: 120 } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Course" } } } } }
+    post:
+      tags: [hierarchy]
+      summary: Create a course in a semester; existing same-name course returned (200)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/CourseCreate" } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/Course" } } } }
+        "200": { description: Existing returned, content: { application/json: { schema: { $ref: "#/components/schemas/Course" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /courses/{courseId}:
+    parameters: [{ $ref: "#/components/parameters/CourseId" }]
+    get:
+      tags: [hierarchy]
+      summary: Course with its year/semester (used by the course page placeholder and 002)
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/CourseDetail" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [hierarchy]
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                defaultColor: { $ref: "#/components/schemas/ColorKey" }
+      responses:
+        "200": { description: Updated, content: { application/json: { schema: { $ref: "#/components/schemas/Course" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "412": { $ref: "#/components/responses/VersionConflict" }
+    delete:
+      tags: [hierarchy]
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "204": { description: Deleted with its classes; folders kept }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "412": { $ref: "#/components/responses/VersionConflict" }
+
+  /courses/{courseId}/deletion-impact:
+    parameters: [{ $ref: "#/components/parameters/CourseId" }]
+    get:
+      tags: [hierarchy]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/DeletionImpact" } } } }
+
+  /classes:
+    post:
+      tags: [classes]
+      summary: |
+        Create a class. Year, semester and course may be referenced by id or created inline in the
+        same transaction (FR-014, FR-026). Creates missing folders (FR-025).
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ClassCreate" } } }
+      responses:
+        "201": { description: Created, content: { application/json: { schema: { $ref: "#/components/schemas/ClassSeries" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422": { $ref: "#/components/responses/Validation" }
+
+  /classes/{lineageId}:
+    parameters: [{ $ref: "#/components/parameters/LineageId" }]
+    get:
+      tags: [classes]
+      summary: All segments of a class (lineage) with links and exception count
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/ClassDetail" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /sessions:
+    get:
+      tags: [sessions]
+      summary: Expanded sessions in a date range (calendar views; 002 timeline uses courseId)
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, description: inclusive, schema: { type: string, format: date } }
+        - { name: courseId, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Sorted by start, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Session" } } } } }
+        "422": { $ref: "#/components/responses/Validation" }  # range > 400 days
+
+  /sessions/{sessionKey}:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [sessions]
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Session" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: [sessions]
+      summary: Edit a session with scope this | following | all (FR-018a)
+      parameters:
+        - { $ref: "#/components/parameters/Scope" }
+        - { $ref: "#/components/parameters/IfMatch" }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SessionEdit" } } }
+      responses:
+        "200":
+          description: Updated; returns affected lineage and number of preserved single-session overrides
+          content: { application/json: { schema: { $ref: "#/components/schemas/ScopeResult" } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "412": { $ref: "#/components/responses/VersionConflict" }
+        "422": { $ref: "#/components/responses/Validation" }
+    delete:
+      tags: [sessions]
+      summary: Cancel this session, delete this and following, or delete the whole class
+      parameters:
+        - { $ref: "#/components/parameters/Scope" }
+        - { $ref: "#/components/parameters/IfMatch" }
+      responses:
+        "200": { description: Done, content: { application/json: { schema: { $ref: "#/components/schemas/ScopeResult" } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "412": { $ref: "#/components/responses/VersionConflict" }
+
+components:
+  securitySchemes:
+    sessionCookie: { type: apiKey, in: cookie, name: uh_session }
+
+  parameters:
+    UserId: { name: userId, in: path, required: true, schema: { type: string } }
+    YearId: { name: yearId, in: path, required: true, schema: { type: string } }
+    SemesterId: { name: semesterId, in: path, required: true, schema: { type: string } }
+    CourseId: { name: courseId, in: path, required: true, schema: { type: string } }
+    LineageId: { name: lineageId, in: path, required: true, schema: { type: string } }
+    SessionKey:
+      name: sessionKey
+      in: path
+      required: true
+      description: "`{lineageId}:{YYYY-MM-DD}` (URL-encoded)"
+      schema: { type: string, pattern: "^[0-9a-f-]{36}:\\d{4}-\\d{2}-\\d{2}$" }
+    Scope:
+      name: scope
+      in: query
+      required: true
+      schema: { type: string, enum: [this, following, all] }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: |
+        Quoted `version` of the target resource. For /sessions/{sessionKey} PATCH and DELETE with any
+        scope (this, following, all): the `seriesVersion` of the segment that contains the target
+        session — except scope=this when an exception already exists for that date, where it is the
+        `exceptionVersion`. A mismatch returns 412 `version_conflict`. Every segment and exception
+        touched by the operation has its version incremented.
+      schema: { type: string, example: '"3"' }
+
+  responses:
+    Unauthorized: { description: Not signed in, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    Forbidden: { description: Not allowed (e.g. non-owner on /admin), content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    NotFound: { description: Not found or not owned, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    Conflict: { description: Name already used or state conflict, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    VersionConflict: { description: "`version_conflict` — reload and retry", content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    Validation: { description: Validation failed; `errors` lists fields, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+    TooManyRequests: { description: Login throttled; `Retry-After` header set, content: { application/problem+json: { schema: { $ref: "#/components/schemas/Problem" } } } }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string, format: uri-reference }
+        title: { type: string }
+        status: { type: integer }
+        code:
+          type: string
+          description: Stable machine code
+          examples: [invalid_credentials, owner_exists, name_taken, version_conflict, semester_end_missing, series_ends_before_start, invalid_time_range, not_found, forbidden, password_change_required]
+        detail: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string, description: JSON pointer, e.g. /recurrence/untilDate }
+              code: { type: string }
+              message: { type: string }
+
+    Me:
+      type: object
+      required: [id, username, role, mustChangePassword, timezone]
+      properties:
+        id: { type: string }
+        username: { type: string }
+        role: { type: string, enum: [owner, member] }
+        mustChangePassword: { type: boolean }
+        timezone: { type: string }
+
+    Account:
+      type: object
+      required: [id, username, role, disabled, createdAt]
+      properties:
+        id: { type: string }
+        username: { type: string }
+        role: { type: string, enum: [owner, member] }
+        disabled: { type: boolean }
+        mustChangePassword: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    NewAccount:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, pattern: "^[a-z0-9._-]{3,32}$" }
+        password: { type: string, format: password, minLength: 10 }
+        timezone: { type: string, description: IANA zone; defaults to server zone }
+
+    ColorKey:
+      type: string
+      enum: [slate, red, orange, amber, lime, green, teal, cyan, blue, indigo, violet, pink]
+
+    Year:
+      type: object
+      required: [id, name, folderName, position, version]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        folderName: { type: string }
+        position: { type: integer, minimum: 0, description: "User-defined order; 0 = top (FR-022a)" }
+        version: { type: integer }
+    YearInput:
+      type: object
+      required: [name]
+      properties: { name: { type: string, minLength: 1, maxLength: 80 } }
+
+    Semester:
+      type: object
+      required: [id, yearId, name, folderName, version]
+      properties:
+        id: { type: string }
+        yearId: { type: string }
+        name: { type: string }
+        folderName: { type: string }
+        startDate: { type: [string, "null"], format: date }
+        endDate: { type: [string, "null"], format: date }
+        version: { type: integer }
+    SemesterFields:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 80 }
+        startDate: { type: [string, "null"], format: date }
+        endDate: { type: [string, "null"], format: date }
+    SemesterCreate:
+      allOf:
+        - $ref: "#/components/schemas/SemesterFields"
+        - type: object
+          required: [yearId, name]
+          properties: { yearId: { type: string } }
+    SemesterUpdate: { $ref: "#/components/schemas/SemesterFields" }
+
+    Course:
+      type: object
+      required: [id, semesterId, name, folderName, defaultColor, version]
+      properties:
+        id: { type: string }
+        semesterId: { type: string }
+        name: { type: string }
+        folderName: { type: string }
+        defaultColor: { $ref: "#/components/schemas/ColorKey" }
+        version: { type: integer }
+    CourseCreate:
+      type: object
+      required: [semesterId, name]
+      properties:
+        semesterId: { type: string }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        defaultColor: { $ref: "#/components/schemas/ColorKey" }
+    CourseDetail:
+      allOf:
+        - $ref: "#/components/schemas/Course"
+        - type: object
+          properties:
+            year: { $ref: "#/components/schemas/Year" }
+            semester: { $ref: "#/components/schemas/Semester" }
+
+    YearNode:
+      type: object
+      properties:
+        year: { $ref: "#/components/schemas/Year" }
+        semesters:
+          type: array
+          items:
+            type: object
+            properties:
+              semester: { $ref: "#/components/schemas/Semester" }
+              courses: { type: array, items: { $ref: "#/components/schemas/Course" } }
+
+    DeletionImpact:
+      type: object
+      description: What deleting would remove; files are always kept
+      properties:
+        semesters: { type: integer }
+        courses: { type: integer }
+        classes: { type: integer }
+        keptFolder: { type: string, description: Path relative to the user's storage root }
+
+    Link:
+      type: object
+      required: [url]
+      properties:
+        label: { type: [string, "null"], maxLength: 60 }
+        url: { type: string, format: uri, maxLength: 2048, pattern: "^https?://" }
+
+    Recurrence:
+      type: object
+      required: [freq]
+      properties:
+        freq: { type: string, enum: [none, weekly] }
+        intervalWeeks: { type: integer, minimum: 1, maximum: 8, default: 1 }
+        byWeekday:
+          type: array
+          items: { type: string, enum: [MO, TU, WE, TH, FR, SA, SU] }
+          minItems: 1
+        end:
+          type: object
+          required: [kind]
+          properties:
+            kind: { type: string, enum: [semester_end, until, count] }
+            untilDate: { type: string, format: date }
+            count: { type: integer, minimum: 1, maximum: 500 }
+
+    RefOrNew:
+      description: Reference an existing entity by id or create a new one inline
+      oneOf:
+        - type: object
+          required: [id]
+          properties: { id: { type: string } }
+        - type: object
+          required: [new]
+          properties: { new: { type: object } }
+
+    ClassFields:
+      type: object
+      properties:
+        title: { type: [string, "null"], maxLength: 60 }
+        location: { type: [string, "null"], maxLength: 120 }
+        color: { $ref: "#/components/schemas/ColorKey" }
+        startTime: { type: string, pattern: "^\\d{2}:\\d{2}$" }
+        endTime: { type: string, pattern: "^\\d{2}:\\d{2}$" }
+        links: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/Link" } }
+        recurrence: { $ref: "#/components/schemas/Recurrence" }
+
+    ClassCreate:
+      allOf:
+        - $ref: "#/components/schemas/ClassFields"
+        - type: object
+          required: [course, startDate, startTime, endTime, color, recurrence]
+          properties:
+            startDate: { type: string, format: date }
+            course:
+              description: |
+                `{ "id": "<courseId>" }` or
+                `{ "new": { "name": "CS 201", "semester": { "id": "…" } | { "new": { "name": "Fall 2026",
+                "startDate": "…", "endDate": "…", "year": { "id": "…" } | { "new": { "name": "2026" } } } } } }`
+              $ref: "#/components/schemas/RefOrNew"
+
+    ClassSeries:
+      allOf:
+        - $ref: "#/components/schemas/ClassFields"
+        - type: object
+          required: [id, lineageId, courseId, startDate, version]
+          properties:
+            id: { type: string }
+            lineageId: { type: string }
+            courseId: { type: string }
+            startDate: { type: string, format: date }
+            version: { type: integer }
+
+    ClassDetail:
+      type: object
+      properties:
+        lineageId: { type: string }
+        course: { $ref: "#/components/schemas/CourseDetail" }
+        segments: { type: array, items: { $ref: "#/components/schemas/ClassSeries" } }
+        exceptionCount: { type: integer }
+
+    Session:
+      type: object
+      required: [key, lineageId, seriesId, courseId, date, start, end, color, status]
+      properties:
+        key: { type: string, example: "0192a3c4-…:2026-10-05" }
+        lineageId: { type: string }
+        seriesId: { type: string }
+        seriesVersion: { type: integer, description: Version of the segment generating this session; send as If-Match for session edits/deletes }
+        courseId: { type: string }
+        courseName: { type: string }
+        title: { type: [string, "null"] }
+        date: { type: string, format: date }
+        start: { type: string, format: date-time, description: ISO 8601 with offset }
+        end: { type: string, format: date-time }
+        location: { type: [string, "null"] }
+        color: { $ref: "#/components/schemas/ColorKey" }
+        links: { type: array, items: { $ref: "#/components/schemas/Link" } }
+        recurrenceSummary: { type: string, example: "Weekly on Mon, Wed until semester end" }
+        isException: { type: boolean }
+        exceptionVersion: { type: [integer, "null"], description: "Version of this date's exception, if any; send as If-Match for scope=this when present" }
+        status: { type: string, enum: [upcoming, past] }
+
+    SessionEdit:
+      description: |
+        Fields to change. With scope=this only startTime, endTime and location are allowed
+        (single-session overrides keep the date). With following/all any ClassFields may change.
+      $ref: "#/components/schemas/ClassFields"
+
+    ScopeResult:
+      type: object
+      properties:
+        lineageId: { type: string }
+        affectedSeriesIds: { type: array, items: { type: string } }
+        preservedOverrides: { type: integer, description: Single-session changes kept by an "all" edit }
+        removedOverrides: { type: integer }
+
+security:
+  - sessionCookie: []
