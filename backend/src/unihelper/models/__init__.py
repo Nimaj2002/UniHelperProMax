@@ -5,6 +5,7 @@ from unihelper.models.base import Base
 from unihelper.models.class_series import ClassLink, ClassSeries
 from unihelper.models.course import Course
 from unihelper.models.note import Note
+from unihelper.models.recording import Recording
 from unihelper.models.semester import Semester
 from unihelper.models.session_exception import SessionException
 from unihelper.models.session_folder import SessionFolder
@@ -20,6 +21,7 @@ __all__ = [
     "ClassSeries",
     "Course",
     "Note",
+    "Recording",
     "Semester",
     "SessionException",
     "SessionFolder",

@@ -311,3 +311,5 @@ components:
         editorMode: { type: string, enum: [live, raw] }
         workspaceLeftCollapsed: { type: boolean }
         workspaceRightCollapsed: { type: boolean }
+        playerVolume: { type: number, minimum: 0, maximum: 1, description: "added by feature 003" }
+        playerMuted: { type: boolean, description: "added by feature 003" }

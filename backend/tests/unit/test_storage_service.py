@@ -42,10 +42,10 @@ def test_traversal_rejected(tmp_path: Path, bad: list[str]) -> None:
 def test_only_note_files_can_be_deleted() -> None:
     names = {n for n in dir(StorageService) if not n.startswith("_")}
     deleting = {n for n in names for w in ("delete", "remove", "unlink", "rmtree") if w in n}
-    assert deleting == {"delete_note_file"}
+    assert deleting == {"delete_content_file"}
 
 
-def test_delete_note_file_scope(tmp_path: Path) -> None:
+def test_delete_content_file_scope(tmp_path: Path) -> None:
     s = StorageService(tmp_path)
     s.write_text_atomic(["alice", "C", "2026-10-05", "notes", "a.md"], "x")
     s.write_text_atomic(["alice", "C", "2026-10-05", "audios", "a.md"], "x")
@@ -56,8 +56,8 @@ def test_delete_note_file_scope(tmp_path: Path) -> None:
         ["alice", "C", "2026-10-05", "notes"],
     ):
         with pytest.raises(StoragePathError):
-            s.delete_note_file(bad)
-    s.delete_note_file(["alice", "C", "2026-10-05", "notes", "a.md"])
+            s.delete_content_file(bad)
+    s.delete_content_file(["alice", "C", "2026-10-05", "notes", "a.md"])
     assert not (tmp_path / "alice/C/2026-10-05/notes/a.md").exists()
     assert (tmp_path / "alice/C/2026-10-05/notes/keep.txt").exists()
 
@@ -98,3 +98,21 @@ def test_rename_file_and_undo(tmp_path: Path) -> None:
     assert (tmp_path / "u/notes/b.md").exists() and not (tmp_path / "u/notes/a.md").exists()
     undo()
     assert (tmp_path / "u/notes/a.md").exists()
+
+
+def test_append_bytes_fsyncs_and_grows(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    parts = ["u", "c", "2026-10-05", "audios", "r.webm"]
+    assert s.append_bytes(parts, b"abc") == 3
+    assert s.append_bytes(parts, b"de") == 5
+    assert (tmp_path / "u/c/2026-10-05/audios/r.webm").read_bytes() == b"abcde"
+
+
+def test_delete_content_file_allows_recordings_only_in_audios(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    s.write_text_atomic(["u", "c", "d", "audios", "r.webm"], "x")
+    s.write_text_atomic(["u", "c", "d", "notes", "x.webm"], "x")
+    with pytest.raises(StoragePathError):
+        s.delete_content_file(["u", "c", "d", "notes", "x.webm"])
+    s.delete_content_file(["u", "c", "d", "audios", "r.webm"])
+    assert not (tmp_path / "u/c/d/audios/r.webm").exists()

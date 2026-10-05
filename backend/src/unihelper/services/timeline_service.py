@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from unihelper.domain.recurrence import expand, resolve_until
-from unihelper.models import ClassSeries, Note, SessionFolder, User
+from unihelper.models import ClassSeries, Note, Recording, SessionFolder, User
 from unihelper.services import hierarchy_service as hs
 from unihelper.services import session_folder_service as sfs
 from unihelper.services.class_service import series_rule
@@ -48,6 +48,14 @@ def course_timeline(
             .group_by(SessionFolder.id)
         ).all()
     )
+    audio: dict[str, int] = dict(
+        db.execute(
+            select(Recording.session_folder_id, func.count(Recording.id))
+            .join(SessionFolder, SessionFolder.id == Recording.session_folder_id)
+            .where(SessionFolder.course_id == course.id)
+            .group_by(Recording.session_folder_id)
+        ).all()
+    )
     folders = {
         f.session_key: f
         for f in db.scalars(select(SessionFolder).where(SessionFolder.course_id == course.id))
@@ -82,12 +90,12 @@ def course_timeline(
                     "status": view.status,
                     "scheduled": True,
                     "note_count": counts.get(folder.id, 0) if folder else 0,
-                    "audio_count": 0,
+                    "audio_count": audio.get(folder.id, 0) if folder else 0,
                 }
             )
     scheduled_keys = {e["key"] for e in entries}
     for key, folder in folders.items():
-        if key in scheduled_keys or not counts.get(folder.id):
+        if key in scheduled_keys or not (counts.get(folder.id) or audio.get(folder.id)):
             continue
         snap = sfs.snapshot_session(user, folder, course, now)
         entries.append(
@@ -104,7 +112,7 @@ def course_timeline(
                 "status": snap["status"],
                 "scheduled": False,
                 "note_count": counts.get(folder.id, 0),
-                "audio_count": 0,
+                "audio_count": audio.get(folder.id, 0),
             }
         )
     entries.sort(key=lambda e: (e["start"], e["key"]))

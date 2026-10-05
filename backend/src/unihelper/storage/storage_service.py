@@ -1,7 +1,8 @@
 """The ONLY module that touches the file system (Constitution III; research R7).
 
 It never deletes folders, and deleting metadata keeps user files (FR-019). The single exception
-is `delete_note_file`: one confirmed `.md` file inside a `notes/` folder (002 research N6).
+is `delete_content_file`: one confirmed note (`.md` in `notes/`) or recording (`.webm`/`.m4a` in
+`audios/`) — 002 research N6, 003 research A7.
 """
 
 from __future__ import annotations
@@ -104,6 +105,33 @@ class StorageService:
         _fsync_dir(path.parent)
         return self.hash_bytes(data), len(data)
 
+    def append_bytes(self, parts: Sequence[str], data: bytes) -> int:
+        """Append and fsync (progressive recording, Constitution I). Returns the new size."""
+        path = self.path_for(parts)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "ab") as fh:
+            fh.write(data)
+            fh.flush()
+            os.fsync(fh.fileno())
+            return fh.tell()
+
+    def replace_bytes_atomic(self, parts: Sequence[str], data: bytes) -> None:
+        path = self.path_for(parts)
+        tmp = path.with_name(f".{path.name}.tmp-{secrets.token_hex(4)}")
+        try:
+            with open(tmp, "wb") as fh:
+                fh.write(data)
+                fh.flush()
+                os.fsync(fh.fileno())
+            _replace_with_retry(tmp, path)
+        finally:
+            if tmp.exists():
+                tmp.unlink()
+        _fsync_dir(path.parent)
+
+    def absolute_path(self, parts: Sequence[str]) -> Path:
+        return self.path_for(parts)
+
     def rename_file(self, old_parts: Sequence[str], new_parts: Sequence[str]) -> Callable[[], None]:
         old = self.path_for(old_parts)
         new = self.path_for(new_parts)
@@ -117,11 +145,13 @@ class StorageService:
 
         return undo
 
-    def delete_note_file(self, parts: Sequence[str]) -> None:
-        """Delete exactly one note file: a `.md` file whose parent folder is `notes`."""
+    def delete_content_file(self, parts: Sequence[str]) -> None:
+        """Delete exactly one note (`.md` in `notes/`) or recording (`.webm`/`.m4a` in
+        `audios/`). Anything else is refused."""
         path = self.path_for(parts)
-        if path.suffix.lower() != ".md" or path.parent.name != "notes" or path.is_dir():
-            raise StoragePathError("Only note files can be deleted")
+        allowed = {"notes": {".md"}, "audios": {".webm", ".m4a"}}
+        if path.is_dir() or path.suffix.lower() not in allowed.get(path.parent.name, set()):
+            raise StoragePathError("Only note and recording files can be deleted")
         try:
             path.unlink()
         except FileNotFoundError:

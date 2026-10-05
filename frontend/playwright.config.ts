@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const backendPort = 8000;
+// override with E2E_BACKEND_PORT / E2E_FRONTEND_PORT to run next to a dev server
+const backendPort = Number(process.env.E2E_BACKEND_PORT ?? 8000);
+const frontendPort = Number(process.env.E2E_FRONTEND_PORT ?? 5173);
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -8,10 +10,30 @@ export default defineConfig({
   workers: 1,
   timeout: 60_000,
   reporter: [["list"], ["html", { open: "never" }]],
-  use: { baseURL: "http://localhost:5173", trace: "retain-on-failure" },
+  use: {
+    baseURL: `http://localhost:${frontendPort}`,
+    trace: "retain-on-failure",
+    // fake microphone for recording tests (feature 003)
+    permissions: ["microphone"],
+    launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
+  },
   projects: [
-    { name: "chromium-light", use: { ...devices["Desktop Chrome"], colorScheme: "light" } },
-    { name: "chromium-dark", use: { ...devices["Desktop Chrome"], colorScheme: "dark" } },
+    {
+      name: "chromium-light",
+      use: {
+        ...devices["Desktop Chrome"],
+        colorScheme: "light",
+        launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
+      },
+    },
+    {
+      name: "chromium-dark",
+      use: {
+        ...devices["Desktop Chrome"],
+        colorScheme: "dark",
+        launchOptions: { args: ["--use-fake-device-for-media-stream", "--use-fake-ui-for-media-stream"] },
+      },
+    },
   ],
   webServer: [
     {
@@ -22,8 +44,8 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      command: "corepack pnpm dev --port 5173 --strictPort",
-      url: "http://localhost:5173",
+      command: `UNIHELPER_API_PORT=${backendPort} corepack pnpm dev --port ${frontendPort} --strictPort`,
+      url: `http://localhost:${frontendPort}`,
       reuseExistingServer: false,
       timeout: 120_000,
     },

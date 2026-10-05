@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLogout, useMe } from "@/features/auth/api";
-import { useAccountMenuItems, useTopBarActions } from "./registry";
+import { signOutAllowed, useAccountMenuItems, useTopBarActions } from "./registry";
 import { useToolbarNode } from "./toolbar";
 
 export function TopBar({ panelVisible, onTogglePanel }: { panelVisible: boolean; onTogglePanel: () => void }) {
@@ -74,9 +74,10 @@ export function TopBar({ panelVisible, onTogglePanel }: { panelVisible: boolean;
               ))}
             {accountItems.length > 0 && <DropdownMenuSeparator />}
             <DropdownMenuItem
-              onSelect={() =>
-                logout.mutate(undefined, { onSettled: () => navigate("/login", { replace: true }) })
-              }
+              onSelect={() => {
+                const signOut = () => logout.mutate(undefined, { onSettled: () => navigate("/login", { replace: true }) });
+                if (signOutAllowed(signOut)) signOut();
+              }}
             >
               <SignOut size={16} /> Sign out
             </DropdownMenuItem>

@@ -1,5 +1,7 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { CaretDown } from "@phosphor-icons/react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Outlet } from "react-router";
+import { PanelResizeHandle } from "@/components/PanelResizeHandle";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { readLocal, writeLocal } from "@/lib/storage";
 import { hasModifier, isTypingTarget } from "@/lib/shortcuts";
@@ -7,14 +9,20 @@ import { DESKTOP_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { cn } from "@/lib/utils";
 import { ActivityBar } from "./ActivityBar";
 import { CoursePanelSlot } from "./CoursePanelSlot";
+import { PanelSectionProvider, usePanelSectionSlot } from "./panelSection";
 import { useGlobalHosts } from "./registry";
 import { TopBar } from "./TopBar";
 import { ToolbarProvider } from "./toolbar";
 
 const MIN_W = 240;
-const MAX_W = 360;
+const MAX_W = 480;
 const DEFAULT_W = 280;
 const clamp = (w: number) => Math.min(MAX_W, Math.max(MIN_W, w));
+/** Height of the page's section under the courses, in % of the panel (starts in the middle). */
+const SECTION_MIN = 15;
+const SECTION_MAX = 85;
+const SECTION_DEFAULT = 50;
+const clampSection = (p: number) => Math.min(SECTION_MAX, Math.max(SECTION_MIN, p));
 
 function GlobalHosts() {
   const hosts = useGlobalHosts();
@@ -27,14 +35,110 @@ function GlobalHosts() {
   );
 }
 
+/**
+ * Desktop left panel: courses, and under them the current page's section (if any). Positioned
+ * to fill its grid cell so long section content scrolls inside instead of growing the page.
+ */
+function SidePanel() {
+  const { section, setTarget } = usePanelSectionSlot();
+  const [pct, setPct] = useState(() => clampSection(readLocal("uh.panel.sectionPct", SECTION_DEFAULT)));
+  const panel = useRef<HTMLElement>(null);
+  useEffect(() => writeLocal("uh.panel.sectionPct", pct), [pct]);
+  const open = section && !section.collapsed;
+  return (
+    <aside
+      id="course-panel"
+      ref={panel}
+      aria-label="Side panel"
+      className="absolute inset-0 flex min-h-0 flex-col overflow-hidden border-r border-divider bg-surface"
+      style={{ "--section-h": `${pct}%` } as CSSProperties}
+    >
+      <div className="min-h-0 flex-1">
+        <CoursePanelSlot />
+      </div>
+      {section && (
+        <section
+          aria-labelledby="panel-section-title"
+          className="relative flex min-h-0 shrink-0 flex-col border-t border-divider"
+          style={open ? { height: "var(--section-h)" } : undefined}
+        >
+          {open && (
+            <PanelResizeHandle
+              value={pct}
+              min={SECTION_MIN}
+              max={SECTION_MAX}
+              defaultValue={SECTION_DEFAULT}
+              onResize={setPct}
+              onDrag={(p) => panel.current?.style.setProperty("--section-h", `${p}%`)}
+              grow="up"
+              step={5}
+              unitsPerPx={() => 100 / (panel.current?.clientHeight || 1)}
+              label={`Resize ${section.title.toLowerCase()}`}
+              controls="panel-section-body"
+              className="top-0"
+            />
+          )}
+          <h2 id="panel-section-title">
+            <button
+              type="button"
+              onClick={section.onToggle}
+              aria-expanded={!section.collapsed}
+              aria-controls="panel-section-body"
+              aria-keyshortcuts="Alt+["
+              className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
+            >
+              <CaretDown size={12} weight="bold" aria-hidden className={cn("transition-transform motion-reduce:transition-none", section.collapsed && "-rotate-90")} />
+              {section.title}
+            </button>
+          </h2>
+          <div id="panel-section-body" ref={setTarget} hidden={section.collapsed} className="min-h-0 flex-1 overflow-hidden" />
+        </section>
+      )}
+    </aside>
+  );
+}
+
+/**
+ * Side panel | page columns. Owns the side panel's width, so committing a resize re-renders only
+ * this wrapper (the panel and page are unchanged elements), not the whole app.
+ */
+function ShellColumns({ side, children }: { side: ReactNode; children: ReactNode }) {
+  const [width, setWidth] = useState(() => clamp(readLocal("uh.panel.width", DEFAULT_W)));
+  const columns = useRef<HTMLDivElement>(null);
+  useEffect(() => writeLocal("uh.panel.width", width), [width]);
+  return (
+    <div
+      ref={columns}
+      className="grid min-h-0"
+      style={{ "--side-w": `${width}px`, gridTemplateColumns: side ? "var(--side-w) minmax(0,1fr)" : "minmax(0,1fr)" } as CSSProperties}
+    >
+      {side && (
+        <div className="relative min-h-0 min-w-0">
+          {side}
+          <PanelResizeHandle
+            value={width}
+            min={MIN_W}
+            max={MAX_W}
+            defaultValue={DEFAULT_W}
+            onResize={setWidth}
+            onDrag={(w) => columns.current?.style.setProperty("--side-w", `${w}px`)}
+            grow="right"
+            label="Resize course panel"
+            controls="course-panel"
+            className="left-full"
+          />
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
 export function AppShell() {
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
-  const [width, setWidth] = useState(() => clamp(readLocal("uh.panel.width", DEFAULT_W)));
   const [collapsed, setCollapsed] = useState(() => readLocal("uh.panel.collapsed", false));
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const dragStart = useRef<{ x: number; w: number } | null>(null);
 
-  useEffect(() => writeLocal("uh.panel.width", width), [width]);
   useEffect(() => writeLocal("uh.panel.collapsed", collapsed), [collapsed]);
 
   const panelVisible = isDesktop ? !collapsed : drawerOpen;
@@ -54,87 +158,35 @@ export function AppShell() {
     return () => window.removeEventListener("keydown", onKey);
   }, [togglePanel]);
 
-  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    dragStart.current = { x: e.clientX, w: width };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (dragStart.current) setWidth(clamp(dragStart.current.w + e.clientX - dragStart.current.x));
-  };
-  const onPointerUp = () => {
-    dragStart.current = null;
-  };
-  const onSeparatorKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (e.key === "ArrowLeft") setWidth((w) => clamp(w - 16));
-    else if (e.key === "ArrowRight") setWidth((w) => clamp(w + 16));
-    else if (e.key === "Home") setWidth(MIN_W);
-    else if (e.key === "End") setWidth(MAX_W);
-    else return;
-    e.preventDefault();
-  };
+  const showPanel = useCallback(() => setCollapsed(false), []);
 
   return (
-    <ToolbarProvider>
-      <div className="grid min-h-[100dvh] grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] bg-surface">
-        <TopBar panelVisible={panelVisible} onTogglePanel={togglePanel} />
-        <div
-          className="grid min-h-0"
-          style={{
-            gridTemplateColumns: isDesktop && !collapsed ? `${width}px 1px minmax(0,1fr)` : "minmax(0,1fr)",
-          }}
-        >
-          {isDesktop && !collapsed && (
-            <>
-              <aside
-                id="course-panel"
-                aria-label="Courses"
-                className="min-h-0 overflow-hidden bg-surface"
-              >
-                <CoursePanelSlot />
-              </aside>
-              {/* A focusable separator is an ARIA window-splitter widget (keyboard-resizable). */}
-              {/* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
-              <div
-                role="separator"
-                aria-orientation="vertical"
-                aria-label="Resize course panel"
-                aria-valuemin={MIN_W}
-                aria-valuemax={MAX_W}
-                aria-valuenow={width}
-                tabIndex={0}
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={onPointerUp}
-                onKeyDown={onSeparatorKey}
-                className={cn(
-                  "relative cursor-col-resize bg-divider",
-                  "after:absolute after:inset-y-0 after:-left-1.5 after:w-3 after:content-['']",
-                  "focus-visible:bg-ring hover:bg-strong-border",
-                )}
-              />
-              {/* eslint-enable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
-            </>
-          )}
-          <main id="main" className="min-h-0 min-w-0 overflow-hidden">
-            <Outlet />
-          </main>
+    <PanelSectionProvider panelVisible={isDesktop && !collapsed} showPanel={showPanel}>
+      <ToolbarProvider>
+        <div className="grid min-h-[100dvh] grid-cols-[minmax(0,1fr)] grid-rows-[auto_1fr_auto] bg-surface">
+          <TopBar panelVisible={panelVisible} onTogglePanel={togglePanel} />
+          <ShellColumns side={isDesktop && !collapsed ? <SidePanel /> : null}>
+            <main id="main" className="min-h-0 min-w-0 overflow-hidden">
+              <Outlet />
+            </main>
+          </ShellColumns>
+          <ActivityBar />
         </div>
-        <ActivityBar />
-      </div>
-      <GlobalHosts />
-      {!isDesktop && (
-        <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <SheetContent side="left" className="w-[min(320px,88vw)] p-0">
-            <SheetTitle className="sr-only">Courses</SheetTitle>
-            <SheetDescription className="sr-only">Browse and search your courses</SheetDescription>
-            <div id="course-panel" className="h-full" onClickCapture={(e) => {
-              if ((e.target as HTMLElement).closest("a")) setDrawerOpen(false);
-            }}>
-              <CoursePanelSlot />
-            </div>
-          </SheetContent>
-        </Sheet>
-      )}
-    </ToolbarProvider>
+        <GlobalHosts />
+        {!isDesktop && (
+          <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+            <SheetContent side="left" className="w-[min(320px,88vw)] p-0">
+              <SheetTitle className="sr-only">Courses</SheetTitle>
+              <SheetDescription className="sr-only">Browse and search your courses</SheetDescription>
+              <div id="course-panel" className="h-full" onClickCapture={(e) => {
+                if ((e.target as HTMLElement).closest("a")) setDrawerOpen(false);
+              }}>
+                <CoursePanelSlot />
+              </div>
+            </SheetContent>
+          </Sheet>
+        )}
+      </ToolbarProvider>
+    </PanelSectionProvider>
   );
 }

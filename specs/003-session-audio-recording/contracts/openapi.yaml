@@ -1,0 +1,209 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 003 additions
+  version: 1.2.0
+  description: |
+    Additive to the 001 and 002 contracts (same conventions). Changes to existing operations
+    (additive): `/preferences` gains `playerVolume` and `playerMuted`; the course timeline's
+    `audioCount` now counts recordings.
+servers:
+  - url: /api/v1
+
+paths:
+  /sessions/{sessionKey}/recordings:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [recordings]
+      summary: Recordings of a session, newest first (stale in-progress ones are finalized as interrupted)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Recording" } }
+        "404": { $ref: "#/components/responses/Problem" }
+    post:
+      tags: [recordings]
+      summary: Start a recording (creates the session folder on first use)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mimeType]
+              properties:
+                mimeType: { type: string, enum: [audio/webm, audio/mp4] }
+      responses:
+        "201":
+          description: Started (status `recording`, nextSeq 0)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recording" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # recording_in_progress
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /recordings/active:
+    get:
+      tags: [recordings]
+      summary: The user's active recording, if any (other windows show it instead of starting another)
+      responses:
+        "200":
+          description: Active recording or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/Recording"
+                  - type: "null"
+
+  /recordings/{recordingId}:
+    parameters: [{ $ref: "#/components/parameters/RecordingId" }]
+    get:
+      tags: [recordings]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recording" }
+        "404": { $ref: "#/components/responses/Problem" }
+    patch:
+      tags: [recordings]
+      summary: Rename (file renamed too); refused while recording
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties: { name: { type: string, minLength: 1, maxLength: 120 } }
+      responses:
+        "200":
+          description: Renamed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recording" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # name_taken | recording_in_progress
+        "412": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [recordings]
+      summary: Delete the recording and its audio file (after confirmation); refused while recording
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "412": { $ref: "#/components/responses/Problem" }
+
+  /recordings/{recordingId}/chunks/{seq}:
+    parameters:
+      - { $ref: "#/components/parameters/RecordingId" }
+      - { name: seq, in: path, required: true, schema: { type: integer, minimum: 0 } }
+    put:
+      tags: [recordings]
+      summary: Append the next chunk (idempotent for already-stored seq numbers)
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary, maxLength: 10485760 }
+      responses:
+        "200":
+          description: Stored (or already stored)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChunkResult" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409":
+          description: "`chunk_gap` (body has `nextSeq`) or `recording_finished`"
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "413": { $ref: "#/components/responses/Problem" }
+
+  /recordings/{recordingId}/stop:
+    parameters: [{ $ref: "#/components/parameters/RecordingId" }]
+    post:
+      tags: [recordings]
+      summary: Finish the recording (or, after a crash, mark it interrupted) and finalize the file
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                interrupted: { type: boolean, default: false }
+                durationMs: { type: integer, minimum: 0, description: client-measured (used for audio/mp4) }
+      responses:
+        "200":
+          description: Finalized
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recording" }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /recordings/{recordingId}/audio:
+    parameters: [{ $ref: "#/components/parameters/RecordingId" }]
+    get:
+      tags: [recordings]
+      summary: The audio file (supports HTTP Range for streaming and seeking)
+      responses:
+        "200": { description: Full file, content: { audio/webm: {}, audio/mp4: {} } }
+        "206": { description: Partial content }
+        "404": { $ref: "#/components/responses/Problem" }   # not_found | file_missing
+
+components:
+  parameters:
+    SessionKey: { name: sessionKey, in: path, required: true, schema: { type: string } }
+    RecordingId: { name: recordingId, in: path, required: true, schema: { type: string } }
+    IfMatch: { name: If-Match, in: header, required: true, schema: { type: string } }
+
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        nextSeq: { type: integer }
+
+    Recording:
+      type: object
+      required: [id, sessionKey, name, fileName, mimeType, status, startedAt, durationMs, size, nextSeq, active, missing, version]
+      properties:
+        id: { type: string }
+        sessionKey: { type: string }
+        name: { type: string }
+        fileName: { type: string }
+        mimeType: { type: string }
+        status: { type: string, enum: [recording, complete, interrupted] }
+        startedAt: { type: string }
+        durationMs: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 0 }
+        nextSeq: { type: integer, minimum: 0 }
+        active: { type: boolean, description: in progress and received data within the last 30 s }
+        missing: { type: boolean, description: audio file not found on disk }
+        version: { type: integer }
+
+    ChunkResult:
+      type: object
+      required: [nextSeq, size]
+      properties:
+        nextSeq: { type: integer }
+        size: { type: integer }

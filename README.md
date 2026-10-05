@@ -2,7 +2,8 @@
 
 Class schedules, per-class Markdown notes, lecture recordings, and transcription for university
 students. Released: 001 accounts, calendar and courses; 002 course timelines and the session
-notes workspace. Recordings, transcription and themes follow in features 003–005 (see `specs/`).
+notes workspace; 003 session audio recording and playback. Transcription and themes follow in
+features 004–005 (see `specs/`).
 
 - Python/FastAPI backend with a versioned JSON API (`/api/v1`) over SQLite
 - React + shadcn/ui frontend, light and dark themes, fully keyboard operable
@@ -63,12 +64,17 @@ data/
 
 Each note is a plain Markdown file (`<Note name>.md`) in its session's `notes/` folder; you can
 open and edit it in any editor — the app picks up the change and never overwrites it silently.
-Session folders are created when a session gets its first note.
+Session folders are created when a session gets its first note or recording.
+
+Each recording is an audio file (`<Recording name>.webm`, or `.m4a` on Safari) in the session's
+`audios/` folder. Audio is saved every few seconds while you record (on the device first, then on
+the server), so closing the page or losing the network keeps everything recorded so far; such a
+recording is listed as "Recovered (interrupted)".
 
 Folder names follow the names you type (made safe for Windows/macOS/Linux) and are renamed when
 you rename things in the app. Deleting a year, semester, course, class, or account **never**
-deletes files; the only file the app ever removes is a note's `.md`, when you delete that note
-and confirm. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
+deletes files; the only files the app ever removes are a note's `.md` or a recording's audio
+file, when you delete that note or recording and confirm. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
 
 Back up by copying the whole data folder while the app is stopped.
 
@@ -79,9 +85,22 @@ Back up by copying the whole data folder while the app is stopped.
 | `Alt+N` | New note |
 | `Alt+W` / `Delete` on a tab | Close tab |
 | `Alt+PageDown` / `Alt+PageUp` | Next / previous tab |
-| `Alt+[` / `Alt+]` | Toggle left / right panel |
+| `Alt+[` / `Alt+]` | Collapse/expand the sessions and notes section (under the courses) / show or hide the audio panel |
 | `Ctrl/Cmd+E` | Live ↔ raw Markdown |
 | `Ctrl/Cmd+Enter` | Open the link under the cursor |
+| Arrow keys on a panel edge | Resize the side panel, the sessions and notes section, or the audio panel (`Home`/`End` min/max, `Enter` or double-click resets; you can also drag the edge) |
+
+## Audio player shortcuts
+
+With focus anywhere in the player:
+
+| Keys | Action |
+|---|---|
+| `Space` / `K` | Play / pause |
+| `J` / `←` · `L` / `→` | Back / forward 5 seconds |
+| `↑` / `↓` | Volume up / down |
+| `M` | Mute / unmute |
+| `PageUp` / `PageDown` on the seek bar | Forward / back 60 seconds |
 
 ## Tests and checks
 
@@ -94,6 +113,7 @@ corepack pnpm lint && corepack pnpm typecheck
 corepack pnpm test            # Vitest + Testing Library + axe
 corepack pnpm exec playwright install chromium   # once
 corepack pnpm e2e             # keyboard-only flows in light and dark, axe WCAG AA
+# dev servers already on 8000/5173? E2E_BACKEND_PORT=8010 E2E_FRONTEND_PORT=5183 corepack pnpm e2e
 ```
 
 A full backend run also fails if any operation in the API contract is never exercised

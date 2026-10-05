@@ -249,4 +249,4 @@ def delete_note(
     check_version(version, note.version)
     db.delete(note)
     db.flush()
-    storage.delete_note_file(parts)  # last: only after the metadata change succeeded
+    storage.delete_content_file(parts)  # last: only after the metadata change succeeded

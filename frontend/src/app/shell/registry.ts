@@ -83,3 +83,15 @@ export const registerGlobalHost = hosts.register;
 export function useGlobalHosts() {
   return useSyncExternalStore(hosts.subscribe, hosts.snapshot, hosts.snapshot);
 }
+
+/** Return false to block sign-out (e.g. while recording); the guard explains why to the user. */
+export type SignOutGuard = (proceed: () => void) => boolean;
+const signOutGuards = new Set<SignOutGuard>();
+export function registerSignOutGuard(guard: SignOutGuard) {
+  signOutGuards.add(guard);
+  return () => signOutGuards.delete(guard);
+}
+export function signOutAllowed(proceed: () => void): boolean {
+  for (const g of signOutGuards) if (!g(proceed)) return false;
+  return true;
+}

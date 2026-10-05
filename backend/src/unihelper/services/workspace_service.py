@@ -16,6 +16,8 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
     "editor_mode": "live",
     "workspace_left_collapsed": False,
     "workspace_right_collapsed": False,
+    "player_volume": 1.0,
+    "player_muted": False,
 }
 
 

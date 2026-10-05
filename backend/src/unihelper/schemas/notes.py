@@ -80,3 +80,5 @@ class Preferences(ApiModel):
     editor_mode: Literal["live", "raw"] | None = None
     workspace_left_collapsed: bool | None = None
     workspace_right_collapsed: bool | None = None
+    player_volume: float | None = Field(default=None, ge=0, le=1)
+    player_muted: bool | None = None

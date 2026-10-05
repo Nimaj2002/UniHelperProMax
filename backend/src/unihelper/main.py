@@ -18,6 +18,7 @@ from unihelper.api.v1 import (
     health,
     hierarchy,
     notes,
+    recordings,
     sessions,
     setup,
     timeline,
@@ -45,6 +46,7 @@ def build_api_router() -> APIRouter:
         notes,
         timeline,
         workspace,
+        recordings,
     ):
         api.include_router(module.router)
     return api

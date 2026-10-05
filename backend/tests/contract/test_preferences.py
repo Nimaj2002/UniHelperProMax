@@ -16,15 +16,19 @@ def test_preferences(owner_client: TestClient) -> None:
         "editorMode": "live",
         "workspaceLeftCollapsed": False,
         "workspaceRightCollapsed": False,
+        "playerVolume": 1.0,
+        "playerMuted": False,
     }
     check(r.json(), "Preferences", spec="002")
     r = c.patch(f"{API}/preferences", json={"editorMode": "raw"})
     assert r.json()["editorMode"] == "raw" and r.json()["workspaceLeftCollapsed"] is False
     c.patch(f"{API}/preferences", json={"workspaceRightCollapsed": True})
-    assert c.get(f"{API}/preferences").json() == {
-        "editorMode": "raw",
-        "workspaceLeftCollapsed": False,
-        "workspaceRightCollapsed": True,
-    }
+    prefs = c.get(f"{API}/preferences").json()
+    assert (prefs["editorMode"], prefs["workspaceRightCollapsed"]) == ("raw", True)
+    # player preferences (feature 003)
+    r = c.patch(f"{API}/preferences", json={"playerVolume": 0.4, "playerMuted": True})
+    assert (r.json()["playerVolume"], r.json()["playerMuted"]) == (0.4, True)
+    check(r.json(), "Preferences", spec="002")
+    assert c.patch(f"{API}/preferences", json={"playerVolume": 1.5}).status_code == 422
     assert c.patch(f"{API}/preferences", json={"theme": "pink"}).status_code == 422
     assert c.patch(f"{API}/preferences", json={"editorMode": "wysiwyg"}).status_code == 422

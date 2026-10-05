@@ -1,11 +1,15 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useParams } from "react-router";
 import { toast } from "sonner";
+import { usePanelSection } from "@/app/shell/panelSection";
+import { PanelResizeHandle } from "@/components/PanelResizeHandle";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSession } from "@/features/classes/api";
 import { isApiError } from "@/lib/api";
+import { readLocal, writeLocal } from "@/lib/storage";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { cn } from "@/lib/utils";
 import {
@@ -44,6 +48,64 @@ async function loadNote(id: string): Promise<Note> {
   return note;
 }
 
+const RIGHT_DEFAULT = 300;
+const RIGHT_MIN = 260;
+const RIGHT_MAX = 640;
+const EDITOR_MIN = 360;
+const RIGHT_WIDTH_KEY = "uh.workspace.rightWidth";
+
+/** Audio panel width, remembered in this browser (a per-device layout convenience). */
+function useRightWidth() {
+  const [width, setWidth] = useState(() => {
+    const v = readLocal(RIGHT_WIDTH_KEY, RIGHT_DEFAULT);
+    return v >= RIGHT_MIN && v <= RIGHT_MAX ? v : RIGHT_DEFAULT;
+  });
+  useEffect(() => writeLocal(RIGHT_WIDTH_KEY, width), [width]);
+  return [width, setWidth] as const;
+}
+
+/**
+ * Editor | audio columns. Owns the audio panel's width, so committing a resize re-renders only
+ * this wrapper (its children are unchanged elements), not the whole workspace.
+ */
+function AudioColumns({ desktop, rightOpen, panel, children }: { desktop: boolean; rightOpen: boolean; panel: ReactNode; children: ReactNode }) {
+  const [width, setWidth] = useRightWidth();
+  const grid = useRef<HTMLDivElement>(null);
+  return (
+    <div
+      ref={grid}
+      className="grid min-h-0 flex-1"
+      style={{
+        "--audio-w": `${width}px`,
+        // the editor always keeps at least EDITOR_MIN px, also while the window resizes
+        gridTemplateColumns: desktop
+          ? `minmax(0,1fr)${rightOpen ? ` min(var(--audio-w), max(${RIGHT_MIN}px, 100% - ${EDITOR_MIN}px))` : ""}`
+          : "minmax(0,1fr)",
+      } as CSSProperties}
+    >
+      {children}
+      {desktop && rightOpen && (
+        <div className="relative min-h-0 min-w-0">
+          <PanelResizeHandle
+            value={width}
+            min={RIGHT_MIN}
+            max={RIGHT_MAX}
+            limit={() => (grid.current?.clientWidth ?? Infinity) - EDITOR_MIN}
+            defaultValue={RIGHT_DEFAULT}
+            onResize={setWidth}
+            onDrag={(w) => grid.current?.style.setProperty("--audio-w", `${w}px`)}
+            grow="left"
+            label="Resize audio panel"
+            controls="workspace-audio-panel"
+            className="left-0"
+          />
+          {panel}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface Tabs {
   open: string[];
   active: string | null;
@@ -62,7 +124,7 @@ function RightPanel({ sessionKey }: { sessionKey: string }) {
   return (
     <>
       {panels.map(({ id, title, component: P }) => (
-        <section key={id} aria-label={title} className="min-h-0">
+        <section key={id} aria-label={title} className="min-h-0 min-w-0">
           <P sessionKey={sessionKey} />
         </section>
       ))}
@@ -91,7 +153,11 @@ export function WorkspacePage() {
   const [drawer, setDrawer] = useState<"left" | "right" | null>(null);
 
   const mode: EditorMode = prefs.data?.editorMode ?? "live";
-  const leftOpen = isDesktop ? !prefs.data?.workspaceLeftCollapsed : drawer === "left";
+  // on desktop the notes and sessions live in a section of the app's left panel
+  const leftCollapsed = prefs.data?.workspaceLeftCollapsed ?? false;
+  const toggleLeftSection = () => updatePrefs.mutate({ workspaceLeftCollapsed: !leftCollapsed });
+  const sidePanel = usePanelSection(isDesktop ? { title: "Sessions and notes", collapsed: leftCollapsed, onToggle: toggleLeftSection } : null);
+  const leftOpen = isDesktop ? sidePanel.panelVisible && !leftCollapsed : drawer === "left";
   const rightOpen = isDesktop ? !prefs.data?.workspaceRightCollapsed : drawer === "right";
   const noteList = useMemo(() => notes.data ?? [], [notes.data]);
   const activeId = tabs.sessionKey === sessionKey ? tabs.active : null;
@@ -155,10 +221,16 @@ export function WorkspacePage() {
   const togglePanel = useCallback(
     (side: "left" | "right") => {
       if (!isDesktop) return setDrawer((d) => (d === side ? null : side));
+      if (side === "left" && !sidePanel.panelVisible) {
+        // the app's left panel is hidden: bring it back with the section open
+        sidePanel.showPanel();
+        if (prefs.data?.workspaceLeftCollapsed) updatePrefs.mutate({ workspaceLeftCollapsed: false });
+        return;
+      }
       const key = side === "left" ? "workspaceLeftCollapsed" : "workspaceRightCollapsed";
       updatePrefs.mutate({ [key]: !(prefs.data?.[key] ?? false) });
     },
-    [isDesktop, prefs.data, updatePrefs],
+    [isDesktop, prefs.data, updatePrefs, sidePanel],
   );
 
   const toggleMode = useCallback(
@@ -311,22 +383,18 @@ export function WorkspacePage() {
       {session.isError ? (
         <p role="alert" className="p-8 text-sm text-danger">This session doesn't exist.</p>
       ) : (
-        <div
-          className="grid min-h-0 flex-1"
-          style={{
-            gridTemplateColumns: isDesktop
-              ? `${leftOpen ? "240px " : ""}minmax(0,1fr)${rightOpen ? " 300px" : ""}`
-              : "minmax(0,1fr)",
-          }}
-        >
-          {isDesktop && leftOpen && <aside aria-label="Sessions and notes" className="min-h-0 border-r border-divider bg-surface">{left}</aside>}
-          <main className={cn("min-h-0 min-w-0")} aria-label="Notes">{editorArea}</main>
-          {isDesktop && rightOpen && (
-            <aside aria-label="Audio" className="min-h-0 overflow-y-auto border-l border-divider bg-surface">
+        <AudioColumns
+          desktop={isDesktop}
+          rightOpen={rightOpen}
+          panel={
+            <aside id="workspace-audio-panel" aria-label="Audio" className="h-full min-h-0 overflow-x-hidden overflow-y-auto border-l border-divider bg-surface">
               <RightPanel sessionKey={sessionKey} />
             </aside>
-          )}
-        </div>
+          }
+        >
+          {isDesktop && sidePanel.target && createPortal(left, sidePanel.target)}
+          <main className={cn("min-h-0 min-w-0")} aria-label="Notes">{editorArea}</main>
+        </AudioColumns>
       )}
 
       {!isDesktop && (
