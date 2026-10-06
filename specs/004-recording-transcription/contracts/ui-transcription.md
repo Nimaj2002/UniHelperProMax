@@ -15,9 +15,10 @@ state is conveyed by text (+ icon), never by colour alone. Works in light, dark 
 
 - **Transcribe** button (icon `Article` + text "Transcribe") on finished recordings
   (`complete` / `interrupted`, file present).
-  - Disabled + reason (tooltip and `aria-describedby` text) when: a transcription is running
-    anywhere ("A transcription is already running."), the recording is still recording, or the
-    file is missing ("The audio file is missing.").
+  - Disabled + reason (`aria-describedby` text) when: a transcription is running anywhere ("A
+    transcription is already running.") or the file is missing ("The audio file is missing.").
+  - Not shown at all while the recording is still being recorded (its "Recording" status already
+    explains why) — decided 2026-10-06.
 - **Status row** under the recording, from the latest job of that recording:
   - Running: stage label + progress — "Queued", "Uploading 42 %", "Transcribing part 2 of 3 ·
     1:24", "Adding to note" — with a shadcn `Progress` (determinate when `progress` is known,

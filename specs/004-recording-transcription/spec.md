@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-04
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "Each recording has a \"Transcribe\" button. Clicking it opens a dialog asking which note of this session the result should go into; if the session has no notes, the user names a new note which is created. The transcript is appended after the last character of the chosen note, separated clearly (e.g. a heading with the recording name and time), so multiple transcripts can accumulate in one note. While a transcription is running, all Transcribe buttons are disabled and show progress; on failure the user sees a clear error and can retry. Transcription uses a provider configured in Settings."
 
@@ -112,7 +112,7 @@ note, and a working retry.
 ### User Story 4 - Use the provider configured in Settings (Priority: P2)
 
 Transcription uses whichever provider the student configured in Settings → Transcription
-(Feature 005): "Voice Studio" (default) or "OpenAI-compatible". If nothing is configured,
+(Feature 005): "Voice Studio" (preselected in Settings) or "OpenAI-compatible". If nothing is configured,
 Transcribe points them there.
 
 **Why this priority**: Transcription cannot work without a provider, but provider setup is a
@@ -171,12 +171,17 @@ notes", and can jump to it.
   finishes or is cancelled.
 - Silent or speechless recording: the transcript section is appended with "(No speech detected)"
   so the user knows it ran.
-- Very long recordings (up to 4 hours) exceed some providers' per-file limits: they are still
-  transcribed completely, and the transcript is in order.
+- Very long recordings (up to 4 hours) exceed some providers' per-file limits: WebM recordings
+  are split and still transcribed completely, in order; Safari (MP4/M4A) recordings over the
+  provider's limit fail with a clear "too long for this provider" error (FR-022).
 - Provider removed or key replaced while a job runs: the running job finishes or fails with a
   clear credential error; it does not use a removed key.
 - Two browser windows: the "one transcription at a time" rule and disabled buttons apply across
   all of the user's windows.
+- Active provider switched (not removed) while a job runs: the running job finishes with the
+  provider and address it started with; the next job uses the newly chosen provider.
+- Session, course or recording deleted while a job runs: the job is discarded with it and
+  nothing is written to any note.
 
 ## Requirements *(mandatory)*
 
@@ -238,8 +243,10 @@ notes", and can jump to it.
 - **FR-020**: Settings-related failures MUST link the user to Settings → Transcription.
 - **FR-021**: Transcription screens MUST work unchanged for any provider the server offers, so
   adding a provider requires no change to them (constitution Principle IV).
-- **FR-022**: Recordings of up to at least 4 hours MUST be transcribable regardless of an
-  individual provider's per-file limits.
+- **FR-022**: WebM recordings (Chrome, Edge, Firefox) of up to at least 4 hours MUST be
+  transcribable regardless of an individual provider's per-file limits. MP4/M4A recordings
+  (Safari) are sent whole; with a provider that limits file size (OpenAI-compatible: 25 MB,
+  about 73 minutes), longer ones fail with a clear "too long for this provider" error.
 
 **Tracking & quality**
 
@@ -247,7 +254,8 @@ notes", and can jump to it.
   and link to the target note; transcribing again MUST warn if already transcribed into the
   same note.
 - **FR-024**: The dialog, progress, errors, and settings MUST be keyboard operable, announce
-  progress and completion to assistive technology, and render correctly in light, dark, and
+  progress (at stage changes and at most every 10 %, never every second) and completion to
+  assistive technology, and render correctly in light, dark, and
   user-created themes with WCAG AA contrast.
 
 ### Key Entities
@@ -270,8 +278,9 @@ notes", and can jump to it.
 - **SC-002**: Across all tests (success, failure, cancel, retry, server restart, concurrent
   editing), 0 cases alter or remove existing note content, and 0 cases append a transcript
   twice.
-- **SC-003**: A 1-hour recording is transcribed and appended within 15 minutes with a typical
-  cloud provider (excluding provider outages).
+- **SC-003**: A 1-hour recording is transcribed and appended within 15 minutes with OpenAI's
+  `whisper-1` over a typical broadband connection (excluding provider outages). (Verification
+  method: manual check.)
 - **SC-004**: 100% of failures show a cause category and a working Retry; users can recover from
   an invalid-key failure (fix key, retry) in under 1 minute.
 - **SC-005**: Progress or stage updates appear at least every 10 seconds while a transcription

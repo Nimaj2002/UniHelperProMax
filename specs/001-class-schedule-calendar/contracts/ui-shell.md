@@ -21,9 +21,12 @@ follow the taste-skill (`design-taste-frontend`) with dials `4 / 3 / 6` (see res
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **CoursePanel**: resizable 240–360 px, collapsible (`[` shortcut and button); collapsed state
+- **CoursePanel**: resizable 240–480 px (default 280; drag the edge or ←/→ on the focused edge), collapsible (`[` shortcut and button); collapsed state
   remembered per browser. Below `lg` (1024 px) it becomes a shadcn `Sheet` drawer and the calendar
   defaults to day view (spec assumption).
+- **Page section in the side panel** (added later, used by 002): a page can show a collapsible
+  section under the courses (002's "Sessions and notes"); its height is draggable and remembered
+  per browser.
 - **CalendarView** fills the remaining width; the time grid scrolls vertically inside the view, the
   header (dates, all-day row) stays fixed. Default: week view of the current week, scrolled to
   07:00 or the first session of the week, current-time line shown.

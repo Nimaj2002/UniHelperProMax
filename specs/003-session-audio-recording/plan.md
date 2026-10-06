@@ -93,9 +93,11 @@ frontend/src/
 ├── features/recordings/
 │   ├── routes.tsx                       # registers workspace panel, activity bar, sign-out guard, recovery
 │   ├── api.ts · chunkStore.ts (IndexedDB) · uploader.ts · recorder.ts (singleton controller)
-│   ├── RecordingPanel.tsx · RecordingList.tsx · RecordingBar.tsx · LevelMeter.tsx
+│   ├── RecordingPanel.tsx               # record/stop + the recording list (no separate list file)
+│   ├── RecordingBar.tsx · LevelMeter.tsx · useElapsed.ts · format.ts
 │   ├── Player.tsx · nowPlaying.ts · RecordingDialogs.tsx
-│   └── recovery.ts                      # resume uploads + final stop after crash
+│   └── extensions.ts                    # per-recording extension registry (used by 004)
+│   (crash recovery is `RecorderController.recover()` in recorder.ts, started from routes.tsx)
 └── app/shell/registry.ts                # + registerSignOutGuard
 frontend/tests/{unit/recorder.test.ts, uploader.test.ts, player.test.tsx, e2e/recording.spec.ts}
 ```
@@ -124,4 +126,6 @@ Post-design Constitution Check: PASS.
 
 ## Complexity Tracking
 
-> No violations.
+| Deviation | Why needed | Simpler alternative rejected because |
+|---|---|---|
+| Principle I exception: without IndexedDB (some private-browsing modes) pending audio is held in memory, so a crash while offline loses un-uploaded audio (spec Assumptions) | There is no device storage available to the app in that mode | Refusing to record would lose the whole lecture; the user is warned when recording starts |

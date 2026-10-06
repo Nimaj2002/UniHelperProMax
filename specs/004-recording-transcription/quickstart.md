@@ -1,16 +1,17 @@
 # Quickstart & Validation: Transcribe Recordings into Notes (004)
 
-Same setup and checks as 001–003 (`README.md`). Until feature 005 ships the Settings screens, a
-provider is configured by writing the 004 settings tables:
+Same setup and checks as 001–003 (`README.md`). Configure a provider in **Settings →
+Transcription** (feature 005): Voice Studio needs only its address; OpenAI-compatible needs an
+address, an API key and a model. For manual checks without a real provider, run the fake
+transcriber and use `http://localhost:8020` as the Voice Studio address:
 
 ```bash
 cd backend
-# point a user at an OpenAI-style server (Voice Studio needs only the address)
-uv run python -m tests.e2e_seed set-provider --data ../data --user <username> \
-  --provider voice-studio --address http://localhost:8020
-# a local fake transcriber for manual checks (returns predictable text)
-uv run uvicorn tests.fake_transcriber:app --port 8020
+uv run uvicorn tests.fake_transcriber:app --port 8020   # returns predictable text
 ```
+
+Note: if UniHelperProMax runs in WSL and the provider on Windows, `localhost` differs between
+them (use WSL mirrored networking or the Windows host's address).
 
 Automated: `uv run pytest` (contract + `integration/test_transcribe_append_flow.py`),
 `corepack pnpm test`, `corepack pnpm e2e` (Playwright starts the fake transcriber itself).
@@ -34,3 +35,4 @@ Automated: `uv run pytest` (contract + `integration/test_transcribe_append_flow.
 | 15 | WebM recording larger than the provider limit (FR-022) | Split into parts; one section with all parts' text in order |
 | 16 | Delete a recording being transcribed (edge case) | Refused until the job finishes or is cancelled |
 | 17 | Keyboard + themes (FR-024) | All of the above keyboard-only in light and dark, axe AA, no key anywhere in responses/logs |
+| 18 | Timing (SC-003, manual) | With a real cloud provider (OpenAI `whisper-1`, normal broadband), a 1-hour WebM recording is transcribed and appended within 15 minutes; record the measured time in the validation record |

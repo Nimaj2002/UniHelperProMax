@@ -106,7 +106,7 @@ frontend/src/
 ├── features/sessions/autosave.ts                     # + NoteSaver.applyServerAppend, auto-resolve known appends
 ├── features/transcription/
 │   ├── routes.tsx                                    # registers recording extension, activity, global host
-│   ├── api.ts · useActiveTranscription.ts · languages.ts
+│   ├── api.ts (incl. the active-job polling hook) · languages.ts · progress.ts (stage labels)
 │   ├── TranscribeButton.tsx · TranscribeDialog.tsx · TranscriptionStatus.tsx
 │   ├── TranscriptionBar.tsx · TranscriptionNotifier.tsx
 │   └── mergeIntoEditor.ts                            # completed job → open NoteSaver/editor
@@ -132,10 +132,11 @@ Post-design Constitution Check: PASS.
 
 ## Dependency on Feature 005
 
-004 is usable end to end only once 005's Settings → Transcription writes the provider tables.
-004 ships the tables, the read path, `GET /transcription/providers` and `GET /transcription/status`;
-the "Open Settings → Transcription" links point to `/settings/transcription`, which 005 adds.
-Tests and manual checks configure providers with `tests/e2e_seed.py`.
+Resolved: 005 is implemented, so providers are configured in Settings → Transcription
+(`/settings/transcription`). 004 ships the tables, the read path, `GET /transcription/providers`
+and `GET /transcription/status`; 005 writes the tables and adds the connection test. Automated
+tests still configure providers with `tests/e2e_seed.py`. Coupling to note: a successful job marks
+the provider "connected" via 005's `transcription_settings_service.mark_connected`.
 
 ## Risks & Mitigations
 

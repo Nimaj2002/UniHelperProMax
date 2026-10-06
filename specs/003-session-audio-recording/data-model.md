@@ -52,5 +52,5 @@ Alembic revision `0005_recordings`. 001/002 conventions apply.
 
 | Store | Key | Value |
 |---|---|---|
-| `chunks` | `[recordingId, seq]` | `{ recordingId, seq, blob, sessionKey }` |
-| `recordings` | `recordingId` | `{ recordingId, sessionKey, courseId, startedAt, stopped: boolean }` — lets the recovery worker finish uploads and send the final stop after a crash |
+| `chunks` | `[recordingId, seq]` | `{ recordingId, seq, blob }` |
+| `recordings` | `recordingId` | `{ recordingId, sessionKey, courseId, label, startedAt, stopped: boolean, interrupted: boolean, durationMs? }` — lets recovery finish uploads and send the final stop after a crash; `label` is the course · date shown in the recording bar, `durationMs` the client-measured length sent on stop |

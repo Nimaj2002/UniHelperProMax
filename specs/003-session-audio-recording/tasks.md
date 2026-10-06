@@ -44,7 +44,7 @@ US5 (rename/delete) → Polish.
 - [X] T011 [US1] Implement `backend/src/unihelper/services/recording_service.py` (start incl. folder get-or-create and active check, chunk append with seq rules and fsync, stop/finalize via `webm.finalize` with atomic replace and fallback to client duration for mp4/parse errors, list/get with `active`/`missing`, active lookup) and routers `backend/src/unihelper/api/v1/recordings.py` (raw body for chunks; `FileResponse` for audio)
 - [X] T012 [P] [US1] Unit tests `frontend/tests/unit/recorder.test.ts` with fake `MediaRecorder`/`getUserMedia`: start creates server recording then records with 5 s timeslice and picks the supported MIME; each chunk is queued; stop flushes and calls stop with duration; permission denied → `error: "permission"` and no server recording; track `ended` (mic unplugged) → stops safely
 - [X] T013 [US1] Implement `frontend/src/features/recordings/recorder.ts` (singleton `RecorderController`: state `idle|starting|recording|stopping|error`, `getUserMedia`, MIME choice, `MediaRecorder.start(5000)`, elapsed timer, `AnalyserNode` level, chunk → `uploader.enqueue`, subscribe/useRecorder hook) and `uploader.ts` (ordered per-recording queue, retry with backoff, handles `chunk_gap`)
-- [X] T014 [US1] Build `RecordingPanel.tsx`, `RecordingList.tsx`, `LevelMeter.tsx`: Record/Stop button, timer, level meter (with text, not colour-only), permission/unsupported messages, list newest first with name/date/duration and status badges; register as the workspace right panel
+- [X] T014 [US1] Build `RecordingPanel.tsx` (the list is part of it; no separate `RecordingList.tsx`), `LevelMeter.tsx`: Record/Stop button, timer, level meter (with text, not colour-only), permission/unsupported messages, list newest first with name/date/duration and status badges; register as the workspace right panel
 
 **Checkpoint**: MVP — record and see/download the file.
 
@@ -56,7 +56,7 @@ US5 (rename/delete) → Polish.
 
 - [X] T015 [P] [US2] Contract/integration tests `backend/tests/integration/test_recording_recovery.py`: no chunk for 30 s → list returns `interrupted` with finalized duration and `active: false`; late chunks still append to an interrupted recording; `stop(interrupted=true)` re-finalizes; a new recording can start once the old one is stale; truncated final chunk still yields a playable file
 - [X] T016 [P] [US2] Unit tests `frontend/tests/unit/uploader.test.ts` (fake IndexedDB via an in-memory `ChunkStore` interface): chunks persist before upload and are removed only after 2xx; offline → stays queued and retries; recovery after "reload" uploads leftovers in order then sends `stop(interrupted: true)`; storage-low warning threshold
-- [X] T017 [US2] Implement `chunkStore.ts` (IndexedDB `uh-recordings`: `chunks`, `recordings`; in-memory fallback with warning) and `recovery.ts` (on app start: for each stored recording without a live recorder → upload remaining chunks → `stop(interrupted)`); stale→interrupted handling in `recording_service.py`
+- [X] T017 [US2] Implement `chunkStore.ts` (IndexedDB `uh-recordings`: `chunks`, `recordings`; in-memory fallback with warning) and crash recovery as `RecorderController.recover()` in `recorder.ts` (on app start: for each stored recording without a live recorder → upload remaining chunks → `stop(interrupted)`; note: "live" is only checked for the current tab, see analysis finding 003-F1); stale→interrupted handling in `recording_service.py`
 - [X] T018 [US2] UI: "Upload pending" and "Recovered (interrupted)" badges, `beforeunload` while recording or pending, storage-low warning toast
 
 ---
@@ -65,7 +65,8 @@ US5 (rename/delete) → Polish.
 
 **Independent Test**: record, switch note tabs, go to the calendar → bar visible, Stop from the bar, recording continuous.
 
-- [X] T019 [US3] `RecordingBar.tsx` registered with `registerActivity`: dot + "Recording" text, elapsed time, course · date, Stop, Go to session; other sessions' panels show "Recording another session — Go to it"; `GET /recordings/active` on load shows a recording from another window
+- [ ] T019 [US3] `RecordingBar.tsx` registered with `registerActivity`: dot + "Recording" text, elapsed time, course · date, Stop, Go to session; other sessions' panels show "Recording another session — Go to it"; `GET /recordings/active` on load shows a recording from another window
+  - **Not done (found 2026-10-06)**: no screen calls `GET /recordings/active` (`fetchActiveRecording` in `frontend/src/features/recordings/api.ts` is unused), so a second window offers "Record" instead of showing the running recording. The recording bar, Stop and "Recording another session — Go to it" in the same window are implemented.
 - [X] T020 [US3] Sign-out guard: TopBar sign-out asks to stop first while recording (`registerSignOutGuard`)
 
 ---

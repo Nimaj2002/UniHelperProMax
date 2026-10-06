@@ -19,28 +19,46 @@ workspace route.
 - Sessions grouped by month (`<h2>` per month), each a link row: weekday + date, time, class
   title, location, note count, audio indicator. Upcoming rows: muted text tokens (AA) + an
   "Upcoming" badge; "No longer scheduled" rows: a badge with that text.
-- On open, scrolls the current/next session to the top third and moves focus to it only if the
-  user navigated with the keyboard.
+- On open, scrolls the current/next session into view (keyboard focus is not moved: moving it
+  on page load is disorienting).
 - Empty course: "No sessions yet" + link to New class.
 
 ## Workspace layout (desktop ≥ 1024 px)
 
+Updated 2026-10-06 to the layout that shipped: the session timeline and note list live in a
+section of the app's side panel (under the courses), not in a workspace column.
+
 ```text
-┌ Workspace header: ← CS 201 · Mon 5 Oct 2026 · 10:00–11:30 · FENS G032          [⇤] [⇥] ┐
-├──────────────┬──────────────────────────────────────────────────┬──────────────┤
-│ Sessions     │ [Lecture notes ●][Homework 3 ✓][+]   Live|Raw     │ Audio        │
-│  Sep         │ ┌──────────────────────────────────────────────┐ │ (feature 003 │
-│   28 Mon     │ │ # Trees                                       │ │  placeholder)│
-│ ▶  5 Oct     │ │ A **binary tree** has …                       │ │              │
-│   …          │ └──────────────────────────────────────────────┘ │              │
-│ [New note]   │ Saved · 10:42                                     │              │
-│ Notes        │                                                   │              │
-│  Lecture …   │                                                   │              │
-└──────────────┴──────────────────────────────────────────────────┴──────────────┘
+┌ Top bar ───────────────────────────────────────────────────────────────────────────────┐
+├ Side panel ───────┬ Workspace header: ← CS 201 · Mon 5 Oct 2026 · 10:00–11:30   [⇤] [⇥] ┤
+│ Courses           │ [Lecture notes ●][Homework 3 ✓][+]   Live|Raw   │ Audio            │
+│  Year › Sem › …   │ ┌───────────────────────────────────────────┐   │  [Record]        │
+│ ═══ (drag) ═══    │ │ # Trees                                    │   │  Recording 10:02 │
+│ ▾ Sessions and    │ │ A **binary tree** has …                    │   │  [Transcribe]    │
+│   notes           │ └───────────────────────────────────────────┘   │  ▶ ─────●─── 🔊  │
+│  [New note]       │ Saved · 10:42                                    │                  │
+│  Notes …          │                                                  │                  │
+│  Sessions (Sep …) │                                                  │                  │
+└───────────────────┴──────────────────────────────────────────────────┴──────────────────┘
 ```
 
-- Left (240 px) and right (300 px) panels are collapsible (buttons + `Alt+[` / `Alt+]`); state
-  stored in `/preferences`. Below 1024 px both become `Sheet` drawers and the editor is full width.
+- **Side panel** (001 shell): resizable 240–480 px (default 280) by dragging its edge or with
+  ←/→ on the focused edge (Home/End = min/max, Enter or double-click = reset); hidden and shown
+  with `[` or the top-bar button. Width and hidden state are remembered per browser.
+- **"Sessions and notes" section** (in the side panel, under the courses): "New note", the
+  note list, then the session timeline (compact: date, time, title, upcoming/unscheduled
+  badges; note/audio counts are shown on the course page only). Starts at half of the panel's
+  height; its top edge is draggable (↑/↓, 15–85 %, Enter resets to 50 %), height remembered per
+  browser. Clicking its header, `Alt+[`, or the workspace header's left button collapses or
+  expands it; this collapsed state is remembered per user (`/preferences`
+  `workspaceLeftCollapsed`). If the side panel is hidden, the workspace button shows it again.
+- **Audio panel** (right): resizable 260–640 px from its left edge (same keys), never narrower
+  than leaving 360 px for the editor; width remembered per browser; collapsed with `Alt+]` or
+  the header's right button, remembered per user (`workspaceRightCollapsed`).
+- Two levels of "more room for the editor": `Alt+[` collapses the section; `[` hides the whole
+  side panel for full width.
+- Below 1024 px the side panel and the audio panel become `Sheet` drawers; the notes and
+  sessions open in their own drawer from the workspace header, and the editor is full width.
 - Tabs: `role="tablist"` containing only `role="tab"` elements (ARIA allows nothing else inside),
   one per open note, `aria-selected`, roving focus with ←/→/Home/End, horizontal scroll when
   crowded, full name in `title`. Closing: `Delete` on the focused tab or `Alt+W`; a pointer-only
@@ -75,6 +93,6 @@ workspace route.
 | `Alt+N` | New note |
 | `Alt+W` | Close current tab |
 | `Alt+PageDown` / `Alt+PageUp` | Next / previous tab |
-| `Alt+[` / `Alt+]` | Toggle left / right panel |
+| `Alt+[` / `Alt+]` | Collapse/expand “Sessions and notes” / the audio panel (`[` hides the whole side panel) |
 | `Mod+E` | Toggle live / raw |
 | `Esc` (in editor) | Move focus to the tab |

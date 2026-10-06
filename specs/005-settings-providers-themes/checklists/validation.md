@@ -35,8 +35,19 @@
 - [x] 17 Export → delete → import identical; duplicate names suffixed; bad files rejected — `unit/theme-file.test.ts`, `test_create_list_get`, E2E
 - [x] 18 Keyboard + themes + axe — E2E in light and dark (the theme preview is excluded only when it deliberately shows failing colours)
 
-Not yet done: a test against a real Voice Studio server and a real OpenAI-compatible provider,
-and a manual walk-through of a custom theme across every screen.
+Not yet done: a test against a real OpenAI-compatible provider, and a manual walk-through of a
+custom theme across every screen. Usability timings SC-001, SC-002 and SC-005 are to be
+verified by hand; SC-004 (theme switch under 0.5 s) is met in practice (the switch is applied
+optimistically) but not measured.
+
+Update 2026-10-06: the user confirmed a real local Voice Studio server works. Follow-ups made
+after the first validation: the connection test falls back to probing
+`/v1/audio/transcriptions` when `/v1/models` doesn't exist
+(`unit/test_openai_client.py::test_server_without_models_endpoint_is_probed`,
+`test_probe_failures`), and an "unreachable" result for a `localhost` address explains the
+WSL/Docker case (`contract/test_transcription_settings.py::test_connection_test`). Backend:
+300 tests pass. Open findings from the 2026-10-06 analysis that need code changes are tracked
+outside this record.
 
 ## Bugs found and fixed during implementation
 

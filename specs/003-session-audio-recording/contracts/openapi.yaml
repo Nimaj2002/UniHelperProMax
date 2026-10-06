@@ -98,7 +98,7 @@ paths:
       responses:
         "204": { description: Deleted }
         "404": { $ref: "#/components/responses/Problem" }
-        "409": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # recording_in_progress; recording_transcribing (added by 004, see its contract)
         "412": { $ref: "#/components/responses/Problem" }
 
   /recordings/{recordingId}/chunks/{seq}:

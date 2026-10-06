@@ -14,6 +14,10 @@ session folders; saving is autosave with atomic writes, optimistic versions, ext
 detection and a local draft safety net. Everything plugs into feature 001's API, storage, session
 keys and shell registries.
 
+> **Later change (2026-10-06)**: the workspace's left column moved into the app's side panel as
+> a collapsible, resizable "Sessions and notes" section, and the audio panel became resizable.
+> The current layout is described in [contracts/ui-workspace.md](./contracts/ui-workspace.md).
+
 ## Technical Context
 
 **Language/Version**: Python 3.12+ (backend), TypeScript 5.9 / React 19 (frontend) — as 001

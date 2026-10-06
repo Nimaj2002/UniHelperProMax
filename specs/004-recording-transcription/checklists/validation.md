@@ -34,9 +34,20 @@
 - [x] 16 Recording delete refused while transcribing — `test_recording_delete_blocked_while_transcribing`
 - [x] 17 Keyboard + themes + axe; key never in responses/logs — E2E (keyboard-only new-note path, axe with dialog and progress), `test_wrong_key_never_leaks`, `test_providers_and_status`
 
-Not yet done: a check against a real Voice Studio server and a real OpenAI-compatible provider
-(only the fake transcriber was used), and a ≥ 1 h real recording. The Settings → Transcription
-screen (`/settings/transcription`) is feature 005; until then the links lead to a missing page.
+Not yet done: a check against a real OpenAI-compatible provider, and a ≥ 1 h real recording.
+- **SC-003** (manual check, quickstart #18) — configure OpenAI-compatible with `whisper-1`, record
+  (or use) a 1-hour WebM recording, start "Transcribe" and time it until the transcript appears
+  in the note on a normal broadband connection; the target is 15 minutes or less. Record the
+  measured time here.
+
+Update 2026-10-06: Settings → Transcription now exists (feature 005), so the "Open Settings"
+links work. The user confirmed transcription with a real local Voice Studio server. Two
+follow-ups made that work: the connection test falls back to probing
+`/v1/audio/transcriptions` when `/v1/models` doesn't exist, and the "unreachable" message
+explains `localhost` when the server runs on another system (e.g. Windows vs. WSL). Open
+findings from the 2026-10-06 analysis that need code changes (save/append race, activity-bar
+Cancel, progress display, second-window and recovery merges, small UI items) are tracked
+outside this record.
 
 ## Bugs found and fixed during implementation
 

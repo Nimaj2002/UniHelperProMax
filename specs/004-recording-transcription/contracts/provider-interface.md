@@ -39,7 +39,7 @@ class TranscriptionProvider(Protocol):
     spec: ProviderSpec
     async def transcribe(self, part: AudioPart, language: str | None,
                          config: ProviderConfig, on_progress: Progress) -> str: ...
-    async def test(self, config: ProviderConfig) -> None: ...   # used by 005; raises ProviderError
+    async def test(self, config: ProviderConfig) -> None: ...   # used by 005 (connection test); raises ProviderError
 ```
 
 ## Errors
@@ -66,6 +66,13 @@ class ProviderError(Exception):
 Both use `OpenAITranscriptionClient`: `POST {base}/v1/audio/transcriptions`, multipart
 `file`, `model`, `language` (omitted for `auto`), `response_format=json`; result `text`
 (trimmed). Base normalisation: strip trailing `/` and a trailing `/v1`.
+
+Connection test (005): `GET {base}/v1/models`; when the server lists models, the configured
+model must be among them. If `/v1/models` doesn't exist (404/405/501 — common for local servers
+such as Voice Studio), the test POSTs an empty form to `/v1/audio/transcriptions`: a validation
+error (400/415/422) proves the endpoint exists (no audio is sent); 404/405 means the server isn't
+a transcription service; 401/403 means the key was rejected. The model name can't be verified in
+that case.
 
 ## Rules for implementations
 

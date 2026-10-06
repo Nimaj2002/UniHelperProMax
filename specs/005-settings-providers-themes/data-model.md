@@ -45,3 +45,22 @@ Deleting the active custom theme sets `theme` to that theme's base.
 `surface, surface-elevated, surface-sunken, surface-hover, text-primary, text-muted, border,
 divider, grid-line, accent, accent-foreground, now-line, focus-ring, success, warning, danger,
 danger-foreground, editor-surface` (18). Labels and derivation: research C4.
+
+| Label in the editor | Token | Note |
+|---|---|---|
+| Background (key colour) | `surface` | page background |
+| Surface / card (key colour "Surface") | `surface-elevated` | cards, dialogs, panels |
+| Sunken surface | `surface-sunken` | inputs, code blocks |
+| Hover | `surface-hover` | hover and selected rows |
+| Primary text (key colour "Text") | `text-primary` | |
+| Muted text | `text-muted` | secondary text, upcoming sessions |
+| Border | `border` | control borders (3:1) |
+| Divider | `divider` | separators |
+| Calendar grid lines | `grid-line` | |
+| Accent (key colour) | `accent` | primary buttons, links |
+| Text on accent | `accent-foreground` | |
+| Secondary accent | `now-line` | the calendar's current-time line and other secondary highlights |
+| Focus ring | `focus-ring` | |
+| Success / Warning / Danger | `success` / `warning` / `danger` | status text and destructive actions |
+| Text on danger | `danger-foreground` | |
+| Editor background | `editor-surface` | the note editor |

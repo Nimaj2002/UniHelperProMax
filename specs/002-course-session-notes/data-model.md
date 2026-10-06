@@ -12,7 +12,7 @@ recording). Never renamed or recomputed.
 |---|---|---|
 | id | text PK | |
 | user_id | text FK→users ON DELETE CASCADE | |
-| course_id | text FK→courses ON DELETE CASCADE | metadata cascades; files stay (FR-019) |
+| course_id | text FK→courses ON DELETE CASCADE | metadata cascades; files stay (001: deleting never removes files) |
 | lineage_id | text | with `original_date` = the session key |
 | original_date | date | UNIQUE (lineage_id, original_date) |
 | folder_name | text | `YYYY-MM-DD`, else `YYYY-MM-DD HHmm`, else ` (2)`… (001 `class_date_folder_name`) |
@@ -60,7 +60,7 @@ States: `ok` → `changed_on_disk` (hash differs) → resolved by adoption (GET)
 | Column | Type | Rules |
 |---|---|---|
 | user_id | text PK FK→users ON DELETE CASCADE | |
-| data | text (JSON object) | known keys: `editorMode` (`live`\|`raw`, default `live`), `workspaceLeftCollapsed` (bool), `workspaceRightCollapsed` (bool); unknown keys rejected |
+| data | text (JSON object) | known keys: `editorMode` (`live`\|`raw`, default `live`), `workspaceLeftCollapsed` (bool — the "Sessions and notes" section), `workspaceRightCollapsed` (bool — the audio panel); added later: `playerVolume` (0–1, default 1) and `playerMuted` (bool) by 003, `theme` (`system`\|`light`\|`dark`\|theme id, default `system`) by 005; unknown keys rejected. Panel widths and the section height are per browser (localStorage), not stored here |
 | updated_at | text | |
 
 ## Timeline entry (computed)

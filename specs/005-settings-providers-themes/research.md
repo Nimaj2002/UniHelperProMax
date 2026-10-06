@@ -24,13 +24,20 @@ providers, simple + Advanced editor, https rule, theme per account).
   (FR-010). Other providers' rows are untouched (FR-011). Changing any value resets that
   provider's status to `not_tested`.
 - `POST /settings/transcription/test` tests the entered values (saved or not) through the
-  provider's `test()` (`GET {base}/v1/models`) with a 15 s budget (FR-008); `useSavedKey: true`
+  provider's `test()` with a 15 s budget (FR-008): `GET {base}/v1/models` (the configured model
+  must be listed when the server lists models); if that endpoint doesn't exist (404/405/501, e.g.
+  a local Voice Studio), an empty POST to `/v1/audio/transcriptions` instead: a validation error
+  (400/415/422) means the endpoint exists, 404/405 means it isn't a transcription server (the
+  model can't be checked this way). `useSavedKey: true`
   uses the stored key without the browser ever seeing it. If the tested values equal the saved
   ones, the result is stored as the provider's status. A successful transcription also marks
   the provider `connected` (spec edge case).
-- Failure categories for the UI: `invalid_address`, `unreachable`, `timeout`,
-  `invalid_credentials`, `model_not_found`, `not_a_transcription_service` (mapped from 004's
-  `ProviderError` + transport errors).
+- Test result categories: `unreachable`, `timeout`, `invalid_credentials`, `model_not_found`,
+  `not_a_transcription_service`, `unknown` (mapped from 004's `ProviderError` and transport
+  errors). A malformed address or the https rule is not a test result but a 422 problem
+  (`invalid_address`, `https_required`) shown under the address field. For an `unreachable`
+  result on a `localhost`/loopback address, the message adds that `localhost` means the machine
+  the UniHelperProMax server runs on (e.g. not Windows when the server runs in WSL or Docker).
 
 ## C3. Address rules (FR-007, clarification B)
 

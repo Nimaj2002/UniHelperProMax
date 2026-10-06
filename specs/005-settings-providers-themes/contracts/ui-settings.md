@@ -15,12 +15,18 @@ can always be typed as text (FR-022).
 - **Provider** `RadioGroup` from `GET /transcription/providers` (Voice Studio preselected when
   nothing is saved). Switching shows that provider's saved values (FR-011).
 - **Fields** generated from the provider's `fields`: `url`/`text` → `Input` with label and
-  placeholder; `secret` → when saved: "••••••••abcd" + "Replace" + "Remove"; when replacing or
-  none saved: password `Input` (FR-009/FR-010).
+  placeholder (optional fields say "(optional)"; Voice Studio shows Server address and an
+  optional Model); `secret` → when saved: "••••••••abcd" (last 4 only for keys of 8+ characters)
+  + "Replace" + "Remove"; Remove only marks the key for removal on Save and offers "Undo" (no
+  confirmation dialog — nothing is removed until Save); when replacing or none saved: password
+  `Input` (FR-009/FR-010). Saving OpenAI-compatible without a key is allowed (status "Not
+  configured"); the key field then shows a hint that transcription needs a key.
 - **Status** line: "Not configured" / "Not tested" / "Connected · tested 10:02" / "Last test
   failed: <reason>" with an icon (FR-013).
 - **Test connection** button → spinner + "Testing…", then a result `role="status"` line; the
-  result resets when any field changes (spec edge case). Inline errors (`invalid_address`,
+  result resets when any field changes (spec edge case). An "unreachable" result for a
+  `localhost` address adds a hint that `localhost` means the machine the UniHelperProMax server
+  runs on (e.g. WSL or Docker vs. the host). Inline errors (`invalid_address`,
   `https_required`, missing field) sit under their field.
 - **Default spoken language** `Select` ("Auto-detect" + languages; FR-012).
 - **Save** (primary) → toast "Transcription settings saved."; Save is allowed without testing.

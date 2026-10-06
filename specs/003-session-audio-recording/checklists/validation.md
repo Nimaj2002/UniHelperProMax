@@ -30,6 +30,18 @@
 
 Not yet done: a manual check with a real microphone, and a desktop-player check of a long
 (≥ 1 h) recording.
+- **SC-004** (manual check) — record or import a 4-hour recording into a session, play it from
+  the start, then seek to the middle and to the last minute; each seek must start playback
+  within 2 seconds, and playback must reach the end.
+
+Success criteria without automated evidence (to be verified by hand, analysis 2026-10-06):
+SC-001 (start within 1 s), SC-002 (repeated crash tests on recordings of 5 min or more),
+SC-003 (30-minute recording without gaps), SC-004 (see above),
+SC-005 (playing every file in an external player), SC-006 (15-minute network outage).
+
+Open findings from the 2026-10-06 analysis that need code changes are tracked outside this
+record (second tab/window handling, sign-out with pending uploads, sleep detection, busy
+microphone message, Safari recovered duration, IndexedDB failures, badge flicker).
 
 ## Bugs found and fixed during implementation
 

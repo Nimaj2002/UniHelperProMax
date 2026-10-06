@@ -33,6 +33,13 @@
 
 A manual walk-through by a person has not been done yet.
 
+Not yet done (manual checks):
+- **SC-005** — create a course with 300 sessions (e.g. a class meeting several times a week over
+  a long semester) and time how long the course page and the side-panel timeline take to open
+  (target ≤ 1 s, current session in view); scroll the whole timeline and watch for stutter; open
+  a note with about 50,000 words and type in it, checking that characters appear without
+  noticeable lag (≤ 100 ms).
+
 ## Bugs found and fixed during implementation
 
 - Tab state was lost when switching session within 500 ms of a change (debounced save was

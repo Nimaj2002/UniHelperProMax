@@ -41,6 +41,10 @@ shell activity registry). Decisions confirmed with the user on 2026-10-05 are ma
 
 ## B3. Provider configuration source (shared with 005)
 
+- **Status (2026-10-06)**: done — feature 005 now writes these tables from Settings →
+  Transcription, tests connections, and marks a provider "connected" after a successful
+  transcription (`mark_connected`, called from `append_result`). `tests/e2e_seed.py` remains a
+  test/dev helper only.
 - **Decision**: 004 creates the per-user storage that 005's Settings screens will write:
   `transcription_settings` (active provider, default language) and `provider_configs` (one row
   per user × provider: non-secret values as JSON, the API key in its own column). 004 only
@@ -82,7 +86,8 @@ shell activity registry). Decisions confirmed with the user on 2026-10-05 are ma
   (the job's `part_texts` JSON list), so a retry/restart continues with the next part, and are joined in order
   with a blank line. **MP4/M4A** (Safari) recordings are sent whole; if larger than the limit
   the job fails with `file_rejected` and a message explaining that this recording is too long
-  for the provider (Safari at 48 kbps ≈ 1.5 h for 25 MB).
+  for the provider (Safari at 48 kbps ≈ 73 min for 25 MB). This exception was confirmed by the
+  user (pure-Python splitting, no ffmpeg) and is written into FR-022.
 - **Rationale**: User-confirmed; reuses 003's EBML code, no ffmpeg (VII).
 - **Trade-off**: a word spanning a cut may be split; cuts happen at most every ~70 min.
 - **Alternatives**: ffmpeg (system dependency); re-encoding in Python (no pure-Python Opus).

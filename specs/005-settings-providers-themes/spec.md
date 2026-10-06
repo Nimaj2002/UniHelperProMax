@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-04
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "A settings area lets users choose a transcription provider: \"Voice Studio\" (default, needs only a server address) or \"OpenAI-compatible\" (server address, API key, model name). Users can test the connection. Themes: built-in light and dark, plus user-created themes where users customize colors; themes can be saved, exported to a file, and imported from a file. The selected theme applies across the whole app."
 
@@ -38,7 +38,8 @@ confirm the address is kept and the provider shows as configured.
 **Acceptance Scenarios**:
 
 1. **Given** no provider has been configured, **When** the user opens Settings → Transcription,
-   **Then** "Voice Studio" is preselected and only a server address field is shown.
+   **Then** "Voice Studio" is preselected and a server address field (and an optional model
+   field) is shown.
 2. **Given** a server address, **When** the user presses "Test connection", **Then** within 15
    seconds they see either success or a specific failure (address invalid, server unreachable,
    server responded but is not a compatible transcription service, timed out).
@@ -65,12 +66,13 @@ credentials.
 **Acceptance Scenarios**:
 
 1. **Given** Settings → Transcription, **When** the user selects "OpenAI-compatible", **Then**
-   fields for server address, API key, and model name are shown, all required.
+   fields for server address, API key, and model name are shown; the address and model are
+   required to save, and the key is needed before transcription works (it can be added later).
 2. **Given** entered values, **When** the user presses "Test connection", **Then** they see
    success or a specific failure (unreachable, invalid credentials, model not found, timed out).
 3. **Given** a saved API key, **When** Settings is opened again, **Then** the key is shown only
-   masked (e.g., "••••••••abcd") with "Replace" and "Remove" actions; the full key is never
-   shown or sent back to the browser.
+   masked (e.g., "••••••••abcd"; keys shorter than 8 characters show no characters) with
+   "Replace" and "Remove" actions; the full key is never shown or sent back to the browser.
 4. **Given** a saved key, **When** the user changes only the model name or address and saves,
    **Then** the stored key is kept without re-entering it.
 5. **Given** the user switches provider from OpenAI-compatible to Voice Studio and saves,
@@ -102,9 +104,11 @@ changes immediately and the choice persists after sign-out/sign-in.
    across the whole app without reload.
 3. **Given** "Match system", **When** the operating system switches between light and dark,
    **Then** the app follows it.
-4. **Given** a chosen theme, **When** the user signs in again (on the same or another browser),
-   **Then** the same theme is applied from the first screen, without a flash of a different
-   theme.
+4. **Given** a chosen theme, **When** the user signs in again on the same or another browser,
+   **Then** the same theme is applied. On a browser where the user has used the app before,
+   it is applied from the first screen without a flash of a different theme; on a new browser
+   it is applied as soon as the user's settings load. Signing out clears the remembered theme,
+   so the next user of a shared browser never sees it.
 
 ---
 
@@ -217,8 +221,11 @@ restored theme is identical; import a corrupt file and confirm a clear error.
 
 - **FR-003**: Users MUST be able to choose one active transcription provider from the list the
   server offers; the first release offers "Voice Studio" and "OpenAI-compatible".
-- **FR-004**: "Voice Studio" MUST be the default selection and require only a server address.
-- **FR-005**: "OpenAI-compatible" MUST require a server address, an API key, and a model name.
+- **FR-004**: "Voice Studio" MUST be the default selection and require only a server address;
+  it MAY also offer an optional model name for servers that need one.
+- **FR-005**: "OpenAI-compatible" MUST require a server address and a model name to save, and an
+  API key before it can be used. It may be saved without a key (shown as "Not configured"), with
+  a hint that transcription needs one.
 - **FR-006**: The fields shown MUST be determined by the selected provider's declared
   requirements, so adding a provider later needs no change to the Settings screens
   (constitution Principle IV).
@@ -229,7 +236,8 @@ restored theme is identical; import a corrupt file and confirm a clear error.
 - **FR-008**: Users MUST be able to test the connection with the entered (unsaved or saved)
   values; the result (success or a specific failure category) MUST appear within 15 seconds.
 - **FR-009**: API keys MUST be stored only on the server, MUST never be returned to or shown in
-  the browser in full after saving (at most the last 4 characters), and MUST never appear in
+  the browser in full after saving (at most the last 4 characters, and none for keys shorter
+  than 8 characters), and MUST never appear in
   logs or error messages.
 - **FR-010**: Users MUST be able to replace or remove a saved API key; editing other fields MUST
   not require re-entering the key.

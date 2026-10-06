@@ -4,7 +4,7 @@
 
 **Created**: 2026-10-04
 
-**Status**: Draft
+**Status**: Implemented
 
 **Input**: User description: "The course page shows a timeline of all sessions of that course: past sessions in normal styling, upcoming sessions in grey. Both are clickable. Opening a session shows a three-panel workspace. Left panel: a vertical timeline of this course's sessions for quick switching, plus a \"new note\" action and a list of all notes for this session. Main panel: notes open as tabs, one note per tab, written in Markdown with a live/preview experience. Each session can have multiple notes with user-chosen names. Right panel: the session's audio (Feature 3). Upcoming sessions allow notes but not recording."
 
@@ -38,7 +38,7 @@ in the session's `notes/` folder.
    **Then** an empty note with that name is created, added to the session's note list, and
    opened in a new tab with the cursor in the editor.
 2. **Given** an open note, **When** the user types, **Then** changes are saved automatically
-   without any save action, and the tab shows the save state (saving / saved / failed).
+   without any save action, and the tab shows the save state (saving / saved / not saved).
 3. **Given** a saved note, **When** the user reloads the page or reopens the session, **Then**
    the note content is exactly as last typed.
 4. **Given** a session with notes, **When** the user browses the storage folders outside the
@@ -83,20 +83,20 @@ each opens the correct session workspace.
 ### User Story 3 - Switch between sessions in the workspace (Priority: P2)
 
 While reviewing for an exam, the student moves from week 3's lecture to week 4's using the
-vertical session timeline in the workspace's left panel, without going back to the course page.
+vertical session timeline in the "Sessions and notes" section of the side panel, without going back to the course page.
 
 **Why this priority**: Fast switching makes reviewing a course practical, but the workspace is
 usable with the course page alone.
 
-**Independent Test**: Open a session, select another session from the left-panel timeline, and
+**Independent Test**: Open a session, select another session from the side-panel timeline, and
 confirm the note list, tabs, and right panel all change to the selected session.
 
 **Acceptance Scenarios**:
 
-1. **Given** an open session workspace, **When** it loads, **Then** the left panel shows a
+1. **Given** an open session workspace, **When** it loads, **Then** the "Sessions and notes" section shows a
    vertical timeline of this course's sessions with the current session highlighted and
    visible, plus the "New note" action and the list of this session's notes.
-2. **Given** the left-panel timeline, **When** the user selects another session, **Then** the
+2. **Given** the side-panel timeline, **When** the user selects another session, **Then** the
    workspace switches to it: its note list, its tabs, and its audio panel are shown.
 3. **Given** the user switches away from a session with open tabs, **When** they later return
    to it, **Then** the same tabs are reopened with the previously active tab selected.
@@ -194,19 +194,19 @@ styling switches without reload.
   marked "No longer scheduled" so its notes remain reachable.
 - A note's file is edited or deleted outside the app while open: the app detects the change
   before saving, never silently overwrites the external version, and lets the user keep either
-  or both (saving theirs as a copy).
+  or both (saving theirs as a copy) (FR-020).
 - Saving fails (server unreachable): typed content stays in the editor and is kept locally until
   the save succeeds; the tab shows "Not saved" and retries automatically; closing the tab or
-  leaving the page warns the user.
+  leaving the page warns the user (FR-019).
 - Note names containing characters invalid in file names (`/`, `:`, `?`, etc.): the note keeps
   the display name; the file name uses a safe readable equivalent.
 - Empty note name or a name of only spaces: refused.
 - A course with no sessions: the course page shows an empty state with a link to add a class.
-- A very long timeline (hundreds of sessions across several semesters): the timeline stays
-  responsive and groups sessions by month.
+- A very long timeline (hundreds of sessions across several semesters): the timeline meets
+  SC-005 and groups sessions by month.
 - Many open tabs: tabs scroll horizontally and remain reachable by keyboard; a long note title
   is truncated with the full name shown on hover/focus.
-- Very large notes (e.g., 50,000 words): editing remains usable and autosave still works.
+- Very large notes (e.g., 50,000 words): typing meets SC-005 and autosave still works.
 - The same note open in two browser windows: the later save does not silently discard the
   earlier window's changes (same conflict handling as external edits).
 
@@ -224,16 +224,21 @@ styling switches without reload.
 - **FR-003**: Every session (past or upcoming) MUST be selectable by pointer and keyboard and
   open that session's workspace.
 - **FR-004**: The timeline MUST initially scroll to the current or next session.
-- **FR-005**: Each session entry MUST indicate its note count and whether it has audio.
+- **FR-005**: Each session entry on the course page MUST indicate its note count and whether it
+  has audio; the compact session list in the side panel MAY omit them.
 - **FR-006**: Sessions removed from the schedule that still have notes or audio MUST remain
   listed, marked "No longer scheduled".
 
 **Session workspace layout**
 
-- **FR-007**: Opening a session MUST show a three-panel workspace: left (session timeline, "New
-  note", note list), main (note tabs and editor), right (session audio).
-- **FR-008**: The left and right panels MUST be collapsible so the editor can use the full
-  width; collapse state is remembered per user.
+- **FR-007**: Opening a session MUST show the session workspace: note tabs and editor in the main
+  area, the session's audio panel on the right, and a "Sessions and notes" section in the app's
+  side panel, under the courses, containing "New note", the note list and the session timeline.
+- **FR-008**: The "Sessions and notes" section and the audio panel MUST be collapsible, and the
+  whole side panel MUST be able to be hidden so the editor can use the full width. The side
+  panel, the section and the audio panel MUST be resizable by pointer and keyboard. Section and
+  audio collapse are remembered per user; panel widths, section height and whether the side
+  panel is hidden are remembered per browser.
 - **FR-009**: The workspace MUST show the course name, session date, time, and location, and a
   way back to the course page.
 - **FR-010**: Each session workspace MUST have a shareable in-app address so browser
@@ -241,9 +246,9 @@ styling switches without reload.
 
 **Session switching**
 
-- **FR-011**: The left panel MUST show a vertical timeline of the course's sessions, with the
-  current session highlighted and scrolled into view, using the same past/upcoming styling as
-  the course page.
+- **FR-011**: The "Sessions and notes" section MUST show a vertical timeline of the course's
+  sessions, with the current session highlighted and scrolled into view (also when the section
+  is expanded later), using the same past/upcoming styling as the course page.
 - **FR-012**: Selecting another session MUST switch the note list, tabs, and right panel to
   that session without a full page reload.
 - **FR-013**: Each session MUST remember its open tabs and active tab, restored when the user
@@ -261,8 +266,9 @@ styling switches without reload.
   open note focuses its tab.
 - **FR-018**: Notes MUST autosave while the user types (within 2 seconds of the user pausing),
   and each tab MUST show its save state (saving / saved / not saved).
-- **FR-019**: Unsaved content MUST never be lost: on save failure it is kept and retried, and
-  leaving the page or closing a tab with unsaved content MUST warn the user.
+- **FR-019**: Unsaved content MUST never be lost: on save failure it is kept and retried.
+  Leaving or reloading the page or closing the browser tab with unsaved content, and closing a
+  note tab whose save is failing, MUST warn the user.
 - **FR-020**: The app MUST NOT silently overwrite a note file that changed since it was loaded
   (external edit or another window); the user chooses how to resolve it and both versions are
   preserved until they do.
@@ -277,7 +283,9 @@ styling switches without reload.
 - **FR-023**: Saved files MUST contain only standard Markdown text, readable in any text
   editor.
 - **FR-024**: Common editing actions MUST have keyboard shortcuts: new note, close tab,
-  next/previous tab, toggling the side panels, and toggling live/raw editing mode.
+  next/previous tab, collapsing the "Sessions and notes" section and the audio panel, hiding the
+  whole side panel, and toggling live/raw mode (from anywhere in the workspace, not only inside
+  the editor).
 
 **Audio panel & upcoming sessions**
 
@@ -313,25 +321,30 @@ styling switches without reload.
 - **SC-002**: In testing that interrupts the app at random moments while typing (reload, closed
   tab, network loss), no more than the last 2 seconds of typing is ever lost, and 0 notes are
   overwritten or emptied.
-- **SC-003**: Switching to another session from the left-panel timeline shows its notes in
+- **SC-003**: Switching to another session from the session timeline in the side panel shows its notes in
   under 1 second.
 - **SC-004**: 100% of notes created in the app can be found and opened as readable Markdown
   files by browsing year → semester → course → date → `notes/` outside the app.
-- **SC-005**: A course timeline with 300 sessions opens and scrolls smoothly, reaching the
-  current session immediately.
+- **SC-005**: A course timeline with 300 sessions opens within 1 second with the current session
+  in view and scrolls at the display's frame rate on a typical laptop; in a 50,000-word note,
+  typed characters appear within 100 ms. (Verification method: manual check.)
 - **SC-006**: Every flow in this feature can be completed using only the keyboard, and all text,
   including greyed-out upcoming sessions, meets WCAG AA contrast in light and dark themes.
 
 ## Assumptions
 
-- Session folders follow the constitution's hierarchy; when a course has more than one session
-  on the same date, the date folder name also includes the start time to keep them distinct.
+- Session folders follow the constitution's hierarchy. The first session folder of a date is
+  named after the date alone (`2026-09-28`); when another session of the course on the same date
+  gets a folder, its name also includes its start time (`2026-09-28 1400`) to keep them distinct.
+  Existing folders are never renamed.
 - Notes are text-only Markdown in this feature; embedding or uploading images and attachments
   is out of scope.
 - Search across note contents, note templates, exporting to PDF, and sharing notes are out of
   scope.
 - Notes cannot be moved between sessions in this feature.
-- Opening a course timeline from the course panel is provided by Feature 001.
+- Opening a course timeline from the course panel is provided by Feature 001. A session's
+  details in the calendar (Feature 001) also offer "Open notes", which opens that session's
+  workspace.
 - Recording, playback, and transcription in the right panel are defined in Features 3 and later;
   this feature only reserves the panel. Recording is allowed for all sessions (see
   Clarifications).

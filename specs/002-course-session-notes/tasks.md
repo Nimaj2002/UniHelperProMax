@@ -113,7 +113,8 @@ Backend `backend/src/unihelper/`, tests `backend/tests/`; frontend `frontend/src
 ### Implementation for User Story 3
 
 - [X] T031 [US3] Implement `backend/src/unihelper/services/workspace_service.py` + `GET/PUT /workspace/{sessionKey}` in `backend/src/unihelper/api/v1/workspace.py`
-- [X] T032 [US3] Add the compact `SessionTimeline` to the workspace left panel (current session highlighted and scrolled into view); on session change `await flushAll()` then navigate; persist tab state (debounced 500 ms) and restore on load in `WorkspacePage.tsx`
+- [ ] T032 [US3] Add the compact `SessionTimeline` to the workspace left panel (current session highlighted and scrolled into view); on session change `await flushAll()` then navigate; persist tab state (debounced 500 ms) and restore on load in `WorkspacePage.tsx`
+  - **Not done (found 2026-10-06)**: the timeline and session switch don't `await flushAll()` before navigating (session links are plain links), so a save failure or conflict on the note you left isn't shown until you return to it. The rest of T032 is implemented.
 
 ---
 

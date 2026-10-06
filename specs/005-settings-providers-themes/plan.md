@@ -46,9 +46,9 @@ themes everywhere, keyboard), III (all via `/api/v1`), VII (no new infrastructur
 
 | Principle | Gate for 005 | Pre | Post-design |
 |---|---|---|---|
-| I. Work never lost | Destructive actions confirmed; unsaved edits guarded | PASS | PASS — delete theme / remove key behind confirmations; editor unsaved-changes dialog |
+| I. Work never lost | Destructive actions confirmed; unsaved edits guarded | PASS | PASS — delete theme behind a confirmation; removing a key is only marked (with Undo) until Save; editor unsaved-changes dialog |
 | II. Data ownership | Themes are portable | PASS | PASS — human-readable theme files (export/import) |
-| III. Separation | Only via `/api/v1` | PASS | PASS — 5 paths in `contracts/openapi.yaml`; export/import parse in the browser, persist via the API |
+| III. Separation | Only via `/api/v1` | PASS | PASS — 4 paths in `contracts/openapi.yaml`; export/import parse in the browser, persist via the API |
 | IV. Pluggable transcription & secrets | UI discovers providers; keys never returned/logged | PASS | PASS — fields from `ProviderSpec`; `secret.{configured,last4}` only; test uses saved key server-side; https rule |
 | V. UI quality | User themes on every screen; AA warnings; keyboard | PASS | PASS — every colour is a token; editor flags failing pairs; new `editor-surface` token; `ui-settings.md` |
 | VI. Testing | Endpoint tests | PASS | PASS — contract tests per path; coverage guard includes 005 |
