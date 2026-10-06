@@ -4,8 +4,11 @@ exactly once, across restarts) — real SQLite, real files."""
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 import json
+import threading
 import time
+from collections.abc import Sequence
 from pathlib import Path
 
 import pytest
@@ -13,7 +16,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from tests import fake_transcriber
-from tests.contract.notes_helpers import create_note
+from tests.contract.notes_helpers import create_note, save
 from tests.contract.transcription_helpers import (
     API,
     configure,
@@ -25,6 +28,8 @@ from tests.contract.transcription_helpers import (
     transcribe,
 )
 from unihelper.models import TranscriptionJob
+from unihelper.services import transcription_service as svc
+from unihelper.storage.storage_service import StorageService
 from unihelper.transcription import providers
 
 pytestmark = pytest.mark.integration
@@ -193,6 +198,95 @@ def test_restart_while_appending_appends_exactly_once(
     run_jobs(c)
     assert note_content(c, note2["id"]) == "other\n\n" + section
     assert job(c, started["id"])["appended"]["text"] == "\n\n" + section
+
+
+def _ready_to_append(app: FastAPI, c: TestClient, key: str, note: dict) -> str:  # type: ignore[type-arg]
+    """A queued job whose transcript text is known, so `append_result` goes straight to the
+    append (as the worker does after the last part)."""
+    rec = finished_recording(c, key)
+    started = start_job(c, rec, note)
+    _set(app, started["id"], part_texts_json=json.dumps(["SPOKEN WORDS"]))
+    return started["id"]  # type: ignore[no-any-return]
+
+
+def test_save_racing_an_append_keeps_the_transcript(
+    app: FastAPI, owner_client: TestClient, tmp_data_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """004-D1: an autosave that passed its checks before a transcript was appended must not
+    replace the file without the transcript. The save pauses inside its file write while the
+    append runs in another thread; the append has to wait for the save."""
+    c = owner_client
+    configure(app)
+    key = make_session(c)
+    note = create_note(c, key, "Race", "old text")
+    job_id = _ready_to_append(app, c, key, note)
+    path = note_path(tmp_data_dir, note)
+
+    in_save_write = threading.Event()
+    append_done = threading.Event()
+    original_write = StorageService.write_text_atomic
+
+    def paused_write(self: StorageService, parts: Sequence[str], text: str) -> tuple[str, int]:
+        in_save_write.set()
+        append_done.wait(timeout=1.0)  # with the lock the append can't finish meanwhile
+        return original_write(self, parts, text)
+
+    monkeypatch.setattr(StorageService, "write_text_atomic", paused_write)
+
+    def do_append() -> None:
+        try:
+            svc.append_result(app.state.sessionmaker, app.state.storage, job_id)
+        finally:
+            append_done.set()
+
+    result: dict[str, object] = {}
+
+    def do_save() -> None:
+        result["response"] = save(c, note, "typed text")
+
+    saver = threading.Thread(target=do_save)
+    saver.start()
+    assert in_save_write.wait(timeout=5)
+    appender = threading.Thread(target=do_append)
+    appender.start()
+    saver.join(timeout=10)
+    appender.join(timeout=10)
+    assert not saver.is_alive() and not appender.is_alive()
+
+    response = result["response"]
+    assert response.status_code == 200, response.text  # type: ignore[attr-defined]
+    final = path.read_text(encoding="utf-8")
+    assert final.startswith("typed text\n\n## Transcript — "), final
+    assert final.endswith("SPOKEN WORDS\n")
+    done = job(c, job_id)
+    assert done["status"] == "completed"
+    assert done["appended"]["previousHash"] == hashlib.sha256(b"typed text").hexdigest()
+    assert note_content(c, note["id"]) == final
+    # created (1) → saved (2) → appended (3): the append didn't reuse a version from before the save
+    r = c.get(f"{API}/notes/{note['id']}")
+    assert done["appended"]["version"] == r.json()["version"] == 3
+    assert r.json()["hash"] == done["appended"]["hash"]
+
+
+def test_save_after_an_append_with_the_old_base_is_refused(
+    app: FastAPI, owner_client: TestClient, tmp_data_dir: Path
+) -> None:
+    """The other order: the append lands first, then a save based on the text before it. The
+    save is refused with the current content (old text + section), which the editor merges as
+    a known append; the file keeps the transcript."""
+    c = owner_client
+    configure(app)
+    key = make_session(c)
+    note = create_note(c, key, "Race", "old text")
+    job_id = _ready_to_append(app, c, key, note)
+    svc.append_result(app.state.sessionmaker, app.state.storage, job_id)
+    appended = job(c, job_id)["appended"]["text"]
+
+    r = save(c, note, "typed text")
+    assert r.status_code == 412, r.text
+    assert r.json()["code"] == "version_conflict"
+    assert r.json()["current"]["content"] == "old text" + appended
+    assert note_path(tmp_data_dir, note).read_text(encoding="utf-8") == "old text" + appended
 
 
 def test_deleted_target_note_gets_a_fallback(app: FastAPI, owner_client: TestClient) -> None:

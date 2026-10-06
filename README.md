@@ -54,6 +54,12 @@ people (Account menu → Manage accounts); there is no public sign-up.
 
 The database schema is migrated automatically on startup.
 
+**Run the backend as one process.** Note saves and transcript appends are serialized by a lock
+inside the server process, so a second process could overwrite a transcript. Don't pass
+`--workers` (or pass `--workers 1`), and don't start two servers on the same `UNIHELPER_DATA_DIR`:
+the server holds `<data>/server.lock`, and a second process refuses to start ("Another UniHelper
+server process is already using …").
+
 ## Your data
 
 ```text
@@ -163,6 +169,7 @@ The owner must choose a new password at the next sign-in.
 ## Project docs
 
 - Constitution: [.specify/memory/constitution.md](.specify/memory/constitution.md)
+- Known issues (not yet fixed): [specs/KNOWN-ISSUES.md](specs/KNOWN-ISSUES.md)
 - Feature 001: [spec](specs/001-class-schedule-calendar/spec.md) ·
   [plan](specs/001-class-schedule-calendar/plan.md) ·
   [quickstart & validation](specs/001-class-schedule-calendar/quickstart.md)

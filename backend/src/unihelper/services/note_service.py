@@ -7,6 +7,9 @@ is never silently overwritten (FR-020).
 
 from __future__ import annotations
 
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from sqlalchemy import select
@@ -21,6 +24,22 @@ from unihelper.services import session_folder_service as sfs
 from unihelper.storage.storage_service import StorageService
 
 MISSING = ""  # hash reported for a note whose file was deleted outside the app
+
+_note_locks: dict[str, threading.Lock] = {}
+_note_locks_guard = threading.Lock()
+
+
+@contextmanager
+def note_file_lock(note_id: str) -> Iterator[None]:
+    """Serialize writers of one note's file (004-D1): a save and a transcript append each hold
+    it from reading the file until their note row is committed, so neither can write over what
+    the other just wrote. Take it before flushing anything (SQLite's write lock comes second).
+
+    The lock lives in this process only: the backend must run as a single process (plan.md)."""
+    with _note_locks_guard:
+        lock = _note_locks.setdefault(note_id, threading.Lock())
+    with lock:
+        yield
 
 
 def _clean_name(name: str) -> str:
@@ -157,51 +176,58 @@ def save_content(
     base_hash: str,
     content: str,
 ) -> dict[str, Any]:
-    note, _folder, parts = _note_with_path(db, user, note_id)
-    data = storage.read_bytes(parts)
-    disk_hash = None if data is None else storage.hash_bytes(data)
-    if version != note.version:
-        raise _conflict(
-            412,
-            "version_conflict",
-            "This note was saved from another window.",
-            note,
-            None if data is None else _decode(data),
-        )
-    if data is None and base_hash != MISSING:
-        raise ApiError(
-            409,
-            "file_missing",
-            "The note's file was deleted outside the app.",
-            extra={"current": {"version": note.version, "hash": MISSING, "content": None}},
-        )
-    if data is not None and disk_hash != note.content_hash:
-        # adopt the external version so the client can choose (it must re-send with it)
-        note.content_hash = disk_hash  # type: ignore[assignment]
-        note.size = len(data)
+    with note_file_lock(note_id):
+        note, _folder, parts = _note_with_path(db, user, note_id)
+        data = storage.read_bytes(parts)
+        disk_hash = None if data is None else storage.hash_bytes(data)
+        if version != note.version:
+            raise _conflict(
+                412,
+                "version_conflict",
+                "This note was saved from another window.",
+                note,
+                None if data is None else _decode(data),
+            )
+        if data is None and base_hash != MISSING:
+            raise ApiError(
+                409,
+                "file_missing",
+                "The note's file was deleted outside the app.",
+                extra={"current": {"version": note.version, "hash": MISSING, "content": None}},
+            )
+        if data is not None and disk_hash != note.content_hash:
+            # adopt the external version so the client can choose (it must re-send with it)
+            note.content_hash = disk_hash  # type: ignore[assignment]
+            note.size = len(data)
+            db.flush()
+            db.commit()
+            raise _conflict(
+                409,
+                "file_changed_on_disk",
+                "This note was changed outside the app.",
+                note,
+                _decode(data),
+            )
+        if data is not None and base_hash != note.content_hash:
+            raise _conflict(
+                409,
+                "file_changed_on_disk",
+                "This note was changed outside the app.",
+                note,
+                _decode(data),
+            )
+        digest, size = storage.write_text_atomic(parts, content)
+        note.content_hash = digest
+        note.size = size
+        note.updated_at = now_iso()
         db.flush()
-        db.commit()
-        raise _conflict(
-            409,
-            "file_changed_on_disk",
-            "This note was changed outside the app.",
-            note,
-            _decode(data),
-        )
-    if data is not None and base_hash != note.content_hash:
-        raise _conflict(
-            409,
-            "file_changed_on_disk",
-            "This note was changed outside the app.",
-            note,
-            _decode(data),
-        )
-    digest, size = storage.write_text_atomic(parts, content)
-    note.content_hash = digest
-    note.size = size
-    note.updated_at = now_iso()
-    db.flush()
-    return {"version": note.version, "hash": digest, "size": size, "updated_at": note.updated_at}
+        db.commit()  # visible before the lock is released (004-D1)
+        return {
+            "version": note.version,
+            "hash": digest,
+            "size": size,
+            "updated_at": note.updated_at,
+        }
 
 
 # ---- append (004 transcription) ----------------------------------------------------------
@@ -215,21 +241,32 @@ def append_to_note(
     Only bytes after the old end are written (append mode + fsync); the separator is chosen
     from the current file so the existing last character is never touched. A file deleted
     outside the app is recreated with just the section. Returns what was written plus the hash
-    before/after and the new note version (the open editor merges with these, 004 B10)."""
+    before/after and the new note version (the open editor merges with these, 004 B10).
+
+    Commits the note row (and anything else pending in `db`) under the note's file lock; a
+    crash before the caller commits the job is handled by the tail check in `append_result`."""
     from unihelper.domain.transcript import separator_for
 
-    note, _folder, parts = _note_with_path(db, user, note_id)
-    data = storage.read_bytes(parts)
-    existing = data or b""
-    previous_hash = MISSING if data is None else storage.hash_bytes(data)
-    text = separator_for(existing) + section_text
-    size = storage.append_bytes(parts, text.encode("utf-8"))
-    new_hash = storage.file_hash(parts) or MISSING
-    note.content_hash = new_hash
-    note.size = size
-    note.updated_at = now_iso()
-    db.flush()  # bumps version, like a save
-    return {"text": text, "previous_hash": previous_hash, "hash": new_hash, "version": note.version}
+    with note_file_lock(note_id):
+        note, _folder, parts = _note_with_path(db, user, note_id)
+        db.refresh(note)  # the caller may have loaded it before a save committed
+        data = storage.read_bytes(parts)
+        existing = data or b""
+        previous_hash = MISSING if data is None else storage.hash_bytes(data)
+        text = separator_for(existing) + section_text
+        size = storage.append_bytes(parts, text.encode("utf-8"))
+        new_hash = storage.file_hash(parts) or MISSING
+        note.content_hash = new_hash
+        note.size = size
+        note.updated_at = now_iso()
+        db.flush()  # bumps version, like a save
+        db.commit()  # visible before the lock is released (004-D1)
+        return {
+            "text": text,
+            "previous_hash": previous_hash,
+            "hash": new_hash,
+            "version": note.version,
+        }
 
 
 # ---- rename / delete (US4) ----------------------------------------------------------------

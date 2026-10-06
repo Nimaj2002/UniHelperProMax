@@ -45,6 +45,10 @@ polling + per-second elapsed time); 4 h recordings (FR-022).
 **Constraints**: Constitution I (append-only, exactly once, failed jobs never touch notes), III
 (all via `/api/v1`), IV (one provider interface, keys never returned/logged, UI discovers
 providers), V (keyboard, AA, state by text), VII (SQLite only — no broker, no ffmpeg).
+**Single process (004-D1)**: note saves and transcript appends take a per-note lock that lives in
+the server process (`note_service.note_file_lock`), so the backend must run as exactly one
+process. `unihelper/single_process.py` holds `<data>/server.lock` from startup; a second process
+(`uvicorn --workers 2`, or a second server on the same data folder) fails at startup.
 
 **Scale/Scope**: one active job per user; worker concurrency 2 jobs per server; transcripts up
 to ~300 KB per section.
@@ -143,11 +147,11 @@ the provider "connected" via 005's `transcription_settings_service.mark_connecte
 | Risk | Mitigation |
 |---|---|
 | Server dies between file append and DB commit | `appending` state + stored section + tail check on recovery (B8) |
-| Autosave races the append in an open editor | Known-append auto-resolution (B10); all other conflicts keep 002's dialog |
+| Autosave races the append in an open editor | Per-note file lock around save and append (each commits under it), so neither writes over the other (004-D1); the editor then merges the known append (B10); all other conflicts keep 002's dialog |
 | Provider echoes secrets in error bodies | Messages built from categories only; logs carry category/status, never bodies |
 | Split parts not decodable by a provider | Each part is a full WebM (header + Tracks + clusters, relative timecodes); unit tests re-parse parts; fake transcriber validates parts |
 | Long provider calls block the event loop | Async HTTP; DB access in threads; worker concurrency capped |
-| Multiple uvicorn workers would run duplicate workers | Job claiming is an atomic `UPDATE … WHERE status='queued'`; documented as single-process deployment (as 001) |
+| Multiple uvicorn workers would run duplicate workers and bypass the in-process note lock | Job claiming is an atomic `UPDATE … WHERE status='queued'`; a second process refuses to start (`<data>/server.lock`, see Constraints) |
 
 ## Complexity Tracking
 

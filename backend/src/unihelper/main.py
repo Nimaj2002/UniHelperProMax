@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from unihelper import single_process
 from unihelper.api.deps import csrf_protect
 from unihelper.api.errors import install_error_handlers, problem_response
 from unihelper.api.v1 import (
@@ -65,15 +66,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         settings.data_dir.mkdir(parents=True, exist_ok=True)
-        # always upgrade: a no-op when the schema is already at head
-        upgrade_to_head(app.state.engine)
-        settings.files_root.mkdir(parents=True, exist_ok=True)
-        worker: TranscriptionWorker = app.state.transcription_worker
-        if settings.transcription_autorun:
-            await worker.start()
-        yield
-        await worker.stop()
-        app.state.engine.dispose()
+        server_lock = single_process.acquire(settings.data_dir)  # before touching any data
+        try:
+            # always upgrade: a no-op when the schema is already at head
+            upgrade_to_head(app.state.engine)
+            settings.files_root.mkdir(parents=True, exist_ok=True)
+            worker: TranscriptionWorker = app.state.transcription_worker
+            if settings.transcription_autorun:
+                await worker.start()
+            yield
+            await worker.stop()
+            app.state.engine.dispose()
+        finally:
+            server_lock.close()
 
     app = FastAPI(
         title="UniHelperProMax API",
