@@ -115,6 +115,7 @@ Backend `backend/src/unihelper/`, tests `backend/tests/`; frontend `frontend/src
 - [X] T031 [US3] Implement `backend/src/unihelper/services/workspace_service.py` + `GET/PUT /workspace/{sessionKey}` in `backend/src/unihelper/api/v1/workspace.py`
 - [ ] T032 [US3] Add the compact `SessionTimeline` to the workspace left panel (current session highlighted and scrolled into view); on session change `await flushAll()` then navigate; persist tab state (debounced 500 ms) and restore on load in `WorkspacePage.tsx`
   - **Not done (found 2026-10-06)**: the timeline and session switch don't `await flushAll()` before navigating (session links are plain links), so a save failure or conflict on the note you left isn't shown until you return to it. The rest of T032 is implemented.
+  - **Fix (002-I3, Batch A)**: route session switches from the left-panel timeline through a handler that runs `await flushAll()` and navigates only when every open note ends `saved`. If a note ends `conflict`, stay, focus its tab and open the conflict dialog; if it ends `error`, stay and show "“<note>” isn't saved yet" with **Stay** (default) / **Switch anyway** (the draft keeps retrying in the background). **Test**: extend `frontend/tests/e2e/workspace-switch.spec.ts`: type in a note, make `PUT /notes/*/content` fail (route abort), click another session → still on the first session with the "isn't saved yet" prompt; **Switch anyway** → the second session opens; the existing "type then switch immediately → text saved" case still passes.
 
 ---
 
@@ -174,6 +175,14 @@ Backend `backend/src/unihelper/`, tests `backend/tests/`; frontend `frontend/src
 - [X] T044 [P] Playwright E2E `frontend/tests/e2e/notes.spec.ts` (light + dark, keyboard-only, axe): quickstart scenarios 1–4, 8–10, 12; reload within 1 s keeps text (SC-002)
 - [X] T045 [P] Playwright E2E `frontend/tests/e2e/notes-resilience.spec.ts`: offline save (route aborts) → "Not saved — retrying" → recovers; external file edit → conflict → Keep both creates "(my version)"; large note (50k words) types and saves
 - [X] T046 Run all checks (ruff, mypy, pytest incl. coverage guard over both contracts, eslint, tsc, vitest, playwright) and record results in `specs/002-course-session-notes/checklists/validation.md`; update `README.md` (notes on disk, editor shortcuts)
+
+---
+
+## Phase 10: Analysis fixes (Batch A, 2026-10-06)
+
+T032 (above) is reopened for 002-I3; the task below is new.
+
+- [ ] T047 [US4] Warn when closing a note tab whose save is failing (FR-019): `closeTab` in `WorkspacePage.tsx` awaits the saver's `flush()`; if the note then is `error` or `conflict`, show an AlertDialog "“<note>” isn't saved" (error: "Saving keeps failing. If you close the tab, your text stays on this device and keeps retrying."; conflict: "This note has a change to resolve first.") with **Keep open** (default) and **Close anyway**. Saved notes close at once as now. Covers the tab close button and `Alt+W`; add the dialog to `contracts/ui-workspace.md`. **Test** in `frontend/tests/unit/note-manage.test.tsx`: save mocked to fail → close the tab → dialog shown, tab still open; **Keep open** keeps it; **Close anyway** closes it and the draft is still in localStorage; a saved note closes with no dialog; axe clean.
 
 ---
 
