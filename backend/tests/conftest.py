@@ -17,6 +17,12 @@ OWNER = {"username": "owner", "password": "owner-password-1", "timezone": "Europ
 
 
 @pytest.fixture
+def anyio_backend() -> str:
+    """Async tests (`@pytest.mark.anyio`) run on asyncio, like the app."""
+    return "asyncio"
+
+
+@pytest.fixture
 def tmp_data_dir(tmp_path: Path) -> Path:
     return tmp_path / "data"
 
@@ -41,7 +47,20 @@ def _record_routes(app):  # type: ignore[no-untyped-def]
 
 @pytest.fixture
 def app(tmp_data_dir: Path):  # type: ignore[no-untyped-def]
-    return _record_routes(create_app(Settings(data_dir=tmp_data_dir)))
+    # transcription jobs run only when a test asks (tests/contract/transcription_helpers.run_jobs);
+    # provider HTTP goes to the in-process fake transcriber
+    import httpx
+
+    from tests import fake_transcriber
+
+    application = create_app(Settings(data_dir=tmp_data_dir, transcription_autorun=False))
+    worker = application.state.transcription_worker
+    worker.transport = httpx.ASGITransport(app=fake_transcriber.app)
+    worker.retry_delays = (0, 0, 0)
+    fake_transcriber.app.state.calls.clear()
+    fake_transcriber.app.state.required_key = None
+    fake_transcriber.app.state.fail_once_done.clear()
+    return _record_routes(application)
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:

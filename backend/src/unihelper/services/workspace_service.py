@@ -18,6 +18,7 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
     "workspace_right_collapsed": False,
     "player_volume": 1.0,
     "player_muted": False,
+    "theme": "system",
 }
 
 
@@ -68,6 +69,12 @@ def get_preferences(db: Session, user: User) -> dict[str, Any]:
 
 
 def patch_preferences(db: Session, user: User, changes: dict[str, Any]) -> dict[str, Any]:
+    theme = changes.get("theme")
+    if theme is not None:
+        from unihelper.services.theme_service import valid_theme_choice
+
+        if not valid_theme_choice(db, user, theme):
+            raise validation_error("/theme", "unknown_theme", "Choose one of your themes.")
     merged = {**get_preferences(db, user), **{k: v for k, v in changes.items() if v is not None}}
     row = db.get(UiPreferences, user.id)
     if row is None:

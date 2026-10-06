@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useParams } from "react-router";
+import { useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { usePanelSection } from "@/app/shell/panelSection";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
@@ -16,7 +16,7 @@ import {
   fetchNote, fetchWorkspace, notesKey, putWorkspace, saveNoteContent, useCreateNote, useDeleteNote,
   useNotes, usePreferences, useRenameNote, useTimeline, useUpdatePreferences, type Note, type NoteMeta,
 } from "./api";
-import { ensureSaver, getSaver, readDraft, removeSaver, useSaveStatus, type SaveFn } from "./autosave";
+import { ensureSaver, getSaver, onServerAppend, readDraft, removeSaver, useSaveStatus, type SaveFn } from "./autosave";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor, type EditorMode, type MarkdownEditorHandle } from "./editor/MarkdownEditor";
 import { NoteList } from "./NoteList";
@@ -135,6 +135,8 @@ function RightPanel({ sessionKey }: { sessionKey: string }) {
 /** Session workspace (FR-007–FR-024): sessions + notes | tabs + editor | audio. */
 export function WorkspacePage() {
   const { courseId = "", sessionKey = "" } = useParams();
+  const [searchParams] = useSearchParams();
+  const linkedNote = searchParams.get("note");
   const qc = useQueryClient();
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
   const session = useSession(sessionKey);
@@ -166,14 +168,19 @@ export function WorkspacePage() {
   // ---- workspace state per session (FR-013) ----------------------------------------------
   useEffect(() => {
     let live = true;
+    // `?note=<id>` (e.g. "Open note" after a transcription) also opens and selects that note
+    const withLinked = (open: string[], active: string | null) =>
+      linkedNote
+        ? { open: open.includes(linkedNote) ? open : [...open, linkedNote], active: linkedNote, sessionKey }
+        : { open, active, sessionKey };
     fetchWorkspace(sessionKey).then(
-      (s) => live && setTabs({ open: s.openNoteIds ?? [], active: s.activeNoteId ?? null, sessionKey }),
-      () => live && setTabs({ open: [], active: null, sessionKey }),
+      (s) => live && setTabs(withLinked(s.openNoteIds ?? [], s.activeNoteId ?? null)),
+      () => live && setTabs(withLinked([], null)),
     );
     return () => {
       live = false;
     };
-  }, [sessionKey]);
+  }, [sessionKey, linkedNote]);
 
   // debounced save of the tab state; a pending save is sent at once when the session changes
   // or the workspace unmounts, so switching quickly never loses tabs (US3 #3)
@@ -191,6 +198,9 @@ export function WorkspacePage() {
   }, [tabs, sessionKey, sendPendingTabs]);
   useEffect(() => sendPendingTabs, [sessionKey, sendPendingTabs]);
 
+
+  // transcripts appended by the server appear in the open editor without reload (004 FR-009)
+  useEffect(() => onServerAppend((noteId, text) => editor.current?.appendContent(noteId, text)), []);
 
   // ---- tab actions -----------------------------------------------------------------------
   const openNote = useCallback((id: string) => {
@@ -329,7 +339,7 @@ export function WorkspacePage() {
         id="note-editor-panel"
         role="tabpanel"
         aria-labelledby={activeId ? `tab-${activeId}` : undefined}
-        className="relative min-h-0 flex-1 bg-surface-elevated"
+        className="relative min-h-0 flex-1 bg-editor-surface"
       >
         {activeId && activeNote && activeMeta ? (
           <>

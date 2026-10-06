@@ -39,6 +39,20 @@ def on_rollback(db: Session, compensate: Callable[[], None]) -> None:
     db.info.setdefault("compensations", []).append(compensate)
 
 
+def on_commit(db: Session, fn: Callable[[], None]) -> None:
+    """Run `fn` once this request's transaction has committed (e.g. wake the transcription
+    worker only when the job row is visible to other connections)."""
+    db.info.setdefault("after_commit", []).append(fn)
+
+
+def _run_after_commit(db: Session) -> None:
+    for fn in db.info.pop("after_commit", []):
+        try:
+            fn()
+        except Exception:  # pragma: no cover - notifications are best effort
+            pass
+
+
 def _run_compensations(db: Session) -> None:
     for fn in reversed(db.info.pop("compensations", [])):
         try:
@@ -56,8 +70,10 @@ def get_db(request: Request) -> Iterator[Session]:
         yield db
         db.commit()
         db.info.pop("compensations", None)
+        _run_after_commit(db)
     except Exception:
         db.rollback()
+        db.info.pop("after_commit", None)
         _run_compensations(db)
         raise
     finally:

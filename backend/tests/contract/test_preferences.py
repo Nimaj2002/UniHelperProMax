@@ -18,6 +18,7 @@ def test_preferences(owner_client: TestClient) -> None:
         "workspaceRightCollapsed": False,
         "playerVolume": 1.0,
         "playerMuted": False,
+        "theme": "system",
     }
     check(r.json(), "Preferences", spec="002")
     r = c.patch(f"{API}/preferences", json={"editorMode": "raw"})
@@ -30,5 +31,7 @@ def test_preferences(owner_client: TestClient) -> None:
     assert (r.json()["playerVolume"], r.json()["playerMuted"]) == (0.4, True)
     check(r.json(), "Preferences", spec="002")
     assert c.patch(f"{API}/preferences", json={"playerVolume": 1.5}).status_code == 422
-    assert c.patch(f"{API}/preferences", json={"theme": "pink"}).status_code == 422
+    assert c.patch(f"{API}/preferences", json={"theme": "pink"}).status_code == 422  # unknown theme
+    for choice in ("light", "dark", "system"):
+        assert c.patch(f"{API}/preferences", json={"theme": choice}).json()["theme"] == choice
     assert c.patch(f"{API}/preferences", json={"editorMode": "wysiwyg"}).status_code == 422

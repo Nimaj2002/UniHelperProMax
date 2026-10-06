@@ -7,6 +7,8 @@
  *   reload, crash or network loss never loses more than what was typed in the current instant.
  * - Network/server failures retry with backoff (1, 2, 4 … 30 s); conflicts (412 other window,
  *   409 changed/deleted outside the app) stop and wait for the user's decision.
+ * - A transcript appended by the server (004) is merged at the end without a conflict: the
+ *   user's unsaved text is kept and the transcript follows it (004 research B10).
  */
 import { useSyncExternalStore } from "react";
 import { ApiError } from "@/lib/api";
@@ -30,6 +32,36 @@ export type SaveFn = (
   baseHash: string,
   keepalive?: boolean,
 ) => Promise<SaveResponse>;
+
+/** What the server appended to a note (a finished transcription's `appended`). */
+export interface ServerAppend {
+  text: string;
+  previousHash: string;
+  hash: string;
+  version: number;
+}
+
+type AppendListener = (noteId: string, text: string) => void;
+const appendListeners = new Set<AppendListener>();
+
+/** The editor subscribes to show merged server appends without reloading. */
+export function onServerAppend(listener: AppendListener): () => void {
+  appendListeners.add(listener);
+  return () => appendListeners.delete(listener);
+}
+
+/** How long a save conflict that looks like "something was appended" waits for a known append. */
+export const APPEND_WAIT_MS = 4000;
+/** Returns true when a server append to this note may be about to be reported (and should be
+ * fetched now). Without such a listener conflicts surface immediately, as in 002. */
+type SuspectListener = (noteId: string) => boolean;
+const suspectListeners = new Set<SuspectListener>();
+
+/** Transcription subscribes: a save just found text appended at the end of this note. */
+export function onAppendSuspected(listener: SuspectListener): () => void {
+  suspectListeners.add(listener);
+  return () => suspectListeners.delete(listener);
+}
 
 export interface Draft {
   baseVersion: number;
@@ -83,6 +115,8 @@ export class NoteSaver {
   private backoff = 1000;
   private listeners = new Set<() => void>();
   private readonly save: SaveFn;
+  private pendingAppends: ServerAppend[] = [];
+  private appendWaiter: { current: ConflictInfo["current"]; resolve: (ok: boolean) => void } | null = null;
   private snapshotCache: { status: SaveStatus; conflict: ConflictInfo | null; lastSavedAt: number | null } | null = null;
 
   constructor(noteId: string, initial: { content: string; version: number; hash: string }, save: SaveFn) {
@@ -186,9 +220,24 @@ export class NoteSaver {
         this.savedContent = text;
         this.backoff = 1000;
         this.lastSavedAt = Date.now();
+        this.applyPendingAppends(); // an append based on what was just saved
       } catch (err) {
         if (err instanceof ApiError && (err.status === 412 || err.status === 409)) {
           const current = (err.problem.current ?? {}) as ConflictInfo["current"];
+          // the server only appended a known transcript, or we already merged it: not a conflict
+          if (this.applyPendingAppends(current) || (current.hash === this.hash && current.version === this.version)) {
+            continue;
+          }
+          // text was added after what we saved: maybe a transcript whose completion we haven't
+          // seen yet — give it a moment before asking the user
+          if (
+            current.content != null &&
+            current.content.length > this.savedContent.length &&
+            current.content.startsWith(this.savedContent) &&
+            [...suspectListeners].map((l) => l(this.noteId)).some(Boolean)
+          ) {
+            if (await this.waitForAppend(current)) continue;
+          }
           const kind = err.code === "file_missing" ? "missing" : err.status === 412 ? "version" : "changed";
           this.conflict = { kind, current };
           this.set("conflict");
@@ -203,6 +252,68 @@ export class NoteSaver {
     this.firstDirtyAt = null;
     clearDraft(this.noteId);
     this.set("saved");
+  }
+
+  // ---- server appends (004 transcription) ----------------------------------------------
+  /** Merge text the server appended to this note: kept local edits stay, the text follows. */
+  applyServerAppend(append: ServerAppend) {
+    if (this.pendingAppends.some((a) => a.hash === append.hash)) return;
+    this.pendingAppends.push(append);
+    const waiter = this.appendWaiter;
+    if (waiter && this.applyPendingAppends(waiter.current)) {
+      this.appendWaiter = null;
+      waiter.resolve(true);
+      return;
+    }
+    if (this.status === "conflict" && this.conflict && this.applyPendingAppends(this.conflict.current)) {
+      this.conflict = null; // the conflict was only this append: carry on saving
+      this.set("dirty");
+      void this.run();
+      return;
+    }
+    if (this.status !== "conflict" && !this.inFlight) this.applyPendingAppends();
+  }
+
+  private waitForAppend(current: ConflictInfo["current"]): Promise<boolean> {
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.appendWaiter = null;
+        resolve(false);
+      }, APPEND_WAIT_MS);
+      this.appendWaiter = {
+        current,
+        resolve: (ok) => {
+          clearTimeout(timer);
+          resolve(ok);
+        },
+      };
+    });
+  }
+
+  /** Apply appends whose base is our saved state (or that explain a racing save's 409/412). */
+  private applyPendingAppends(current?: ConflictInfo["current"]): boolean {
+    let applied = false;
+    for (const a of [...this.pendingAppends]) {
+      const basedOnSaved = a.previousHash === this.hash;
+      const explainsConflict = current?.content != null && current.content === this.savedContent + a.text;
+      if (!basedOnSaved && !explainsConflict) continue;
+      this.pendingAppends = this.pendingAppends.filter((x) => x !== a);
+      this.savedContent += a.text;
+      this.content += a.text;
+      this.version = a.version;
+      this.hash = a.hash;
+      applied = true;
+      appendListeners.forEach((l) => l(this.noteId, a.text));
+    }
+    if (applied && !current) {
+      if (this.content === this.savedContent) {
+        clearDraft(this.noteId);
+        if (!this.inFlight) this.set("saved");
+      } else if (!this.inFlight) {
+        this.update(this.content); // save the user's kept edits on top
+      }
+    }
+    return applied;
   }
 
   // ---- conflict resolution (ConflictDialog) ---------------------------------------------

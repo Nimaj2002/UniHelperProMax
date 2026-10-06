@@ -1,7 +1,7 @@
 import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { searchKeymap } from "@codemirror/search";
-import { Compartment, EditorState, type Extension } from "@codemirror/state";
+import { Compartment, EditorState, Transaction, type Extension } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { livePreview, openLinkCommand } from "./livePreview";
@@ -12,6 +12,8 @@ export type EditorMode = "live" | "raw";
 export interface MarkdownEditorHandle {
   /** Replace a note's text (e.g. after "Use the file's version"). */
   replaceContent(noteId: string, text: string): void;
+  /** Add text at the end (a merged transcript): cursor, scroll and undo history stay as they are. */
+  appendContent(noteId: string, text: string): void;
   /** Drop the cached state of a closed/deleted note. */
   forget(noteId: string): void;
   focus(): void;
@@ -133,6 +135,17 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function M
         v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: text } });
       } else {
         cache.current.delete(id);
+      }
+    },
+    appendContent(id, text) {
+      const v = view.current;
+      if (v && current.current === id) {
+        v.dispatch({
+          changes: { from: v.state.doc.length, insert: text },
+          annotations: Transaction.addToHistory.of(false),
+        });
+      } else {
+        cache.current.delete(id); // rebuilt from the saver's content when shown again
       }
     },
     forget(id) {

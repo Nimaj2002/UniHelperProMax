@@ -1,0 +1,245 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 005 additions
+  version: 1.4.0
+  description: |
+    Additive to the 001–004 contracts. Changes to existing operations (additive): `/preferences`
+    gains `theme` (`system` | `light` | `dark` | a custom theme id; default `system`). No response
+    ever contains an API key — only `secret.configured` and `secret.last4` (Constitution IV).
+servers:
+  - url: /api/v1
+
+paths:
+  /settings/transcription:
+    get:
+      tags: [settings]
+      summary: The user's provider settings (per provider, keys masked) and default language
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TranscriptionSettings" }
+    put:
+      tags: [settings]
+      summary: Save the active provider, default language and one provider's values
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TranscriptionSettingsSave" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TranscriptionSettings" }
+        "422": { $ref: "#/components/responses/Problem" }   # invalid_address | https_required | field_required | unknown_provider | bad language
+
+  /settings/transcription/test:
+    post:
+      tags: [settings]
+      summary: Test a provider with the entered (unsaved or saved) values within 15 s
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConnectionTest" }
+      responses:
+        "200":
+          description: Result (success or a failure category)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConnectionTestResult" }
+        "422": { $ref: "#/components/responses/Problem" }   # invalid_address | https_required | field_required
+
+  /themes:
+    get:
+      tags: [themes]
+      summary: The user's custom themes, by name
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Theme" } }
+    post:
+      tags: [themes]
+      summary: Create a theme (new, duplicate or import)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ThemeCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Theme" }
+        "409": { $ref: "#/components/responses/Problem" }   # name_taken (unless uniqueName)
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /themes/{themeId}:
+    parameters: [{ $ref: "#/components/parameters/ThemeId" }]
+    get:
+      tags: [themes]
+      summary: One theme
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Theme" }
+        "404": { $ref: "#/components/responses/Problem" }
+    put:
+      tags: [themes]
+      summary: Save edits (name, colours, low-contrast flag)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ThemeWrite" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Theme" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # name_taken
+        "412": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+        "428": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [themes]
+      summary: Delete; if it was the active theme the preference falls back to its base
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/Problem" }
+        "412": { $ref: "#/components/responses/Problem" }
+        "428": { $ref: "#/components/responses/Problem" }
+
+components:
+  parameters:
+    ThemeId: { name: themeId, in: path, required: true, schema: { type: string } }
+    IfMatch: { name: If-Match, in: header, required: true, schema: { type: string } }
+
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+
+    Hex: { type: string, pattern: "^#[0-9a-fA-F]{6}$" }
+
+    SecretState:
+      type: object
+      required: [configured, last4]
+      properties:
+        configured: { type: boolean }
+        last4: { type: [string, "null"], description: last 4 characters of a saved key, never more }
+
+    ProviderSettings:
+      type: object
+      required: [providerId, values, secret, status, lastError, testedAt]
+      properties:
+        providerId: { type: string }
+        values: { type: object, additionalProperties: { type: string }, description: non-secret fields only }
+        secret: { $ref: "#/components/schemas/SecretState" }
+        status: { type: string, enum: [not_configured, not_tested, connected, failed] }
+        lastError: { type: [string, "null"] }
+        testedAt: { type: [string, "null"] }
+
+    TranscriptionSettings:
+      type: object
+      required: [activeProviderId, defaultLanguage, providers]
+      properties:
+        activeProviderId: { type: [string, "null"] }
+        defaultLanguage: { type: string }
+        providers: { type: array, items: { $ref: "#/components/schemas/ProviderSettings" } }
+
+    TranscriptionSettingsSave:
+      type: object
+      required: [activeProviderId, defaultLanguage, provider]
+      properties:
+        activeProviderId: { type: string }
+        defaultLanguage: { type: string, description: "`auto` or ISO 639-1" }
+        provider:
+          type: object
+          required: [providerId, values]
+          properties:
+            providerId: { type: string }
+            values: { type: object, additionalProperties: { type: string } }
+            apiKey: { type: [string, "null"], description: "absent = keep the saved key, string = replace, null = remove" }
+
+    ConnectionTest:
+      type: object
+      required: [providerId, values]
+      properties:
+        providerId: { type: string }
+        values: { type: object, additionalProperties: { type: string } }
+        apiKey: { type: [string, "null"], description: an entered (unsaved) key }
+        useSavedKey: { type: boolean, default: false }
+
+    ConnectionTestResult:
+      type: object
+      required: [ok, category, message]
+      properties:
+        ok: { type: boolean }
+        category:
+          type: [string, "null"]
+          enum: [unreachable, timeout, invalid_credentials, model_not_found, not_a_transcription_service, unknown, null]
+        message: { type: [string, "null"] }
+
+    ColorSet:
+      type: object
+      additionalProperties: { $ref: "#/components/schemas/Hex" }
+      description: token → colour (tokens of data-model.md; unknown tokens rejected)
+
+    ThemeWrite:
+      type: object
+      required: [name, keyColors, overrides, colors, lowContrast]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        keyColors: { $ref: "#/components/schemas/ColorSet" }
+        overrides: { $ref: "#/components/schemas/ColorSet" }
+        colors: { $ref: "#/components/schemas/ColorSet" }
+        lowContrast: { type: boolean }
+
+    ThemeCreate:
+      allOf:
+        - $ref: "#/components/schemas/ThemeWrite"
+        - type: object
+          required: [base]
+          properties:
+            base: { type: string, enum: [light, dark] }
+            uniqueName: { type: boolean, default: false, description: "on a name clash add \" (2)\", \" (3)\"… instead of 409 (import)" }
+
+    Theme:
+      type: object
+      required: [id, name, base, keyColors, overrides, colors, lowContrast, version, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        base: { type: string, enum: [light, dark] }
+        keyColors: { $ref: "#/components/schemas/ColorSet" }
+        overrides: { $ref: "#/components/schemas/ColorSet" }
+        colors: { $ref: "#/components/schemas/ColorSet" }
+        lowContrast: { type: boolean }
+        version: { type: integer }
+        createdAt: { type: string }
+        updatedAt: { type: string }

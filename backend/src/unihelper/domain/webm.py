@@ -257,3 +257,63 @@ def finalize(data: bytes) -> tuple[bytes, int]:
     head = data[: layout.header_end] + encode_id(SEGMENT) + encode_size(UNKNOWN)
     body = info + kept + cues + data[layout.clusters[0].offset :]
     return head + body, layout.duration_ms
+
+
+# ---- splitting (004 research B5) --------------------------------------------------------------
+
+
+def _rebase_cluster(raw: bytes, base: int) -> bytes:
+    """Rewrite a cluster's Timecode to `timecode - base`, keeping the element's byte width."""
+    _, p = read_id(raw, 0)
+    _, p = read_size(raw, p)
+    end = len(raw)
+    while p < end:
+        cid, q = read_id(raw, p)
+        size, q = read_size(raw, q)
+        if cid == TIMECODE:
+            value = read_uint(raw[q : q + size]) - base
+            return raw[:q] + max(value, 0).to_bytes(size, "big") + raw[q + size :]
+        if size == UNKNOWN:
+            break
+        p = q + size
+    return raw
+
+
+def split(data: bytes, max_bytes: int | None) -> list[tuple[bytes, int]]:
+    """Split into independently playable WebM files of at most `max_bytes` each, at Cluster
+    boundaries: [(part bytes, part duration ms)]. Cluster payloads are kept; only each part's
+    cluster Timecodes are rebased so every part starts at 0."""
+    layout = analyse(data)
+    to_ms = layout.timecode_scale / 1_000_000
+    if max_bytes is None or len(data) <= max_bytes:
+        return [(data, layout.duration_ms)]
+    info_payload = b"".join(raw for iid, raw in layout.info_children if iid != DURATION)
+    prefix = (
+        data[: layout.header_end]
+        + encode_id(SEGMENT)
+        + encode_size(UNKNOWN)
+        + element(INFO, info_payload)
+        + b"".join(layout.kept)
+    )
+    bounds = [c.offset for c in layout.clusters] + [len(data)]
+    raws = [data[bounds[i] : bounds[i + 1]] for i in range(len(layout.clusters))]
+    groups: list[list[int]] = [[]]
+    size = len(prefix)
+    for i, raw in enumerate(raws):
+        if len(prefix) + len(raw) > max_bytes:
+            raise WebmError("a single cluster is larger than the part limit")
+        if groups[-1] and size + len(raw) > max_bytes:
+            groups.append([])
+            size = len(prefix)
+        groups[-1].append(i)
+        size += len(raw)
+    parts: list[tuple[bytes, int]] = []
+    for g, idx in enumerate(groups):
+        base = layout.clusters[idx[0]].timecode
+        body = b"".join(_rebase_cluster(raws[i], base) for i in idx)
+        if g + 1 < len(groups):
+            end_ms = round(layout.clusters[groups[g + 1][0]].timecode * to_ms)
+        else:
+            end_ms = layout.duration_ms
+        parts.append((prefix + body, max(0, end_ms - round(base * to_ms))))
+    return parts

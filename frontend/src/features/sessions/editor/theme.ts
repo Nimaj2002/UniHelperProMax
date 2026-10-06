@@ -4,7 +4,7 @@ import { EditorView } from "@codemirror/view";
 export const editorTheme = EditorView.theme({
   "&": {
     color: "var(--text-primary)",
-    backgroundColor: "var(--surface-elevated)",
+    backgroundColor: "var(--editor-surface)",
     height: "100%",
     fontSize: "15px",
   },

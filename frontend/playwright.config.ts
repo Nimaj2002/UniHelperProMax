@@ -3,6 +3,7 @@ import { defineConfig, devices } from "@playwright/test";
 // override with E2E_BACKEND_PORT / E2E_FRONTEND_PORT to run next to a dev server
 const backendPort = Number(process.env.E2E_BACKEND_PORT ?? 8000);
 const frontendPort = Number(process.env.E2E_FRONTEND_PORT ?? 5173);
+const transcriberPort = Number(process.env.E2E_TRANSCRIBER_PORT ?? 8020);
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -36,6 +37,13 @@ export default defineConfig({
     },
   ],
   webServer: [
+    {
+      // predictable OpenAI-style transcription server for feature 004
+      command: `cd ../backend && uv run uvicorn tests.fake_transcriber:app --port ${transcriberPort}`,
+      url: `http://localhost:${transcriberPort}/v1/models`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
     {
       // fresh data dir per run so setup flows start from an empty installation
       command: `rm -rf ../data-e2e && cd ../backend && UNIHELPER_DATA_DIR=../data-e2e uv run uvicorn unihelper.main:app --port ${backendPort}`,

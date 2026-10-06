@@ -12,6 +12,7 @@
   --surface-elevated: #fdfdfd;
   --surface-sunken: #efeff1;
   --surface-hover: #e7e7ea;
+  --editor-surface: #fdfdfd;
   --text-primary: #18181b;
   --text-muted: #55555d;
   --border: #85858d;
@@ -71,6 +72,7 @@
   --surface-elevated: #1b1b1f;
   --surface-sunken: #0e0e10;
   --surface-hover: #26262b;
+  --editor-surface: #1b1b1f;
   --text-primary: #ececef;
   --text-muted: #a2a2ab;
   --border: #6c6c75;

@@ -669,6 +669,248 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transcription/providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Providers */
+        get: operations["providers_api_v1_transcription_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcription/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Transcription Status */
+        get: operations["transcription_status_api_v1_transcription_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recordings/{recording_id}/transcriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start */
+        post: operations["start_api_v1_recordings__recording_id__transcriptions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcriptions/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active */
+        get: operations["active_api_v1_transcriptions_active_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unseen */
+        get: operations["unseen_api_v1_transcriptions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{session_key}/transcriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Session History */
+        get: operations["session_history_api_v1_sessions__session_key__transcriptions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcriptions/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Job */
+        get: operations["get_job_api_v1_transcriptions__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcriptions/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel */
+        post: operations["cancel_api_v1_transcriptions__job_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcriptions/{job_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry */
+        post: operations["retry_api_v1_transcriptions__job_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transcriptions/{job_id}/seen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Seen */
+        post: operations["seen_api_v1_transcriptions__job_id__seen_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/transcription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Settings */
+        get: operations["get_settings_api_v1_settings_transcription_get"];
+        /** Save Settings */
+        put: operations["save_settings_api_v1_settings_transcription_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/transcription/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Connection */
+        post: operations["test_connection_api_v1_settings_transcription_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/themes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Themes */
+        get: operations["list_themes_api_v1_themes_get"];
+        put?: never;
+        /** Create Theme */
+        post: operations["create_theme_api_v1_themes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/themes/{theme_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Theme */
+        get: operations["get_theme_api_v1_themes__theme_id__get"];
+        /** Update Theme */
+        put: operations["update_theme_api_v1_themes__theme_id__put"];
+        post?: never;
+        /** Delete Theme */
+        delete: operations["delete_theme_api_v1_themes__theme_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -695,6 +937,17 @@ export interface components {
         AccountUpdate: {
             /** Disabled */
             disabled: boolean;
+        };
+        /** AppendResult */
+        AppendResult: {
+            /** Text */
+            text: string;
+            /** Previoushash */
+            previousHash: string;
+            /** Hash */
+            hash: string;
+            /** Version */
+            version: number;
         };
         /** ChunkResult */
         ChunkResult: {
@@ -773,6 +1026,31 @@ export interface components {
             recurrence: components["schemas"]["Recurrence"];
             /** Version */
             version: number;
+        };
+        /** ConnectionTest */
+        ConnectionTest: {
+            /** Providerid */
+            providerId: string;
+            /** Values */
+            values: {
+                [key: string]: string;
+            };
+            /** Apikey */
+            apiKey?: string | null;
+            /**
+             * Usesavedkey
+             * @default false
+             */
+            useSavedKey: boolean;
+        };
+        /** ConnectionTestResult */
+        ConnectionTestResult: {
+            /** Ok */
+            ok: boolean;
+            /** Category */
+            category: ("unreachable" | "timeout" | "invalid_credentials" | "model_not_found" | "not_a_transcription_service" | "unknown") | null;
+            /** Message */
+            message: string | null;
         };
         /** ContentSave */
         ContentSave: {
@@ -1013,11 +1291,70 @@ export interface components {
             playerVolume?: number | null;
             /** Playermuted */
             playerMuted?: boolean | null;
+            /** Theme */
+            theme?: string | null;
         };
         /** ProfileUpdate */
         ProfileUpdate: {
             /** Timezone */
             timezone?: string | null;
+        };
+        /** ProviderField */
+        ProviderField: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "url" | "secret" | "text";
+            /** Required */
+            required: boolean;
+            /** Placeholder */
+            placeholder: string | null;
+        };
+        /** ProviderSave */
+        ProviderSave: {
+            /** Providerid */
+            providerId: string;
+            /** Values */
+            values: {
+                [key: string]: string;
+            };
+            /** Apikey */
+            apiKey?: string | null;
+        };
+        /** ProviderSettings */
+        ProviderSettings: {
+            /** Providerid */
+            providerId: string;
+            /** Values */
+            values: {
+                [key: string]: string;
+            };
+            secret: components["schemas"]["SecretState"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "not_configured" | "not_tested" | "connected" | "failed";
+            /** Lasterror */
+            lastError: string | null;
+            /** Testedat */
+            testedAt: string | null;
+        };
+        /** ProviderSpec */
+        ProviderSpec: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Fields */
+            fields: components["schemas"]["ProviderField"][];
+            /** Maxuploadbytes */
+            maxUploadBytes: number | null;
         };
         /** Recording */
         Recording: {
@@ -1147,6 +1484,13 @@ export interface components {
              */
             removedOverrides: number;
         };
+        /** SecretState */
+        SecretState: {
+            /** Configured */
+            configured: boolean;
+            /** Last4 */
+            last4: string | null;
+        };
         /** Semester */
         Semester: {
             /** Id */
@@ -1265,6 +1609,86 @@ export interface components {
             /** Needsowner */
             needsOwner: boolean;
         };
+        /** Theme */
+        Theme: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Base
+             * @enum {string}
+             */
+            base: "light" | "dark";
+            /** Keycolors */
+            keyColors: {
+                [key: string]: string;
+            };
+            /** Overrides */
+            overrides: {
+                [key: string]: string;
+            };
+            /** Colors */
+            colors: {
+                [key: string]: string;
+            };
+            /** Lowcontrast */
+            lowContrast: boolean;
+            /** Version */
+            version: number;
+            /** Createdat */
+            createdAt: string;
+            /** Updatedat */
+            updatedAt: string;
+        };
+        /** ThemeCreate */
+        ThemeCreate: {
+            /** Name */
+            name: string;
+            /** Keycolors */
+            keyColors: {
+                [key: string]: string;
+            };
+            /** Overrides */
+            overrides: {
+                [key: string]: string;
+            };
+            /** Colors */
+            colors: {
+                [key: string]: string;
+            };
+            /** Lowcontrast */
+            lowContrast: boolean;
+            /**
+             * Base
+             * @enum {string}
+             */
+            base: "light" | "dark";
+            /**
+             * Uniquename
+             * @default false
+             */
+            uniqueName: boolean;
+        };
+        /** ThemeWrite */
+        ThemeWrite: {
+            /** Name */
+            name: string;
+            /** Keycolors */
+            keyColors: {
+                [key: string]: string;
+            };
+            /** Overrides */
+            overrides: {
+                [key: string]: string;
+            };
+            /** Colors */
+            colors: {
+                [key: string]: string;
+            };
+            /** Lowcontrast */
+            lowContrast: boolean;
+        };
         /** Timeline */
         Timeline: {
             /** Courseid */
@@ -1306,6 +1730,100 @@ export interface components {
             noteCount: number;
             /** Audiocount */
             audioCount: number;
+        };
+        /** TranscriptionJob */
+        TranscriptionJob: {
+            /** Id */
+            id: string;
+            /** Recordingid */
+            recordingId: string;
+            /** Recordingname */
+            recordingName: string;
+            /** Sessionkey */
+            sessionKey: string;
+            /** Courseid */
+            courseId: string;
+            /** Noteid */
+            noteId: string | null;
+            /** Notename */
+            noteName: string;
+            /** Language */
+            language: string;
+            /** Providerid */
+            providerId: string;
+            /** Providername */
+            providerName: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "uploading" | "transcribing" | "appending" | "completed" | "failed" | "cancelled";
+            /** Partindex */
+            partIndex: number;
+            /** Partcount */
+            partCount: number;
+            /** Progress */
+            progress: number | null;
+            /** Stagestartedat */
+            stageStartedAt: string | null;
+            /** Errorcategory */
+            errorCategory: ("not_configured" | "invalid_credentials" | "unavailable" | "file_rejected" | "quota_exceeded" | "unknown") | null;
+            /** Errormessage */
+            errorMessage: string | null;
+            /** Settingsrelated */
+            settingsRelated: boolean;
+            /** Cancelrequested */
+            cancelRequested: boolean;
+            /** Fallbacknotecreated */
+            fallbackNoteCreated: boolean;
+            /** Attempts */
+            attempts: number;
+            /** Seen */
+            seen: boolean;
+            appended: components["schemas"]["AppendResult"] | null;
+            /** Createdat */
+            createdAt: string;
+            /** Startedat */
+            startedAt: string | null;
+            /** Finishedat */
+            finishedAt: string | null;
+        };
+        /** TranscriptionSettings */
+        TranscriptionSettings: {
+            /** Activeproviderid */
+            activeProviderId: string | null;
+            /** Defaultlanguage */
+            defaultLanguage: string;
+            /** Providers */
+            providers: components["schemas"]["ProviderSettings"][];
+        };
+        /** TranscriptionSettingsSave */
+        TranscriptionSettingsSave: {
+            /** Activeproviderid */
+            activeProviderId: string;
+            /** Defaultlanguage */
+            defaultLanguage: string;
+            provider: components["schemas"]["ProviderSave"];
+        };
+        /** TranscriptionStart */
+        TranscriptionStart: {
+            /** Noteid */
+            noteId?: string | null;
+            /** Newnotename */
+            newNoteName?: string | null;
+            /** Language */
+            language?: string | null;
+        };
+        /** TranscriptionStatus */
+        TranscriptionStatus: {
+            /** Configured */
+            configured: boolean;
+            /** Providerid */
+            providerId: string | null;
+            /** Providername */
+            providerName: string | null;
+            /** Defaultlanguage */
+            defaultLanguage: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -3147,6 +3665,523 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    providers_api_v1_transcription_providers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderSpec"][];
+                };
+            };
+        };
+    };
+    transcription_status_api_v1_transcription_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionStatus"];
+                };
+            };
+        };
+    };
+    start_api_v1_recordings__recording_id__transcriptions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranscriptionStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    active_api_v1_transcriptions_active_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionJob"] | null;
+                };
+            };
+        };
+    };
+    unseen_api_v1_transcriptions_get: {
+        parameters: {
+            query: {
+                unseen: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionJob"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    session_history_api_v1_sessions__session_key__transcriptions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionJob"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_job_api_v1_transcriptions__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_api_v1_transcriptions__job_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_api_v1_transcriptions__job_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    seen_api_v1_transcriptions__job_id__seen_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_settings_api_v1_settings_transcription_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionSettings"];
+                };
+            };
+        };
+    };
+    save_settings_api_v1_settings_transcription_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TranscriptionSettingsSave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TranscriptionSettings"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_connection_api_v1_settings_transcription_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConnectionTest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionTestResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_themes_api_v1_themes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Theme"][];
+                };
+            };
+        };
+    };
+    create_theme_api_v1_themes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThemeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Theme"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_theme_api_v1_themes__theme_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                theme_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Theme"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_theme_api_v1_themes__theme_id__put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                theme_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThemeWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Theme"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_theme_api_v1_themes__theme_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                theme_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

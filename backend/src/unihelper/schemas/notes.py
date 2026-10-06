@@ -82,3 +82,5 @@ class Preferences(ApiModel):
     workspace_right_collapsed: bool | None = None
     player_volume: float | None = Field(default=None, ge=0, le=1)
     player_muted: bool | None = None
+    # 005: "system" | "light" | "dark" | a custom theme id (per account)
+    theme: str | None = Field(default=None, min_length=1, max_length=64)

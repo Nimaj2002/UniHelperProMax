@@ -9,6 +9,8 @@ from unihelper.models.recording import Recording
 from unihelper.models.semester import Semester
 from unihelper.models.session_exception import SessionException
 from unihelper.models.session_folder import SessionFolder
+from unihelper.models.theme import Theme
+from unihelper.models.transcription import ProviderConfig, TranscriptionJob, TranscriptionSettings
 from unihelper.models.ui_preferences import UiPreferences
 from unihelper.models.user import User
 from unihelper.models.workspace_state import WorkspaceState
@@ -21,10 +23,14 @@ __all__ = [
     "ClassSeries",
     "Course",
     "Note",
+    "ProviderConfig",
     "Recording",
     "Semester",
     "SessionException",
     "SessionFolder",
+    "Theme",
+    "TranscriptionJob",
+    "TranscriptionSettings",
     "UiPreferences",
     "User",
     "WorkspaceState",

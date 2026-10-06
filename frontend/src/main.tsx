@@ -3,12 +3,9 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router";
 import { createQueryClient, Providers } from "./app/providers";
 import { createAppRouter } from "./app/router";
-import { applyTheme, systemTheme } from "./app/theme";
 import "./index.css";
 
-// set the theme before first paint to avoid a flash of the wrong theme
-applyTheme(systemTheme());
-
+// the theme is applied before first paint by public/theme-boot.js (cached per-account choice)
 const queryClient = createQueryClient();
 const router = createAppRouter();
 

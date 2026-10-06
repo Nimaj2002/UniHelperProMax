@@ -11,6 +11,7 @@ import { workspacePath } from "@/features/sessions/SessionTimeline";
 import type { WorkspacePanelProps } from "@/features/sessions/workspace-panels";
 import { formatDay } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { useRecordingExtensions } from "./extensions";
 import { deleteRecording, recordingsKey, renameRecording, useRecordings, type Recording } from "./api";
 import { formatDuration, spokenDuration } from "./format";
 import { LevelMeter } from "./LevelMeter";
@@ -46,6 +47,7 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
   const elapsed = useElapsed(state.status === "recording" ? state.startedAt : null);
   const [selected, setSelected] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ kind: "rename" | "delete"; recording: Recording } | null>(null);
+  const extensions = useRecordingExtensions();
 
   const thisSession = state.sessionKey === sessionKey && rec.active;
   const otherSession = rec.active && !thisSession;
@@ -120,44 +122,54 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
             const live = r.status === "recording" && thisSession && state.recordingId === r.id;
             const waiting = (pending.get(r.id) ?? 0) > 0;
             return (
-              <li key={r.id} className="group flex items-start gap-1">
-                <button
-                  type="button"
-                  onClick={() => setSelected(r.id)}
-                  aria-pressed={selected === r.id}
-                  disabled={r.status === "recording"}
-                  className={cn(
-                    "grid min-w-0 flex-1 gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-accent disabled:cursor-default disabled:hover:bg-transparent",
-                    selected === r.id && "bg-accent",
-                  )}
-                >
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium" title={r.name}>{r.name}</span>
-                    <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
-                      {live ? formatDuration(elapsed) : r.status === "recording" ? "—" : formatDuration(r.durationMs)}
+              <li key={r.id} className="grid gap-1">
+                <div className="group flex items-start gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelected(r.id)}
+                    aria-pressed={selected === r.id}
+                    disabled={r.status === "recording"}
+                    className={cn(
+                      "grid min-w-0 flex-1 gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-accent disabled:cursor-default disabled:hover:bg-transparent",
+                      selected === r.id && "bg-accent",
+                    )}
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="truncate text-sm font-medium" title={r.name}>{r.name}</span>
+                      <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+                        {live ? formatDuration(elapsed) : r.status === "recording" ? "—" : formatDuration(r.durationMs)}
+                      </span>
                     </span>
-                  </span>
-                  <span className="text-xs text-muted-foreground">{localStart(r.startedAt)}</span>
-                  <span className="flex flex-wrap gap-1">
-                    {r.status === "recording" && <Badge variant="outline">Recording</Badge>}
-                    {r.status === "interrupted" && <Badge variant="outline">Recovered (interrupted)</Badge>}
-                    {waiting && <Badge variant="outline">Upload pending</Badge>}
-                    {r.missing && r.status !== "recording" && <Badge variant="outline">File missing</Badge>}
-                  </span>
-                </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-7" aria-label={`Actions for ${r.name}`} disabled={r.status === "recording" && r.active}>
-                      <DotsThree size={18} weight="bold" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => setDialog({ kind: "rename", recording: r })}>Rename…</DropdownMenuItem>
-                    <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => setDialog({ kind: "delete", recording: r })}>
-                      Delete…
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    <span className="text-xs text-muted-foreground">{localStart(r.startedAt)}</span>
+                    <span className="flex flex-wrap gap-1">
+                      {r.status === "recording" && <Badge variant="outline">Recording</Badge>}
+                      {r.status === "interrupted" && <Badge variant="outline">Recovered (interrupted)</Badge>}
+                      {waiting && <Badge variant="outline">Upload pending</Badge>}
+                      {r.missing && r.status !== "recording" && <Badge variant="outline">File missing</Badge>}
+                    </span>
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="size-7" aria-label={`Actions for ${r.name}`} disabled={r.status === "recording" && r.active}>
+                        <DotsThree size={18} weight="bold" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => setDialog({ kind: "rename", recording: r })}>Rename…</DropdownMenuItem>
+                      <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => setDialog({ kind: "delete", recording: r })}>
+                        Delete…
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                {extensions.map(({ id, Action, Details }) =>
+                  Action || Details ? (
+                    <div key={id} className="grid gap-1 pl-2">
+                      {Action && <Action recording={r} sessionKey={sessionKey} />}
+                      {Details && <Details recording={r} sessionKey={sessionKey} />}
+                    </div>
+                  ) : null,
+                )}
               </li>
             );
           })}

@@ -21,6 +21,9 @@ class Settings:
     secure_cookies: bool = False
     host: str = "127.0.0.1"
     port: int = 8000
+    # 004: background transcription worker
+    transcription_concurrency: int = 2
+    transcription_autorun: bool = True  # tests run jobs explicitly instead
 
     @property
     def db_path(self) -> Path:
@@ -43,4 +46,5 @@ def load_settings() -> Settings:
         secure_cookies=_env_bool("UNIHELPER_SECURE_COOKIES", False),
         host=os.environ.get("UNIHELPER_HOST", "127.0.0.1"),
         port=int(os.environ.get("UNIHELPER_PORT", "8000")),
+        transcription_concurrency=int(os.environ.get("UNIHELPER_TRANSCRIPTION_CONCURRENCY", "2")),
     )

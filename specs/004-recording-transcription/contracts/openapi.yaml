@@ -1,0 +1,254 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 004 additions
+  version: 1.3.0
+  description: |
+    Additive to the 001–003 contracts (same conventions: cookie session, CSRF header on writes,
+    RFC 9457 problems with a `code`). Changes to existing operations (additive):
+    `DELETE /recordings/{recordingId}` also returns 409 `recording_transcribing` while one of
+    the recording's transcriptions is active. No response ever contains a provider key
+    (Constitution IV, FR-017, FR-019).
+servers:
+  - url: /api/v1
+
+paths:
+  /transcription/providers:
+    get:
+      tags: [transcription]
+      summary: Providers this server offers and the fields each needs (UI discovers providers here)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/ProviderSpec" } }
+
+  /transcription/status:
+    get:
+      tags: [transcription]
+      summary: Whether the user has a usable provider, and the default language (no values, no key)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TranscriptionStatus" }
+
+  /recordings/{recordingId}/transcriptions:
+    parameters: [{ $ref: "#/components/parameters/RecordingId" }]
+    post:
+      tags: [transcription]
+      summary: Start transcribing a finished recording into an existing or new note of its session
+      description: |
+        Exactly one of `noteId` and `newNoteName` is required. A new note is created (002 rules)
+        before the job is queued; if queuing then fails the note stays (it is the user's).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TranscriptionStart" }
+      responses:
+        "202":
+          description: Queued
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TranscriptionJob" }
+        "404": { $ref: "#/components/responses/Problem" }   # recording or note not found / not the user's
+        "409": { $ref: "#/components/responses/Problem" }   # transcription_in_progress | recording_not_finished | file_missing | provider_not_configured | name_taken
+        "422": { $ref: "#/components/responses/Problem" }   # validation (both/neither target, bad language, empty name)
+
+  /transcriptions/active:
+    get:
+      tags: [transcription]
+      summary: The user's active job (queued/uploading/transcribing/appending), if any
+      responses:
+        "200":
+          description: Active job or null
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/TranscriptionJob"
+                  - type: "null"
+
+  /transcriptions:
+    get:
+      tags: [transcription]
+      summary: Finished jobs the user has not acknowledged yet (notifications on next visit)
+      parameters:
+        - { name: unseen, in: query, required: true, schema: { type: boolean, const: true } }
+      responses:
+        "200":
+          description: OK, oldest first
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/TranscriptionJob" } }
+
+  /sessions/{sessionKey}/transcriptions:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [transcription]
+      summary: Transcription history of the session's recordings, newest first
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/TranscriptionJob" } }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /transcriptions/{jobId}:
+    parameters: [{ $ref: "#/components/parameters/JobId" }]
+    get:
+      tags: [transcription]
+      summary: One job
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TranscriptionJob" }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /transcriptions/{jobId}/cancel:
+    parameters: [{ $ref: "#/components/parameters/JobId" }]
+    post:
+      tags: [transcription]
+      summary: Cancel an active job (ignored once appending has started; the job then completes)
+      responses:
+        "200":
+          description: The job after the request (`cancelled`, or still running with cancelRequested)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TranscriptionJob" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # job_finished
+
+  /transcriptions/{jobId}/retry:
+    parameters: [{ $ref: "#/components/parameters/JobId" }]
+    post:
+      tags: [transcription]
+      summary: Run a failed or cancelled job again into the same note with the same language
+      responses:
+        "202":
+          description: Queued again
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TranscriptionJob" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # transcription_in_progress | job_not_retryable | provider_not_configured | file_missing
+
+  /transcriptions/{jobId}/seen:
+    parameters: [{ $ref: "#/components/parameters/JobId" }]
+    post:
+      tags: [transcription]
+      summary: Acknowledge a finished job's notification
+      responses:
+        "204": { description: Acknowledged }
+        "404": { $ref: "#/components/responses/Problem" }
+
+components:
+  parameters:
+    SessionKey: { name: sessionKey, in: path, required: true, schema: { type: string } }
+    RecordingId: { name: recordingId, in: path, required: true, schema: { type: string } }
+    JobId: { name: jobId, in: path, required: true, schema: { type: string } }
+
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+
+    ProviderField:
+      type: object
+      required: [key, label, kind, required]
+      properties:
+        key: { type: string, examples: [address, apiKey, model] }
+        label: { type: string }
+        kind: { type: string, enum: [url, secret, text] }
+        required: { type: boolean }
+        placeholder: { type: [string, "null"] }
+
+    ProviderSpec:
+      type: object
+      required: [id, name, fields, maxUploadBytes]
+      properties:
+        id: { type: string, examples: [voice-studio, openai-compatible] }
+        name: { type: string }
+        fields: { type: array, items: { $ref: "#/components/schemas/ProviderField" } }
+        maxUploadBytes: { type: [integer, "null"], description: per-file limit; longer WebM recordings are split }
+
+    TranscriptionStatus:
+      type: object
+      required: [configured, providerId, providerName, defaultLanguage]
+      properties:
+        configured: { type: boolean }
+        providerId: { type: [string, "null"] }
+        providerName: { type: [string, "null"] }
+        defaultLanguage: { type: string, description: "`auto` or ISO 639-1" }
+
+    TranscriptionStart:
+      type: object
+      properties:
+        noteId: { type: string }
+        newNoteName: { type: string, minLength: 1, maxLength: 120 }
+        language: { type: string, description: "`auto` or ISO 639-1; defaults to the user's default language" }
+
+    AppendResult:
+      type: object
+      required: [text, previousHash, hash, version]
+      description: What was appended, so an open editor can merge it without reloading (FR-009)
+      properties:
+        text: { type: string, description: separator + section exactly as written }
+        previousHash: { type: string }
+        hash: { type: string }
+        version: { type: integer, description: note version after the append }
+
+    TranscriptionJob:
+      type: object
+      required: [id, recordingId, recordingName, sessionKey, courseId, noteId, noteName, language, providerId, providerName,
+                 status, partIndex, partCount, progress, stageStartedAt, errorCategory, errorMessage, settingsRelated,
+                 cancelRequested, fallbackNoteCreated, attempts, seen, appended, createdAt, startedAt, finishedAt]
+      properties:
+        id: { type: string }
+        recordingId: { type: string }
+        recordingName: { type: string }
+        sessionKey: { type: string }
+        courseId: { type: string }
+        noteId: { type: [string, "null"], description: null when the target note was deleted and no fallback exists yet }
+        noteName: { type: string, description: current name of the target (or fallback) note }
+        language: { type: string }
+        providerId: { type: string }
+        providerName: { type: string }
+        status: { type: string, enum: [queued, uploading, transcribing, appending, completed, failed, cancelled] }
+        partIndex: { type: integer, minimum: 0 }
+        partCount: { type: integer, minimum: 1 }
+        progress: { type: [number, "null"], minimum: 0, maximum: 1 }
+        stageStartedAt: { type: [string, "null"] }
+        errorCategory:
+          type: [string, "null"]
+          enum: [not_configured, invalid_credentials, unavailable, file_rejected, quota_exceeded, unknown, null]
+        errorMessage: { type: [string, "null"], description: plain language; never contains a key }
+        settingsRelated: { type: boolean, description: the UI links to Settings → Transcription }
+        cancelRequested: { type: boolean }
+        fallbackNoteCreated: { type: boolean, description: target note was gone; a new note received the transcript }
+        attempts: { type: integer, minimum: 1 }
+        seen: { type: boolean }
+        appended:
+          oneOf:
+            - $ref: "#/components/schemas/AppendResult"
+            - type: "null"
+        createdAt: { type: string }
+        startedAt: { type: [string, "null"] }
+        finishedAt: { type: [string, "null"] }

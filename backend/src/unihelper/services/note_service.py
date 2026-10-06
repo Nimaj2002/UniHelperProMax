@@ -204,6 +204,34 @@ def save_content(
     return {"version": note.version, "hash": digest, "size": size, "updated_at": note.updated_at}
 
 
+# ---- append (004 transcription) ----------------------------------------------------------
+
+
+def append_to_note(
+    db: Session, storage: StorageService, user: User, note_id: str, section_text: str
+) -> dict[str, Any]:
+    """Append a transcript section after the file's current last character (Principle I).
+
+    Only bytes after the old end are written (append mode + fsync); the separator is chosen
+    from the current file so the existing last character is never touched. A file deleted
+    outside the app is recreated with just the section. Returns what was written plus the hash
+    before/after and the new note version (the open editor merges with these, 004 B10)."""
+    from unihelper.domain.transcript import separator_for
+
+    note, _folder, parts = _note_with_path(db, user, note_id)
+    data = storage.read_bytes(parts)
+    existing = data or b""
+    previous_hash = MISSING if data is None else storage.hash_bytes(data)
+    text = separator_for(existing) + section_text
+    size = storage.append_bytes(parts, text.encode("utf-8"))
+    new_hash = storage.file_hash(parts) or MISSING
+    note.content_hash = new_hash
+    note.size = size
+    note.updated_at = now_iso()
+    db.flush()  # bumps version, like a save
+    return {"text": text, "previous_hash": previous_hash, "hash": new_hash, "version": note.version}
+
+
 # ---- rename / delete (US4) ----------------------------------------------------------------
 
 

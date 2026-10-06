@@ -305,6 +305,14 @@ def delete_recording(
     check_version(version, r.version)
     if is_active(r):
         raise _in_progress()
+    from unihelper.services.transcription_service import has_active_job_for_recording
+
+    if has_active_job_for_recording(db, r.id):
+        raise ApiError(
+            409,
+            "recording_transcribing",
+            "This recording is being transcribed. Cancel or wait for the transcription first.",
+        )
     parts, _ = _parts(db, user, r)
     db.delete(r)
     db.flush()

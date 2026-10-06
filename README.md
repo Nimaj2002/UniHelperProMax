@@ -2,11 +2,11 @@
 
 Class schedules, per-class Markdown notes, lecture recordings, and transcription for university
 students. Released: 001 accounts, calendar and courses; 002 course timelines and the session
-notes workspace; 003 session audio recording and playback. Transcription and themes follow in
-features 004–005 (see `specs/`).
+notes workspace; 003 session audio recording and playback; 004 transcription into notes; 005
+settings (transcription providers, light/dark/custom themes). Specs and plans are in `specs/`.
 
 - Python/FastAPI backend with a versioned JSON API (`/api/v1`) over SQLite
-- React + shadcn/ui frontend, light and dark themes, fully keyboard operable
+- React + shadcn/ui frontend, light, dark and your own themes, fully keyboard operable
 - Your files stay yours: a plain, human-readable folder tree on disk
 
 ## Requirements
@@ -71,6 +71,10 @@ Each recording is an audio file (`<Recording name>.webm`, or `.m4a` on Safari) i
 the server), so closing the page or losing the network keeps everything recorded so far; such a
 recording is listed as "Recovered (interrupted)".
 
+A transcript is only ever **added at the end** of the note you choose, under a heading such as
+`## Transcript — Recording 10:02 · 2026-10-05 10:02 · 1h 24m`; nothing already in the note is
+changed. If the note is open, the text appears there without reloading and your typing is kept.
+
 Folder names follow the names you type (made safe for Windows/macOS/Linux) and are renamed when
 you rename things in the app. Deleting a year, semester, course, class, or account **never**
 deletes files; the only files the app ever removes are a note's `.md` or a recording's audio
@@ -102,6 +106,33 @@ With focus anywhere in the player:
 | `M` | Mute / unmute |
 | `PageUp` / `PageDown` on the seek bar | Forward / back 60 seconds |
 
+## Transcription
+
+Each finished recording has a **Transcribe** button: choose a note of the session (or name a new
+one) and the spoken language. The job runs on the server, so you can keep working, change pages
+or close the browser; one transcription runs at a time per user, with progress, Cancel and Retry.
+Long WebM recordings are split automatically for providers with a file-size limit.
+
+Providers speak the OpenAI audio transcription API (`POST <address>/v1/audio/transcriptions`).
+Choose one in **Settings → Transcription** (gear icon in the top bar, or the account menu):
+**Voice Studio** needs only its server address; **OpenAI-compatible** needs an address, an API
+key and a model. Use **Test connection** to check them. The key stays on the server: after
+saving you only ever see its last 4 characters. An API key is only sent over plain `http://` to
+this computer or your local network; public addresses need `https://`.
+
+For trying transcription without a real provider, run the predictable fake transcriber
+(`cd backend && uv run uvicorn tests.fake_transcriber:app --port 8020`) and use
+`http://localhost:8020` as the Voice Studio address.
+
+## Themes
+
+**Settings → Appearance** offers Light, Dark, Match system and your own themes. A new theme
+starts from Light, Dark or another theme of yours; set 4 key colours (background, surface, text,
+accent) and the rest is worked out, or switch on **Advanced** to set every colour. The editor
+shows a live preview and flags colour pairs that don't meet WCAG AA (you can still save; the theme
+is then marked "Low contrast"). Themes can be exported to a `.uhtheme.json` file and imported
+again, e.g. to share them. Your choice is saved to your account and used on every device.
+
 ## Tests and checks
 
 ```bash
@@ -113,7 +144,7 @@ corepack pnpm lint && corepack pnpm typecheck
 corepack pnpm test            # Vitest + Testing Library + axe
 corepack pnpm exec playwright install chromium   # once
 corepack pnpm e2e             # keyboard-only flows in light and dark, axe WCAG AA
-# dev servers already on 8000/5173? E2E_BACKEND_PORT=8010 E2E_FRONTEND_PORT=5183 corepack pnpm e2e
+# dev servers already on 8000/5173/8020? E2E_BACKEND_PORT=8010 E2E_FRONTEND_PORT=5183 E2E_TRANSCRIBER_PORT=8021 corepack pnpm e2e
 ```
 
 A full backend run also fails if any operation in the API contract is never exercised

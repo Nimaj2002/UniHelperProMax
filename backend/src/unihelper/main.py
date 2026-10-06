@@ -20,8 +20,11 @@ from unihelper.api.v1 import (
     notes,
     recordings,
     sessions,
+    settings,
     setup,
+    themes,
     timeline,
+    transcription,
     workspace,
 )
 from unihelper.config import Settings, load_settings
@@ -29,6 +32,7 @@ from unihelper.db.engine import make_engine, make_sessionmaker
 from unihelper.db.migrate import upgrade_to_head
 from unihelper.services.login_throttle import LoginThrottle
 from unihelper.storage.storage_service import StorageService
+from unihelper.transcription.worker import TranscriptionWorker
 
 API_PREFIX = "/api/v1"
 
@@ -47,6 +51,9 @@ def build_api_router() -> APIRouter:
         timeline,
         workspace,
         recordings,
+        transcription,
+        settings,
+        themes,
     ):
         api.include_router(module.router)
     return api
@@ -61,7 +68,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # always upgrade: a no-op when the schema is already at head
         upgrade_to_head(app.state.engine)
         settings.files_root.mkdir(parents=True, exist_ok=True)
+        worker: TranscriptionWorker = app.state.transcription_worker
+        if settings.transcription_autorun:
+            await worker.start()
         yield
+        await worker.stop()
         app.state.engine.dispose()
 
     app = FastAPI(
@@ -78,6 +89,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.sessionmaker = make_sessionmaker(engine)
     app.state.storage = StorageService(settings.files_root)
     app.state.login_throttle = LoginThrottle()
+    app.state.transcription_worker = TranscriptionWorker(
+        app.state.sessionmaker,
+        app.state.storage,
+        concurrency=settings.transcription_concurrency,
+    )
 
     install_error_handlers(app)
     app.include_router(build_api_router())

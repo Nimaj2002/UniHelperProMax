@@ -44,6 +44,7 @@
   --color-surface-elevated: var(--surface-elevated);
   --color-surface-sunken: var(--surface-sunken);
   --color-surface-hover: var(--surface-hover);
+  --color-editor-surface: var(--editor-surface);
   --color-text-primary: var(--text-primary);
   --color-text-muted: var(--text-muted);
   --color-strong-border: var(--border);
