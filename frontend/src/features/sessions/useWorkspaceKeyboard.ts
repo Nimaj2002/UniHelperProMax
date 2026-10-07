@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 
 export interface WorkspaceActions {
   newNote: () => void;
+  /** 006: Alt+Shift+N */
+  importNote?: () => void;
   closeTab: () => void;
   nextTab: () => void;
   prevTab: () => void;
@@ -21,6 +23,13 @@ export function useWorkspaceKeyboard(actions: WorkspaceActions) {
       if (!e.altKey || e.ctrlKey || e.metaKey) return;
       if (document.querySelector("[role='dialog'][data-state='open'],[role='alertdialog'][data-state='open']")) return;
       const a = ref.current;
+      if (e.shiftKey) {
+        if (e.code === "KeyN" && a.importNote) {
+          e.preventDefault();
+          a.importNote();
+        }
+        return;
+      }
       const map: Record<string, () => void> = {
         KeyN: a.newNote,
         KeyW: a.closeTab,

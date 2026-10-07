@@ -299,7 +299,7 @@ confirmation and confirm it is gone from the list and the `audios/` folder.
   recording instead.
 - Playback speed control, waveform display, bookmarks, and trimming/editing audio are out of
   scope.
-- Uploading existing audio files from the user's device is out of scope.
+- Uploading existing audio files from the user's device was out of scope for 003; added by 006 (specs/006-session-file-import).
 - Transcription of recordings into notes is defined in Feature 4; deleting a recording never
   changes notes created from it.
 - Deleted recordings are removed permanently after confirmation; a trash/undo is out of scope.

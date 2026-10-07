@@ -8,6 +8,7 @@ import { PanelResizeHandle } from "@/components/PanelResizeHandle";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSession } from "@/features/classes/api";
+import { useNoteImporter } from "@/features/imports/useNoteImporter";
 import { isApiError } from "@/lib/api";
 import { readLocal, writeLocal } from "@/lib/storage";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
@@ -16,7 +17,7 @@ import {
   fetchNote, fetchWorkspace, notesKey, putWorkspace, saveNoteContent, useCreateNote, useDeleteNote,
   useNotes, usePreferences, useRenameNote, useTimeline, useUpdatePreferences, type Note, type NoteMeta,
 } from "./api";
-import { ensureSaver, getSaver, onServerAppend, readDraft, removeSaver, useSaveStatus, type SaveFn } from "./autosave";
+import { ensureSaver, getSaver, onServerAppend, onServerReplace, readDraft, removeSaver, useSaveStatus, type SaveFn } from "./autosave";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor, type EditorMode, type MarkdownEditorHandle } from "./editor/MarkdownEditor";
 import { NoteList } from "./NoteList";
@@ -201,6 +202,8 @@ export function WorkspacePage() {
 
   // transcripts appended by the server appear in the open editor without reload (004 FR-009)
   useEffect(() => onServerAppend((noteId, text) => editor.current?.appendContent(noteId, text)), []);
+  // a note replaced by an import shows its new content (006 FR-020)
+  useEffect(() => onServerReplace((noteId, text) => editor.current?.replaceContent(noteId, text)), []);
 
   // ---- tab actions -----------------------------------------------------------------------
   const openNote = useCallback((id: string) => {
@@ -248,8 +251,11 @@ export function WorkspacePage() {
     [mode, updatePrefs],
   );
 
+  const noteImporter = useNoteImporter({ sessionKey, notes: noteList, onOpen: openNote });
+
   useWorkspaceKeyboard({
     newNote: () => setDialog({ kind: "new" }),
+    importNote: noteImporter.pick,
     closeTab: () => activeId && closeTab(activeId),
     nextTab: () => cycleTab(1),
     prevTab: () => cycleTab(-1),
@@ -304,6 +310,8 @@ export function WorkspacePage() {
         activeId={activeId}
         loading={notes.isPending}
         onNew={() => setDialog({ kind: "new" })}
+        onImport={noteImporter.pick}
+        importing={noteImporter.running}
         onOpen={openNote}
         onRename={(note) => setDialog({ kind: "rename", note })}
         onDelete={(note) => {
@@ -369,9 +377,14 @@ export function WorkspacePage() {
                 {activeId ? "Opening note…" : noteList.length ? "Choose a note on the left, or start a new one." : "No notes for this session yet."}
               </p>
               {!activeId && (
-                <button type="button" onClick={() => setDialog({ kind: "new" })} className="justify-self-center text-sm font-medium text-primary underline underline-offset-4">
-                  New note <kbd className="ml-1 font-mono text-xs text-muted-foreground">Alt+N</kbd>
-                </button>
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
+                  <button type="button" onClick={() => setDialog({ kind: "new" })} className="text-sm font-medium text-primary underline underline-offset-4">
+                    New note <kbd className="ml-1 font-mono text-xs text-muted-foreground">Alt+N</kbd>
+                  </button>
+                  <button type="button" onClick={noteImporter.pick} className="text-sm font-medium text-primary underline underline-offset-4">
+                    Import note <kbd className="ml-1 font-mono text-xs text-muted-foreground">Alt+Shift+N</kbd>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -387,7 +400,7 @@ export function WorkspacePage() {
         session={session.data}
         leftOpen={leftOpen}
         rightOpen={rightOpen}
-        onToggleLeft={() => togglePanel("left")}
+        onToggleLeft={isDesktop ? undefined : () => togglePanel("left")}
         onToggleRight={() => togglePanel("right")}
       />
       {session.isError ? (
@@ -417,6 +430,7 @@ export function WorkspacePage() {
         </Sheet>
       )}
 
+      {noteImporter.element}
       {dialog?.kind === "new" && (
         <NoteNameDialog
           title="New note"

@@ -7,6 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useSession } from "@/features/classes/api";
+import { AudioDropZone } from "@/features/imports/AudioDropZone";
+import { UploadAudioButton } from "@/features/imports/UploadAudioButton";
+import { UploadList } from "@/features/imports/UploadList";
 import { workspacePath } from "@/features/sessions/SessionTimeline";
 import type { WorkspacePanelProps } from "@/features/sessions/workspace-panels";
 import { formatDay } from "@/lib/dates";
@@ -72,14 +75,18 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
   };
 
   return (
+    <AudioDropZone sessionKey={sessionKey}>
     <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 p-4">
       <h2 className="text-sm font-semibold">Audio</h2>
 
-      {!rec.active && (
-        <Button onClick={() => void startRec()} disabled={!session.data || state.status !== "idle"} className="justify-self-start">
-          <Microphone size={16} weight="fill" aria-hidden /> Record
-        </Button>
-      )}
+      <div className="flex flex-wrap gap-2">
+        {!rec.active && (
+          <Button onClick={() => void startRec()} disabled={!session.data || state.status !== "idle"}>
+            <Microphone size={16} weight="fill" aria-hidden /> Record
+          </Button>
+        )}
+        <UploadAudioButton sessionKey={sessionKey} />
+      </div>
       {thisSession && (
         <div className="grid gap-2 rounded-lg border border-divider bg-surface-elevated p-3">
           <div className="flex items-center gap-2">
@@ -114,6 +121,8 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
       )}
       {state.notice && !state.error && <p role="status" className="text-sm text-warning">{state.notice}</p>}
 
+      <UploadList sessionKey={sessionKey} />
+
       <section aria-label="Recordings" className="grid min-w-0 gap-1">
         {recordings.isPending && <p className="text-sm text-muted-foreground">Loading…</p>}
         {recordings.isSuccess && list.length === 0 && !thisSession && <p className="text-sm text-muted-foreground">No recordings yet.</p>}
@@ -135,13 +144,21 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
                     )}
                   >
                     <span className="flex items-center justify-between gap-2">
-                      <span className="truncate text-sm font-medium" title={r.name}>{r.name}</span>
+                      <span
+                        className="truncate text-sm font-medium"
+                        title={r.origin === "imported" && r.originalFileName ? `${r.name} — imported from ${r.originalFileName}` : r.name}
+                      >
+                        {r.name}
+                      </span>
                       <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
                         {live ? formatDuration(elapsed) : r.status === "recording" ? "—" : formatDuration(r.durationMs)}
                       </span>
                     </span>
-                    <span className="text-xs text-muted-foreground">{localStart(r.startedAt)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {r.origin === "imported" ? "Imported" : "Recorded"} {localStart(r.startedAt)}
+                    </span>
                     <span className="flex flex-wrap gap-1">
+                      {r.origin === "imported" && <Badge variant="outline">Imported</Badge>}
                       {r.status === "recording" && <Badge variant="outline">Recording</Badge>}
                       {r.status === "interrupted" && <Badge variant="outline">Recovered (interrupted)</Badge>}
                       {waiting && <Badge variant="outline">Upload pending</Badge>}
@@ -203,6 +220,7 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
         />
       )}
     </div>
+    </AudioDropZone>
   );
 }
 

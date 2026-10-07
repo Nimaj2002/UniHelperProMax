@@ -10,6 +10,16 @@ import { claimPlayback, releasePlayback } from "./nowPlaying";
 const SKIP = 5;
 
 /** Play/pause, stop, seek, ±5 s, volume + mute (FR-017–FR-022). */
+/** Why playback failed, in words. A browser may not decode a valid imported format (006). */
+export function playbackError(recording: Recording, err: MediaError | null): string {
+  if (recording.missing) return "The audio file is missing from the session folder.";
+  if (recording.origin === "imported" && err?.code === 4 /* MEDIA_ERR_SRC_NOT_SUPPORTED */) {
+    const format = recording.fileName.slice(recording.fileName.lastIndexOf(".") + 1).toUpperCase();
+    return `This browser can't play ${format} files. Try another browser, or transcribe it.`;
+  }
+  return "This recording can't be played.";
+}
+
 export function Player({ recording }: { recording: Recording }) {
   const audio = useRef<HTMLAudioElement>(null);
   const prefs = usePreferences();
@@ -110,7 +120,7 @@ export function Player({ recording }: { recording: Recording }) {
         onTimeUpdate={(e) => setTime(e.currentTarget.currentTime)}
         onLoadedMetadata={(e) => setMediaDuration(e.currentTarget.duration)}
         onDurationChange={(e) => setMediaDuration(e.currentTarget.duration)}
-        onError={() => setError(recording.missing ? "The audio file is missing from the session folder." : "This recording can't be played.")}
+        onError={(e) => setError(playbackError(recording, e.currentTarget.error))}
       />
       <p className="truncate text-sm font-medium" title={recording.name}>{recording.name}</p>
       {/* transport and volume wrap onto two lines when the panel is narrow */}

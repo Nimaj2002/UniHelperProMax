@@ -24,6 +24,7 @@ def test_start_list_get_active(
     check(rec, "Recording", spec="003")
     assert rec["status"] == "recording" and rec["active"] is True and rec["nextSeq"] == 0
     assert rec["name"].startswith("Recording ") and rec["fileName"].endswith(".webm")
+    assert rec["origin"] == "recorded" and rec["originalFileName"] is None  # 006
     assert_problem(
         c.post(f"{API}/sessions/{key}/recordings", json={"mimeType": "audio/webm"}),
         409,

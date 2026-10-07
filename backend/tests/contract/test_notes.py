@@ -130,3 +130,32 @@ def test_content_size_limit(owner_client: TestClient) -> None:
     note = create_note(c, make_session(c), "Big")
     r = save(c, note, "x" * (5 * 1024 * 1024 + 1))
     assert r.status_code == 422
+
+
+# ---- 006: notes created from imported files ----------------------------------------------
+
+
+def test_create_refuses_binary_content(owner_client: TestClient, tmp_data_dir: Path) -> None:
+    c = owner_client
+    key = make_session(c)
+    r = c.post(
+        f"{API}/sessions/{key}/notes", json={"name": "slides", "content": "PK\x03\x04\x00\x00"}
+    )
+    assert_problem(r, 422, "content_not_text")
+    assert c.get(f"{API}/sessions/{key}/notes").json() == []
+    notes_dir = tmp_data_dir / "files/owner/2026/Fall 2026/CS 201/2026-09-28/notes"
+    assert not notes_dir.exists() or list(notes_dir.iterdir()) == []
+
+
+def test_imported_text_round_trips_byte_for_byte(
+    owner_client: TestClient, tmp_data_dir: Path
+) -> None:
+    c = owner_client
+    key = make_session(c)
+    notes_dir = tmp_data_dir / "files/owner/2026/Fall 2026/CS 201/2026-09-28/notes"
+    crlf = "line one\r\nline two\r\n\r\n- ünïcödé ✓\r\n"
+    note = c.post(f"{API}/sessions/{key}/notes", json={"name": "questions", "content": crlf}).json()
+    assert (notes_dir / note["fileName"]).read_bytes() == crlf.encode("utf-8")
+    big = ("x" * 1023 + "\n") * (5 * 1024)  # 5 MB of characters
+    note = c.post(f"{API}/sessions/{key}/notes", json={"name": "big", "content": big}).json()
+    assert (notes_dir / note["fileName"]).read_bytes() == big.encode("utf-8")

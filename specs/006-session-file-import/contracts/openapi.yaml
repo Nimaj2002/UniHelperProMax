@@ -1,0 +1,150 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 006 additions
+  version: 1.5.0
+  description: |
+    Additive to the 001–005 contracts (same conventions: camelCase JSON, RFC 9457 problems,
+    CSRF header on writes, `If-Match` versions). Changes to existing operations (additive):
+    the 003 `Recording` schema gains `origin` and `originalFileName`, and its `mimeType` may be
+    any of the import formats; `POST /sessions/{sessionKey}/notes` (002) can also answer 422
+    `content_not_text` when the content contains a NUL character.
+servers:
+  - url: /api/v1
+
+paths:
+  /sessions/{sessionKey}/recordings/import:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    post:
+      tags: [recordings]
+      summary: Import one audio file into the session (stored unchanged in its audios/ folder)
+      description: |
+        The body is the raw file. Nothing is created unless the whole file arrives, matches its
+        extension's format and is stored; on any error or client disconnect no row and no file
+        remain. Checks done before reading the body: extension, Content-Length, size limit,
+        free disk space, session.
+      parameters:
+        - name: fileName
+          in: query
+          required: true
+          description: Original file name including extension (decides the expected format)
+          schema: { type: string, minLength: 1, maxLength: 255 }
+        - name: durationMs
+          in: query
+          required: false
+          description: Duration measured by the browser; used only if the server can't read one
+          schema: { type: integer, minimum: 0 }
+        - name: Content-Length
+          in: header
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 1073741824 }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+      responses:
+        "201":
+          description: Imported (status `complete`, origin `imported`)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Recording" }
+        "404": { $ref: "#/components/responses/Problem" }   # session not found
+        "411": { $ref: "#/components/responses/Problem" }   # length_required
+        "413": { $ref: "#/components/responses/Problem" }   # file_too_large (limit in `maxBytes`)
+        "415": { $ref: "#/components/responses/Problem" }   # unsupported_type (`accepted` lists extensions)
+        "422": { $ref: "#/components/responses/Problem" }   # unreadable_audio · incomplete_upload
+        "507": { $ref: "#/components/responses/Problem" }   # insufficient_storage
+
+  /notes/{noteId}/import-replace:
+    parameters: [{ $ref: "#/components/parameters/NoteId" }]
+    put:
+      tags: [notes]
+      summary: Replace a note's whole content with an imported file's text (user-confirmed)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string, maxLength: 5242880 }
+      responses:
+        "200":
+          description: Replaced; the note keeps its name and file name
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Note" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # note_transcribing · file_changed_on_disk
+        "412": { $ref: "#/components/responses/Problem" }   # version_conflict
+        "422": { $ref: "#/components/responses/Problem" }   # content_not_text
+
+components:
+  parameters:
+    SessionKey: { name: sessionKey, in: path, required: true, schema: { type: string } }
+    NoteId: { name: noteId, in: path, required: true, schema: { type: string } }
+    IfMatch: { name: If-Match, in: header, required: true, schema: { type: string } }
+
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        maxBytes: { type: integer, description: present on file_too_large }
+        accepted:
+          type: array
+          items: { type: string }
+          description: present on unsupported_type — accepted extensions
+
+    Recording:
+      type: object
+      description: 003 Recording plus origin fields
+      required: [id, sessionKey, name, fileName, mimeType, status, startedAt, durationMs, size, nextSeq, active, missing, version, origin, originalFileName]
+      properties:
+        id: { type: string }
+        sessionKey: { type: string }
+        name: { type: string }
+        fileName: { type: string }
+        mimeType:
+          type: string
+          enum: [audio/webm, audio/mp4, audio/mpeg, audio/wav, audio/ogg, audio/flac, audio/aac]
+        status: { type: string, enum: [recording, complete, interrupted] }
+        startedAt: { type: string, description: capture start (recorded) or import time (imported) }
+        durationMs: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 0 }
+        nextSeq: { type: integer, minimum: 0 }
+        active: { type: boolean }
+        missing: { type: boolean }
+        version: { type: integer }
+        origin: { type: string, enum: [recorded, imported] }
+        originalFileName: { type: [string, "null"] }
+
+    Note:
+      type: object
+      description: Same as the 002 Note
+      required: [id, sessionKey, name, fileName, version, size, createdAt, updatedAt, content, hash]
+      properties:
+        id: { type: string }
+        sessionKey: { type: string }
+        name: { type: string }
+        fileName: { type: string }
+        version: { type: integer }
+        size: { type: integer }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+        content: { type: string }
+        hash: { type: string }
+        missing: { type: boolean }

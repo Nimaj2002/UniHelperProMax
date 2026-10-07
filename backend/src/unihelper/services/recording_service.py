@@ -4,7 +4,11 @@
 from __future__ import annotations
 
 import logging
+import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -13,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from unihelper.api.errors import ApiError, not_found, validation_error
 from unihelper.db.engine import on_rollback
-from unihelper.domain import webm
+from unihelper.domain import audio_probe, webm
 from unihelper.domain.naming import name_key, normalize_display, safe_name, unique_sibling
 from unihelper.models import Recording, SessionFolder, User
 from unihelper.models.base import now_iso
@@ -24,6 +28,7 @@ log = logging.getLogger("unihelper.recordings")
 STALE = timedelta(seconds=30)
 MAX_CHUNK = 10 * 1024 * 1024
 EXT = {"audio/webm": ".webm", "audio/mp4": ".m4a"}
+MAX_NAME = 120
 
 
 def _now() -> datetime:
@@ -32,6 +37,11 @@ def _now() -> datetime:
 
 def _last_activity(r: Recording) -> datetime:
     return datetime.fromisoformat(r.last_chunk_at or r.started_at)
+
+
+def _ext(r: Recording) -> str:
+    """The row's own extension: recordings are .webm/.m4a, imports keep theirs (006)."""
+    return Path(r.file_name).suffix.lower() or EXT.get(r.mime_type, "")
 
 
 def is_active(r: Recording, now: datetime | None = None) -> bool:
@@ -61,6 +71,8 @@ def view(db: Session, storage: StorageService, user: User, r: Recording) -> dict
         "active": is_active(r),
         "missing": not storage.absolute_path(parts).exists(),
         "version": r.version,
+        "origin": r.origin,
+        "original_file_name": r.original_file_name,
     }
 
 
@@ -166,14 +178,19 @@ def audio_file(
 # ---- writes -------------------------------------------------------------------------------
 
 
+def _unique_name(base: str, taken: list[str]) -> str:
+    """`base`, or `base (2)`, `base (3)`… — the first one no other item uses (case-insensitive)."""
+    keys = {name_key(t) for t in taken}
+    name, n = base, 2
+    while name_key(name) in keys:
+        suffix = f" ({n})"
+        name, n = base[: MAX_NAME - len(suffix)].rstrip() + suffix, n + 1
+    return name
+
+
 def _default_name(user: User, started: datetime, taken: list[str]) -> str:
     local = started.astimezone(ZoneInfo(user.timezone))
-    base = f"Recording {local.strftime('%H:%M')}"
-    keys = {t.casefold() for t in taken}
-    name, n = base, 2
-    while name.casefold() in keys:
-        name, n = f"{base} ({n})", n + 1
-    return name
+    return _unique_name(f"Recording {local.strftime('%H:%M')}", taken)
 
 
 def start_recording(
@@ -284,7 +301,7 @@ def rename_recording(
             )
         )
     )
-    new_file = unique_sibling(safe_name(name) + EXT[r.mime_type], files)
+    new_file = unique_sibling(safe_name(name) + _ext(r), files)
     if new_file != r.file_name:
         on_rollback(db, storage.rename_file(parts, [*parts[:-1], new_file]))
         r.file_name = new_file
@@ -317,3 +334,92 @@ def delete_recording(
     db.delete(r)
     db.flush()
     storage.delete_content_file(parts)
+
+
+# ---- import (feature 006) -----------------------------------------------------------------
+
+_session_locks: dict[str, threading.Lock] = {}
+_session_locks_guard = threading.Lock()
+
+
+@contextmanager
+def session_import_lock(user_id: str, session_key: str) -> Iterator[None]:
+    """Serialize imports into one session from creating its folder and choosing a name until
+    the row is committed: two concurrent uploads must neither both create the session folder
+    nor pick the same "Name (2)" (006 research I6). In-process only: the backend runs as a
+    single process."""
+    with _session_locks_guard:
+        lock = _session_locks.setdefault(f"{user_id}:{session_key}", threading.Lock())
+    with lock:
+        yield
+
+
+def _import_name(original_file_name: str) -> str:
+    stem = original_file_name[: original_file_name.rfind(".")]  # callers checked the extension
+    return normalize_display(stem)[:MAX_NAME].strip() or "Imported audio"
+
+
+def import_audio(
+    db: Session,
+    storage: StorageService,
+    user: User,
+    key: str,
+    staged: Path,
+    original_file_name: str,
+    client_duration_ms: int | None,
+) -> dict[str, Any]:
+    """Turn a fully received staging file into an imported Recording (FR-007–FR-010).
+
+    The file is checked first; it is moved into the session's audios/ folder only under a
+    name and file name no other item or on-disk file uses, and the move is undone if the
+    transaction doesn't commit — so a failure leaves the session exactly as it was (FR-024)."""
+    mime = audio_probe.mime_for(original_file_name)
+    result = audio_probe.probe(staged, mime) if mime else None
+    if mime is None or result is None:
+        storage.discard_upload(staged)
+        raise ApiError(
+            422,
+            "unreadable_audio",
+            f"{original_file_name} couldn't be read as audio.",
+        )
+    ext = Path(original_file_name).suffix.lower()
+    size = staged.stat().st_size
+    with session_import_lock(user.id, key):
+        resolved = sfs.resolve(db, user, key)
+        folder = sfs.get_or_create_folder(db, storage, user, resolved)
+        names = list(
+            db.scalars(select(Recording.name).where(Recording.session_folder_id == folder.id))
+        )
+        name = _unique_name(_import_name(original_file_name), names)
+        files = list(
+            db.scalars(select(Recording.file_name).where(Recording.session_folder_id == folder.id))
+        )
+        file_name = unique_sibling(safe_name(name) + ext, files)
+        folder_parts = sfs.folder_parts(user, resolved, folder)
+        # never take the name of a file that is already on disk (copied in by hand)
+        while storage.absolute_path([*folder_parts, "audios", file_name]).exists():
+            files.append(file_name)
+            file_name = unique_sibling(safe_name(name) + ext, files)
+        parts = [*folder_parts, "audios", file_name]
+        on_rollback(db, storage.commit_upload(staged, parts))
+        r = Recording(
+            user_id=user.id,
+            session_folder_id=folder.id,
+            name=name,
+            name_key=name_key(name),
+            file_name=file_name,
+            file_key=file_name.casefold(),
+            mime_type=mime,
+            status="complete",
+            started_at=_now().isoformat(timespec="milliseconds"),
+            duration_ms=result.duration_ms or client_duration_ms or 0,
+            size=size,
+            next_seq=0,
+            origin="imported",
+            original_file_name=original_file_name[:255],
+        )
+        db.add(r)
+        db.flush()
+        db.commit()  # visible before the lock is released
+    log.info("imported audio %s into session folder %s", r.id, folder.id)
+    return view(db, storage, user, r)

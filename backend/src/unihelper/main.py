@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi.responses import FileResponse
@@ -34,6 +36,8 @@ from unihelper.db.migrate import upgrade_to_head
 from unihelper.services.login_throttle import LoginThrottle
 from unihelper.storage.storage_service import StorageService
 from unihelper.transcription.worker import TranscriptionWorker
+
+log = logging.getLogger("unihelper")
 
 API_PREFIX = "/api/v1"
 
@@ -71,6 +75,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             # always upgrade: a no-op when the schema is already at head
             upgrade_to_head(app.state.engine)
             settings.files_root.mkdir(parents=True, exist_ok=True)
+            try:  # staging files left by an import interrupted by a restart (006)
+                app.state.storage.sweep_uploads(timedelta(hours=1))
+            except OSError:
+                log.exception("could not clean up the import staging folder")
             worker: TranscriptionWorker = app.state.transcription_worker
             if settings.transcription_autorun:
                 await worker.start()

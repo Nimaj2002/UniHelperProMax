@@ -144,3 +144,15 @@ describe("Player", () => {
     await waitFor(() => expect(patches()).toContainEqual({ playerVolume: 0.55, playerMuted: false }));
   });
 });
+
+describe("playbackError (006)", () => {
+  it("names the format when the browser can't decode an imported file", async () => {
+    const { playbackError } = await import("@/features/recordings/Player");
+    const imported = { ...recording, origin: "imported", fileName: "Lecture.flac", originalFileName: "Lecture.flac" } as Recording;
+    const unsupported = { code: 4 } as MediaError;
+    expect(playbackError(imported, unsupported)).toBe("This browser can't play FLAC files. Try another browser, or transcribe it.");
+    expect(playbackError(imported, { code: 2 } as MediaError)).toBe("This recording can't be played.");
+    expect(playbackError({ ...recording, origin: "recorded" } as Recording, unsupported)).toBe("This recording can't be played.");
+    expect(playbackError({ ...imported, missing: true }, unsupported)).toBe("The audio file is missing from the session folder.");
+  });
+});

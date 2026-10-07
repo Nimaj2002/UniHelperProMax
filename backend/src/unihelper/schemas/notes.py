@@ -32,6 +32,10 @@ class NoteCreate(ApiModel):
     content: str = Field(default="", max_length=MAX_CONTENT)
 
 
+class NoteImportReplace(ApiModel):
+    content: str = Field(max_length=MAX_CONTENT)
+
+
 class NoteRename(ApiModel):
     name: str = Field(min_length=1, max_length=120)
 

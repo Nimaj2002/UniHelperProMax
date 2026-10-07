@@ -50,6 +50,15 @@ export function onServerAppend(listener: AppendListener): () => void {
   return () => appendListeners.delete(listener);
 }
 
+type ReplaceListener = (noteId: string, content: string) => void;
+const replaceListeners = new Set<ReplaceListener>();
+
+/** The editor subscribes to swap in content replaced by an import (006). */
+export function onServerReplace(listener: ReplaceListener): () => void {
+  replaceListeners.add(listener);
+  return () => replaceListeners.delete(listener);
+}
+
 /** How long a save conflict that looks like "something was appended" waits for a known append. */
 export const APPEND_WAIT_MS = 4000;
 /** Returns true when a server append to this note may be about to be reported (and should be
@@ -345,6 +354,24 @@ export class NoteSaver {
     this.content = draft;
     this.conflict = { kind: "version", current };
     this.set("conflict");
+  }
+
+  /**
+   * The server replaced this note's content with an imported file (006 FR-020). Only allowed
+   * when nothing is unsaved here — the importer refuses Replace otherwise — so no typed text is
+   * dropped. Open editors show the new content through `onServerReplace`.
+   */
+  adoptServerReplace(next: { content: string; hash: string; version: number }): boolean {
+    if (this.status !== "saved" || this.inFlight) return false;
+    this.clearTimers();
+    this.version = next.version;
+    this.hash = next.hash;
+    this.content = this.savedContent = next.content;
+    this.firstDirtyAt = null;
+    clearDraft(this.noteId);
+    this.set("saved");
+    replaceListeners.forEach((l) => l(this.noteId, next.content));
+    return true;
   }
 
   /** After "Keep both" saved this text as a new note: adopt the other version here. */

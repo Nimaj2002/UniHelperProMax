@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { NoteSaver, readDraft, type SaveFn } from "@/features/sessions/autosave";
+import { NoteSaver, onServerReplace, readDraft, type SaveFn } from "@/features/sessions/autosave";
 import { ApiError } from "@/lib/api";
 
 function saverWith(save: SaveFn) {
@@ -159,5 +159,27 @@ describe("NoteSaver", () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(save).not.toHaveBeenCalled();
     expect(s.status).toBe("saved");
+  });
+});
+
+describe("adoptServerReplace (006)", () => {
+  it("takes the imported content when nothing is unsaved and tells the editor", () => {
+    const s = saverWith(ok());
+    const seen: [string, string][] = [];
+    const off = onServerReplace((id, text) => seen.push([id, text]));
+    expect(s.adoptServerReplace({ content: "imported", hash: "h9", version: 9 })).toBe(true);
+    expect([s.status, s.content, s.version, s.hash]).toEqual(["saved", "imported", 9, "h9"]);
+    expect(seen).toEqual([["n1", "imported"]]);
+    s.update("imported"); // the editor echoing the new document is not an edit
+    expect(s.status).toBe("saved");
+    off();
+  });
+
+  it("refuses while typed text is unsaved, keeping it", async () => {
+    const s = saverWith(ok());
+    s.update("typed");
+    expect(s.adoptServerReplace({ content: "imported", hash: "h9", version: 9 })).toBe(false);
+    expect([s.status, s.content, s.version]).toEqual(["dirty", "typed", 1]);
+    expect(readDraft("n1")?.content).toBe("typed");
   });
 });

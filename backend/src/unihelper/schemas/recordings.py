@@ -6,13 +6,17 @@ from pydantic import Field
 
 from unihelper.schemas.common import ApiModel
 
+MimeType = Literal[
+    "audio/webm", "audio/mp4", "audio/mpeg", "audio/wav", "audio/ogg", "audio/flac", "audio/aac"
+]
+
 
 class Recording(ApiModel):
     id: str
     session_key: str
     name: str
     file_name: str
-    mime_type: str
+    mime_type: MimeType
     status: Literal["recording", "complete", "interrupted"]
     started_at: str
     duration_ms: int
@@ -21,6 +25,8 @@ class Recording(ApiModel):
     active: bool
     missing: bool
     version: int
+    origin: Literal["recorded", "imported"]
+    original_file_name: str | None
 
 
 class RecordingStart(ApiModel):

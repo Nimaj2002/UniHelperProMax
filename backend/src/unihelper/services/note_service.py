@@ -7,6 +7,7 @@ is never silently overwritten (FR-020).
 
 from __future__ import annotations
 
+import logging
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -23,6 +24,7 @@ from unihelper.models.base import now_iso
 from unihelper.services import session_folder_service as sfs
 from unihelper.storage.storage_service import StorageService
 
+log = logging.getLogger("unihelper.notes")
 MISSING = ""  # hash reported for a note whose file was deleted outside the app
 
 _note_locks: dict[str, threading.Lock] = {}
@@ -102,10 +104,21 @@ def list_notes(db: Session, user: User, key: str) -> list[dict[str, Any]]:
 # ---- create / read / save --------------------------------------------------------------
 
 
+def _check_text(content: str) -> None:
+    """Notes are text: a NUL character means a binary file was imported (006 research I10)."""
+    if "\x00" in content:
+        raise validation_error(
+            "/content",
+            "content_not_text",
+            "This text contains characters that aren't allowed in a note.",
+        )
+
+
 def create_note(
     db: Session, storage: StorageService, user: User, key: str, name: str, content: str = ""
 ) -> dict[str, Any]:
     name = _clean_name(name)
+    _check_text(content)
     r = sfs.resolve(db, user, key)
     folder = sfs.get_or_create_folder(db, storage, user, r)
     if (
@@ -124,6 +137,8 @@ def create_note(
         file_name = _file_name(name, siblings)
         parts[-1] = file_name
     digest, size = storage.write_text_atomic(parts, content)
+    # a failed commit (e.g. a racing create with the same name) must not leave the file behind
+    on_rollback(db, lambda: storage.delete_content_file(parts))
     note = Note(
         user_id=user.id,
         session_folder_id=folder.id,
@@ -267,6 +282,58 @@ def append_to_note(
             "hash": new_hash,
             "version": note.version,
         }
+
+
+# ---- replace by import (006 US5) ---------------------------------------------------------
+
+
+def import_replace(
+    db: Session, storage: StorageService, user: User, note_id: str, version: int, content: str
+) -> dict[str, Any]:
+    """Replace a note's whole content with an imported file's text, after the user confirmed
+    it (006 FR-020, research I11). Refused — leaving the note untouched — when the note changed
+    since the user saw it, a transcript is about to be appended to it, or its file was edited
+    outside the app. Holds the note's file lock like saves and appends (004-D1)."""
+    from unihelper.models import TranscriptionJob
+    from unihelper.models.transcription import ACTIVE_STATUSES
+
+    _check_text(content)
+    with note_file_lock(note_id):
+        note, folder, parts = _note_with_path(db, user, note_id)
+        db.refresh(note)
+        data = storage.read_bytes(parts)
+        if version != note.version:
+            raise _conflict(
+                412,
+                "version_conflict",
+                "This note changed since you chose Replace. Nothing was replaced.",
+                note,
+                None if data is None else _decode(data),
+            )
+        busy = db.scalar(
+            select(TranscriptionJob.id).where(
+                TranscriptionJob.note_id == note.id,
+                TranscriptionJob.status.in_(ACTIVE_STATUSES),
+            )
+        )
+        if busy is not None:
+            raise ApiError(409, "note_transcribing", "A transcription is being added to this note.")
+        if data is not None and storage.hash_bytes(data) != note.content_hash:
+            raise _conflict(
+                409,
+                "file_changed_on_disk",
+                "This note was changed outside the app. Nothing was replaced.",
+                note,
+                _decode(data),
+            )
+        digest, size = storage.write_text_atomic(parts, content)  # recreates a missing file
+        note.content_hash = digest
+        note.size = size
+        note.updated_at = now_iso()
+        db.flush()  # bumps version
+        db.commit()  # visible before the lock is released (004-D1)
+        log.info("note %s replaced by import", note.id)
+        return {**meta(note, folder), "content": content, "hash": digest, "missing": False}
 
 
 # ---- rename / delete (US4) ----------------------------------------------------------------

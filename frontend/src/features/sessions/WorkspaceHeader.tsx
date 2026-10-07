@@ -11,7 +11,9 @@ interface Props {
   session: Session | undefined;
   leftOpen: boolean;
   rightOpen: boolean;
-  onToggleLeft: () => void;
+  /** Only on narrow screens, where it opens the drawer; on desktop the section collapses from
+   * its own header and Alt+[ still works. */
+  onToggleLeft?: () => void;
   onToggleRight: () => void;
 }
 
@@ -22,9 +24,11 @@ export function WorkspaceHeader({ courseId, session, leftOpen, rightOpen, onTogg
   const upcoming = session ? statusAt(session.start, now) === "upcoming" : false;
   return (
     <header className="flex min-w-0 items-center gap-2 border-b border-divider px-2 py-2 sm:px-3">
-      <Button variant="ghost" size="icon" onClick={onToggleLeft} aria-pressed={leftOpen} aria-label={leftOpen ? "Hide sessions and notes" : "Show sessions and notes"} aria-keyshortcuts="Alt+[">
-        <SidebarSimple size={18} />
-      </Button>
+      {onToggleLeft && (
+        <Button variant="ghost" size="icon" onClick={onToggleLeft} aria-pressed={leftOpen} aria-label={leftOpen ? "Hide sessions and notes" : "Show sessions and notes"} aria-keyshortcuts="Alt+[">
+          <SidebarSimple size={18} />
+        </Button>
+      )}
       <Link to={`/courses/${courseId}`} className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-foreground">
         <ArrowLeft size={14} aria-hidden />
         <span className="max-w-40 truncate">{session?.courseName ?? "Course"}</span>

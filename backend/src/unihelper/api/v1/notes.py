@@ -5,7 +5,15 @@ from typing import Any
 from fastapi import APIRouter, Response, status
 
 from unihelper.api.deps import CurrentUser, DbSession, IfMatch, Storage
-from unihelper.schemas.notes import ContentSave, Note, NoteCreate, NoteMeta, NoteRename, SaveResult
+from unihelper.schemas.notes import (
+    ContentSave,
+    Note,
+    NoteCreate,
+    NoteImportReplace,
+    NoteMeta,
+    NoteRename,
+    SaveResult,
+)
 from unihelper.services import note_service
 
 router = APIRouter(tags=["notes"])
@@ -42,6 +50,19 @@ def save_content(
     return note_service.save_content(
         db, storage, user, note_id, version, body.base_hash, body.content
     )
+
+
+@router.put("/notes/{note_id}/import-replace", response_model=Note)
+def import_replace(
+    note_id: str,
+    body: NoteImportReplace,
+    version: IfMatch,
+    user: CurrentUser,
+    db: DbSession,
+    storage: Storage,
+) -> Any:
+    """Replace a note's content with an imported file's text (006 FR-020, user-confirmed)."""
+    return note_service.import_replace(db, storage, user, note_id, version, body.content)
 
 
 @router.patch("/notes/{note_id}", response_model=NoteMeta)

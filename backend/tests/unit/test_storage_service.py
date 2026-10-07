@@ -116,3 +116,92 @@ def test_delete_content_file_allows_recordings_only_in_audios(tmp_path: Path) ->
         s.delete_content_file(["u", "c", "d", "notes", "x.webm"])
     s.delete_content_file(["u", "c", "d", "audios", "r.webm"])
     assert not (tmp_path / "u/c/d/audios/r.webm").exists()
+
+
+# ---- import staging (006 T009) ------------------------------------------------------------
+
+
+def test_delete_content_file_accepts_imported_audio_extensions(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    for ext in (".mp3", ".m4a", ".aac", ".wav", ".ogg", ".oga", ".opus", ".flac", ".webm"):
+        s.write_text_atomic(["u", "c", "d", "audios", f"a{ext}"], "x")
+        s.delete_content_file(["u", "c", "d", "audios", f"a{ext}"])
+        assert not (tmp_path / "u/c/d/audios" / f"a{ext}").exists()
+    s.write_text_atomic(["u", "c", "d", "audios", "x.txt"], "x")
+    with pytest.raises(StoragePathError):
+        s.delete_content_file(["u", "c", "d", "audios", "x.txt"])
+
+
+def test_open_upload_stages_outside_user_folders(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    path, fh = s.open_upload()
+    with fh:
+        fh.write(b"abc")
+    assert path.parent == (tmp_path / ".uploads").resolve()
+    assert path.suffix == ".part"
+    assert path.read_bytes() == b"abc"
+
+
+def test_discard_upload_only_touches_staging_parts(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    path, fh = s.open_upload()
+    fh.close()
+    s.discard_upload(path)
+    assert not path.exists()
+    s.discard_upload(path)  # already gone: fine
+
+    s.write_text_atomic(["u", "c", "d", "audios", "a.part"], "keep")
+    with pytest.raises(StoragePathError):
+        s.discard_upload(tmp_path / "u/c/d/audios/a.part")
+    (tmp_path / ".uploads" / "other.txt").write_text("keep")
+    with pytest.raises(StoragePathError):
+        s.discard_upload(tmp_path / ".uploads" / "other.txt")
+    assert (tmp_path / "u/c/d/audios/a.part").read_text() == "keep"
+
+
+def test_commit_upload_moves_atomically_and_undo_removes_it(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    path, fh = s.open_upload()
+    with fh:
+        fh.write(b"audio")
+    target = ["u", "c", "d", "audios", "Lecture.mp3"]
+    undo = s.commit_upload(path, target)
+    assert not path.exists()
+    assert (tmp_path / "u/c/d/audios/Lecture.mp3").read_bytes() == b"audio"
+    undo()
+    assert not (tmp_path / "u/c/d/audios/Lecture.mp3").exists()
+    assert list((tmp_path / ".uploads").iterdir()) == []
+
+
+def test_commit_upload_never_replaces_an_existing_file(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    s.write_text_atomic(["u", "c", "d", "audios", "Lecture.mp3"], "theirs")
+    path, fh = s.open_upload()
+    with fh:
+        fh.write(b"mine")
+    with pytest.raises(FileExistsError):
+        s.commit_upload(path, ["u", "c", "d", "audios", "Lecture.mp3"])
+    assert (tmp_path / "u/c/d/audios/Lecture.mp3").read_text() == "theirs"
+    assert path.exists()  # still staged; the caller discards it
+
+
+def test_sweep_uploads_deletes_only_stale_parts(tmp_path: Path) -> None:
+    import os
+    import time
+    from datetime import timedelta
+
+    s = StorageService(tmp_path)
+    old, fh = s.open_upload()
+    fh.close()
+    new, fh = s.open_upload()
+    fh.close()
+    hours_ago = time.time() - 2 * 3600
+    os.utime(old, (hours_ago, hours_ago))
+    (tmp_path / ".uploads" / "notes.txt").write_text("x")
+    os.utime(tmp_path / ".uploads" / "notes.txt", (hours_ago, hours_ago))
+
+    assert s.sweep_uploads(timedelta(hours=1)) == 1
+    assert not old.exists()
+    assert new.exists()
+    assert (tmp_path / ".uploads" / "notes.txt").exists()
+    assert StorageService(tmp_path / "fresh").sweep_uploads(timedelta(hours=1)) == 0

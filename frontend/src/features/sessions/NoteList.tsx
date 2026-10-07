@@ -1,4 +1,4 @@
-import { DotsThree, Plus } from "@phosphor-icons/react";
+import { DotsThree, Plus, UploadSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -12,21 +12,31 @@ interface Props {
   activeId: string | null;
   loading: boolean;
   onNew: () => void;
+  /** 006: pick .md/.txt files to import as notes */
+  onImport?: () => void;
+  importing?: boolean;
   onOpen: (id: string) => void;
   onRename: (note: NoteMeta) => void;
   onDelete: (note: NoteMeta) => void;
 }
 
 /** The session's notes in creation order (FR-016); open notes are marked. */
-export function NoteList({ notes, openIds, activeId, loading, onNew, onOpen, onRename, onDelete }: Props) {
+export function NoteList({ notes, openIds, activeId, loading, onNew, onImport, importing, onOpen, onRename, onDelete }: Props) {
   return (
     <section aria-labelledby="notes-heading" className="grid gap-2">
       <div className="flex items-center justify-between px-2">
         <h2 id="notes-heading" className="text-xs font-semibold text-muted-foreground">Notes</h2>
       </div>
-      <Button size="sm" variant="outline" className="mx-2 justify-start" onClick={onNew} aria-keyshortcuts="Alt+N">
-        <Plus size={14} aria-hidden /> New note
-      </Button>
+      <div className="mx-2 grid grid-cols-2 gap-2">
+        <Button size="sm" variant="outline" className="justify-start" onClick={onNew} aria-keyshortcuts="Alt+N">
+          <Plus size={14} aria-hidden /> New note
+        </Button>
+        {onImport && (
+          <Button size="sm" variant="outline" className="justify-start" onClick={onImport} disabled={importing} aria-keyshortcuts="Alt+Shift+N">
+            <UploadSimple size={14} aria-hidden /> Import note
+          </Button>
+        )}
+      </div>
       {loading && <p className="px-2 text-sm text-muted-foreground">Loading…</p>}
       {!loading && notes.length === 0 && <p className="px-2 text-sm text-muted-foreground">No notes yet.</p>}
       <ul className="grid gap-0.5">

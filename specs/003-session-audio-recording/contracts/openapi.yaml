@@ -185,21 +185,28 @@ components:
 
     Recording:
       type: object
-      required: [id, sessionKey, name, fileName, mimeType, status, startedAt, durationMs, size, nextSeq, active, missing, version]
+      description: |
+        006 added `origin`, `originalFileName` and the import mime types (imported audio is a
+        Recording row too); keep identical to the Recording schema in specs/006-session-file-import.
+      required: [id, sessionKey, name, fileName, mimeType, status, startedAt, durationMs, size, nextSeq, active, missing, version, origin, originalFileName]
       properties:
         id: { type: string }
         sessionKey: { type: string }
         name: { type: string }
         fileName: { type: string }
-        mimeType: { type: string }
+        mimeType:
+          type: string
+          enum: [audio/webm, audio/mp4, audio/mpeg, audio/wav, audio/ogg, audio/flac, audio/aac]
         status: { type: string, enum: [recording, complete, interrupted] }
-        startedAt: { type: string }
+        startedAt: { type: string, description: capture start (recorded) or import time (imported) }
         durationMs: { type: integer, minimum: 0 }
         size: { type: integer, minimum: 0 }
         nextSeq: { type: integer, minimum: 0 }
         active: { type: boolean, description: in progress and received data within the last 30 s }
         missing: { type: boolean, description: audio file not found on disk }
         version: { type: integer }
+        origin: { type: string, enum: [recorded, imported] }
+        originalFileName: { type: [string, "null"] }
 
     ChunkResult:
       type: object

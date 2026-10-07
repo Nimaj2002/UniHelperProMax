@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from tests.conftest import assert_problem
 from tests.contract.openapi_check import check
-from tests.contract.recording_helpers import API, make_session, start, stop, upload_all
+from tests.contract.recording_helpers import API, make_session, put_chunk, start, stop, upload_all
 from tests.webm_fixture import chunks, make_webm
 
 pytestmark = pytest.mark.contract
@@ -108,3 +108,53 @@ def test_delete(owner_client: TestClient, tmp_data_dir: Path) -> None:
     # a recording whose file vanished can still be removed
     (tmp_data_dir / AUDIOS / b["fileName"]).unlink()
     assert c.delete(f"{API}/recordings/{b['id']}", headers=im(b["version"])).status_code == 204
+
+
+# ---- imported audio is managed like recordings (006 US3, T029) ----------------------------
+
+
+def test_imported_audio_rename_keeps_its_format_and_delete_removes_it(
+    owner_client: TestClient, tmp_data_dir: Path
+) -> None:
+    from tests import audio_fixtures as fx
+    from tests.contract.import_helpers import audios_dir, import_audio
+
+    c = owner_client
+    key = make_session(c)
+    rec = import_audio(c, key, "VID_20261005_0932.mp3", fx.mp3_cbr(3000)).json()
+    renamed = c.patch(
+        f"{API}/recordings/{rec['id']}",
+        json={"name": "Week 3 — Graphs"},
+        headers={"If-Match": f'"{rec["version"]}"'},
+    )
+    assert renamed.status_code == 200, renamed.text
+    body = renamed.json()
+    assert body["fileName"] == "Week 3 — Graphs.mp3" and body["origin"] == "imported"
+    assert (audios_dir(tmp_data_dir) / "Week 3 — Graphs.mp3").read_bytes() == fx.mp3_cbr(3000)
+    assert not (audios_dir(tmp_data_dir) / "VID_20261005_0932.mp3").exists()
+
+    gone = c.delete(f"{API}/recordings/{rec['id']}", headers={"If-Match": f'"{body["version"]}"'})
+    assert gone.status_code == 204
+    assert list(audios_dir(tmp_data_dir).iterdir()) == []
+
+
+def test_imported_audio_takes_no_chunks_and_is_not_deleted_while_transcribing(
+    app: Any, owner_client: TestClient
+) -> None:
+    from tests import audio_fixtures as fx
+    from tests.contract.import_helpers import import_audio
+    from tests.contract.transcription_helpers import configure, transcribe
+
+    c = owner_client
+    configure(app)
+    key = make_session(c)
+    rec = import_audio(c, key, "lecture.wav", fx.wav(2000)).json()
+    assert_problem(put_chunk(c, rec["id"], 0, b"more"), 409, "recording_finished")
+
+    started = transcribe(c, rec["id"], newNoteName="Transcript")
+    assert started.status_code == 202, started.text
+    assert_problem(
+        c.delete(f"{API}/recordings/{rec['id']}", headers={"If-Match": f'"{rec["version"]}"'}),
+        409,
+        "recording_transcribing",
+    )

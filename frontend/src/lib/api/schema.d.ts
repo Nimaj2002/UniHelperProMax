@@ -511,6 +511,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notes/{note_id}/import-replace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Import Replace
+         * @description Replace a note's content with an imported file's text (006 FR-020, user-confirmed).
+         */
+        put: operations["import_replace_api_v1_notes__note_id__import_replace_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/courses/{course_id}/timeline": {
         parameters: {
             query?: never;
@@ -663,6 +683,27 @@ export interface paths {
         get: operations["get_audio_api_v1_recordings__recording_id__audio_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{session_key}/recordings/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Recording
+         * @description Stream one audio file into staging, check it, then move it into the session (FR-001–
+         *     FR-010). Everything that can be refused is refused before the body is read (SC-002).
+         */
+        post: operations["import_recording_api_v1_sessions__session_key__recordings_import_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1243,6 +1284,11 @@ export interface components {
              */
             content: string;
         };
+        /** NoteImportReplace */
+        NoteImportReplace: {
+            /** Content */
+            content: string;
+        };
         /** NoteMeta */
         NoteMeta: {
             /** Id */
@@ -1366,8 +1412,11 @@ export interface components {
             name: string;
             /** Filename */
             fileName: string;
-            /** Mimetype */
-            mimeType: string;
+            /**
+             * Mimetype
+             * @enum {string}
+             */
+            mimeType: "audio/webm" | "audio/mp4" | "audio/mpeg" | "audio/wav" | "audio/ogg" | "audio/flac" | "audio/aac";
             /**
              * Status
              * @enum {string}
@@ -1387,6 +1436,13 @@ export interface components {
             missing: boolean;
             /** Version */
             version: number;
+            /**
+             * Origin
+             * @enum {string}
+             */
+            origin: "recorded" | "imported";
+            /** Originalfilename */
+            originalFileName: string | null;
         };
         /** RecordingRename */
         RecordingRename: {
@@ -3250,6 +3306,43 @@ export interface operations {
             };
         };
     };
+    import_replace_api_v1_notes__note_id__import_replace_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteImportReplace"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     course_timeline_api_v1_courses__course_id__timeline_get: {
         parameters: {
             query?: never;
@@ -3669,6 +3762,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_recording_api_v1_sessions__session_key__recordings_import_post: {
+        parameters: {
+            query: {
+                fileName: string;
+                durationMs?: number | null;
+            };
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Recording"];
+                };
             };
             /** @description Validation Error */
             422: {

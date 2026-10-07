@@ -83,16 +83,34 @@ changed. If the note is open, the text appears there without reloading and your 
 
 Folder names follow the names you type (made safe for Windows/macOS/Linux) and are renamed when
 you rename things in the app. Deleting a year, semester, course, class, or account **never**
-deletes files; the only files the app ever removes are a note's `.md` or a recording's audio
-file, when you delete that note or recording and confirm. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
+deletes files; the only files the app ever removes are a note's `.md` or a recording's (or imported
+audio's) file, when you delete that note or recording and confirm — and its own upload staging
+files in `files/.uploads/`. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
 
 Back up by copying the whole data folder while the app is stopped.
+
+## Importing audio and notes
+
+- **Upload audio** (next to Record, or drop files on the audio panel): MP3, M4A, AAC, WAV, OGG,
+  Opus, WebM or FLAC, up to 1 GB each. Other types and bigger files are refused before anything is
+  sent. The file is stored **unchanged** in the session's `audios/` folder, named after the file
+  (`Lecture.mp3`, or `Lecture (2).mp3` if that name is taken — existing items are never renamed or
+  replaced). It is listed with an "Imported" label and plays, renames, deletes and transcribes like
+  a recording. While uploading, a file is kept in `data/files/.uploads/` (outside your folders) and
+  only moved into the session once it has fully arrived and been checked, so a cancelled or failed
+  upload leaves nothing behind; leftovers from a server restart are removed on the next start.
+- **Import note** (`Alt+Shift+N`): `.md` or `.txt` files up to 5 MB, in UTF-8. Each becomes a new
+  note named after the file, with exactly the file's text. If a note with that name exists you
+  choose **Rename**, **Replace** (asked to confirm again; refused while that note has unsaved
+  changes or a transcript is being added to it) or **Skip**. Imported text is never merged into an
+  existing note.
 
 ## Notes workspace shortcuts
 
 | Keys | Action |
 |---|---|
 | `Alt+N` | New note |
+| `Alt+Shift+N` | Import note (`.md` / `.txt`) |
 | `Alt+W` / `Delete` on a tab | Close tab |
 | `Alt+PageDown` / `Alt+PageUp` | Next / previous tab |
 | `Alt+[` / `Alt+]` | Collapse/expand the sessions and notes section (under the courses) / show or hide the audio panel |

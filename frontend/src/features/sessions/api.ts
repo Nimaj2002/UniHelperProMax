@@ -35,6 +35,16 @@ export function saveNoteContent(id: string, content: string, version: number, ba
   });
 }
 
+/** Create a note from an imported file (006); errors such as 409 `name_taken` are the caller's. */
+export function createNote(sessionKey: string, name: string, content: string) {
+  return apiFetch<Note>(`/sessions/${enc(sessionKey)}/notes`, { method: "POST", body: { name, content } });
+}
+
+/** Replace a note's whole content with an imported file's text, after the user confirmed it (006). */
+export function importReplaceNote(noteId: string, version: number, content: string) {
+  return apiFetch<Note>(`/notes/${enc(noteId)}/import-replace`, { method: "PUT", body: { content }, version });
+}
+
 export function useCreateNote(sessionKey: string) {
   const qc = useQueryClient();
   return useMutation({

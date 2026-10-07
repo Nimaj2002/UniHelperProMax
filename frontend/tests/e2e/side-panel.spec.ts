@@ -67,12 +67,13 @@ test("Workspace notes and sessions sit under the courses: collapsible, resizable
   await panelEdge.dblclick();
   await expect(panelEdge).toHaveAttribute("aria-valuenow", "280");
 
-  // hiding the whole panel and bringing it back from the workspace toggle
-  await page.getByRole("button", { name: "Hide sessions and notes" }).click();
+  // no header toggle on desktop (the section collapses from its own header); Alt+[ still works
+  await expect(page.getByRole("button", { name: /^(Hide|Show) sessions and notes$/ })).toHaveCount(0);
+  await page.keyboard.press("Alt+[");
   await expect(header).toHaveAttribute("aria-expanded", "false");
   await page.keyboard.press("[");
   await expect(side).toBeHidden();
-  await page.getByRole("button", { name: "Show sessions and notes" }).click();
+  await page.keyboard.press("Alt+[");
   await expect(side).toBeVisible();
   await expect(header).toHaveAttribute("aria-expanded", "true");
   await shot("restored");

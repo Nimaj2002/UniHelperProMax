@@ -184,7 +184,7 @@ def _check_recording(db: Session, storage: StorageService, user: User, rec: Reco
     if rec.status == "recording":
         raise _conflict("recording_not_finished", "Stop the recording before transcribing it.")
     parts, _ = recs._parts(db, user, rec)
-    if storage.read_bytes(parts) is None:
+    if not storage.absolute_path(parts).is_file():  # don't read it: imports can be 1 GB
         raise _conflict("file_missing", "The audio file is missing from the session folder.")
 
 
@@ -343,15 +343,20 @@ def prepare(maker: Maker, storage: StorageService, job_id: str) -> Plan:
         rec = db.get(Recording, job.recording_id)
         assert user is not None and rec is not None
         parts_path, _ = recs._parts(db, user, rec)
+        spec = SPECS.get(job.provider_id)
+        if spec is None:
+            raise ProviderError("not_configured", settings_related=True)
+        limit = spec.max_upload_bytes
+        if rec.mime_type != "audio/webm" and limit:
+            # sent whole: refuse before reading — an import can be 1 GB (006 research I8)
+            path = storage.absolute_path(parts_path)
+            if path.exists() and path.stat().st_size > limit:
+                raise ProviderError("file_rejected", f"This recording is too long for {spec.name}.")
         data = storage.read_bytes(parts_path)
         if data is None:
             raise ProviderError(
                 "file_rejected", "The audio file is missing from the session folder."
             )
-        spec = SPECS.get(job.provider_id)
-        if spec is None:
-            raise ProviderError("not_configured", settings_related=True)
-        limit = spec.max_upload_bytes
         stem = rec.file_name.rsplit(".", 1)[0]
         ext = rec.file_name.rsplit(".", 1)[-1]
         if rec.mime_type == "audio/webm":
