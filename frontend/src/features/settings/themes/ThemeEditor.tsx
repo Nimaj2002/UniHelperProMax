@@ -18,6 +18,7 @@ import {
   BUILT_IN, contrastIssues, formatRatio, KEY_COLORS, KEY_LABELS, keyColorsOf, resolve, TOKEN_LABELS, TOKENS,
   type Base, type ColorSet, type KeyColors, type Token,
 } from "./colors";
+import { presetById } from "./presets";
 import { ThemePreview } from "./ThemePreview";
 
 interface Draft {
@@ -52,10 +53,13 @@ export function ThemeEditor() {
   else {
     const from = params.get("from") ?? "light";
     const source = list.find((t) => t.id === from);
-    const base: Base = source ? source.base : from === "dark" ? "dark" : "light";
+    const preset = presetById(from);
+    const base: Base = source ? source.base : preset ? preset.base : from === "dark" ? "dark" : "light";
     initial = source
       ? { ...fromTheme(source), name: params.get("name") ?? "" }
-      : { name: params.get("name") ?? "", base, keyColors: keyColorsOf(BUILT_IN[base]), overrides: {} };
+      : preset
+        ? { name: params.get("name") ?? "", base, keyColors: preset.keyColors, overrides: {} }
+        : { name: params.get("name") ?? "", base, keyColors: keyColorsOf(BUILT_IN[base]), overrides: {} };
   }
   return <Editor key={themeId ?? "new"} initial={initial} existing={editing} />;
 }

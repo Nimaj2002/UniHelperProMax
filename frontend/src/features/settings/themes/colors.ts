@@ -76,8 +76,8 @@ export function mix(a: string, b: string, t: number): string {
 }
 
 // the extremes for mixing; readable text on fills comes from the built-in tokens (below)
-const WHITE = rgbToHex([255, 255, 255]);
-const BLACK = rgbToHex([0, 0, 0]);
+export const WHITE = rgbToHex([255, 255, 255]);
+export const BLACK = rgbToHex([0, 0, 0]);
 
 /** Move `fg` toward black or white (away from the backgrounds) until it reaches `min` against
  * every background, or as close as it gets. */
@@ -131,13 +131,15 @@ export function derive(base: Base, key: KeyColors): ColorSet {
   const darkBg = luminance(bg) < 0.18;
   const surfaces = [bg, surf];
   const danger = ensureContrast(b.danger, surfaces, 4.5);
+  const sunken = darkBg ? mix(bg, BLACK, 0.3) : mix(bg, text, 0.04);
   return {
     surface: bg,
     "surface-elevated": surf,
-    "surface-sunken": darkBg ? mix(bg, BLACK, 0.3) : mix(bg, text, 0.04),
+    "surface-sunken": sunken,
     "surface-hover": mix(surf, text, 0.08),
     "text-primary": text,
-    "text-muted": ensureContrast(mix(text, bg, 0.35), surfaces, 4.5),
+    // muted text is also shown on sunken fills (e.g. a hovered toggle)
+    "text-muted": ensureContrast(mix(text, bg, 0.35), [...surfaces, sunken], 4.5),
     border: ensureContrast(mix(text, bg, 0.5), [bg], 3),
     divider: mix(bg, text, 0.12),
     "grid-line": mix(bg, text, 0.09),
@@ -175,6 +177,8 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
   pair("text-primary", "editor-surface"),
   pair("text-muted", "surface"),
   pair("text-muted", "surface-elevated"),
+  pair("text-muted", "surface-sunken"), // hovered toggles and menu items
+  pair("text-primary", "surface-hover"), // selected toggles (e.g. calendar Week/Day/Month)
   pair("accent", "surface"),
   pair("accent", "surface-elevated"),
   pair("accent-foreground", "accent"),

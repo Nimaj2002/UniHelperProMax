@@ -251,12 +251,20 @@ restored theme is identical; import a corrupt file and confirm a clear error.
 
 - **FR-014**: The app MUST include built-in "Light" and "Dark" themes that cannot be edited or
   deleted, plus a "Match system" option; the default for new users is "Match system".
+- **FR-014a** *(added 2026-10-08)*: The app MUST also include 18 built-in preset themes that
+  cannot be edited or deleted, shown in "Light themes" (GitHub Light, Catppuccin Latte, One Light,
+  Solarized Light, Rosé Pine Dawn, Nord Light, Gruvbox Light, Tokyo Night Light, Linear) and "Dark
+  themes" (Dracula, Tokyo Night, Catppuccin Mocha, Nord, Gruvbox Dark, One Dark Pro, Rosé Pine,
+  Night Owl, Midnight Blue). Each is defined by its published 4 key colours; where a palette does
+  not meet WCAG AA, its text/accent colour is darkened (light) or lightened (dark) just enough to
+  pass, so every built-in theme meets AA (Constitution V). Presets can be selected, duplicated
+  (as a custom theme), exported, and used as the starting point of a new theme.
 - **FR-015**: The selected theme MUST apply immediately and consistently to every screen,
   component, and dialog in the app. The choice is stored per account (not per device) and
   applied on every device and browser where the user signs in; there is no per-device
   override. "Match system" resolves to light or dark using each device's own system setting.
-- **FR-016**: Users MUST be able to create custom themes by name, starting from Light, Dark, or
-  another custom theme.
+- **FR-016**: Users MUST be able to create custom themes by name, starting from Light, Dark, a
+  preset theme (FR-014a), or another custom theme.
 - **FR-017**: The theme editor MUST open in a simple mode where the user sets 4 key colours
   (background, surface/card, text, accent) and every other colour is derived automatically,
   with derived text/background pairs chosen to meet WCAG AA where possible. An "Advanced"

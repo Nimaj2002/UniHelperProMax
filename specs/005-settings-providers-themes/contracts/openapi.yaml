@@ -4,7 +4,8 @@ info:
   version: 1.4.0
   description: |
     Additive to the 001–004 contracts. Changes to existing operations (additive): `/preferences`
-    gains `theme` (`system` | `light` | `dark` | a custom theme id; default `system`). No response
+    gains `theme` (`system` | `light` | `dark` | `preset:<slug>` for a built-in preset theme
+    (added 2026-10-08) | a custom theme id; default `system`). No response
     ever contains an API key — only `secret.configured` and `secret.last4` (Constitution IV).
 servers:
   - url: /api/v1

@@ -123,3 +123,26 @@ test("Settings → Appearance: choose, create, export/import and delete themes",
   const themes = await (await page.request.get("/api/v1/themes")).json();
   expect(themes.find((x: { name: string }) => x.name === name).colors).toEqual(exported.colors);
 });
+
+test("Settings → Appearance: built-in preset themes apply at once and after reload", async ({ page }) => {
+  await signIn(page);
+  await page.goto("/settings/appearance");
+  await expect(page.getByRole("region", { name: "Light themes" }).getByRole("radio")).toHaveCount(9);
+  await expect(page.getByRole("region", { name: "Dark themes" }).getByRole("radio")).toHaveCount(9);
+  await axeClean(page);
+
+  await page.getByRole("radio", { name: /^Dracula/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--surface"))).toBe("#282a36");
+  await page.reload(); // theme-boot.js + ThemeSync restore it from the account
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--surface"))).toBe("#282a36");
+  await axeClean(page);
+
+  // a palette nudged to AA: same background, deeper accent
+  await page.getByRole("radio", { name: /^Solarized Light/ }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--surface"))).toBe("#fdf6e3");
+  await expect.poll(() => page.evaluate(() => document.documentElement.style.getPropertyValue("--accent"))).not.toBe("#268bd2");
+  await page.goto("/calendar");
+  await axeClean(page);
+});

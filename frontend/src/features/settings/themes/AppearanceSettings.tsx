@@ -19,6 +19,7 @@ import { usePreferences, useUpdatePreferences } from "@/features/sessions/api";
 import { isApiError } from "@/lib/api";
 import { createTheme, deleteTheme, themesKey, updateTheme, useThemes, type Theme } from "../api";
 import { BUILT_IN, contrastIssues, keyColorsOf, type Base, type ColorSet } from "./colors";
+import { PRESETS, type Preset } from "./presets";
 import { fileName, parseFile, toFile, type ThemeData } from "./themeFile";
 
 interface Option {
@@ -27,6 +28,7 @@ interface Option {
   swatches: string[];
   theme?: Theme;
   builtIn?: Base;
+  preset?: Preset;
 }
 
 function swatchesOf(c: ColorSet) {
@@ -50,6 +52,14 @@ const builtInData = (base: Base): ThemeData => ({
   colors: BUILT_IN[base],
 });
 
+const presetData = (p: Preset): ThemeData => ({
+  name: p.name,
+  base: p.base,
+  keyColors: p.keyColors,
+  overrides: {},
+  colors: p.colors,
+});
+
 const themeData = (t: Theme): ThemeData => ({
   name: t.name,
   base: t.base,
@@ -71,12 +81,21 @@ export function AppearanceSettings() {
 
   const active = prefs.data?.theme ?? "system";
   const custom = themes.data ?? [];
-  const options: Option[] = [
-    { id: "light", name: "Light", swatches: swatchesOf(BUILT_IN.light), builtIn: "light" },
-    { id: "dark", name: "Dark", swatches: swatchesOf(BUILT_IN.dark), builtIn: "dark" },
-    { id: "system", name: "Match system", swatches: [BUILT_IN.light.surface, BUILT_IN.light.accent, BUILT_IN.dark.surface, BUILT_IN.dark.accent] },
-    ...custom.map((t) => ({ id: t.id, name: t.name, swatches: swatchesOf(t.colors as ColorSet), theme: t })),
+  const presetOption = (p: Preset): Option => ({ id: p.id, name: p.name, swatches: swatchesOf(p.colors), preset: p });
+  const groups: { title: string; options: Option[] }[] = [
+    {
+      title: "Basic",
+      options: [
+        { id: "light", name: "Light", swatches: swatchesOf(BUILT_IN.light), builtIn: "light" },
+        { id: "dark", name: "Dark", swatches: swatchesOf(BUILT_IN.dark), builtIn: "dark" },
+        { id: "system", name: "Match system", swatches: [BUILT_IN.light.surface, BUILT_IN.light.accent, BUILT_IN.dark.surface, BUILT_IN.dark.accent] },
+      ],
+    },
+    { title: "Light themes", options: PRESETS.filter((p) => p.base === "light").map(presetOption) },
+    { title: "Dark themes", options: PRESETS.filter((p) => p.base === "dark").map(presetOption) },
+    { title: "Your themes", options: custom.map((t) => ({ id: t.id, name: t.name, swatches: swatchesOf(t.colors as ColorSet), theme: t })) },
   ];
+  const sourceData = (o: Option): ThemeData => (o.theme ? themeData(o.theme) : o.preset ? presetData(o.preset) : builtInData(o.builtIn!));
 
   const refresh = () => qc.invalidateQueries({ queryKey: themesKey });
 
@@ -140,54 +159,56 @@ export function AppearanceSettings() {
       </header>
       {importError && <p role="alert" className="text-sm text-danger">{importError}</p>}
 
-      <RadioGroup
-        value={active}
-        onValueChange={(v) => updatePrefs.mutate({ theme: v })}
-        aria-label="Theme"
-        className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
-      >
-        {options.map((o) => (
-          <div key={o.id} className="flex items-start gap-2 rounded-lg border border-divider bg-surface-elevated p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary">
-            <RadioGroupItem value={o.id} id={`theme-${o.id}`} className="mt-1" />
-            <Label htmlFor={`theme-${o.id}`} className="grid min-w-0 flex-1 cursor-pointer gap-2 font-normal">
-              <span className="flex min-w-0 items-center gap-2">
-                <span className="min-w-0 truncate font-medium" title={o.name}>{o.name}</span>
-                {active === o.id && <Badge variant="outline">Active</Badge>}
-                {o.theme?.lowContrast && <Badge variant="outline">Low contrast</Badge>}
-              </span>
-              <span className="flex gap-1" aria-hidden>
-                {o.swatches.map((c, i) => (
-                  <span key={i} className="size-5 rounded border border-divider" style={{ backgroundColor: c }} />
-                ))}
-              </span>
-            </Label>
-            {o.id !== "system" && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="size-7" aria-label={`Actions for ${o.name}`}>
-                    <DotsThree size={18} weight="bold" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {o.theme && (
-                    <>
-                      <DropdownMenuItem onSelect={() => navigate(`/settings/appearance/themes/${o.theme!.id}`)}>Edit</DropdownMenuItem>
-                      <DropdownMenuItem onSelect={() => setDialog({ kind: "rename", theme: o.theme! })}>Rename…</DropdownMenuItem>
-                    </>
+      <RadioGroup value={active} onValueChange={(v) => updatePrefs.mutate({ theme: v })} aria-label="Theme" className="grid gap-6">
+        {groups.filter((g) => g.options.length > 0).map((g) => (
+          <section key={g.title} aria-label={g.title} className="grid gap-2">
+            <h3 className="text-sm font-semibold text-muted-foreground">{g.title}</h3>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {g.options.map((o) => (
+                <div key={o.id} className="flex items-start gap-2 rounded-lg border border-divider bg-surface-elevated p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary">
+                  <RadioGroupItem value={o.id} id={`theme-${o.id}`} className="mt-1" />
+                  <Label htmlFor={`theme-${o.id}`} className="grid min-w-0 flex-1 cursor-pointer gap-2 font-normal">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="min-w-0 truncate font-medium" title={o.name}>{o.name}</span>
+                      {active === o.id && <Badge variant="outline">Active</Badge>}
+                      {o.theme?.lowContrast && <Badge variant="outline">Low contrast</Badge>}
+                    </span>
+                    <span className="flex gap-1" aria-hidden>
+                      {o.swatches.map((c, i) => (
+                        <span key={i} className="size-5 rounded border border-divider" style={{ backgroundColor: c }} />
+                      ))}
+                    </span>
+                  </Label>
+                  {o.id !== "system" && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-7" aria-label={`Actions for ${o.name}`}>
+                          <DotsThree size={18} weight="bold" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {o.theme && (
+                          <>
+                            <DropdownMenuItem onSelect={() => navigate(`/settings/appearance/themes/${o.theme!.id}`)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setDialog({ kind: "rename", theme: o.theme! })}>Rename…</DropdownMenuItem>
+                          </>
+                        )}
+                        <DropdownMenuItem onSelect={() => void duplicate(sourceData(o))}>Duplicate</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => download(sourceData(o))}>
+                          <DownloadSimple size={14} aria-hidden /> Export
+                        </DropdownMenuItem>
+                        {o.theme && (
+                          <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => setDialog({ kind: "delete", theme: o.theme! })}>
+                            Delete…
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                  <DropdownMenuItem onSelect={() => void duplicate(o.theme ? themeData(o.theme) : builtInData(o.builtIn!))}>Duplicate</DropdownMenuItem>
-                  <DropdownMenuItem onSelect={() => download(o.theme ? themeData(o.theme) : builtInData(o.builtIn!))}>
-                    <DownloadSimple size={14} aria-hidden /> Export
-                  </DropdownMenuItem>
-                  {o.theme && (
-                    <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => setDialog({ kind: "delete", theme: o.theme! })}>
-                      Delete…
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
+                </div>
+              ))}
+            </div>
+          </section>
         ))}
       </RadioGroup>
 
@@ -266,6 +287,7 @@ function NewThemeDialog({ themes, onClose, onCreate }: { themes: Theme[]; onClos
               <SelectContent>
                 <SelectItem value="light">Light</SelectItem>
                 <SelectItem value="dark">Dark</SelectItem>
+                {PRESETS.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
                 {themes.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
               </SelectContent>
             </Select>

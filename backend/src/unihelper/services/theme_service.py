@@ -18,6 +18,9 @@ from unihelper.schemas.themes import KEY_COLORS, TOKENS, ThemeCreate, ThemeWrite
 
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 BUILT_IN = ("system", "light", "dark")
+# built-in preset palettes are defined in the frontend (features/settings/themes/presets.ts);
+# the browser falls back to "system" for an id it doesn't know
+PRESET = re.compile(r"^preset:[a-z0-9]+(-[a-z0-9]+)*$")
 
 
 def view(t: Theme) -> dict[str, Any]:
@@ -137,7 +140,7 @@ def delete_theme(db: Session, user: User, theme_id: str, version: int) -> None:
 
 
 def valid_theme_choice(db: Session, user: User, choice: str) -> bool:
-    if choice in BUILT_IN:
+    if choice in BUILT_IN or PRESET.match(choice):
         return True
     t = db.get(Theme, choice)
     return t is not None and t.user_id == user.id

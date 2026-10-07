@@ -150,8 +150,13 @@ For trying transcription without a real provider, run the predictable fake trans
 
 ## Themes
 
-**Settings → Appearance** offers Light, Dark, Match system and your own themes. A new theme
-starts from Light, Dark or another theme of yours; set 4 key colours (background, surface, text,
+**Settings → Appearance** offers Light, Dark, Match system, 18 built-in themes based on popular
+editor palettes (9 light: GitHub Light, Catppuccin Latte, One Light, Solarized Light, Rosé Pine
+Dawn, Nord Light, Gruvbox Light, Tokyo Night Light, Linear; 9 dark: Dracula, Tokyo Night,
+Catppuccin Mocha, Nord, Gruvbox Dark, One Dark Pro, Rosé Pine, Night Owl, Midnight Blue) and your
+own themes. Built-in themes all meet WCAG AA, so a few palettes use a slightly deeper text or
+accent shade than the original. A new theme starts from Light, Dark, a built-in theme or another
+theme of yours; set 4 key colours (background, surface, text,
 accent) and the rest is worked out, or switch on **Advanced** to set every colour. The editor
 shows a live preview and flags colour pairs that don't meet WCAG AA (you can still save; the theme
 is then marked "Low contrast"). Themes can be exported to a `.uhtheme.json` file and imported

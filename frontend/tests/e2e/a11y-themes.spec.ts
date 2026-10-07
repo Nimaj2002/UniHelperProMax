@@ -129,3 +129,43 @@ test("Accessibility (006): import UI in a user-created theme", async ({ page }, 
   await page.keyboard.press("Escape"); // skip
   await expect(page.getByRole("alertdialog")).toBeHidden();
 });
+
+test("Accessibility: every built-in preset theme passes WCAG AA on the main screens", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name.includes("dark"), "presets set their own colours; one colour-scheme run is enough");
+  test.setTimeout(480_000);
+  await signIn(page);
+  const cls = await seedClass(page, {
+    // evening slot: keeps other specs' 10:00 calendar layouts unchanged
+    course: newHierarchy("PRESETS 101", "Presets", "Presets year"), startDate: "2026-09-28", startTime: "19:00",
+    endTime: "20:00", location: "Room 3", color: "violet",
+    recurrence: { freq: "weekly", byWeekday: ["MO", "WE"], end: { kind: "semester_end" } },
+  });
+  const csrf = (await page.context().cookies()).find((c) => c.name === "uh_csrf")?.value ?? "";
+  const setTheme = (theme: string) => page.request.patch("/api/v1/preferences", { data: { theme }, headers: { "X-CSRF-Token": csrf } });
+
+  await page.goto("/settings/appearance");
+  await expect(page.locator("[role=radio][value^='preset:']")).toHaveCount(18);
+  const ids = await page.locator("[role=radio][value^='preset:']").evaluateAll((els) => els.map((e) => e.getAttribute("value")!));
+  expect(ids).toHaveLength(18);
+  try {
+    for (const id of ids) {
+      expect((await setTheme(id)).ok()).toBe(true);
+      // a fresh page per preset: many full dev-server page loads in one tab exhaust Chromium
+      // (net::ERR_INSUFFICIENT_RESOURCES)
+      const p = await page.context().newPage();
+      try {
+        await p.goto("/calendar/week/2026-10-05");
+        await expect(p.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 15000 });
+        await expect.poll(() => p.evaluate(() => document.documentElement.style.getPropertyValue("--surface"))).not.toBe("");
+        await settledAxe(p, `${id} calendar`);
+        await p.goto(`/courses/${cls.courseId}/sessions/${encodeURIComponent(`${cls.lineageId}:2026-10-05`)}`);
+        await expect(p.getByRole("button", { name: "Upload audio" })).toBeVisible({ timeout: 15000 });
+        await settledAxe(p, `${id} workspace`);
+      } finally {
+        await p.close();
+      }
+    }
+  } finally {
+    await setTheme("system");
+  }
+});

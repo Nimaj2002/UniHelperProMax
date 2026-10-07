@@ -32,6 +32,8 @@ def test_preferences(owner_client: TestClient) -> None:
     check(r.json(), "Preferences", spec="002")
     assert c.patch(f"{API}/preferences", json={"playerVolume": 1.5}).status_code == 422
     assert c.patch(f"{API}/preferences", json={"theme": "pink"}).status_code == 422  # unknown theme
-    for choice in ("light", "dark", "system"):
+    for bad in ("preset:", "preset:Dracula", "preset:../x", "preset:a--b"):
+        assert c.patch(f"{API}/preferences", json={"theme": bad}).status_code == 422, bad
+    for choice in ("light", "dark", "system", "preset:rose-pine-dawn", "preset:dracula"):
         assert c.patch(f"{API}/preferences", json={"theme": choice}).json()["theme"] == choice
     assert c.patch(f"{API}/preferences", json={"editorMode": "wysiwyg"}).status_code == 422

@@ -1,0 +1,149 @@
+{
+  "_note": "Built-in preset themes (spec 005 FR-014a): each palette's published key colours. Colours that miss WCAG AA are adjusted at load time in features/settings/themes/presets.ts.",
+  "presets": [
+    {
+      "name": "GitHub Light",
+      "base": "light",
+      "background": "#FFFFFF",
+      "surface": "#F6F8FA",
+      "text": "#1F2328",
+      "accent": "#0969DA"
+    },
+    {
+      "name": "Catppuccin Latte",
+      "base": "light",
+      "background": "#EFF1F5",
+      "surface": "#E6E9EF",
+      "text": "#4C4F69",
+      "accent": "#1E66F5"
+    },
+    {
+      "name": "One Light",
+      "base": "light",
+      "background": "#FAFAFA",
+      "surface": "#F0F0F0",
+      "text": "#383A42",
+      "accent": "#4078F2"
+    },
+    {
+      "name": "Solarized Light",
+      "base": "light",
+      "background": "#FDF6E3",
+      "surface": "#EEE8D5",
+      "text": "#657B83",
+      "accent": "#268BD2"
+    },
+    {
+      "name": "Rosé Pine Dawn",
+      "base": "light",
+      "background": "#FAF4ED",
+      "surface": "#F2E9DE",
+      "text": "#575279",
+      "accent": "#907AA9"
+    },
+    {
+      "name": "Nord Light",
+      "base": "light",
+      "background": "#ECEFF4",
+      "surface": "#E5E9F0",
+      "text": "#2E3440",
+      "accent": "#5E81AC"
+    },
+    {
+      "name": "Gruvbox Light",
+      "base": "light",
+      "background": "#FBF1C7",
+      "surface": "#F2E5BC",
+      "text": "#3C3836",
+      "accent": "#458588"
+    },
+    {
+      "name": "Tokyo Night Light",
+      "base": "light",
+      "background": "#E1E2E7",
+      "surface": "#DFE1E8",
+      "text": "#3760BF",
+      "accent": "#2E7DE9"
+    },
+    {
+      "name": "Linear",
+      "base": "light",
+      "background": "#F8F9FB",
+      "surface": "#FFFFFF",
+      "text": "#17181C",
+      "accent": "#5E6AD2"
+    },
+    {
+      "name": "Dracula",
+      "base": "dark",
+      "background": "#282A36",
+      "surface": "#343746",
+      "text": "#F8F8F2",
+      "accent": "#BD93F9"
+    },
+    {
+      "name": "Tokyo Night",
+      "base": "dark",
+      "background": "#1A1B26",
+      "surface": "#24283B",
+      "text": "#C0CAF5",
+      "accent": "#7AA2F7"
+    },
+    {
+      "name": "Catppuccin Mocha",
+      "base": "dark",
+      "background": "#1E1E2E",
+      "surface": "#313244",
+      "text": "#CDD6F4",
+      "accent": "#89B4FA"
+    },
+    {
+      "name": "Nord",
+      "base": "dark",
+      "background": "#2E3440",
+      "surface": "#3B4252",
+      "text": "#ECEFF4",
+      "accent": "#88C0D0"
+    },
+    {
+      "name": "Gruvbox Dark",
+      "base": "dark",
+      "background": "#282828",
+      "surface": "#3C3836",
+      "text": "#EBDBB2",
+      "accent": "#83A598"
+    },
+    {
+      "name": "One Dark Pro",
+      "base": "dark",
+      "background": "#282C34",
+      "surface": "#21252B",
+      "text": "#ABB2BF",
+      "accent": "#61AFEF"
+    },
+    {
+      "name": "Rosé Pine",
+      "base": "dark",
+      "background": "#191724",
+      "surface": "#26233A",
+      "text": "#E0DEF4",
+      "accent": "#C4A7E7"
+    },
+    {
+      "name": "Night Owl",
+      "base": "dark",
+      "background": "#011627",
+      "surface": "#0B2942",
+      "text": "#D6DEEB",
+      "accent": "#82AAFF"
+    },
+    {
+      "name": "Midnight Blue",
+      "base": "dark",
+      "background": "#0F1117",
+      "surface": "#181B24",
+      "text": "#E6EAF2",
+      "accent": "#6C8CFF"
+    }
+  ]
+}
