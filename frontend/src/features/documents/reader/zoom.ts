@@ -24,3 +24,24 @@ export function resolvePage(input: string, pageCount: number): { page: number; m
   if (n > pageCount) return { page: pageCount, message: `There are ${pageCount} pages — showing page ${pageCount}.` };
   return { page: n };
 }
+
+// ---- continuous zoom: Ctrl/Cmd + wheel, trackpad and touch pinch ---------------------------
+
+export const clampZoom = (scale: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, scale));
+
+const LINE_PX = 16;
+const PAGE_PX = 800;
+
+/**
+ * Zoom factor for one Ctrl/Cmd + wheel event. Trackpad pinches arrive as Ctrl + wheel with small
+ * pixel deltas, mouse wheels as larger ones; both zoom smoothly (wheel up/pinch out zooms in).
+ */
+export function wheelZoomFactor(deltaY: number, deltaMode = 0): number {
+  const px = deltaY * (deltaMode === 1 ? LINE_PX : deltaMode === 2 ? PAGE_PX : 1);
+  return Math.exp(-Math.max(-100, Math.min(100, px)) * 0.01);
+}
+
+/** Scale while pinching two fingers: the start scale times how far apart they moved. */
+export function pinchScale(startScale: number, startDistance: number, distance: number): number {
+  return startDistance > 0 ? clampZoom((startScale * distance) / startDistance) : clampZoom(startScale);
+}

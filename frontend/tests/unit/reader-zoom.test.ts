@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolvePage, stepZoom, zoomLabel } from "@/features/documents/reader/zoom";
+import { clampZoom, pinchScale, resolvePage, stepZoom, wheelZoomFactor, zoomLabel } from "@/features/documents/reader/zoom";
 
 describe("reader zoom", () => {
   it("steps through the fixed zoom levels within 50–400 %", () => {
@@ -17,5 +17,18 @@ describe("reader zoom", () => {
     expect(resolvePage("999", 42)).toEqual({ page: 42, message: "There are 42 pages — showing page 42." });
     expect(resolvePage("0", 42)?.page).toBe(1);
     expect(resolvePage("abc", 42)).toBeNull();
+  });
+
+  it("zooms smoothly with Ctrl/Cmd + wheel and pinches, within 50–400 %", () => {
+    expect(wheelZoomFactor(-100)).toBeCloseTo(Math.E, 5); // wheel up zooms in
+    expect(wheelZoomFactor(100)).toBeCloseTo(1 / Math.E, 5);
+    expect(wheelZoomFactor(-3, 1)).toBeCloseTo(wheelZoomFactor(-48), 10); // lines → px
+    expect(wheelZoomFactor(-5000)).toBe(wheelZoomFactor(-100)); // one event never jumps far
+    expect(wheelZoomFactor(0)).toBe(1);
+    expect(pinchScale(1, 100, 200)).toBe(2);
+    expect(pinchScale(1, 100, 50)).toBe(0.5);
+    expect(pinchScale(2, 100, 1000)).toBe(4);
+    expect(pinchScale(1, 0, 50)).toBe(1);
+    expect(clampZoom(0.1)).toBe(0.5);
   });
 });

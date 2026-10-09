@@ -21,7 +21,7 @@ import { useAnnotations } from "./annotations/useAnnotations";
 import { ReaderToolbar } from "./ReaderToolbar";
 import { SearchBox, type SearchResult } from "./SearchBox";
 import { usePosition } from "./usePosition";
-import { stepZoom } from "./zoom";
+import { clampZoom, pinchScale, stepZoom, wheelZoomFactor } from "./zoom";
 
 interface Location {
   page: number;
@@ -250,6 +250,86 @@ export default function PdfReader({ document: doc, visible, onEscape }: Props) {
     viewer.currentScaleValue = String(next);
   };
   const zoom = (dir: 1 | -1) => setZoom(stepZoom(viewerRef.current?.currentScale ?? scale, dir));
+
+  // ---- pinch and Ctrl/Cmd + wheel zoom, anchored at the pointer / between the fingers --------
+  useEffect(() => {
+    const c = container.current;
+    if (!c) return;
+    // the scale the gesture aims at: kept apart from the viewer's (rounded to 1 %) so many small
+    // steps add up; a gesture starts afresh after a short pause
+    let target = 0;
+    let last = 0;
+    let touch: { distance: number; scale: number } | null = null;
+    let gesture: number | null = null; // Safari trackpad pinch: scale at its start
+    const zoomTo = (next: number, origin: [number, number]) => {
+      const viewer = viewerRef.current;
+      if (!viewer?.pagesCount) return;
+      target = clampZoom(next);
+      scaleMode.current = target;
+      setFitWidth(false);
+      // a short drawing delay: pages are re-rendered once the gesture pauses
+      viewer.updateScale({ scaleFactor: target / viewer.currentScale, origin, drawingDelay: 400 });
+    };
+    const startScale = () => viewerRef.current?.currentScale ?? 1;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault(); // never zoom the whole page
+      const now = performance.now();
+      if (now - last > 300 || !target) target = startScale();
+      last = now;
+      zoomTo(target * wheelZoomFactor(e.deltaY, e.deltaMode), [e.clientX, e.clientY]);
+    };
+    const between = (t: TouchList) => {
+      const [a, b] = [t[0], t[1]];
+      return { distance: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), origin: [(a.clientX + b.clientX) / 2, (a.clientY + b.clientY) / 2] as [number, number] };
+    };
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) touch = { distance: between(e.touches).distance, scale: startScale() };
+    };
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touch || e.touches.length !== 2) return;
+      e.preventDefault();
+      const { distance, origin } = between(e.touches);
+      zoomTo(pinchScale(touch.scale, touch.distance, distance), origin);
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) touch = null;
+    };
+    type GestureEvent = UIEvent & { scale: number; clientX: number; clientY: number };
+    const onGestureStart = (e: Event) => {
+      e.preventDefault();
+      gesture = startScale();
+    };
+    const onGestureChange = (e: Event) => {
+      e.preventDefault();
+      const g = e as GestureEvent;
+      if (gesture === null || touch) return; // touch screens are handled by the touch events
+      zoomTo(clampZoom(gesture * g.scale), [g.clientX, g.clientY]);
+    };
+    const onGestureEnd = (e: Event) => {
+      e.preventDefault();
+      gesture = null;
+    };
+    const opts = { passive: false } as const;
+    c.addEventListener("wheel", onWheel, opts);
+    c.addEventListener("touchstart", onTouchStart, opts);
+    c.addEventListener("touchmove", onTouchMove, opts);
+    c.addEventListener("touchend", onTouchEnd);
+    c.addEventListener("touchcancel", onTouchEnd);
+    c.addEventListener("gesturestart", onGestureStart, opts);
+    c.addEventListener("gesturechange", onGestureChange, opts);
+    c.addEventListener("gestureend", onGestureEnd, opts);
+    return () => {
+      c.removeEventListener("wheel", onWheel);
+      c.removeEventListener("touchstart", onTouchStart);
+      c.removeEventListener("touchmove", onTouchMove);
+      c.removeEventListener("touchend", onTouchEnd);
+      c.removeEventListener("touchcancel", onTouchEnd);
+      c.removeEventListener("gesturestart", onGestureStart);
+      c.removeEventListener("gesturechange", onGestureChange);
+      c.removeEventListener("gestureend", onGestureEnd);
+    };
+  }, [failure]);
   const toggleDarkPages = () => updatePrefs.mutate({ readerDarkPages: !darkPages });
   const find = (query: string, { again, previous }: { again: boolean; previous: boolean }) => {
     if (!query.trim()) setResult(NO_RESULT);
@@ -404,7 +484,7 @@ export default function PdfReader({ document: doc, visible, onEscape }: Props) {
         {!pdf && <ReaderMessage>Opening document…</ReaderMessage>}
         {/* the scrolling page area takes focus so keyboard users can scroll it (WCAG 2.1.1) */}
         {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
-        <div ref={container} tabIndex={0} aria-label="Pages" aria-keyshortcuts={tool === "text" || tool === "comment" ? "Enter" : undefined} className="uh-reader-pages absolute inset-0 overflow-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring">
+        <div ref={container} tabIndex={0} aria-label="Pages" aria-keyshortcuts={tool === "text" || tool === "comment" ? "Enter" : undefined} className="uh-reader-pages absolute inset-0 touch-pan-x touch-pan-y overflow-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring">
           <div ref={viewerEl} className="pdfViewer" />
         </div>
       </div>

@@ -44,6 +44,9 @@ Handout week 3         0.8 MB · 30 Sep     ⋯   (⋯ = Rename… · Delete…)
 - Page field: Enter jumps; out-of-range → nearest page + polite message "There are 42 pages —
   showing page 42." Page indicator in a polite live region.
 - Zoom 50–400 % (steps 50, 67, 75, 90, 100, 110, 125, 150, 175, 200, 250, 300, 400), Fit width.
+- Continuous zoom over the pages, within 50–400 % and anchored where the gesture happens:
+  `Ctrl/Cmd` + scroll wheel (wheel up zooms in), trackpad pinch, and two-finger pinch on touch
+  screens. The browser's own page zoom never triggers over the pages; one-finger scrolling stays.
 - Search: `Ctrl/Cmd+F` while the reader has focus opens an inline search box: "3 of 11", ↑/↓
   buttons, Enter/Shift+Enter; "No matches"; scanned: "This document has no searchable text."
 - Dark pages: toggle button (`aria-pressed`), remembered per user.
