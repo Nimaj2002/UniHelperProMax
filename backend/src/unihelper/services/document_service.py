@@ -3,6 +3,9 @@
 A PDF is stored exactly as uploaded and never written again (Constitution II); its annotations
 live in `<name>.annotations.json` next to it (annotation_service). Imports reuse 006's staging and
 per-session lock, so concurrent uploads never clash on the session folder or on a name.
+
+A document is stored in the session it was uploaded to but belongs to the whole course: every
+session of the course, of any of its classes, lists it, and names are unique across the course.
 """
 
 from __future__ import annotations
@@ -16,7 +19,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from unihelper.api.errors import ApiError, not_found
@@ -64,6 +67,28 @@ def get_owned(db: Session, user: User, document_id: str) -> Document:
     return d
 
 
+def course_folder_ids(user: User, course_id: str) -> Select[str]:
+    """Ids of the session folders of one course: its documents are shared by all its sessions."""
+    return select(SessionFolder.id).where(
+        SessionFolder.user_id == user.id, SessionFolder.course_id == course_id
+    )
+
+
+def course_documents(user: User, course_id: str) -> Select[Document]:
+    return select(Document).where(
+        Document.user_id == user.id,
+        Document.session_folder_id.in_(course_folder_ids(user, course_id)),
+    )
+
+
+@contextmanager
+def course_import_lock(user_id: str, course_id: str) -> Iterator[None]:
+    """Serialize choosing a document name across the course's sessions until the row is
+    committed: two sessions of one course uploading at once must not pick the same name."""
+    with session_import_lock(user_id, f"course:{course_id}"):
+        yield
+
+
 def pdf_parts(db: Session, user: User, d: Document) -> tuple[list[str], SessionFolder]:
     folder = db.get(SessionFolder, d.session_folder_id)
     assert folder is not None
@@ -104,13 +129,12 @@ def view(db: Session, storage: StorageService, user: User, d: Document) -> dict[
 def list_documents(
     db: Session, storage: StorageService, user: User, key: str
 ) -> list[dict[str, Any]]:
+    """The documents of the session's course, whichever of its sessions they were uploaded to."""
     resolved = sfs.resolve(db, user, key)
-    if resolved.folder is None:
-        return []
     rows = db.scalars(
-        select(Document)
-        .where(Document.session_folder_id == resolved.folder.id)
-        .order_by(Document.uploaded_at.desc(), Document.id.desc())
+        course_documents(user, resolved.course.id).order_by(
+            Document.uploaded_at.desc(), Document.id.desc()
+        )
     )
     return [view(db, storage, user, d) for d in rows]
 
@@ -204,27 +228,35 @@ def import_document(
     with session_import_lock(user.id, key):
         resolved = sfs.resolve(db, user, key)
         folder = sfs.get_or_create_folder(db, storage, user, resolved)
-        rows = list(db.scalars(select(Document).where(Document.session_folder_id == folder.id)))
-        name = _unique_name(_document_name(original_file_name), {r.name_key for r in rows})
-        folder_parts = sfs.folder_parts(user, resolved, folder)
-        file_name = _free_file_name(storage, folder_parts, name, [r.file_name for r in rows])
-        on_rollback(db, storage.commit_upload(staged.path, [*folder_parts, "documents", file_name]))
-        d = Document(
-            user_id=user.id,
-            session_folder_id=folder.id,
-            name=name,
-            name_key=name_key(name),
-            file_name=file_name,
-            file_key=file_name.casefold(),
-            original_file_name=original_file_name[:255],
-            size=staged.size,
-            sha256=staged.sha256,
-            encrypted=probe.encrypted,
-            uploaded_at=_now(),
-        )
-        db.add(d)
-        db.flush()
-        db.commit()  # visible before the lock is released
+        with course_import_lock(user.id, resolved.course.id):
+            rows = list(db.scalars(select(Document).where(Document.session_folder_id == folder.id)))
+            course_names = set(
+                db.scalars(
+                    course_documents(user, resolved.course.id).with_only_columns(Document.name_key)
+                )
+            )
+            name = _unique_name(_document_name(original_file_name), course_names)
+            folder_parts = sfs.folder_parts(user, resolved, folder)
+            file_name = _free_file_name(storage, folder_parts, name, [r.file_name for r in rows])
+            on_rollback(
+                db, storage.commit_upload(staged.path, [*folder_parts, "documents", file_name])
+            )
+            d = Document(
+                user_id=user.id,
+                session_folder_id=folder.id,
+                name=name,
+                name_key=name_key(name),
+                file_name=file_name,
+                file_key=file_name.casefold(),
+                original_file_name=original_file_name[:255],
+                size=staged.size,
+                sha256=staged.sha256,
+                encrypted=probe.encrypted,
+                uploaded_at=_now(),
+            )
+            db.add(d)
+            db.flush()
+            db.commit()  # visible before the locks are released
     log.info("document %s added to session folder %s", d.id, folder.id)
     return view(db, storage, user, d)
 
@@ -250,7 +282,7 @@ def set_page_count(
 
 
 def _name_taken() -> ApiError:
-    msg = "A document with this name already exists in this session."
+    msg = "A document with this name already exists in this course."
     return ApiError(
         409, "name_taken", msg, errors=[{"field": "/name", "code": "name_taken", "message": msg}]
     )
@@ -271,36 +303,36 @@ def rename_document(
     if len(name) > MAX_NAME:
         raise validation_error("/name", "name_too_long", "Use at most 120 characters.")
     with document_file_lock(d.id):
-        clash = db.scalar(
-            select(Document).where(
-                Document.session_folder_id == d.session_folder_id,
-                Document.name_key == name_key(name),
-                Document.id != d.id,
-            )
-        )
-        if clash is not None:
-            raise _name_taken()
-        parts, _ = pdf_parts(db, user, d)
-        folder_parts = parts[:-2]
-        others = list(
-            db.scalars(
-                select(Document.file_name).where(
-                    Document.session_folder_id == d.session_folder_id, Document.id != d.id
+        parts, folder = pdf_parts(db, user, d)
+        # names are unique across the course: its sessions all list the document
+        with course_import_lock(user.id, folder.course_id):
+            clash = db.scalar(
+                course_documents(user, folder.course_id).where(
+                    Document.name_key == name_key(name), Document.id != d.id
                 )
             )
-        )
-        new_file = unique_sibling(safe_name(name) + ".pdf", others)
-        if new_file.casefold() != d.file_name.casefold():
-            new_file = _free_file_name(storage, folder_parts, name, others)
-        if new_file != d.file_name:
-            on_rollback(db, storage.rename_pair(parts, [*parts[:-1], new_file]))
-            _retarget_sidecar(storage, [*parts[:-1], new_file])
-            d.file_name = new_file
-            d.file_key = new_file.casefold()
-        d.name = name
-        d.name_key = name_key(name)
-        db.flush()
-        db.commit()  # visible before an annotation save waiting on the lock reads the name
+            if clash is not None:
+                raise _name_taken()
+            folder_parts = parts[:-2]
+            others = list(
+                db.scalars(
+                    select(Document.file_name).where(
+                        Document.session_folder_id == d.session_folder_id, Document.id != d.id
+                    )
+                )
+            )
+            new_file = unique_sibling(safe_name(name) + ".pdf", others)
+            if new_file.casefold() != d.file_name.casefold():
+                new_file = _free_file_name(storage, folder_parts, name, others)
+            if new_file != d.file_name:
+                on_rollback(db, storage.rename_pair(parts, [*parts[:-1], new_file]))
+                _retarget_sidecar(storage, [*parts[:-1], new_file])
+                d.file_name = new_file
+                d.file_key = new_file.casefold()
+            d.name = name
+            d.name_key = name_key(name)
+            db.flush()
+            db.commit()  # visible before an annotation save waiting on the lock reads the name
     return view(db, storage, user, d)
 
 

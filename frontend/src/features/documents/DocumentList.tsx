@@ -10,7 +10,7 @@ import { formatBytes } from "@/features/imports/audioFiles";
 import { UploadList } from "@/features/imports/UploadList";
 import type { SidePanelSectionProps } from "@/features/sessions/workspace-panels";
 import { formatDay } from "@/lib/dates";
-import { deleteDocument, documentKey, documentsKey, prefetchReader, renameDocument, useDocuments, type Document } from "./api";
+import { allDocumentsKey, deleteDocument, documentKey, prefetchReader, renameDocument, useDocuments, type Document } from "./api";
 import { DeleteDocumentDialog, RenameDocumentDialog } from "./DocumentDialogs";
 import { PDF_ACCEPT } from "./pdfFiles";
 import { documentQueue } from "./queue";
@@ -21,7 +21,15 @@ function uploadedOn(iso: string) {
   return formatDay(date, "d MMM");
 }
 
-/** "Documents" in the session's side panel (007 FR-001–FR-010): upload, list, open, rename, delete. */
+/** The day of a session from its key (`{lineageId}:{yyyy-mm-dd}`). */
+function sessionDay(key: string) {
+  return formatDay(key.slice(key.lastIndexOf(":") + 1), "d MMM");
+}
+
+/**
+ * "Documents" in the session's side panel (007 FR-001–FR-010): upload, list, open, rename, delete.
+ * Lists the documents of every session of the course; one uploaded to another session says which.
+ */
 export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePanelSectionProps) {
   const docs = useDocuments(sessionKey);
   const qc = useQueryClient();
@@ -31,7 +39,8 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
   const [dialog, setDialog] = useState<{ kind: "rename" | "delete"; doc: Document } | null>(null);
   const onRename = (doc: Document) => setDialog({ kind: "rename", doc });
   const onDelete = (doc: Document) => setDialog({ kind: "delete", doc });
-  const refresh = () => qc.invalidateQueries({ queryKey: documentsKey(sessionKey) });
+  // every session of the course lists the document
+  const refresh = () => qc.invalidateQueries({ queryKey: allDocumentsKey });
   const hasDocuments = list.length > 0;
   useEffect(() => {
     if (hasDocuments) prefetchReader();
@@ -72,10 +81,9 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
         />
       )}
       <FileDropZone sessionKey={sessionKey} queue={queue} label="Drop PDF files to add them" testId="documents-drop-zone">
-        <section aria-labelledby="documents-heading" className="grid gap-2 border-t border-divider pt-3">
-          <div className="flex items-center justify-between gap-2 px-2">
-            <h2 id="documents-heading" className="text-xs font-semibold text-muted-foreground">Documents</h2>
-            <Button size="xs" variant="outline" onClick={() => input.current?.click()}>
+        <div className="grid gap-2">
+          <div className="px-2">
+            <Button size="sm" variant="outline" className="w-full justify-start" onClick={() => input.current?.click()}>
               <UploadSimple aria-hidden /> Upload PDF
             </Button>
             <input
@@ -114,6 +122,7 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
                   </span>
                   <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
                     {formatBytes(d.size)} · {uploadedOn(d.uploadedAt)}
+                    {d.sessionKey !== sessionKey && <span>· from {sessionDay(d.sessionKey)}</span>}
                     {d.missing && <Badge variant="outline">File missing</Badge>}
                     {d.encrypted && <Badge variant="outline">Protected</Badge>}
                   </span>
@@ -134,7 +143,7 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
               </li>
             ))}
           </ul>
-        </section>
+        </div>
       </FileDropZone>
     </>
   );

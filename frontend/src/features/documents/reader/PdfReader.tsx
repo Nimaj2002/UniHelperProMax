@@ -9,7 +9,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { AnnotationEditorType, AnnotationMode, type PDFDocumentProxy } from "pdfjs-dist";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePreferences, useUpdatePreferences } from "@/features/sessions/api";
-import { documentFileUrl, documentKey, documentsKey, setPageCount, type Document } from "../api";
+import { allDocumentsKey, documentFileUrl, documentKey, setPageCount, type Document } from "../api";
 import { EventBus, LinkTarget, loadDocument, PDFFindController, PDFLinkService, PDFViewer } from "./pdfjs";
 import { DOC_ATTACH, DOC_DETACH } from "./events";
 import { ReaderMessage, PROTECTED_MESSAGE } from "./ReaderMessage";
@@ -115,7 +115,7 @@ export default function PdfReader({ document: doc, visible, onEscape }: Props) {
     setPageCount(doc.id, doc.version, pdf.numPages).then(
       (d) => {
         qc.setQueryData(documentKey(d.id), d);
-        void qc.invalidateQueries({ queryKey: documentsKey(d.sessionKey) });
+        void qc.invalidateQueries({ queryKey: allDocumentsKey });
       },
       () => {}, // informational only; reported again next time
     );

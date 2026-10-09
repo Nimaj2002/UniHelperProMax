@@ -20,13 +20,11 @@ interface Props {
   onDelete: (note: NoteMeta) => void;
 }
 
-/** The session's notes in creation order (FR-016); open notes are marked. */
+/** The session's notes in creation order (FR-016); open notes are marked. Its "Notes" header is
+ * the left panel's collapsible section. */
 export function NoteList({ notes, openIds, activeId, loading, onNew, onImport, importing, onOpen, onRename, onDelete }: Props) {
   return (
-    <section aria-labelledby="notes-heading" className="grid gap-2">
-      <div className="flex items-center justify-between px-2">
-        <h2 id="notes-heading" className="text-xs font-semibold text-muted-foreground">Notes</h2>
-      </div>
+    <div className="grid gap-2">
       <div className="mx-2 grid grid-cols-2 gap-2">
         <Button size="sm" variant="outline" className="justify-start" onClick={onNew} aria-keyshortcuts="Alt+N">
           <Plus size={14} aria-hidden /> New note
@@ -74,6 +72,6 @@ export function NoteList({ notes, openIds, activeId, loading, onNew, onImport, i
           );
         })}
       </ul>
-    </section>
+    </div>
   );
 }

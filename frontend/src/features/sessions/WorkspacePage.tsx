@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { createPortal } from "react-dom";
 import { useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { usePanelSection } from "@/app/shell/panelSection";
+import { CollapsibleSection, usePanelSections, type PanelSection } from "@/app/shell/panelSection";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -245,10 +245,16 @@ export function WorkspacePage() {
   const [drawer, setDrawer] = useState<"left" | "right" | null>(null);
 
   const mode: EditorMode = prefs.data?.editorMode ?? "live";
-  // on desktop the notes and sessions live in a section of the app's left panel
-  const leftCollapsed = prefs.data?.workspaceLeftCollapsed ?? false;
-  const toggleLeftSection = () => updatePrefs.mutate({ workspaceLeftCollapsed: !leftCollapsed });
-  const sidePanel = usePanelSection(isDesktop ? { title: "Sessions and notes", collapsed: leftCollapsed, onToggle: toggleLeftSection } : null);
+  // notes, documents and sessions are collapsible sections of the app's left panel (on mobile, of
+  // the workspace's drawer)
+  const sideSections = useSidePanelSections();
+  const leftSections = useMemo<PanelSection[]>(
+    () => [{ id: "notes", title: "Notes" }, ...sideSections.map(({ id, title }) => ({ id, title })), { id: "sessions", title: "Sessions" }],
+    [sideSections],
+  );
+  const sidePanel = usePanelSections(isDesktop ? leftSections : null);
+  const leftIds = useMemo(() => leftSections.map((s) => s.id), [leftSections]);
+  const leftCollapsed = leftIds.every((id) => sidePanel.collapsed[id]);
   const leftOpen = isDesktop ? sidePanel.panelVisible && !leftCollapsed : drawer === "left";
   const rightOpen = isDesktop ? !prefs.data?.workspaceRightCollapsed : drawer === "right";
   const noteList = useMemo(() => notes.data ?? [], [notes.data]);
@@ -317,16 +323,18 @@ export function WorkspacePage() {
   const togglePanel = useCallback(
     (side: "left" | "right") => {
       if (!isDesktop) return setDrawer((d) => (d === side ? null : side));
-      if (side === "left" && !sidePanel.panelVisible) {
-        // the app's left panel is hidden: bring it back with the section open
-        sidePanel.showPanel();
-        if (prefs.data?.workspaceLeftCollapsed) updatePrefs.mutate({ workspaceLeftCollapsed: false });
+      if (side === "left") {
+        // the app's left panel is hidden: bring it back with the sections open; else collapse
+        // the workspace's sections together (or expand them all when all are collapsed)
+        if (!sidePanel.panelVisible) {
+          sidePanel.showPanel();
+          sidePanel.setCollapsed(leftIds, false);
+        } else sidePanel.setCollapsed(leftIds, !leftCollapsed);
         return;
       }
-      const key = side === "left" ? "workspaceLeftCollapsed" : "workspaceRightCollapsed";
-      updatePrefs.mutate({ [key]: !(prefs.data?.[key] ?? false) });
+      updatePrefs.mutate({ workspaceRightCollapsed: !(prefs.data?.workspaceRightCollapsed ?? false) });
     },
-    [isDesktop, prefs.data, updatePrefs, sidePanel],
+    [isDesktop, prefs.data, updatePrefs, sidePanel, leftIds, leftCollapsed],
   );
 
   const toggleMode = useCallback(
@@ -334,7 +342,6 @@ export function WorkspacePage() {
     [mode, updatePrefs],
   );
 
-  const sideSections = useSidePanelSections();
   const noteImporter = useNoteImporter({ sessionKey, notes: noteList, onOpen: openNote });
 
   useWorkspaceKeyboard({
@@ -432,8 +439,8 @@ export function WorkspacePage() {
   });
 
   // ---- layout -----------------------------------------------------------------------------
-  const left = (
-    <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto py-3">
+  const leftContent: Record<string, ReactNode> = {
+    notes: (
       <NoteList
         notes={noteList}
         openIds={openIds}
@@ -449,13 +456,35 @@ export function WorkspacePage() {
           setDialog({ kind: "delete", note });
         }}
       />
-      {sideSections.map(({ id, component: Section }) => (
-        <Section key={id} sessionKey={sessionKey} openDocument={openDocument} closeDocument={closeDeletedDocument} />
-      ))}
-      <nav aria-label="Sessions of this course" className="min-h-0 border-t border-divider pt-3">
-        <h2 className="px-2 pb-1 text-xs font-semibold text-muted-foreground">Sessions</h2>
+    ),
+    ...Object.fromEntries(
+      sideSections.map(({ id, component: Section }) => [
+        id,
+        <Section key={id} sessionKey={sessionKey} openDocument={openDocument} closeDocument={closeDeletedDocument} />,
+      ]),
+    ),
+    sessions: (
+      <nav aria-label="Sessions of this course" className="py-1">
         {timeline.data && <SessionTimeline entries={timeline.data.entries} variant="compact" activeKey={sessionKey} />}
       </nav>
+    ),
+  };
+  const leftBody = (id: string) => <div className="py-2">{leftContent[id]}</div>;
+  // mobile drawer: the same collapsible sections, stacked and scrolling together
+  const left = (
+    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
+      {leftSections.map(({ id, title }, i) => (
+        <CollapsibleSection
+          key={id}
+          id={id}
+          title={title}
+          collapsed={sidePanel.collapsed[id] ?? false}
+          onToggle={() => sidePanel.setCollapsed([id], !sidePanel.collapsed[id])}
+          className={cn("shrink-0", i > 0 && "border-t border-divider")}
+        >
+          {leftBody(id)}
+        </CollapsibleSection>
+      ))}
     </div>
   );
 
@@ -600,7 +629,11 @@ export function WorkspacePage() {
             </aside>
           }
         >
-          {isDesktop && sidePanel.target && createPortal(left, sidePanel.target)}
+          {isDesktop &&
+            leftSections.map(({ id }) => {
+              const target = sidePanel.targets[id];
+              return target ? createPortal(leftBody(id), target, id) : null;
+            })}
           <main ref={mainRef} className="min-h-0 min-w-0" aria-label="Notes and documents">{editorArea}</main>
         </AudioColumns>
       )}

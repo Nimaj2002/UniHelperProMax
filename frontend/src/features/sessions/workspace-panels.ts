@@ -30,7 +30,7 @@ export function useWorkspacePanels(): WorkspacePanel[] {
   );
 }
 
-// ---- side-panel sections below the note list (007: Documents) --------------------------------
+// ---- left-panel sections between Notes and Sessions (007: Documents) --------------------------------
 
 export interface SidePanelSectionProps {
   sessionKey: string;
@@ -42,6 +42,8 @@ export interface SidePanelSectionProps {
 
 export interface SidePanelSection {
   id: string;
+  /** The section's collapsible header in the left panel. */
+  title: string;
   component: ComponentType<SidePanelSectionProps>;
 }
 

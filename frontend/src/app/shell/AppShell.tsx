@@ -1,4 +1,3 @@
-import { CaretDown } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Outlet } from "react-router";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
@@ -9,7 +8,7 @@ import { DESKTOP_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { cn } from "@/lib/utils";
 import { ActivityBar } from "./ActivityBar";
 import { CoursePanelSlot } from "./CoursePanelSlot";
-import { PanelSectionProvider, usePanelSectionSlot } from "./panelSection";
+import { CollapsibleSection, PanelSectionProvider, usePanelSectionSlot } from "./panelSection";
 import { useGlobalHosts } from "./registry";
 import { TopBar } from "./TopBar";
 import { ToolbarProvider } from "./toolbar";
@@ -18,11 +17,10 @@ const MIN_W = 240;
 const MAX_W = 480;
 const DEFAULT_W = 280;
 const clamp = (w: number) => Math.min(MAX_W, Math.max(MIN_W, w));
-/** Height of the page's section under the courses, in % of the panel (starts in the middle). */
-const SECTION_MIN = 15;
-const SECTION_MAX = 85;
-const SECTION_DEFAULT = 50;
-const clampSection = (p: number) => Math.min(SECTION_MAX, Math.max(SECTION_MIN, p));
+/** Share of an open section in the space it splits with the open section above it (%). */
+const PAIR_MIN = 10;
+const PAIR_MAX = 90;
+const COURSES = { id: "courses", title: "Academic years" };
 
 function GlobalHosts() {
   const hosts = useGlobalHosts();
@@ -36,64 +34,87 @@ function GlobalHosts() {
 }
 
 /**
- * Desktop left panel: courses, and under them the current page's section (if any). Positioned
- * to fill its grid cell so long section content scrolls inside instead of growing the page.
+ * Desktop left panel: a stack of collapsible sections — the academic years (courses), then the
+ * current page's sections (if any). Open sections share the panel's height; the edge between two
+ * open sections resizes them. Positioned to fill its grid cell so long content scrolls inside
+ * each section instead of growing the page.
  */
 function SidePanel() {
-  const { section, setTarget } = usePanelSectionSlot();
-  const [pct, setPct] = useState(() => clampSection(readLocal("uh.panel.sectionPct", SECTION_DEFAULT)));
-  const panel = useRef<HTMLElement>(null);
-  useEffect(() => writeLocal("uh.panel.sectionPct", pct), [pct]);
-  const open = section && !section.collapsed;
+  const { sections: pageSections, setTarget, collapsed, setCollapsed } = usePanelSectionSlot();
+  const [weights, setWeights] = useState<Record<string, number>>(() => readLocal("uh.panel.sectionWeights", {}));
+  useEffect(() => writeLocal("uh.panel.sectionWeights", weights), [weights]);
+  // section elements, for live resizing; stable ref callbacks per section
+  const [elements] = useState(() => new Map<string, HTMLElement>());
+  const [refs] = useState(() => new Map<string, { section: (el: HTMLElement | null) => void; body: (el: HTMLDivElement | null) => void }>());
+  const refsFor = (id: string) => {
+    let r = refs.get(id);
+    if (!r) {
+      r = {
+        section: (el) => void (el ? elements.set(id, el) : elements.delete(id)),
+        body: (el) => setTarget(id, el),
+      };
+      refs.set(id, r);
+    }
+    return r;
+  };
+  const sections = [COURSES, ...pageSections];
+  const weight = (id: string) => weights[id] ?? 1;
+  let previousOpen: string | null = null;
   return (
     <aside
       id="course-panel"
-      ref={panel}
       aria-label="Side panel"
       className="absolute inset-0 flex min-h-0 flex-col overflow-hidden border-r border-divider bg-surface"
-      style={{ "--section-h": `${pct}%` } as CSSProperties}
     >
-      <div className="min-h-0 flex-1">
-        <CoursePanelSlot />
-      </div>
-      {section && (
-        <section
-          aria-labelledby="panel-section-title"
-          className="relative flex min-h-0 shrink-0 flex-col border-t border-divider"
-          style={open ? { height: "var(--section-h)" } : undefined}
-        >
-          {open && (
-            <PanelResizeHandle
-              value={pct}
-              min={SECTION_MIN}
-              max={SECTION_MAX}
-              defaultValue={SECTION_DEFAULT}
-              onResize={setPct}
-              onDrag={(p) => panel.current?.style.setProperty("--section-h", `${p}%`)}
-              grow="up"
-              step={5}
-              unitsPerPx={() => 100 / (panel.current?.clientHeight || 1)}
-              label={`Resize ${section.title.toLowerCase()}`}
-              controls="panel-section-body"
-              className="top-0"
-            />
-          )}
-          <h2 id="panel-section-title">
-            <button
-              type="button"
-              onClick={section.onToggle}
-              aria-expanded={!section.collapsed}
-              aria-controls="panel-section-body"
-              aria-keyshortcuts="Alt+["
-              className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              <CaretDown size={12} weight="bold" aria-hidden className={cn("transition-transform motion-reduce:transition-none", section.collapsed && "-rotate-90")} />
-              {section.title}
-            </button>
-          </h2>
-          <div id="panel-section-body" ref={setTarget} hidden={section.collapsed} className="min-h-0 flex-1 overflow-hidden" />
-        </section>
-      )}
+      {sections.map(({ id, title }, i) => {
+        const isCollapsed = collapsed[id] ?? false;
+        const above = isCollapsed ? null : previousOpen;
+        if (!isCollapsed) previousOpen = id;
+        const pair = () => weight(id) + (above ? weight(above) : 0);
+        const share = above ? Math.round((100 * weight(id)) / pair()) : 0;
+        const bodyId = `panel-section-${id}-body`;
+        return (
+          <CollapsibleSection
+            key={id}
+            id={id}
+            title={title}
+            collapsed={isCollapsed}
+            onToggle={() => setCollapsed([id], !isCollapsed)}
+            sectionRef={refsFor(id).section}
+            bodyRef={id === COURSES.id ? undefined : refsFor(id).body}
+            bodyClassName={id === COURSES.id ? "overflow-hidden" : "overflow-x-hidden overflow-y-auto"}
+            className={cn(i > 0 && "border-t border-divider", isCollapsed && "shrink-0")}
+            style={isCollapsed ? undefined : { flex: `${weight(id)} 1 0` }}
+            handle={
+              above && (
+                <PanelResizeHandle
+                  value={share}
+                  min={PAIR_MIN}
+                  max={PAIR_MAX}
+                  defaultValue={50}
+                  onResize={(p) => {
+                    const total = pair();
+                    setWeights((w) => ({ ...w, [id]: (total * p) / 100, [above]: (total * (100 - p)) / 100 }));
+                  }}
+                  onDrag={(p) => {
+                    const total = pair();
+                    elements.get(id)?.style.setProperty("flex-grow", String((total * p) / 100));
+                    elements.get(above)?.style.setProperty("flex-grow", String((total * (100 - p)) / 100));
+                  }}
+                  grow="up"
+                  step={5}
+                  unitsPerPx={() => 100 / ((elements.get(id)?.clientHeight ?? 0) + (elements.get(above)?.clientHeight ?? 0) || 1)}
+                  label={`Resize ${title.toLowerCase()}`}
+                  controls={bodyId}
+                  className="top-0"
+                />
+              )
+            }
+          >
+            {id === COURSES.id && <CoursePanelSlot />}
+          </CollapsibleSection>
+        );
+      })}
     </aside>
   );
 }

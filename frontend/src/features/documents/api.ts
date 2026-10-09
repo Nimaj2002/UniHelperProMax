@@ -7,6 +7,8 @@ export type Document = Schemas["Document"];
 const enc = encodeURIComponent;
 
 export const documentsKey = (sessionKey: string) => ["documents", sessionKey] as const;
+/** Every session's document list: a document is listed by all sessions of its course. */
+export const allDocumentsKey = ["documents"] as const;
 export const documentKey = (id: string) => ["document", id] as const;
 
 export function useDocuments(sessionKey: string) {
@@ -42,7 +44,8 @@ export function prefetchReader() {
   else setTimeout(load, 500);
 }
 
-/** Upload one PDF (007 FR-002–FR-008): stored unchanged in the session's documents/ folder. */
+/** Upload one PDF (007 FR-002–FR-008): stored unchanged in the session's documents/ folder and
+ * listed by every session of the course. */
 export function importDocument(
   sessionKey: string,
   file: Blob & { name: string },

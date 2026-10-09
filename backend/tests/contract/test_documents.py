@@ -71,6 +71,15 @@ def test_name_clash_and_hand_copied_files(owner_client: TestClient, tmp_data_dir
     assert b["fileName"] == "paper (2).pdf"  # a stray sidecar is never adopted either
 
 
+def _other_course_session(c: TestClient) -> str:
+    """A session of another course (MATH 101) in the same semester as `make_session`'s CS 201."""
+    from tests.contract.test_classes_sessions_read import new_class_body
+
+    body = new_class_body()
+    body["course"]["new"]["name"] = "MATH 101"
+    return f"{c.post(f'{API}/classes', json=body).json()['lineageId']}:2026-09-28"
+
+
 def test_upcoming_session_and_foreign_session(
     owner_client: TestClient, make_member: Any, tmp_data_dir: Path
 ) -> None:
@@ -84,8 +93,67 @@ def test_upcoming_session_and_foreign_session(
     other = make_member()
     assert_problem(upload_pdf(other, key, "x.pdf", fx.text_pdf(1)), 404, "not_found")
     assert_problem(other.get(f"{API}/documents/{doc['id']}"), 404, "not_found")
-    assert c.get(f"{API}/sessions/{make_session(c)}/documents").json() == []
+    assert c.get(f"{API}/sessions/{_other_course_session(c)}/documents").json() == []
     assert staged_files(tmp_data_dir) == []
+
+
+def test_documents_are_shared_by_the_course_sessions(
+    owner_client: TestClient, tmp_data_dir: Path
+) -> None:
+    c = owner_client
+    monday = make_session(c)
+    wednesday = monday.replace("2026-09-28", "2026-09-30")
+    doc = _ok(upload_pdf(c, monday, "syllabus.pdf", fx.text_pdf(1)))
+    assert doc["sessionKey"] == monday
+
+    # listed in another session of the course (which has no folder yet), stored where uploaded
+    listed = c.get(f"{API}/sessions/{wednesday}/documents").json()
+    assert [(d["id"], d["sessionKey"]) for d in listed] == [(doc["id"], monday)]
+    assert (documents_dir(tmp_data_dir) / "syllabus.pdf").exists()
+
+    # names are unique across the course
+    again = _ok(upload_pdf(c, wednesday, "Syllabus.pdf", fx.text_pdf(1)))
+    assert again["name"] == "Syllabus (2)" and again["sessionKey"] == wednesday
+    assert (documents_dir(tmp_data_dir, "2026-09-30") / "Syllabus (2).pdf").exists()
+    r = c.patch(
+        f"{API}/documents/{again['id']}",
+        json={"name": "SYLLABUS"},
+        headers={"If-Match": f'"{again["version"]}"'},
+    )
+    assert_problem(r, 409, "name_taken")
+    assert [d["id"] for d in c.get(f"{API}/sessions/{monday}/documents").json()] == [
+        again["id"],
+        doc["id"],
+    ]
+
+    # a shared document stays open as a tab in another session
+    tabs = {"tabs": [{"kind": "document", "id": doc["id"]}], "active": None}
+    assert c.put(f"{API}/workspace/{wednesday}", json=tabs).status_code == 200
+    state = c.get(f"{API}/workspace/{wednesday}").json()
+    assert state["tabs"] == [{"kind": "document", "id": doc["id"]}]
+
+    # another class of the course, at other times, lists them too
+    from tests.contract.test_classes_sessions_read import new_class_body
+
+    course_id = c.get(f"{API}/sessions/{monday}").json()["courseId"]
+    lab = c.post(
+        f"{API}/classes",
+        json=new_class_body(
+            course={"id": course_id},
+            title="Lab",
+            startTime="14:00",
+            endTime="15:00",
+            recurrence={"freq": "weekly", "byWeekday": ["FR"], "end": {"kind": "semester_end"}},
+        ),
+    ).json()
+    friday = f"{lab['lineageId']}:2026-10-02"
+    assert {d["id"] for d in c.get(f"{API}/sessions/{friday}/documents").json()} == {
+        doc["id"],
+        again["id"],
+    }
+
+    # another course doesn't see them
+    assert c.get(f"{API}/sessions/{_other_course_session(c)}/documents").json() == []
 
 
 # ---- US2: refusals (T018): each leaves no row, no file, no staging file ------------------------
