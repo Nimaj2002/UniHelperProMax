@@ -1,0 +1,11 @@
+{
+  "_note": "Annotation colours (007 FR-026, FR-035). Colours belong to the document and look the same in every theme. `fill` paints highlights and comment markers; `ink` draws strokes and text-box text and meets WCAG AA on white pages. Keep in sync with PALETTE in backend/src/unihelper/domain/annotations.py (checked by a test).",
+  "colors": [
+    { "id": "yellow", "name": "Yellow", "fill": "#fde047", "ink": "#854d0e" },
+    { "id": "green", "name": "Green", "fill": "#86efac", "ink": "#166534" },
+    { "id": "blue", "name": "Blue", "fill": "#93c5fd", "ink": "#1e40af" },
+    { "id": "pink", "name": "Pink", "fill": "#f9a8d4", "ink": "#9d174d" },
+    { "id": "orange", "name": "Orange", "fill": "#fdba74", "ink": "#9a3412" },
+    { "id": "purple", "name": "Purple", "fill": "#c4b5fd", "ink": "#5b21b6" }
+  ]
+}

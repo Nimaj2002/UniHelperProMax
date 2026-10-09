@@ -1,0 +1,334 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 007 additions
+  version: 1.6.0
+  description: |
+    Additive to the 001–006 contracts (same conventions: camelCase JSON, RFC 9457 problems, CSRF
+    header on writes, `If-Match` versions). Changes to existing operations (additive):
+    `GET/PUT /workspace/{sessionKey}` gain `tabs`, `active` and `split` (002 `openNoteIds` /
+    `activeNoteId` stay, derived from `tabs`); `/preferences` gains `readerDarkPages`.
+servers:
+  - url: /api/v1
+
+paths:
+  /sessions/{sessionKey}/documents:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [documents]
+      summary: The session's documents, newest first
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Document" } }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /sessions/{sessionKey}/documents/import:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    post:
+      tags: [documents]
+      summary: Upload one PDF (raw body), stored unchanged in the session's documents/ folder
+      description: |
+        Same mechanics as 006 audio import: refused before reading the body when the name isn't
+        `.pdf` (415 `unsupported_type`), `Content-Length` is missing (411) or over 200 MB (413
+        `file_too_large`, `maxBytes`), or disk space is short (507). Streamed to staging, checked
+        (`%PDF-` header, `%%EOF` trailer) → 422 `unreadable_pdf`, then moved into place.
+      parameters:
+        - { name: fileName, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 255 } }
+        - { name: Content-Length, in: header, required: true, schema: { type: integer, minimum: 1, maximum: 209715200 } }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+      responses:
+        "201":
+          description: Uploaded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "411": { $ref: "#/components/responses/Problem" }
+        "413": { $ref: "#/components/responses/Problem" }
+        "415": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }   # unreadable_pdf · incomplete_upload
+        "507": { $ref: "#/components/responses/Problem" }
+
+  /documents/{documentId}:
+    parameters: [{ $ref: "#/components/parameters/DocumentId" }]
+    get:
+      tags: [documents]
+      summary: One document
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+        "404": { $ref: "#/components/responses/Problem" }
+    patch:
+      tags: [documents]
+      summary: Rename (file and annotation sidecar renamed with it) or report the page count
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                name: { type: string, minLength: 1, maxLength: 120 }
+                pageCount: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Document" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # name_taken
+        "412": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [documents]
+      summary: Delete the PDF and its annotation sidecar (user-confirmed)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/Problem" }
+        "412": { $ref: "#/components/responses/Problem" }
+
+  /documents/{documentId}/file:
+    parameters: [{ $ref: "#/components/parameters/DocumentId" }]
+    get:
+      tags: [documents]
+      summary: The PDF bytes (supports Range for progressive loading)
+      parameters:
+        - { name: Range, in: header, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: "Whole file (`Accept-Ranges: bytes`, `ETag`)"
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "206":
+          description: Partial content
+          content:
+            application/pdf:
+              schema: { type: string, format: binary }
+        "404": { $ref: "#/components/responses/Problem" }   # not_found · file_missing
+
+  /documents/{documentId}/annotations:
+    parameters: [{ $ref: "#/components/parameters/DocumentId" }]
+    get:
+      tags: [annotations]
+      summary: The user's annotations for this document (from the sidecar; empty when none)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnnotationSet" }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /documents/{documentId}/annotations/ops:
+    parameters: [{ $ref: "#/components/parameters/DocumentId" }]
+    post:
+      tags: [annotations]
+      summary: Apply a batch of annotation operations (merged per annotation, idempotent by opId)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ops]
+              properties:
+                ops:
+                  type: array
+                  minItems: 1
+                  maxItems: 200
+                  items: { $ref: "#/components/schemas/AnnotationOp" }
+      responses:
+        "200":
+          description: Every op's result, in order (a batch is applied as a whole or not at all)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [results, notice]
+                properties:
+                  results:
+                    type: array
+                    items: { $ref: "#/components/schemas/AnnotationOpResult" }
+                  notice:
+                    type: [string, "null"]
+                    description: e.g. `unreadable_file_moved` when a hand-edited sidecar was moved aside
+        "404": { $ref: "#/components/responses/Problem" }
+        "413": { $ref: "#/components/responses/Problem" }   # too_many_annotations
+        "422": { $ref: "#/components/responses/Problem" }   # invalid annotation (page, geometry, sizes)
+
+  /documents/{documentId}/position:
+    parameters: [{ $ref: "#/components/parameters/DocumentId" }]
+    get:
+      tags: [documents]
+      summary: The user's last page (null when never opened)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [page]
+                properties:
+                  page: { type: [integer, "null"], minimum: 1 }
+        "404": { $ref: "#/components/responses/Problem" }
+    put:
+      tags: [documents]
+      summary: Remember the last page
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [page]
+              properties:
+                page: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [page]
+                properties:
+                  page: { type: integer }
+        "404": { $ref: "#/components/responses/Problem" }
+
+components:
+  parameters:
+    SessionKey: { name: sessionKey, in: path, required: true, schema: { type: string } }
+    DocumentId: { name: documentId, in: path, required: true, schema: { type: string } }
+    IfMatch: { name: If-Match, in: header, required: true, schema: { type: string } }
+
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        maxBytes: { type: integer }
+
+    Document:
+      type: object
+      required: [id, sessionKey, name, fileName, originalFileName, size, encrypted, pageCount, uploadedAt, annotationCount, missing, version]
+      properties:
+        id: { type: string }
+        sessionKey: { type: string }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        fileName: { type: string }
+        originalFileName: { type: string }
+        size: { type: integer, minimum: 1 }
+        encrypted: { type: boolean }
+        pageCount: { type: [integer, "null"] }
+        uploadedAt: { type: string }
+        annotationCount: { type: integer, minimum: 0, description: for the delete confirmation (FR-009) }
+        missing: { type: boolean }
+        version: { type: integer }
+
+    Annotation:
+      type: object
+      required: [id, type, page, color]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [highlight, ink, textbox, comment] }
+        page: { type: integer, minimum: 1 }
+        color: { type: string, enum: [yellow, green, blue, pink, orange, purple] }
+        rects:
+          type: array
+          maxItems: 500
+          items: { type: array, minItems: 4, maxItems: 4, items: { type: number } }
+        quoted: { type: string, maxLength: 2000 }
+        strokes:
+          type: array
+          items: { type: array, items: { type: array, minItems: 2, maxItems: 2, items: { type: number } } }
+        width: { type: number, minimum: 0.5, maximum: 24 }
+        box: { type: array, minItems: 4, maxItems: 4, items: { type: number } }
+        anchor: { type: array, minItems: 2, maxItems: 2, items: { type: number } }
+        text: { type: string, maxLength: 10000 }
+        rev: { type: integer, minimum: 1, description: server-assigned }
+        conflictOf: { type: string }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+
+    AnnotationSet:
+      type: object
+      required: [annotations]
+      properties:
+        annotations:
+          type: array
+          items: { $ref: "#/components/schemas/Annotation" }
+
+    AnnotationOp:
+      type: object
+      required: [opId, kind]
+      properties:
+        opId: { type: string, minLength: 8, maxLength: 64 }
+        kind: { type: string, enum: [upsert, delete] }
+        annotation: { $ref: "#/components/schemas/Annotation" }
+        id: { type: string, description: for delete }
+        baseRev: { type: [integer, "null"], description: rev the client edited; null for a new annotation }
+
+    AnnotationOpResult:
+      type: object
+      required: [opId, status]
+      properties:
+        opId: { type: string }
+        status: { type: string, enum: [ok, kept_both, kept_changed] }
+        annotation: { $ref: "#/components/schemas/Annotation" }
+        copy: { $ref: "#/components/schemas/Annotation", description: the incoming version kept as a copy (kept_both) }
+
+    TabRef:
+      type: object
+      required: [kind, id]
+      properties:
+        kind: { type: string, enum: [note, document] }
+        id: { type: string }
+
+    WorkspaceStateV2:
+      type: object
+      description: 002 WorkspaceState plus these fields (all optional on PUT for older clients)
+      properties:
+        openNoteIds: { type: array, items: { type: string } }
+        activeNoteId: { type: [string, "null"] }
+        tabs: { type: array, maxItems: 50, items: { $ref: "#/components/schemas/TabRef" } }
+        active: { oneOf: [{ $ref: "#/components/schemas/TabRef" }, { type: "null" }] }
+        split:
+          type: [object, "null"]
+          required: [enabled, focused, ratio]
+          properties:
+            enabled: { type: boolean }
+            left: { oneOf: [{ $ref: "#/components/schemas/TabRef" }, { type: "null" }] }
+            right: { oneOf: [{ $ref: "#/components/schemas/TabRef" }, { type: "null" }] }
+            focused: { type: string, enum: [left, right] }
+            ratio: { type: number, minimum: 0.2, maximum: 0.8 }
+
+    PreferencesAddition:
+      type: object
+      properties:
+        readerDarkPages: { type: [boolean, "null"] }

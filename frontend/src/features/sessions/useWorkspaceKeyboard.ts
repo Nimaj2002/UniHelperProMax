@@ -9,6 +9,8 @@ export interface WorkspaceActions {
   prevTab: () => void;
   toggleLeft: () => void;
   toggleRight: () => void;
+  /** 007: Alt+\ toggles split view */
+  toggleSplit?: () => void;
 }
 
 /** FR-024 shortcuts (contracts/ui-workspace.md). Alt-combos work inside the editor too;
@@ -37,6 +39,7 @@ export function useWorkspaceKeyboard(actions: WorkspaceActions) {
         PageUp: a.prevTab,
         BracketLeft: a.toggleLeft,
         BracketRight: a.toggleRight,
+        ...(a.toggleSplit && { Backslash: a.toggleSplit }),
       };
       const run = map[e.code];
       if (!run) return;

@@ -4,13 +4,15 @@ import { describe, expect, it, vi } from "vitest";
 import { axe } from "vitest-axe";
 import { DeleteNoteDialog } from "@/features/sessions/NoteDialogs";
 import { NoteList } from "@/features/sessions/NoteList";
-import { NoteTabs } from "@/features/sessions/NoteTabs";
+import { WorkspaceTabs } from "@/features/sessions/WorkspaceTabs";
+import type { TabRef } from "@/features/sessions/tabState";
 import type { NoteMeta } from "@/features/sessions/api";
 
 const note = (id: string, name: string): NoteMeta => ({
   id, sessionKey: "L:2026-10-05", name, fileName: `${name}.md`, version: 1, size: 0, createdAt: "", updatedAt: "",
 });
 const notes = [note("a", "Lecture notes"), note("b", "Homework 3")];
+const tab = (id: string): TabRef => ({ kind: "note", id });
 
 describe("note management", () => {
   it("list marks open notes and offers rename/delete; selecting calls onOpen", async () => {
@@ -32,17 +34,21 @@ describe("note management", () => {
   it("tabs: one per open note, arrow keys move, close button closes", async () => {
     const onSelect = vi.fn();
     const onClose = vi.fn();
-    render(<NoteTabs notes={notes} openIds={["a", "b"]} activeId="a" onSelect={onSelect} onClose={onClose} />);
+    const state = { tabs: [tab("a"), tab("b")], active: tab("a"), split: null };
+    const titleOf = (t: TabRef) => notes.find((n) => n.id === t.id)?.name;
+    render(
+      <WorkspaceTabs state={state} titleOf={titleOf} splitAvailable={false} onSelect={onSelect} onClose={onClose} onToggleSplit={vi.fn()} onMoveToOtherPane={vi.fn()} />,
+    );
     expect(screen.getAllByRole("tab")).toHaveLength(2);
     expect(screen.getByRole("tab", { name: /^Lecture notes/ })).toHaveAttribute("aria-selected", "true");
     const user = userEvent.setup();
     screen.getByRole("tab", { name: /^Lecture notes/ }).focus();
     await user.keyboard("{ArrowRight}");
-    expect(onSelect).toHaveBeenCalledWith("b");
+    expect(onSelect).toHaveBeenCalledWith(tab("b"));
     await user.keyboard("{Delete}");
-    expect(onClose).toHaveBeenCalledWith("a");
+    expect(onClose).toHaveBeenCalledWith(tab("a"));
     await user.click(document.querySelector<HTMLElement>("[data-close-tab='b']")!);
-    expect(onClose).toHaveBeenCalledWith("b");
+    expect(onClose).toHaveBeenCalledWith(tab("b"));
     expect(onSelect).toHaveBeenCalledTimes(1); // clicking × does not select the tab
   });
 

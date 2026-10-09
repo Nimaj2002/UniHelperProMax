@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
@@ -8,6 +8,9 @@ import { PanelResizeHandle } from "@/components/PanelResizeHandle";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSession } from "@/features/classes/api";
+import { useDocuments } from "@/features/documents/api";
+import { confirmCloseDocument } from "@/features/documents/leaveGuards";
+import { DOC_ATTACH, DOC_DETACH, DocumentTabView } from "@/features/documents/reader/DocumentTabView";
 import { useNoteImporter } from "@/features/imports/useNoteImporter";
 import { isApiError } from "@/lib/api";
 import { readLocal, writeLocal } from "@/lib/storage";
@@ -22,11 +25,14 @@ import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor, type EditorMode, type MarkdownEditorHandle } from "./editor/MarkdownEditor";
 import { NoteList } from "./NoteList";
 import { DeleteNoteDialog, NoteNameDialog } from "./NoteDialogs";
-import { NoteTabs, StatusLabel } from "./NoteTabs";
 import { SessionTimeline } from "./SessionTimeline";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import { WorkspaceHeader } from "./WorkspaceHeader";
-import { useWorkspacePanels } from "./workspace-panels";
+import { paneId, StatusLabel, tabDomId, WorkspaceTabs } from "./WorkspaceTabs";
+import {
+  EMPTY, fromServer, panes, reduceTabs, same, toServer, type Side, type TabAction, type TabRef, type WorkspaceTabs as TabsState,
+} from "./tabState";
+import { useSidePanelSections, useWorkspacePanels } from "./workspace-panels";
 
 const saveFn: SaveFn = (id, content, version, baseHash, keepalive) =>
   saveNoteContent(id, content, version, baseHash, keepalive).then((r) => ({ version: r.version, hash: r.hash }));
@@ -107,12 +113,6 @@ function AudioColumns({ desktop, rightOpen, panel, children }: { desktop: boolea
   );
 }
 
-interface Tabs {
-  open: string[];
-  active: string | null;
-  sessionKey: string | null;
-}
-
 function RightPanel({ sessionKey }: { sessionKey: string }) {
   const panels = useWorkspacePanels();
   if (!panels.length)
@@ -133,7 +133,87 @@ function RightPanel({ sessionKey }: { sessionKey: string }) {
   );
 }
 
-/** Session workspace (FR-007–FR-024): sessions + notes | tabs + editor | audio. */
+
+const SPLIT_MIN_WIDTH = 1100;
+
+/** Width of an element, kept up to date (split view is offered from 1100 px, 007 FR-014a). */
+function useElementWidth(ref: RefObject<HTMLElement | null>) {
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setWidth(el.clientWidth);
+    const ro = new ResizeObserver(([e]) => setWidth(e.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [ref]);
+  return width;
+}
+
+/**
+ * Shows a document's reader in a pane. Each open document renders once into its own host element
+ * (`hosts`), which this slot borrows while it shows that document, so the reader keeps page,
+ * zoom and scroll across tab switches and moves between panes (research R11).
+ */
+function DocSlot({ host, parking }: { host: HTMLElement; parking: RefObject<HTMLElement | null> }) {
+  const slot = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    slot.current?.appendChild(host);
+    // moving a node resets its scroll offsets: the reader saves and restores its view (R11)
+    host.dispatchEvent(new Event(DOC_ATTACH));
+    const park = parking.current;
+    return () => {
+      host.dispatchEvent(new Event(DOC_DETACH));
+      park?.appendChild(host);
+    };
+  }, [host, parking]);
+  return <div ref={slot} className="h-full min-h-0" />;
+}
+
+interface NotePaneProps {
+  noteId: string;
+  meta: NoteMeta | undefined;
+  visible: boolean;
+  mode: EditorMode;
+  editorRef: RefObject<MarkdownEditorHandle | null>;
+  onToggleMode: () => void;
+}
+
+/** One pane's note editor; stays mounted (hidden) while the pane shows a document. */
+function NotePane({ noteId, meta, visible, mode, editorRef, onToggleMode }: NotePaneProps) {
+  const query = useQuery({ queryKey: ["note", noteId], queryFn: () => loadNote(noteId), staleTime: Infinity, gcTime: Infinity });
+  const note = query.data;
+  const snap = useSaveStatus(getSaver(noteId));
+  if (!note || !meta) {
+    return visible ? <p className="grid h-full place-items-center p-8 text-sm text-muted-foreground">Opening note…</p> : null;
+  }
+  return (
+    <div className={cn("relative flex h-full min-h-0 flex-col bg-editor-surface", !visible && "hidden")}>
+      {note.missing && snap?.status !== "conflict" && (
+        <p role="status" className="border-b border-divider px-4 py-2 text-sm text-warning">
+          This note's file is missing on disk. Typing will save it again.
+        </p>
+      )}
+      <div className="min-h-0 flex-1">
+        <MarkdownEditor
+          ref={editorRef}
+          noteId={noteId}
+          initialContent={getSaver(noteId)?.content ?? note.content}
+          label={`${meta.name} — Markdown note`}
+          mode={mode}
+          onChange={(id, text) => getSaver(id)?.update(text)}
+          onToggleMode={onToggleMode}
+          onEscape={() => document.getElementById(tabDomId({ kind: "note", id: noteId }))?.focus()}
+        />
+      </div>
+      <p className="pointer-events-none absolute right-3 bottom-2 text-xs" aria-live="polite">
+        <StatusLabel noteId={noteId} />
+      </p>
+    </div>
+  );
+}
+
+/** Session workspace (FR-007–FR-024, 007 FR-011–FR-014a): sessions + notes | tabs + panes | audio. */
 export function WorkspacePage() {
   const { courseId = "", sessionKey = "" } = useParams();
   const [searchParams] = useSearchParams();
@@ -143,14 +223,23 @@ export function WorkspacePage() {
   const session = useSession(sessionKey);
   const timeline = useTimeline(courseId);
   const notes = useNotes(sessionKey);
+  const documents = useDocuments(sessionKey);
   const prefs = usePreferences();
   const updatePrefs = useUpdatePreferences();
   const createNote = useCreateNote(sessionKey);
   const renameNote = useRenameNote(sessionKey);
   const deleteNote = useDeleteNote(sessionKey);
-  const editor = useRef<MarkdownEditorHandle>(null);
+  const leftEditor = useRef<MarkdownEditorHandle>(null);
+  const rightEditor = useRef<MarkdownEditorHandle>(null);
+  const editors = useMemo(() => ({ left: leftEditor, right: rightEditor }), []);
+  const eachEditor = useCallback((fn: (e: MarkdownEditorHandle) => void) => {
+    for (const r of [leftEditor, rightEditor]) if (r.current) fn(r.current);
+  }, []);
+  const mainRef = useRef<HTMLElement>(null);
+  const panesRef = useRef<HTMLDivElement>(null);
+  const mainWidth = useElementWidth(mainRef);
 
-  const [tabs, setTabs] = useState<Tabs>({ open: [], active: null, sessionKey: null });
+  const [tabState, setTabState] = useState<{ ws: TabsState; sessionKey: string | null }>({ ws: EMPTY, sessionKey: null });
   const [dialog, setDialog] = useState<{ kind: "new" } | { kind: "rename" | "delete"; note: NoteMeta } | null>(null);
   const [deleteError, setDeleteError] = useState<string>();
   const [drawer, setDrawer] = useState<"left" | "right" | null>(null);
@@ -163,20 +252,22 @@ export function WorkspacePage() {
   const leftOpen = isDesktop ? sidePanel.panelVisible && !leftCollapsed : drawer === "left";
   const rightOpen = isDesktop ? !prefs.data?.workspaceRightCollapsed : drawer === "right";
   const noteList = useMemo(() => notes.data ?? [], [notes.data]);
-  const activeId = tabs.sessionKey === sessionKey ? tabs.active : null;
-  const openIds = tabs.sessionKey === sessionKey ? tabs.open : [];
+  const docList = useMemo(() => documents.data ?? [], [documents.data]);
+  const ws = tabState.sessionKey === sessionKey ? tabState.ws : EMPTY;
+  const splitAvailable = isDesktop && mainWidth >= SPLIT_MIN_WIDTH;
+  const view = panes(ws, splitAvailable);
+  const activeId = ws.active?.kind === "note" ? ws.active.id : null;
+  const openIds = ws.tabs.filter((t) => t.kind === "note").map((t) => t.id);
+  const act = useCallback((a: TabAction) => setTabState((t) => ({ ...t, ws: reduceTabs(t.ws, a) })), []);
 
-  // ---- workspace state per session (FR-013) ----------------------------------------------
+  // ---- workspace state per session (FR-013, 007 FR-013/FR-014a) -------------------------
   useEffect(() => {
     let live = true;
     // `?note=<id>` (e.g. "Open note" after a transcription) also opens and selects that note
-    const withLinked = (open: string[], active: string | null) =>
-      linkedNote
-        ? { open: open.includes(linkedNote) ? open : [...open, linkedNote], active: linkedNote, sessionKey }
-        : { open, active, sessionKey };
+    const withLinked = (s: TabsState) => (linkedNote ? reduceTabs(s, { type: "open", tab: { kind: "note", id: linkedNote } }) : s);
     fetchWorkspace(sessionKey).then(
-      (s) => live && setTabs(withLinked(s.openNoteIds ?? [], s.activeNoteId ?? null)),
-      () => live && setTabs(withLinked([], null)),
+      (s) => live && setTabState({ ws: withLinked(fromServer(s)), sessionKey }),
+      () => live && setTabState({ ws: withLinked(EMPTY), sessionKey }),
     );
     return () => {
       live = false;
@@ -185,51 +276,43 @@ export function WorkspacePage() {
 
   // debounced save of the tab state; a pending save is sent at once when the session changes
   // or the workspace unmounts, so switching quickly never loses tabs (US3 #3)
-  const pendingTabs = useRef<{ key: string; open: string[]; active: string | null } | null>(null);
+  const pendingTabs = useRef<{ key: string; ws: TabsState } | null>(null);
   const sendPendingTabs = useCallback(() => {
     const p = pendingTabs.current;
     pendingTabs.current = null;
-    if (p) void putWorkspace(p.key, { openNoteIds: p.open, activeNoteId: p.active }).catch(() => {});
+    if (p) void putWorkspace(p.key, toServer(p.ws)).catch(() => {});
   }, []);
   useEffect(() => {
-    if (tabs.sessionKey !== sessionKey) return;
-    pendingTabs.current = { key: sessionKey, open: tabs.open, active: tabs.active };
+    if (tabState.sessionKey !== sessionKey) return;
+    pendingTabs.current = { key: sessionKey, ws: tabState.ws };
     const t = window.setTimeout(sendPendingTabs, 500);
     return () => window.clearTimeout(t);
-  }, [tabs, sessionKey, sendPendingTabs]);
+  }, [tabState, sessionKey, sendPendingTabs]);
   useEffect(() => sendPendingTabs, [sessionKey, sendPendingTabs]);
 
-
   // transcripts appended by the server appear in the open editor without reload (004 FR-009)
-  useEffect(() => onServerAppend((noteId, text) => editor.current?.appendContent(noteId, text)), []);
+  useEffect(() => onServerAppend((noteId, text) => eachEditor((e) => e.appendContent(noteId, text))), [eachEditor]);
   // a note replaced by an import shows its new content (006 FR-020)
-  useEffect(() => onServerReplace((noteId, text) => editor.current?.replaceContent(noteId, text)), []);
+  useEffect(() => onServerReplace((noteId, text) => eachEditor((e) => e.replaceContent(noteId, text))), [eachEditor]);
 
   // ---- tab actions -----------------------------------------------------------------------
-  const openNote = useCallback((id: string) => {
-    setTabs((t) => ({ ...t, open: t.open.includes(id) ? t.open : [...t.open, id], active: id }));
-  }, []);
+  const openNote = useCallback((id: string) => act({ type: "open", tab: { kind: "note", id } }), [act]);
+  const openDocument = useCallback((id: string) => act({ type: "open", tab: { kind: "document", id } }), [act]);
+  const closeDeletedDocument = useCallback((id: string) => act({ type: "close", tab: { kind: "document", id } }), [act]);
 
   const closeTab = useCallback(
-    (id: string) => {
-      void getSaver(id)?.flush();
-      setTabs((t) => {
-        const i = t.open.indexOf(id);
-        const open = t.open.filter((x) => x !== id);
-        const active = t.active === id ? (open[i] ?? open[i - 1] ?? null) : t.active;
-        return { ...t, open, active };
-      });
+    (tab: TabRef) => {
+      if (tab.kind === "note") {
+        void getSaver(tab.id)?.flush();
+        eachEditor((e) => e.forget(tab.id));
+        act({ type: "close", tab });
+        return;
+      }
+      // unsent annotation changes: try now, else ask (007 FR-029)
+      void confirmCloseDocument(tab.id).then((go) => go && act({ type: "close", tab }));
     },
-    [],
+    [act, eachEditor],
   );
-
-  const cycleTab = useCallback((dir: 1 | -1) => {
-    setTabs((t) => {
-      if (!t.open.length) return t;
-      const i = t.open.indexOf(t.active ?? "");
-      return { ...t, active: t.open[(i + dir + t.open.length) % t.open.length] };
-    });
-  }, []);
 
   const togglePanel = useCallback(
     (side: "left" | "right") => {
@@ -251,30 +334,55 @@ export function WorkspacePage() {
     [mode, updatePrefs],
   );
 
+  const sideSections = useSidePanelSections();
   const noteImporter = useNoteImporter({ sessionKey, notes: noteList, onOpen: openNote });
 
   useWorkspaceKeyboard({
     newNote: () => setDialog({ kind: "new" }),
     importNote: noteImporter.pick,
-    closeTab: () => activeId && closeTab(activeId),
-    nextTab: () => cycleTab(1),
-    prevTab: () => cycleTab(-1),
+    closeTab: () => ws.active && closeTab(ws.active),
+    nextTab: () => act({ type: "cycle", dir: 1 }),
+    prevTab: () => act({ type: "cycle", dir: -1 }),
     toggleLeft: () => togglePanel("left"),
     toggleRight: () => togglePanel("right"),
+    toggleSplit: () => splitAvailable && act({ type: "toggleSplit" }),
   });
 
+  // ---- tab names ----------------------------------------------------------------------------
+  const noteById = useMemo(() => new Map(noteList.map((n) => [n.id, n])), [noteList]);
+  const docById = useMemo(() => new Map(docList.map((d) => [d.id, d])), [docList]);
+  const titleOf = useCallback(
+    (t: TabRef) => (t.kind === "note" ? noteById.get(t.id)?.name : docById.get(t.id)?.name),
+    [noteById, docById],
+  );
+
+  // ---- note editors per pane ----------------------------------------------------------------
+  // A pane showing a document keeps its last note's editor mounted but hidden, so undo history and
+  // scroll survive; it is dropped when that note is closed or shown in the other pane.
+  const [held, setHeld] = useState<Record<Side, string | null>>({ left: null, right: null });
+  const editorNote = (side: Side): string | null => {
+    const shown = side === "left" ? view.left : view.right;
+    if (shown?.kind === "note") return shown.id;
+    if (side === "right" && !view.split) return null;
+    const h = held[side];
+    if (!h || !openIds.includes(h)) return null;
+    const o = side === "left" ? view.right : view.left;
+    return o?.kind === "note" && o.id === h ? null : h;
+  };
+  const leftNote = editorNote("left");
+  const rightNote = editorNote("right");
+  if (held.left !== leftNote || held.right !== rightNote) setHeld({ left: leftNote, right: rightNote });
+  useEffect(() => {
+    // an editor's cached state for a note now edited in the other pane is stale
+    if (leftNote) rightEditor.current?.forget(leftNote);
+    if (rightNote) leftEditor.current?.forget(rightNote);
+  }, [leftNote, rightNote]);
+
   // ---- active note + conflicts ------------------------------------------------------------
-  const activeMeta = noteList.find((n) => n.id === activeId);
-  const activeQuery = useQuery({
-    queryKey: ["note", activeId],
-    queryFn: () => loadNote(activeId!),
-    enabled: !!activeId,
-    staleTime: Infinity,
-    gcTime: Infinity,
-  });
-  const activeNote = activeQuery.data;
+  const activeMeta = activeId ? noteById.get(activeId) : undefined;
   const activeSaver = activeId ? getSaver(activeId) : undefined;
   const activeSnap = useSaveStatus(activeSaver);
+  const editorOf = (noteId: string) => (leftNote === noteId ? leftEditor.current : rightNote === noteId ? rightEditor.current : null);
 
   const keepBoth = async () => {
     if (!activeSaver || !activeMeta) return;
@@ -290,7 +398,7 @@ export function WorkspacePage() {
     if (!created) return;
     ensureSaver(created.id, { content: created.content, version: created.version, hash: created.hash }, saveFn);
     const text = activeSaver.adoptTheirsAfterCopy();
-    editor.current?.replaceContent(activeSaver.noteId, text);
+    eachEditor((e) => e.replaceContent(activeSaver.noteId, text));
     openNote(created.id);
     toast.success(`Your text was saved as “${created.name}”.`);
   };
@@ -298,8 +406,30 @@ export function WorkspacePage() {
   const useTheirs = () => {
     if (!activeSaver) return;
     const text = activeSaver.useTheirs();
-    editor.current?.replaceContent(activeSaver.noteId, text);
+    eachEditor((e) => e.replaceContent(activeSaver.noteId, text));
   };
+
+  // ---- document readers: one per open document tab, kept mounted (research R11) ------------
+  const parking = useRef<HTMLDivElement>(null);
+  const [hosts] = useState(() => new Map<string, HTMLDivElement>());
+  const openDocIds = ws.tabs.filter((t) => t.kind === "document" && docById.has(t.id)).map((t) => t.id);
+  const hostFor = (id: string) => {
+    let h = hosts.get(id);
+    if (!h) {
+      h = document.createElement("div");
+      h.className = "h-full min-h-0";
+      h.dataset.docHost = id;
+      hosts.set(id, h);
+    }
+    return h;
+  };
+  useEffect(() => {
+    for (const [id, h] of hosts)
+      if (!openDocIds.includes(id)) {
+        h.remove();
+        hosts.delete(id);
+      }
+  });
 
   // ---- layout -----------------------------------------------------------------------------
   const left = (
@@ -319,6 +449,9 @@ export function WorkspacePage() {
           setDialog({ kind: "delete", note });
         }}
       />
+      {sideSections.map(({ id, component: Section }) => (
+        <Section key={id} sessionKey={sessionKey} openDocument={openDocument} closeDocument={closeDeletedDocument} />
+      ))}
       <nav aria-label="Sessions of this course" className="min-h-0 border-t border-divider pt-3">
         <h2 className="px-2 pb-1 text-xs font-semibold text-muted-foreground">Sessions</h2>
         {timeline.data && <SessionTimeline entries={timeline.data.entries} variant="compact" activeKey={sessionKey} />}
@@ -326,70 +459,122 @@ export function WorkspacePage() {
     </div>
   );
 
+  const emptyPane = (
+    <div className="grid h-full place-items-center p-8 text-center">
+      <div className="grid max-w-sm gap-3">
+        <p className="text-sm text-muted-foreground">
+          {noteList.length || docList.length ? "Choose a note or document on the left, or start a new note." : "No notes for this session yet."}
+        </p>
+        <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
+          <button type="button" onClick={() => setDialog({ kind: "new" })} className="text-sm font-medium text-primary underline underline-offset-4">
+            New note <kbd className="ml-1 font-mono text-xs text-muted-foreground">Alt+N</kbd>
+          </button>
+          <button type="button" onClick={noteImporter.pick} className="text-sm font-medium text-primary underline underline-offset-4">
+            Import note <kbd className="ml-1 font-mono text-xs text-muted-foreground">Alt+Shift+N</kbd>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
+  const pane = (side: Side) => {
+    const shown = side === "left" ? view.left : view.right;
+    const known = shown && titleOf(shown) !== undefined ? shown : null;
+    const noteId = side === "left" ? leftNote : rightNote;
+    const focused = view.split && ws.split?.focused === side;
+    return (
+      <section
+        id={paneId(side)}
+        role="tabpanel"
+        aria-labelledby={known ? tabDomId(known) : undefined}
+        aria-label={known ? undefined : side === "left" ? "Left pane" : "Right pane"}
+        onFocusCapture={() => view.split && !focused && act({ type: "focusPane", side })}
+        onPointerDownCapture={() => view.split && !focused && act({ type: "focusPane", side })}
+        className={cn("relative h-full min-h-0 min-w-0 bg-editor-surface", view.split && focused && "shadow-[inset_0_2px_0_var(--accent)]")}
+      >
+        {noteId && (
+          <NotePane
+            noteId={noteId}
+            meta={noteById.get(noteId)}
+            visible={known?.kind === "note"}
+            mode={mode}
+            editorRef={editors[side]}
+            onToggleMode={toggleMode}
+          />
+        )}
+        {known?.kind === "document" && <DocSlot host={hostFor(known.id)} parking={parking} />}
+        {!known && (side === "left" || !view.split ? emptyPane : <p className="grid h-full place-items-center p-8 text-sm text-muted-foreground">Select a tab to show it here.</p>)}
+      </section>
+    );
+  };
+
+  const ratio = ws.split?.ratio ?? 0.5;
+  const showsNote = view.left?.kind === "note" || view.right?.kind === "note";
   const editorArea = (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex min-w-0 items-end justify-between gap-2 bg-surface">
-        <NoteTabs notes={noteList} openIds={openIds} activeId={activeId} onSelect={openNote} onClose={closeTab} />
-        <ToggleGroup
-          type="single"
-          size="sm"
-          variant="outline"
-          value={mode}
-          onValueChange={(v) => v && v !== mode && toggleMode()}
-          aria-label="Editing mode"
-          className="mr-2 mb-1 shrink-0"
-        >
-          <ToggleGroupItem value="live" aria-keyshortcuts="Control+E Meta+E">Live</ToggleGroupItem>
-          <ToggleGroupItem value="raw" aria-keyshortcuts="Control+E Meta+E">Raw</ToggleGroupItem>
-        </ToggleGroup>
+        <WorkspaceTabs
+          state={ws}
+          titleOf={titleOf}
+          splitAvailable={splitAvailable}
+          onSelect={(tab) => act({ type: "open", tab })}
+          onClose={closeTab}
+          onToggleSplit={() => act({ type: "toggleSplit" })}
+          onMoveToOtherPane={(tab) => act({ type: "moveToOtherPane", tab })}
+        />
+        {showsNote && (
+          <ToggleGroup
+            type="single"
+            size="sm"
+            variant="outline"
+            value={mode}
+            onValueChange={(v) => v && v !== mode && toggleMode()}
+            aria-label="Editing mode"
+            className="mr-2 mb-1 shrink-0"
+          >
+            <ToggleGroupItem value="live" aria-keyshortcuts="Control+E Meta+E">Live</ToggleGroupItem>
+            <ToggleGroupItem value="raw" aria-keyshortcuts="Control+E Meta+E">Raw</ToggleGroupItem>
+          </ToggleGroup>
+        )}
       </div>
       <div
-        id="note-editor-panel"
-        role="tabpanel"
-        aria-labelledby={activeId ? `tab-${activeId}` : undefined}
-        className="relative min-h-0 flex-1 bg-editor-surface"
+        ref={panesRef}
+        className="grid min-h-0 flex-1"
+        style={{ "--split-l": `${ratio * 100}%`, gridTemplateColumns: view.split ? "minmax(0,var(--split-l)) minmax(0,1fr)" : "minmax(0,1fr)" } as CSSProperties}
       >
-        {activeId && activeNote && activeMeta ? (
-          <>
-            {activeNote.missing && activeSnap?.status !== "conflict" && (
-              <p role="status" className="border-b border-divider px-4 py-2 text-sm text-warning">
-                This note's file is missing on disk. Typing will save it again.
-              </p>
-            )}
-            <MarkdownEditor
-              ref={editor}
-              noteId={activeId}
-              initialContent={getSaver(activeId)?.content ?? activeNote.content}
-              label={`${activeMeta.name} — Markdown note`}
-              mode={mode}
-              onChange={(id, text) => getSaver(id)?.update(text)}
-              onToggleMode={toggleMode}
-              onEscape={() => document.getElementById(`tab-${activeId}`)?.focus()}
+        {pane("left")}
+        {view.split && (
+          <div className="relative min-h-0 min-w-0 border-l border-divider">
+            <PanelResizeHandle
+              value={Math.round(ratio * 100)}
+              min={20}
+              max={80}
+              defaultValue={50}
+              step={2}
+              unitsPerPx={() => 100 / (panesRef.current?.clientWidth || 1)}
+              onResize={(v) => act({ type: "setRatio", ratio: v / 100 })}
+              onDrag={(v) => panesRef.current?.style.setProperty("--split-l", `${v}%`)}
+              grow="right"
+              label="Resize split view"
+              controls={paneId("left")}
+              className="left-0"
             />
-            <p className="pointer-events-none absolute right-3 bottom-2 text-xs" aria-live="polite">
-              <StatusLabel noteId={activeId} />
-            </p>
-          </>
-        ) : (
-          <div className="grid h-full place-items-center p-8 text-center">
-            <div className="grid max-w-sm gap-3">
-              <p className="text-sm text-muted-foreground">
-                {activeId ? "Opening note…" : noteList.length ? "Choose a note on the left, or start a new one." : "No notes for this session yet."}
-              </p>
-              {!activeId && (
-                <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
-                  <button type="button" onClick={() => setDialog({ kind: "new" })} className="text-sm font-medium text-primary underline underline-offset-4">
-                    New note <kbd className="ml-1 font-mono text-xs text-muted-foreground">Alt+N</kbd>
-                  </button>
-                  <button type="button" onClick={noteImporter.pick} className="text-sm font-medium text-primary underline underline-offset-4">
-                    Import note <kbd className="ml-1 font-mono text-xs text-muted-foreground">Alt+Shift+N</kbd>
-                  </button>
-                </div>
-              )}
-            </div>
+            {pane("right")}
           </div>
         )}
       </div>
+      <div ref={parking} hidden />
+      {openDocIds.map((id) =>
+        createPortal(
+          <DocumentTabView
+            documentId={id}
+            visible={same(view.left, { kind: "document", id }) || same(view.right, { kind: "document", id })}
+            onEscape={() => document.getElementById(tabDomId({ kind: "document", id }))?.focus()}
+          />,
+          hostFor(id),
+          id,
+        ),
+      )}
     </div>
   );
 
@@ -416,7 +601,7 @@ export function WorkspacePage() {
           }
         >
           {isDesktop && sidePanel.target && createPortal(left, sidePanel.target)}
-          <main className={cn("min-h-0 min-w-0")} aria-label="Notes">{editorArea}</main>
+          <main ref={mainRef} className="min-h-0 min-w-0" aria-label="Notes and documents">{editorArea}</main>
         </AudioColumns>
       )}
 
@@ -443,7 +628,7 @@ export function WorkspacePage() {
             ensureSaver(note.id, { content: note.content, version: note.version, hash: note.hash }, saveFn);
             setDialog(null);
             openNote(note.id);
-            requestAnimationFrame(() => requestAnimationFrame(() => editor.current?.focus()));
+            requestAnimationFrame(() => requestAnimationFrame(() => editorOf(note.id)?.focus()));
           }}
         />
       )}
@@ -483,8 +668,7 @@ export function WorkspacePage() {
               return;
             }
             removeSaver(note.id);
-            editor.current?.forget(note.id);
-            closeTab(note.id);
+            closeTab({ kind: "note", id: note.id });
             setDialog(null);
             toast.success(`Deleted “${note.name}”.`);
           }}

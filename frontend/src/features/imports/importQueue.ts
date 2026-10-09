@@ -1,7 +1,8 @@
 /**
- * Audio uploads, kept outside React so they continue while the user moves around the app
+ * File uploads, kept outside React so they continue while the user moves around the app
  * (006 FR-005, FR-006, FR-012; data-model "Upload"). At most two upload at once; each file has
- * its own progress, cancel and result.
+ * its own progress, cancel and result. One queue per kind of file: audio (006) and PDFs (007)
+ * differ only in their upload call, their pre-check and their messages.
  */
 import { useSyncExternalStore } from "react";
 import { ApiError } from "@/lib/api";
@@ -22,7 +23,8 @@ export interface UploadEntry {
   error?: FileProblem;
   /** Network and server-side failures can be retried; rejections of the file itself can't. */
   retryable: boolean;
-  recordingId?: string;
+  /** Id of what the upload created (a recording, a document). */
+  resultId?: string;
 }
 
 export interface UploadEvent {
@@ -37,13 +39,20 @@ export interface BatchResult {
   detail?: string;
 }
 
-export type UploadFn = (
+export type UploadFn<T extends { id: string } = Recording> = (
   sessionKey: string,
   file: File,
   durationMs: number | undefined,
   onProgress: (loaded: number, total: number) => void,
   signal: AbortSignal,
-) => Promise<Recording>;
+) => Promise<T>;
+
+export interface QueueKind {
+  /** `null` when the file may be uploaded; otherwise why not (no request is sent). */
+  check: (file: File) => FileProblem | null;
+  /** The message for a failed upload. */
+  errorMessage: (err: unknown, fileName: string, size: number) => FileProblem & { retryable: boolean };
+}
 
 interface Internal {
   entry: UploadEntry;
@@ -82,7 +91,9 @@ export function uploadErrorMessage(err: unknown, fileName: string, size: number)
   return { code: "network_error", message: `Upload of ${fileName} failed — check your connection.`, retryable: true };
 }
 
-export class ImportQueue {
+const AUDIO_KIND: QueueKind = { check: checkAudioFile, errorMessage: (e, n, s) => uploadErrorMessage(e, n, s) };
+
+export class ImportQueue<T extends { id: string } = Recording> {
   private items = new Map<string, Internal>();
   private order: string[] = [];
   private snapshot: UploadEntry[] = [];
@@ -92,15 +103,16 @@ export class ImportQueue {
   private lastEmit = 0;
   private emitTimer: ReturnType<typeof setTimeout> | null = null;
   private seq = 0;
-  onUploaded?: (sessionKey: string, recording: Recording) => void;
+  onUploaded?: (sessionKey: string, created: T) => void;
   onBatchSettled?: (sessionKey: string, results: BatchResult[]) => void;
 
   constructor(
-    private upload: UploadFn = importAudio,
+    private upload: UploadFn<T> = importAudio as unknown as UploadFn<T>,
     private probe: (file: File) => Promise<number | undefined> = probeDuration,
     private readonly concurrency = 2,
     private readonly renderIntervalMs = 250,
     private now: () => number = () => Date.now(),
+    private readonly kind: QueueKind = AUDIO_KIND,
   ) {}
 
   // ---- observation ---------------------------------------------------------------------
@@ -160,7 +172,7 @@ export class ImportQueue {
     const ids: string[] = [];
     for (const file of files) {
       const id = `u${++this.seq}`;
-      const problem = checkAudioFile(file);
+      const problem = this.kind.check(file);
       const item: Internal = {
         file,
         lastQuarter: 0,
@@ -282,14 +294,14 @@ export class ImportQueue {
       );
       if (cancelled(item)) return; // cancel() already reported it
       item.entry.state = "done";
-      item.entry.recordingId = rec.id;
+      item.entry.resultId = rec.id;
       this.fire("done", item);
       this.onUploaded?.(item.entry.sessionKey, rec);
       this.settle(item);
       this.remove(item.entry.id);
     } catch (err) {
       if (cancelled(item)) return; // cancel() already reported it
-      const problem = uploadErrorMessage(err, item.entry.fileName, item.entry.size);
+      const problem = this.kind.errorMessage(err, item.entry.fileName, item.entry.size);
       item.entry.state = "failed";
       item.entry.error = { code: problem.code, message: problem.message };
       item.entry.retryable = problem.retryable;
@@ -319,15 +331,31 @@ export class ImportQueue {
   }
 }
 
+// every app-wide queue, so leave/sign-out guards cover audio (006) and PDF (007) uploads
+const queues = new Set<AnyQueue>();
+
+export function registerQueue<Q extends AnyQueue>(q: Q): Q {
+  queues.add(q);
+  return q;
+}
+
+export function allQueues(): AnyQueue[] {
+  importQueue(); // the audio queue always exists
+  return [...queues];
+}
+
 let shared: ImportQueue | null = null;
 
-/** The app-wide queue (module-level, so uploads survive navigation). */
+/** The app-wide audio queue (module-level, so uploads survive navigation). */
 export function importQueue(): ImportQueue {
-  shared ??= new ImportQueue();
+  shared ??= registerQueue(new ImportQueue());
   return shared;
 }
 
-export function useImportQueue(sessionKey: string, queue: ImportQueue = importQueue()): UploadEntry[] {
+/** Anything with the queue's commands, whatever it uploads (audio, PDFs). */
+export type AnyQueue = Pick<ImportQueue<{ id: string }>, "subscribe" | "getSnapshot" | "onEvent" | "cancel" | "retry" | "dismiss" | "enqueue" | "hasActiveUploads" | "cancelAll">;
+
+export function useImportQueue(sessionKey: string, queue: AnyQueue = importQueue()): UploadEntry[] {
   const all = useSyncExternalStore(queue.subscribe, queue.getSnapshot);
   return all.filter((e) => e.sessionKey === sessionKey);
 }

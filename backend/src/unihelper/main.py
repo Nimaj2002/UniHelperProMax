@@ -10,6 +10,8 @@ from datetime import timedelta
 from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from unihelper import single_process
 from unihelper.api.deps import csrf_protect
@@ -18,6 +20,7 @@ from unihelper.api.v1 import (
     admin,
     auth,
     classes,
+    documents,
     health,
     hierarchy,
     notes,
@@ -33,6 +36,7 @@ from unihelper.api.v1 import (
 from unihelper.config import Settings, load_settings
 from unihelper.db.engine import make_engine, make_sessionmaker
 from unihelper.db.migrate import upgrade_to_head
+from unihelper.services import annotation_service
 from unihelper.services.login_throttle import LoginThrottle
 from unihelper.storage.storage_service import StorageService
 from unihelper.transcription.worker import TranscriptionWorker
@@ -56,6 +60,7 @@ def build_api_router() -> APIRouter:
         timeline,
         workspace,
         recordings,
+        documents,
         transcription,
         settings,
         themes,
@@ -75,6 +80,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             # always upgrade: a no-op when the schema is already at head
             upgrade_to_head(app.state.engine)
             settings.files_root.mkdir(parents=True, exist_ok=True)
+            try:  # results of annotation ops older than 30 days (007 research R7)
+                with Session(app.state.engine) as db:
+                    annotation_service.prune_applied_ops(db)
+            except SQLAlchemyError:
+                log.exception("could not prune old annotation op results")
             try:  # staging files left by an import interrupted by a restart (006)
                 app.state.storage.sweep_uploads(timedelta(hours=1))
             except OSError:

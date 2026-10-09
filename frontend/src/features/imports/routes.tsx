@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { recordingsKey } from "@/features/recordings/api";
 import { ImportSummaryHost, showImportSummary, type SummaryRow } from "./ImportSummaryDialog";
-import { importQueue, type BatchResult } from "./importQueue";
+import { allQueues, importQueue, type BatchResult } from "./importQueue";
 
 const OUTCOME: Record<BatchResult["outcome"], string> = {
   imported: "Uploaded",
@@ -47,7 +47,7 @@ function ImportLifecycle() {
     };
     q.onBatchSettled = (_sessionKey, results) => announceBatch(results);
     const beforeUnload = (e: BeforeUnloadEvent) => {
-      if (q.hasActiveUploads()) {
+      if (allQueues().some((x) => x.hasActiveUploads())) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -86,7 +86,7 @@ function SignOutWhileUploading() {
           <Button
             variant="destructive"
             onClick={() => {
-              importQueue().cancelAll();
+              allQueues().forEach((x) => x.cancelAll());
               setOpen(false);
               pendingSignOut?.();
             }}
@@ -103,7 +103,7 @@ registerGlobalHost({ id: "import-lifecycle", component: ImportLifecycle });
 registerGlobalHost({ id: "import-summary", component: ImportSummaryHost });
 registerGlobalHost({ id: "import-signout", component: SignOutWhileUploading });
 registerSignOutGuard((proceed) => {
-  if (!importQueue().hasActiveUploads()) return true;
+  if (!allQueues().some((x) => x.hasActiveUploads())) return true;
   pendingSignOut = proceed;
   signOutListeners.forEach((l) => l());
   return false;

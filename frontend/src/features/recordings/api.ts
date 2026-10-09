@@ -1,5 +1,6 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { API_BASE, ApiError, apiFetch, readCookie, type Schemas } from "@/lib/api";
+import { uploadFile } from "@/lib/api/upload";
 
 export type Recording = Schemas["Recording"];
 const enc = encodeURIComponent;
@@ -58,10 +59,7 @@ export function audioUrl(id: string, version: number) {
   return `${API_BASE}/recordings/${enc(id)}/audio?v=${version}`;
 }
 
-/**
- * Import one audio file (006). XMLHttpRequest because fetch has no upload progress; aborting the
- * signal aborts the request, and the server then keeps nothing (research I5).
- */
+/** Import one audio file (006): stored unchanged, listed as "Imported". */
 export function importAudio(
   sessionKey: string,
   file: Blob & { name: string },
@@ -69,33 +67,7 @@ export function importAudio(
   onProgress: (loaded: number, total: number) => void,
   signal: AbortSignal,
 ): Promise<Recording> {
-  return new Promise((resolve, reject) => {
-    const params = new URLSearchParams({ fileName: file.name });
-    if (durationMs !== undefined) params.set("durationMs", String(durationMs));
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", `${API_BASE}/sessions/${enc(sessionKey)}/recordings/import?${params}`);
-    xhr.withCredentials = true;
-    xhr.setRequestHeader("Content-Type", "application/octet-stream");
-    xhr.setRequestHeader("Accept", "application/json");
-    xhr.setRequestHeader("X-CSRF-Token", decodeURIComponent(readCookie("uh_csrf") ?? ""));
-    xhr.upload.onprogress = (e) => onProgress(e.loaded, e.lengthComputable ? e.total : file.size);
-    xhr.onload = () => {
-      let data: Record<string, unknown> = {};
-      try {
-        data = JSON.parse(xhr.responseText || "{}") as Record<string, unknown>;
-      } catch {
-        /* not JSON */
-      }
-      if (xhr.status >= 200 && xhr.status < 300) resolve(data as unknown as Recording);
-      else reject(new ApiError(xhr.status, String(data.code ?? "http_error"), String(data.title ?? xhr.statusText), undefined, [], data));
-    };
-    xhr.onerror = () => reject(new ApiError(0, "network_error", "Can't reach the server."));
-    xhr.onabort = () => reject(new DOMException("Upload cancelled", "AbortError"));
-    if (signal.aborted) {
-      reject(new DOMException("Upload cancelled", "AbortError"));
-      return;
-    }
-    signal.addEventListener("abort", () => xhr.abort(), { once: true });
-    xhr.send(file);
-  });
+  const query: Record<string, string> = { fileName: file.name };
+  if (durationMs !== undefined) query.durationMs = String(durationMs);
+  return uploadFile<Recording>(`/sessions/${enc(sessionKey)}/recordings/import`, query, file, onProgress, signal);
 }

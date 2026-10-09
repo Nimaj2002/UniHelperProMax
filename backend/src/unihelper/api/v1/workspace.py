@@ -18,9 +18,7 @@ def get_workspace(session_key: str, user: CurrentUser, db: DbSession) -> Any:
 
 @router.put("/workspace/{session_key}", response_model=WorkspaceState)
 def put_workspace(session_key: str, body: WorkspaceState, user: CurrentUser, db: DbSession) -> Any:
-    return workspace_service.put_state(
-        db, user, session_key, body.open_note_ids, body.active_note_id
-    )
+    return workspace_service.put_state(db, user, session_key, body)
 
 
 @router.get("/preferences", response_model=Preferences)

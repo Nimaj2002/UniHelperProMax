@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import errno
 from typing import Annotated, Any
 
 import anyio
 from fastapi import APIRouter, Query, Request, Response, status
 from fastapi.responses import FileResponse
-from starlette.requests import ClientDisconnect
 
+from unihelper.api import uploads
 from unihelper.api.deps import CurrentUser, DbSession, IfMatch, Storage
 from unihelper.api.errors import ApiError
 from unihelper.domain import audio_probe
@@ -101,21 +100,6 @@ def delete_recording(
 # ---- import (feature 006, research I5) ----------------------------------------------------
 
 MAX_IMPORT_BYTES = 1024 * 1024 * 1024  # 1 GB (FR-004)
-FREE_SPACE_MARGIN = 64 * 1024 * 1024
-WRITE_SIZE = 1024 * 1024
-
-
-def _too_large() -> ApiError:
-    return ApiError(
-        413,
-        "file_too_large",
-        "Audio files can be at most 1 GB.",
-        extra={"maxBytes": MAX_IMPORT_BYTES},
-    )
-
-
-def _no_space() -> ApiError:
-    return ApiError(507, "insufficient_storage", "There isn't enough space on the server.")
 
 
 @router.post(
@@ -141,51 +125,15 @@ async def import_recording(
             "This file type isn't supported.",
             extra={"accepted": list(audio_probe.ACCEPTED_EXTENSIONS)},
         )
-    raw_length = request.headers.get("content-length")
-    if raw_length is None or not raw_length.isdigit():
-        raise ApiError(411, "length_required", "The upload must state its size.")
-    length = int(raw_length)
-    if length > MAX_IMPORT_BYTES:
-        raise _too_large()
+    length = uploads.declared_length(request, MAX_IMPORT_BYTES, "Audio files")
     if length == 0:
         raise ApiError(422, "unreadable_audio", f"{file_name} couldn't be read as audio.")
     await anyio.to_thread.run_sync(sfs.resolve, db, user, session_key)  # 404 before the body
-    if await anyio.to_thread.run_sync(storage.free_bytes) < length + FREE_SPACE_MARGIN:
-        raise _no_space()
-
-    staged, fh = await anyio.to_thread.run_sync(storage.open_upload)
-    received = 0
+    staged = await uploads.receive_upload(request, storage, length, MAX_IMPORT_BYTES, "Audio files")
     try:
-        try:
-            buffer = bytearray()
-            async for chunk in request.stream():
-                received += len(chunk)
-                if received > MAX_IMPORT_BYTES:
-                    raise _too_large()
-                buffer += chunk
-                if len(buffer) >= WRITE_SIZE:
-                    await anyio.to_thread.run_sync(fh.write, bytes(buffer))
-                    buffer.clear()
-            if buffer:
-                await anyio.to_thread.run_sync(fh.write, bytes(buffer))
-        finally:
-            await anyio.to_thread.run_sync(fh.close)
-        if received != length:
-            raise ApiError(
-                422, "incomplete_upload", "The upload ended before the whole file arrived."
-            )
         return await anyio.to_thread.run_sync(
-            svc.import_audio, db, storage, user, session_key, staged, file_name, duration_ms
+            svc.import_audio, db, storage, user, session_key, staged.path, file_name, duration_ms
         )
-    except ClientDisconnect:
-        await anyio.to_thread.run_sync(storage.discard_upload, staged)
-        # the browser cancelled or went away: nobody receives this answer
-        raise ApiError(400, "upload_cancelled", "The upload was cancelled.") from None
-    except OSError as err:
-        await anyio.to_thread.run_sync(storage.discard_upload, staged)
-        if err.errno == errno.ENOSPC:
-            raise _no_space() from err
-        raise
     except BaseException:
-        await anyio.to_thread.run_sync(storage.discard_upload, staged)
+        await anyio.to_thread.run_sync(storage.discard_upload, staged.path)
         raise

@@ -73,9 +73,27 @@ class Timeline(ApiModel):
     entries: list[TimelineEntry]
 
 
+class TabRef(ApiModel):
+    kind: Literal["note", "document"]
+    id: str = Field(min_length=1, max_length=64)
+
+
+class SplitState(ApiModel):
+    enabled: bool
+    left: TabRef | None = None
+    right: TabRef | None = None
+    focused: Literal["left", "right"] = "left"
+    ratio: float = Field(default=0.5, ge=0.2, le=0.8)
+
+
 class WorkspaceState(ApiModel):
     open_note_ids: list[str] = Field(default_factory=list, max_length=50)
     active_note_id: str | None = None
+    # 007: typed tabs and split view; when `tabs` is omitted (older clients) it is derived
+    # from open_note_ids / active_note_id
+    tabs: list[TabRef] | None = Field(default=None, max_length=50)
+    active: TabRef | None = None
+    split: SplitState | None = None
 
 
 class Preferences(ApiModel):
@@ -88,3 +106,4 @@ class Preferences(ApiModel):
     player_muted: bool | None = None
     # 005: "system" | "light" | "dark" | a custom theme id (per account)
     theme: str | None = Field(default=None, min_length=1, max_length=64)
+    reader_dark_pages: bool | None = None  # 007 FR-022a

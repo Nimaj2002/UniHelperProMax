@@ -1,0 +1,111 @@
+/* 007 reader: pdf.js viewer styles mapped to theme tokens (Constitution V). Pages stay paper
+   (white) unless "dark pages" is on; the chrome around them follows the theme. */
+
+.uh-reader-pages {
+  background: var(--surface-sunken);
+  --page-margin: 12px auto;
+  --page-border: none;
+  --spreadHorizontalWrapped-margin-LR: -3.5px;
+}
+
+.uh-reader-pages .pdfViewer .page {
+  border: none;
+  box-shadow: 0 1px 3px var(--shadow-tint), 0 0 0 1px var(--shadow-tint);
+}
+
+.uh-reader[data-dark-pages] .uh-reader-pages .pdfViewer .page {
+  background-color: var(--reader-page-dark-bg);
+}
+
+/* a page whose rendering failed keeps its place and says so; other pages stay readable */
+.uh-reader-pages .uh-page-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 1rem;
+  background: var(--surface);
+  color: var(--danger);
+  font-size: 0.875rem;
+  z-index: 10;
+}
+
+/* links in the PDF are keyboard-reachable; show focus with the theme's ring */
+.uh-reader-pages .annotationLayer a:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* search matches (FR-018): theme colours; the current match also gets an outline (not colour alone) */
+.uh-reader-pages .textLayer .highlight {
+  --highlight-bg-color: color-mix(in srgb, var(--warning) 35%, transparent);
+  --highlight-selected-bg-color: color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+.uh-reader-pages .textLayer .highlight.selected {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+/* the user's annotations (US6): one overlay per page, above pdf.js's text and annotation layers.
+   With Select it lets the pointer through (text selection, PDF links) except on annotations. */
+.uh-reader-pages .uh-annot-page {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.uh-annot-surface {
+  position: relative;
+}
+
+.uh-annot-surface[data-drawing] {
+  pointer-events: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.uh-annot-surface[data-tool="text"] {
+  cursor: text;
+}
+
+.uh-annot-svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.uh-annot-hl rect {
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+}
+
+.uh-annot-hl-dark rect {
+  opacity: 0.35;
+}
+
+.uh-annot-item,
+.uh-annot-surface textarea {
+  pointer-events: auto;
+}
+
+.uh-annot-item {
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.uh-annot-surface[data-drawing] .uh-annot-item {
+  pointer-events: none;
+}
+
+.uh-annot-item:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.uh-annot-textbox {
+  border: 1px dashed;
+}

@@ -1,13 +1,21 @@
 import { useRef, useState, type DragEvent, type ReactNode } from "react";
 import { toast } from "sonner";
-import { importQueue } from "./importQueue";
+import { importQueue, type AnyQueue } from "./importQueue";
 
 function hasFiles(e: DragEvent) {
   return [...e.dataTransfer.types].includes("Files");
 }
 
-/** Dropping audio anywhere on the panel uploads it like "Upload audio" (006 US1 #3). */
-export function AudioDropZone({ sessionKey, children }: { sessionKey: string; children: ReactNode }) {
+interface DropZoneProps {
+  sessionKey: string;
+  queue: AnyQueue;
+  label: string;
+  testId: string;
+  children: ReactNode;
+}
+
+/** Dropping files anywhere on the zone uploads them like its upload button (006, 007). */
+export function FileDropZone({ sessionKey, queue, label, testId, children }: DropZoneProps) {
   const [over, setOver] = useState(false);
   const depth = useRef(0);
 
@@ -31,7 +39,7 @@ export function AudioDropZone({ sessionKey, children }: { sessionKey: string; ch
     });
     if (!items.length) files.push(...e.dataTransfer.files);
     if (folders) toast.warning("Folders can't be uploaded — drop the files inside.");
-    if (files.length) importQueue().enqueue(sessionKey, files);
+    if (files.length) queue.enqueue(sessionKey, files);
   };
 
   return (
@@ -54,7 +62,7 @@ export function AudioDropZone({ sessionKey, children }: { sessionKey: string; ch
         if (depth.current === 0) setOver(false);
       }}
       onDrop={onDrop}
-      data-testid="audio-drop-zone"
+      data-testid={testId}
     >
       {children}
       {over && (
@@ -62,9 +70,18 @@ export function AudioDropZone({ sessionKey, children }: { sessionKey: string; ch
           aria-hidden
           className="pointer-events-none absolute inset-2 grid place-items-center rounded-lg border-2 border-dashed border-primary bg-background/90 p-4 text-center text-sm font-medium text-foreground"
         >
-          Drop audio files to upload
+          {label}
         </div>
       )}
     </div>
+  );
+}
+
+/** Dropping audio anywhere on the panel uploads it like "Upload audio" (006 US1 #3). */
+export function AudioDropZone({ sessionKey, children }: { sessionKey: string; children: ReactNode }) {
+  return (
+    <FileDropZone sessionKey={sessionKey} queue={importQueue()} label="Drop audio files to upload" testId="audio-drop-zone">
+      {children}
+    </FileDropZone>
   );
 }

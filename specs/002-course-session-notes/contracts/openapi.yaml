@@ -303,6 +303,9 @@ components:
       properties:
         openNoteIds: { type: array, maxItems: 50, items: { type: string } }
         activeNoteId: { type: [string, "null"] }
+        tabs: { type: array, maxItems: 50, description: "added by feature 007 — see its WorkspaceStateV2" }
+        active: { description: "added by feature 007" }
+        split: { description: "added by feature 007" }
 
     Preferences:
       type: object
@@ -314,3 +317,4 @@ components:
         playerVolume: { type: number, minimum: 0, maximum: 1, description: "added by feature 003" }
         playerMuted: { type: boolean, description: "added by feature 003" }
         theme: { type: string, minLength: 1, maxLength: 64, description: "005: system | light | dark | a custom theme id (per account)" }
+        readerDarkPages: { type: boolean, description: "added by feature 007 (FR-022a)" }

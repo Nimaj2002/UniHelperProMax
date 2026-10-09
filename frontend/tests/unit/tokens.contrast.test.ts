@@ -18,6 +18,7 @@ const TEXT_PAIRS: [string, string][] = [
   ["danger-foreground", "danger"],
   ["success", "surface"],
   ["warning", "surface"],
+  ["reader-page-dark-fg", "reader-page-dark-bg"], // 007 dark pages
 ];
 
 const UI_PAIRS: [string, string][] = [

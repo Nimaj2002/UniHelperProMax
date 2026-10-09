@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { formatBytes } from "./audioFiles";
-import { importQueue, useImportQueue, type UploadEntry, type UploadEvent } from "./importQueue";
+import { importQueue, useImportQueue, type AnyQueue, type UploadEntry, type UploadEvent } from "./importQueue";
 
 function announcement(e: UploadEvent): string {
   const name = e.entry.fileName;
@@ -21,8 +21,7 @@ function announcement(e: UploadEvent): string {
   }
 }
 
-function Row({ entry }: { entry: UploadEntry }) {
-  const q = importQueue();
+function Row({ entry, queue: q }: { entry: UploadEntry; queue: AnyQueue }) {
   const percent = entry.total ? Math.min(100, Math.round((entry.loaded / entry.total) * 100)) : 0;
   const problem = entry.state === "failed" || entry.state === "rejected";
   return (
@@ -69,15 +68,15 @@ function Row({ entry }: { entry: UploadEntry }) {
 }
 
 /** Uploads into this session: progress, cancel, retry (contracts/ui-import.md). */
-export function UploadList({ sessionKey }: { sessionKey: string }) {
-  const entries = useImportQueue(sessionKey);
+export function UploadList({ sessionKey, queue = importQueue() }: { sessionKey: string; queue?: AnyQueue }) {
+  const entries = useImportQueue(sessionKey, queue);
   const [live, setLive] = useState("");
   useEffect(
     () =>
-      importQueue().onEvent((e) => {
+      queue.onEvent((e) => {
         if (e.entry.sessionKey === sessionKey) setLive(announcement(e));
       }),
-    [sessionKey],
+    [sessionKey, queue],
   );
   return (
     <>
@@ -86,7 +85,7 @@ export function UploadList({ sessionKey }: { sessionKey: string }) {
         <section aria-label="Uploads" className="grid gap-1">
           <ul className="grid gap-1.5">
             {entries.map((e) => (
-              <Row key={e.id} entry={e} />
+              <Row key={e.id} entry={e} queue={queue} />
             ))}
           </ul>
         </section>

@@ -1,27 +1,26 @@
 <!--
 Sync Impact Report
 ==================
-Version change: (unversioned template) → 1.0.0
-Bump rationale: Initial ratification; all placeholders replaced with project-specific governance.
+Version change: 1.0.0 → 1.1.0
+Bump rationale: MINOR — Principle II materially expanded: a third session folder (`documents/`)
+for uploaded PDFs, plus two new rules (original uploads are never modified; annotations are kept
+outside the original file in plain files). No principle removed or redefined incompatibly.
 
-Modified principles (template slot → new title):
-  - [PRINCIPLE_1_NAME] → I. User Work Is Never Lost (NON-NEGOTIABLE)
-  - [PRINCIPLE_2_NAME] → II. Data Ownership & Open Formats
-  - [PRINCIPLE_3_NAME] → III. Strict Frontend/Backend Separation
-  - [PRINCIPLE_4_NAME] → IV. Pluggable Transcription & Secret Handling
-  - [PRINCIPLE_5_NAME] → V. UI Quality & Accessibility
-Added sections:
-  - VI. Test Coverage for Endpoints and Critical Flows (new principle beyond template's five)
-  - VII. Simplicity & Spec Discipline (new principle beyond template's five)
-  - Technical Constraints (SECTION_2)
-  - Development Workflow & Quality Gates (SECTION_3)
+Modified principles:
+  - II. Data Ownership & Open Formats (title unchanged; rules expanded)
+Modified sections:
+  - Technical Constraints → Storage (now names document content alongside notes and audio)
+Added sections: none
 Removed sections: none
 
 Templates reviewed (not modified by this command; they read the constitution at runtime):
-  - .specify/templates/plan-template.md      ✅ "Constitution Check" gate picks up principles I–VII
+  - .specify/templates/plan-template.md      ✅ Constitution Check picks up the amended Principle II
   - .specify/templates/spec-template.md      ✅ no change required
-  - .specify/templates/tasks-template.md     ✅ no change required (Principle VI makes
-                                                  endpoint + critical-flow tests mandatory)
+  - .specify/templates/tasks-template.md     ✅ no change required
+
+Dependent specs to review for compliance (Governance):
+  - specs/007-session-pdf-reader/spec.md — its `documents/` assumption is now covered by
+    Principle II; the plan's Constitution Check should confirm it.
 
 Deferred TODOs: none
 -->
@@ -52,14 +51,20 @@ promise of the product and outranks every other concern.
 ### II. Data Ownership & Open Formats
 
 - Notes MUST be stored as plain Markdown (`.md`) files; audio MUST be stored in standard,
-  widely playable audio formats (e.g., WebM/Opus, OGG, WAV, MP3, M4A).
+  widely playable audio formats (e.g., WebM/Opus, OGG, WAV, MP3, M4A); uploaded documents MUST
+  be stored as the PDF files the user uploaded.
 - Files MUST live in a human-readable folder hierarchy:
-  `<year>/<semester>/<syllabus>/<class-date>/notes/` and `.../<class-date>/audios/`.
+  `<year>/<semester>/<syllabus>/<class-date>/notes/`, `.../<class-date>/audios/` and, for
+  uploaded PDFs, `.../<class-date>/documents/`.
   Folder and file names MUST be readable by a person (no opaque IDs as the only identifier).
-- A user MUST be able to browse, open, copy, and back up their notes and audio with ordinary
-  OS tools, without running the app.
+- Original uploaded PDFs MUST never be modified by the app. Annotations MUST be stored outside
+  the original file — as a sidecar file or as a separate annotated copy next to it, as the
+  feature's plan decides — so the original stays byte-for-byte intact and the user's work stays
+  in plain files.
+- A user MUST be able to browse, open, copy, and back up their notes, audio, documents and
+  annotations with ordinary OS tools, without running the app.
 - The database (SQLite) stores metadata and indexes; it MUST NOT be the sole location of note
-  bodies or audio content.
+  bodies, audio content, documents or annotations.
 
 **Rationale**: Students own their academic work. Open formats and a browsable layout guarantee
 the data outlives the app and stays portable.
@@ -135,8 +140,8 @@ spec discipline keeps the product focused.
 
 ## Technical Constraints
 
-- **Storage**: SQLite for metadata; file system (hierarchy defined in Principle II) for note and
-  audio content.
+- **Storage**: SQLite for metadata; file system (hierarchy defined in Principle II) for note,
+  audio and document content (including annotation files).
 - **API**: RESTful JSON, versioned under a path prefix (e.g., `/api/v1`).
 - **UI**: shadcn/ui primitives, theme tokens for all colors, light + dark + user-created themes.
 - **Transcription**: provider-agnostic interface on the backend; keys stored server-side only.
@@ -170,4 +175,4 @@ spec discipline keeps the product focused.
 - **Compliance review**: every plan's Constitution Check and every code review MUST verify
   compliance with Principles I–VII. Unjustified violations block merge.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-04
+**Version**: 1.1.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08

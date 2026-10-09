@@ -59,6 +59,9 @@ section of the app's side panel (under the courses), not in a workspace column.
   side panel for full width.
 - Below 1024 px the side panel and the audio panel become `Sheet` drawers; the notes and
   sessions open in their own drawer from the workspace header, and the editor is full width.
+- 007: tabs are typed — notes and documents (PDF reader) share this one tab bar, and a toggleable
+  split view shows two tabs side by side (`Alt+\`); see
+  `specs/007-session-pdf-reader/contracts/ui-reader.md`.
 - Tabs: `role="tablist"` containing only `role="tab"` elements (ARIA allows nothing else inside),
   one per open note, `aria-selected`, roving focus with ←/→/Home/End, horizontal scroll when
   crowded, full name in `title`. Closing: `Delete` on the focused tab or `Alt+W`; a pointer-only

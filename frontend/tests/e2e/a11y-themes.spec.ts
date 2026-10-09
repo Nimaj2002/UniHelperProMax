@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { newHierarchy, seedClass, signIn, tag } from "./helpers";
+import { textPdf } from "./pdf-fixtures";
 
 async function axe(page: Page, label: string) {
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
@@ -168,4 +169,111 @@ test("Accessibility: every built-in preset theme passes WCAG AA on the main scre
   } finally {
     await setTheme("system");
   }
+});
+
+/**
+ * A member account of its own, so the theme and "dark pages" this test sets don't change the
+ * owner account other specs use in parallel.
+ */
+async function memberPage(browser: Browser, owner: Page, username: string) {
+  const csrf = async (ctx: BrowserContext) => (await ctx.cookies()).find((c) => c.name === "uh_csrf")?.value ?? "";
+  const first = "member-password-1";
+  const password = "member-password-2";
+  await owner.request.post("/api/v1/admin/users", { data: { username, password: first }, headers: { "X-CSRF-Token": await csrf(owner.context()) } });
+  const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
+  const p = await ctx.newPage();
+  const login = await p.request.post("/api/v1/auth/login", { data: { username, password: first } });
+  if (login.ok()) {
+    await p.request.post("/api/v1/auth/password", { data: { currentPassword: first, newPassword: password }, headers: { "X-CSRF-Token": await csrf(ctx) } });
+  } else {
+    expect((await p.request.post("/api/v1/auth/login", { data: { username, password } })).ok()).toBe(true);
+  }
+  return { p, ctx, csrf: () => csrf(ctx) };
+}
+
+test("Accessibility (007): documents, reader, search, annotations and split view; keyboard only", async ({ page, browser }, testInfo) => {
+  test.setTimeout(240_000);
+  const t = tag(testInfo.project.name);
+  await signIn(page);
+  const { p, ctx, csrf } = await memberPage(browser, page, `reader-${t.toLowerCase()}`);
+  const cls = await seedClass(p, {
+    course: newHierarchy(`A11YDOC${t} 101`, `A11y doc ${t}`, `A11y doc year ${t}`), startDate: "2026-09-28", startTime: "19:00",
+    endTime: "20:00", location: "Room 1", color: "teal",
+    recurrence: { freq: "weekly", byWeekday: ["MO", "WE"], end: { kind: "semester_end" } },
+  });
+  const url = `/courses/${cls.courseId}/sessions/${encodeURIComponent(`${cls.lineageId}:2026-10-05`)}`;
+  await p.goto(url);
+  const docs = p.getByRole("region", { name: "Documents" });
+
+  // keyboard only: upload, open, read, search, annotate, split (freehand excluded, SC-008)
+  await docs.getByRole("button", { name: "Upload PDF" }).focus();
+  const chooser = p.waitForEvent("filechooser");
+  await p.keyboard.press("Enter");
+  await (await chooser).setFiles({ name: "Readable.pdf", mimeType: "application/pdf", buffer: textPdf(5) });
+  await expect(docs.getByRole("button", { name: /^Readable/ })).toBeVisible({ timeout: 15000 });
+  await settledAxe(p, "documents section");
+  await docs.getByRole("button", { name: /^Readable/ }).focus();
+  await p.keyboard.press("Enter");
+  const r = p.getByRole("region", { name: "Readable — PDF" });
+  await expect(r.getByTestId("reader-status")).toHaveText(/Page 1 of 5/, { timeout: 15000 });
+  await expect(r.getByRole("radio", { name: "Draw" })).toBeEnabled();
+  await r.getByLabel("Pages", { exact: true }).focus();
+  await p.keyboard.press("PageDown");
+  await expect(r.getByTestId("reader-status")).toHaveText(/Page 2 of 5/);
+  await settledAxe(p, "reader");
+
+  await p.keyboard.press("Control+f");
+  await p.keyboard.type("tree");
+  await expect(r.getByTestId("search-status")).toHaveText(/of 5/);
+  await settledAxe(p, "reader search");
+  await p.keyboard.press("Escape");
+
+  await r.getByRole("radio", { name: "Comment" }).focus();
+  await p.keyboard.press("Space");
+  await r.getByLabel("Pages", { exact: true }).focus();
+  await p.keyboard.press("Enter");
+  await p.keyboard.type("for the exam");
+  await p.keyboard.press("Escape");
+  const comment = r.getByRole("button", { name: /^Comment, page \d: for the exam/ });
+  await comment.focus();
+  await expect(comment).toHaveClass(/outline-ring/);
+  await settledAxe(p, "selected annotation");
+
+  // split view: a note next to the PDF
+  await p.keyboard.press("Alt+n");
+  await p.getByRole("dialog", { name: "New note" }).getByLabel("Note name").fill("Questions");
+  await p.keyboard.press("Enter");
+  await p.getByRole("tab", { name: /^Readable/ }).focus();
+  await p.keyboard.press("Enter");
+  await p.keyboard.press("Alt+Backslash");
+  await expect(p.getByRole("button", { name: "Split" })).toHaveAttribute("aria-pressed", "true");
+  await settledAxe(p, "split view");
+
+  await r.getByRole("button", { name: "Dark pages" }).focus();
+  await p.keyboard.press("Enter");
+  await expect(r.getByRole("button", { name: "Dark pages" })).toHaveAttribute("aria-pressed", "true");
+  await settledAxe(p, "dark pages");
+
+  if (!testInfo.project.name.includes("dark")) {
+    // one built-in preset and one user-created theme (both colour schemes are the two projects)
+    const setTheme = async (theme: string) =>
+      expect((await p.request.patch("/api/v1/preferences", { data: { theme }, headers: { "X-CSRF-Token": await csrf() } })).ok()).toBe(true);
+    await p.goto("/settings/appearance");
+    const preset = await p.locator("[role=radio][value^='preset:']").first().getAttribute("value");
+    await setTheme(preset!);
+    await p.goto(url);
+    await expect(r.getByTestId("reader-status")).toHaveText(/Page \d of 5/, { timeout: 15000 });
+    await settledAxe(p, `reader in ${preset}`);
+
+    await p.goto("/settings/appearance");
+    await p.getByRole("button", { name: "New theme…" }).click();
+    await p.getByRole("dialog").getByRole("textbox", { name: "Name" }).fill("Reader a11y");
+    await p.getByRole("button", { name: "Create and edit" }).click();
+    await p.getByRole("button", { name: "Save theme" }).click();
+    await p.getByRole("radio", { name: /Reader a11y/ }).click();
+    await p.goto(url);
+    await expect(r.getByTestId("reader-status")).toHaveText(/Page \d of 5/, { timeout: 15000 });
+    await settledAxe(p, "reader in a user theme");
+  }
+  await ctx.close();
 });

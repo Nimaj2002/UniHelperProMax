@@ -29,3 +29,37 @@ export function useWorkspacePanels(): WorkspacePanel[] {
     () => panels,
   );
 }
+
+// ---- side-panel sections below the note list (007: Documents) --------------------------------
+
+export interface SidePanelSectionProps {
+  sessionKey: string;
+  /** Open (or focus) a document as a tab of the workspace tab bar. */
+  openDocument: (documentId: string) => void;
+  /** Close a document's tab without asking (the document was deleted). */
+  closeDocument: (documentId: string) => void;
+}
+
+export interface SidePanelSection {
+  id: string;
+  component: ComponentType<SidePanelSectionProps>;
+}
+
+let sections: SidePanelSection[] = [];
+const sectionListeners = new Set<() => void>();
+
+export function registerSidePanelSection(section: SidePanelSection) {
+  sections = [...sections.filter((s) => s.id !== section.id), section];
+  sectionListeners.forEach((l) => l());
+}
+
+export function useSidePanelSections(): SidePanelSection[] {
+  return useSyncExternalStore(
+    (l) => {
+      sectionListeners.add(l);
+      return () => sectionListeners.delete(l);
+    },
+    () => sections,
+    () => sections,
+  );
+}

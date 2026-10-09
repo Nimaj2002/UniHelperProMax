@@ -1,9 +1,11 @@
 """The ONLY module that touches the file system (Constitution III; research R7).
 
 It never deletes folders, and deleting metadata keeps user files (FR-019). Two exceptions:
-`delete_content_file` — one confirmed note (`.md` in `notes/`) or recording/imported audio (in
-`audios/`) — 002 research N6, 003 research A7; and the import staging files `*.part` in
-`files/.uploads/`, which are never user content (006 research I5).
+`delete_content_file` — one confirmed note (`.md` in `notes/`), recording/imported audio (in
+`audios/`) or document (a `.pdf` and its `.annotations.json` sidecar in `documents/`) — 002
+research N6, 003 research A7, 007; and the import staging files `*.part` in `files/.uploads/`,
+which are never user content (006 research I5). Uploaded PDFs are never written after the upload
+is committed (Constitution II).
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from typing import BinaryIO
 from unihelper.domain.naming import safe_name
 
 UPLOADS_DIR = ".uploads"  # staging for imports; usernames can't start with "." (safe_name)
+SIDECAR_SUFFIX = ".annotations.json"  # 007: annotations next to the PDF, never inside it
 AUDIO_EXTENSIONS = {".webm", ".m4a", ".mp3", ".aac", ".wav", ".ogg", ".oga", ".opus", ".flac"}
 
 
@@ -152,13 +155,56 @@ class StorageService:
 
         return undo
 
-    def delete_content_file(self, parts: Sequence[str]) -> None:
-        """Delete exactly one note (`.md` in `notes/`) or recording/imported audio (an audio
-        extension in `audios/`). Anything else is refused."""
+    @staticmethod
+    def sidecar_parts(pdf_parts: Sequence[str]) -> list[str]:
+        """`…/documents/Name.pdf` → `…/documents/Name.annotations.json`."""
+        name = pdf_parts[-1]
+        stem = name[: -len(".pdf")] if name.lower().endswith(".pdf") else name
+        return [*pdf_parts[:-1], stem + SIDECAR_SUFFIX]
+
+    def rename_pair(self, old_pdf: Sequence[str], new_pdf: Sequence[str]) -> Callable[[], None]:
+        """Rename a document's PDF and, when present, its sidecar, together (007 FR-009).
+        Never replaces an existing file; returns one undo for both."""
+        moves = [(old_pdf, new_pdf), (self.sidecar_parts(old_pdf), self.sidecar_parts(new_pdf))]
+        for old, new in moves:
+            if self.path_for(old) != self.path_for(new) and self.path_for(new).exists():
+                raise FileExistsError(str(self.path_for(new)))
+        undos = [self.rename_file(old, new) for old, new in moves]
+
+        def undo() -> None:
+            for u in reversed(undos):
+                u()
+
+        return undo
+
+    def move_aside(self, parts: Sequence[str], label: str) -> Path | None:
+        """Keep a file the app can't use (e.g. a hand-edited sidecar that is no longer valid
+        JSON) under a new name next to it: `Name.annotations.<label>.json`. Never deletes or
+        replaces anything; returns the new path, or None when the file doesn't exist."""
         path = self.path_for(parts)
-        allowed = {"notes": {".md"}, "audios": AUDIO_EXTENSIONS}
-        if path.is_dir() or path.suffix.lower() not in allowed.get(path.parent.name, set()):
-            raise StoragePathError("Only note and recording files can be deleted")
+        if not path.exists():
+            return None
+        base = path.name[: -len(".json")] if path.name.endswith(".json") else path.name
+        target = path.with_name(f"{base}.{label}.json")
+        n = 2
+        while target.exists():
+            target = path.with_name(f"{base}.{label}-{n}.json")
+            n += 1
+        _replace_with_retry(path, target)
+        _fsync_dir(path.parent)
+        return target
+
+    def delete_content_file(self, parts: Sequence[str]) -> None:
+        """Delete exactly one note (`.md` in `notes/`), recording/imported audio (an audio
+        extension in `audios/`) or document file (`.pdf` or `*.annotations.json` in
+        `documents/`). Anything else is refused."""
+        path = self.path_for(parts)
+        allowed = {"notes": {".md"}, "audios": AUDIO_EXTENSIONS, "documents": {".pdf"}}
+        sidecar = path.parent.name == "documents" and path.name.lower().endswith(SIDECAR_SUFFIX)
+        if path.is_dir() or not (
+            sidecar or path.suffix.lower() in allowed.get(path.parent.name, set())
+        ):
+            raise StoragePathError("Only note, recording and document files can be deleted")
         try:
             path.unlink()
         except FileNotFoundError:

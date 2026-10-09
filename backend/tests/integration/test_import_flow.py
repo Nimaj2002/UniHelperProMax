@@ -64,6 +64,8 @@ def _asgi_upload(
     parts: list[bytes],
     total: int,
     disconnect: bool = True,
+    path_suffix: str = "recordings/import",
+    file_name: str = "lecture.wav",
 ) -> list[dict[str, Any]]:
     """Send `parts` as the body with a declared `total` length, then disconnect (what a
     cancelled XHR looks like to the server) or end the body there."""
@@ -77,9 +79,9 @@ def _asgi_upload(
         "server": ("testserver", 80),
         "client": ("testclient", 50000),
         "root_path": "",
-        "path": f"{API}/sessions/{key}/recordings/import",
-        "raw_path": f"{API}/sessions/{key}/recordings/import".encode(),
-        "query_string": b"fileName=lecture.wav",
+        "path": f"{API}/sessions/{key}/{path_suffix}",
+        "raw_path": f"{API}/sessions/{key}/{path_suffix}".encode(),
+        "query_string": f"fileName={file_name}".encode(),
         "headers": [
             (b"host", b"testserver"),
             (b"content-type", b"application/octet-stream"),

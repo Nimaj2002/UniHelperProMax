@@ -710,6 +710,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/{session_key}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Documents */
+        get: operations["list_documents_api_v1_sessions__session_key__documents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{session_key}/documents/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Document
+         * @description Stream one PDF into staging, check it, then move it into the session's documents/ folder
+         *     (FR-001–FR-008). Anything that can be refused is refused before the body is read.
+         */
+        post: operations["import_document_api_v1_sessions__session_key__documents_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Document */
+        get: operations["get_document_api_v1_documents__document_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/transcription/providers": {
         parameters: {
             query?: never;
@@ -1174,6 +1229,33 @@ export interface components {
             /** Keptfolder */
             keptFolder: string;
         };
+        /** Document */
+        Document: {
+            /** Id */
+            id: string;
+            /** Sessionkey */
+            sessionKey: string;
+            /** Name */
+            name: string;
+            /** Filename */
+            fileName: string;
+            /** Originalfilename */
+            originalFileName: string;
+            /** Size */
+            size: number;
+            /** Encrypted */
+            encrypted: boolean;
+            /** Pagecount */
+            pageCount: number | null;
+            /** Uploadedat */
+            uploadedAt: string;
+            /** Annotationcount */
+            annotationCount: number;
+            /** Missing */
+            missing: boolean;
+            /** Version */
+            version: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1339,6 +1421,8 @@ export interface components {
             playerMuted?: boolean | null;
             /** Theme */
             theme?: string | null;
+            /** Readerdarkpages */
+            readerDarkPages?: boolean | null;
         };
         /** ProfileUpdate */
         ProfileUpdate: {
@@ -1665,6 +1749,34 @@ export interface components {
             /** Needsowner */
             needsOwner: boolean;
         };
+        /** SplitState */
+        SplitState: {
+            /** Enabled */
+            enabled: boolean;
+            left?: components["schemas"]["TabRef"] | null;
+            right?: components["schemas"]["TabRef"] | null;
+            /**
+             * Focused
+             * @default left
+             * @enum {string}
+             */
+            focused: "left" | "right";
+            /**
+             * Ratio
+             * @default 0.5
+             */
+            ratio: number;
+        };
+        /** TabRef */
+        TabRef: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "note" | "document";
+            /** Id */
+            id: string;
+        };
         /** Theme */
         Theme: {
             /** Id */
@@ -1900,6 +2012,10 @@ export interface components {
             openNoteIds?: string[];
             /** Activenoteid */
             activeNoteId?: string | null;
+            /** Tabs */
+            tabs?: components["schemas"]["TabRef"][] | null;
+            active?: components["schemas"]["TabRef"] | null;
+            split?: components["schemas"]["SplitState"] | null;
         };
         /** Year */
         Year: {
@@ -3795,6 +3911,101 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Recording"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_documents_api_v1_sessions__session_key__documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_document_api_v1_sessions__session_key__documents_import_post: {
+        parameters: {
+            query: {
+                fileName: string;
+            };
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_document_api_v1_documents__document_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
                 };
             };
             /** @description Validation Error */

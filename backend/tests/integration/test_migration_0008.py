@@ -136,7 +136,8 @@ def test_0008_keeps_transcription_history(tmp_path: Path) -> None:
         "SELECT id, name, file_name, version, origin, original_file_name FROM recordings"
     ).fetchall()
     assert row == [("r1", "Recording 10:02", "Recording 10-02.webm", 3, "recorded", None)]
-    assert con.execute("SELECT version_num FROM alembic_version").fetchone() == ("0008",)
+    (version,) = con.execute("SELECT version_num FROM alembic_version").fetchone()
+    assert version >= "0008"  # upgraded through 0008 (later migrations may follow)
     indexes = {r[1] for r in con.execute("PRAGMA index_list(recordings)")}
     assert {"ix_recordings_session_folder_id", "ix_recordings_user_id"} <= indexes
     con.close()

@@ -65,7 +65,7 @@ server process is already using …").
 ```text
 data/
 ├── unihelper.sqlite3            metadata only
-└── files/<username>/<Year>/<Semester>/<Course>/<YYYY-MM-DD>/{notes,audios}/
+└── files/<username>/<Year>/<Semester>/<Course>/<YYYY-MM-DD>/{notes,audios,documents}/
 ```
 
 Each note is a plain Markdown file (`<Note name>.md`) in its session's `notes/` folder; you can
@@ -83,9 +83,9 @@ changed. If the note is open, the text appears there without reloading and your 
 
 Folder names follow the names you type (made safe for Windows/macOS/Linux) and are renamed when
 you rename things in the app. Deleting a year, semester, course, class, or account **never**
-deletes files; the only files the app ever removes are a note's `.md` or a recording's (or imported
-audio's) file, when you delete that note or recording and confirm — and its own upload staging
-files in `files/.uploads/`. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
+deletes files; the only files the app ever removes are a note's `.md`, a recording's (or imported
+audio's) file, or a document's PDF and its annotations file, when you delete that item and
+confirm — and its own upload staging files in `files/.uploads/`. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
 
 Back up by copying the whole data folder while the app is stopped.
 
@@ -105,6 +105,46 @@ Back up by copying the whole data folder while the app is stopped.
   changes or a transcript is being added to it) or **Skip**. Imported text is never merged into an
   existing note.
 
+## Documents and the PDF reader
+
+- **Upload PDF** (in the session's "Documents" section, or drop files on it): PDF files up to
+  200 MB each. The PDF is stored **unchanged** in the session's `documents/` folder, named after the
+  file (`Lecture 5.pdf`, or `Lecture 5 (2).pdf` when the name is taken). Password-protected PDFs
+  are kept and listed as "Protected", but can't be opened in the app.
+- A document opens as a tab of the workspace's tab bar, next to your notes; the reader has no tabs
+  of its own. It remembers your page per document, across devices. Links inside the PDF work;
+  web links open in a new browser tab. **Dark pages** shows pages light-on-dark (remembered).
+- **Split view** (`Alt+\` or the Split button at the end of the tab bar): two tabs side by side —
+  e.g. the slides on the left, your note on the right. Choosing a tab shows it in the focused pane;
+  "Show in other pane" is in the tab's menu (right-click or `Shift+F10`). Offered when the main area
+  is at least 1100 px wide; nothing is closed when you turn it off.
+- **Annotations**: Highlight (select text first), Draw, Text box and Comment, in six named colours;
+  move, recolour, delete, undo and redo. They are saved within two seconds and kept on the device
+  while you are offline. They live in a plain JSON file next to the PDF —
+  `<Name>.annotations.json` ([format](specs/007-session-pdf-reader/contracts/annotation-file.md)) —
+  so the PDF itself is never modified. If two windows change the same annotation, both versions are
+  kept. Annotations already inside a PDF are shown but can't be edited.
+
+```text
+<YYYY-MM-DD>/documents/
+├── Lecture 5 — Trees.pdf                 exactly as uploaded
+└── Lecture 5 — Trees.annotations.json    your annotations (once there are some)
+```
+
+### Reader shortcuts
+
+With focus in the reader:
+
+| Keys | Action |
+|---|---|
+| `PageDown` / `PageUp` · `Home` / `End` | Next / previous page · first / last page |
+| `Ctrl/Cmd +` / `Ctrl/Cmd -` / `Ctrl/Cmd 0` | Zoom in / out / 100 % |
+| `Ctrl/Cmd+F` | Search in the document (`Enter` / `Shift+Enter` next / previous, `Esc` closes) |
+| `Enter` on the pages (Text or Comment tool) | Add a text box or comment in the middle of the visible page |
+| On a selected annotation: arrows (`Shift` ×10) · `Enter` · `C` · `Delete` | Move · edit text · colour · delete |
+| `Ctrl/Cmd+Z` · `Ctrl/Cmd+Shift+Z` or `Ctrl+Y` | Undo · redo (annotations) |
+| `Esc` | Leave the tool (back to Select); from Select, back to the tab bar |
+
 ## Notes workspace shortcuts
 
 | Keys | Action |
@@ -113,6 +153,7 @@ Back up by copying the whole data folder while the app is stopped.
 | `Alt+Shift+N` | Import note (`.md` / `.txt`) |
 | `Alt+W` / `Delete` on a tab | Close tab |
 | `Alt+PageDown` / `Alt+PageUp` | Next / previous tab |
+| `Alt+\` | Split view on / off |
 | `Alt+[` / `Alt+]` | Collapse/expand the sessions and notes section (under the courses) / show or hide the audio panel |
 | `Ctrl/Cmd+E` | Live ↔ raw Markdown |
 | `Ctrl/Cmd+Enter` | Open the link under the cursor |

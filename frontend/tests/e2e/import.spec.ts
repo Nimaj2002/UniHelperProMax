@@ -115,7 +115,7 @@ test("US1/US2: cancel an upload; unsupported files are refused without a request
   await cancel.click();
   await expect(cancel).toBeHidden();
   expect(Date.now() - started).toBeLessThan(1000); // SC-003
-  await expect(page.getByTestId("upload-announcer")).toHaveText("long.wav upload cancelled");
+  await expect(panel.getByTestId("upload-announcer")).toHaveText("long.wav upload cancelled");
   await page.waitForTimeout(500);
   await expect(panel.getByRole("button", { name: /^long/ })).toHaveCount(0);
 });

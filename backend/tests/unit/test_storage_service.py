@@ -205,3 +205,64 @@ def test_sweep_uploads_deletes_only_stale_parts(tmp_path: Path) -> None:
     assert new.exists()
     assert (tmp_path / ".uploads" / "notes.txt").exists()
     assert StorageService(tmp_path / "fresh").sweep_uploads(timedelta(hours=1)) == 0
+
+
+# ---- documents (007 T008) -------------------------------------------------------------------
+
+
+def test_delete_content_file_accepts_documents_and_sidecars_only(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    d = ["u", "c", "d", "documents"]
+    for name in ("Slides.pdf", "Slides.annotations.json"):
+        s.write_text_atomic([*d, name], "x")
+        s.delete_content_file([*d, name])
+        assert not (tmp_path / "u/c/d/documents" / name).exists()
+    for name in ("notes.txt", "other.json", "Slides.annotations.unreadable.json.bak"):
+        s.write_text_atomic([*d, name], "keep")
+        with pytest.raises(StoragePathError):
+            s.delete_content_file([*d, name])
+    s.write_text_atomic(["u", "c", "d", "notes", "x.pdf"], "keep")
+    with pytest.raises(StoragePathError):
+        s.delete_content_file(["u", "c", "d", "notes", "x.pdf"])
+
+
+def test_rename_pair_moves_pdf_and_sidecar_with_one_undo(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    d = ["u", "c", "d", "documents"]
+    s.write_text_atomic([*d, "Old.pdf"], "pdf")
+    s.write_text_atomic([*d, "Old.annotations.json"], "{}")
+    undo = s.rename_pair([*d, "Old.pdf"], [*d, "New.pdf"])
+    base = tmp_path / "u/c/d/documents"
+    assert (base / "New.pdf").read_text() == "pdf"
+    assert (base / "New.annotations.json").read_text() == "{}"
+    assert not (base / "Old.pdf").exists() and not (base / "Old.annotations.json").exists()
+    undo()
+    assert (base / "Old.pdf").exists() and (base / "Old.annotations.json").exists()
+    assert not (base / "New.pdf").exists()
+
+
+def test_rename_pair_without_sidecar_and_never_replacing(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    d = ["u", "c", "d", "documents"]
+    s.write_text_atomic([*d, "A.pdf"], "a")
+    s.rename_pair([*d, "A.pdf"], [*d, "B.pdf"])
+    assert (tmp_path / "u/c/d/documents/B.pdf").read_text() == "a"
+    s.write_text_atomic([*d, "C.pdf"], "c")
+    s.write_text_atomic([*d, "D.annotations.json"], "theirs")
+    with pytest.raises(FileExistsError):
+        s.rename_pair([*d, "C.pdf"], [*d, "D.pdf"])
+    assert (tmp_path / "u/c/d/documents/C.pdf").read_text() == "c"
+    assert (tmp_path / "u/c/d/documents/D.annotations.json").read_text() == "theirs"
+
+
+def test_move_aside_keeps_the_file_under_a_new_name(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    parts = ["u", "c", "d", "documents", "Slides.annotations.json"]
+    s.write_text_atomic(parts, "not json")
+    first = s.move_aside(parts, "unreadable-20261008-101500")
+    assert first is not None and first.name == "Slides.annotations.unreadable-20261008-101500.json"
+    assert first.read_text() == "not json"
+    s.write_text_atomic(parts, "again")
+    second = s.move_aside(parts, "unreadable-20261008-101500")
+    assert second is not None and second.name.endswith("-2.json")
+    assert s.move_aside(parts, "x") is None  # nothing left to move

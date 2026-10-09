@@ -20,6 +20,10 @@ class WorkspaceState(Base):
     original_date: Mapped[date] = mapped_column(Date, primary_key=True)
     open_note_ids: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
     active_note_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    # 007: typed tabs [{kind, id}] and the split view; open_note_ids/active_note_id are kept
+    # (derived from tabs) for older clients
+    tabs_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+    split_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     updated_at: Mapped[str] = mapped_column(
         String, nullable=False, default=now_iso, onupdate=now_iso
     )
