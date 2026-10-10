@@ -1,7 +1,7 @@
 import { screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import { CoursePanel } from "@/features/courses/CoursePanel";
+import { CoursePanel, CourseSearch } from "@/features/courses/CoursePanel";
 import type { YearNode } from "@/features/courses/api";
 import { json, mockFetch, on, renderRoutes } from "./test-utils";
 
@@ -20,7 +20,7 @@ it("filters 200 courses within 500 ms of the last keystroke", { timeout: 30_000 
     })),
   }));
   const { calls } = mockFetch(on("GET", "/api/v1/course-tree", () => json(tree)));
-  renderRoutes([{ path: "/", element: <CoursePanel /> }], "/");
+  renderRoutes([{ path: "/", element: <><CourseSearch /><CoursePanel /></> }], "/");
   await screen.findByText("Course 0000");
   expect(screen.getAllByRole("link")).toHaveLength(200);
   const user = userEvent.setup({ delay: null });

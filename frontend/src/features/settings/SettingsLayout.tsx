@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router";
+import { PageFrame } from "@/app/shell/PageFrame";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
@@ -9,8 +10,8 @@ const SECTIONS = [
 /** Settings area (005 FR-001): section nav + content. */
 export function SettingsLayout() {
   return (
-    <div className="h-[calc(100dvh-3.5rem)] overflow-y-auto">
-      <div className="mx-auto grid max-w-5xl gap-6 px-4 py-6 sm:px-6 md:grid-cols-[180px_minmax(0,1fr)]">
+    <PageFrame>
+      <div className="mx-auto grid max-w-5xl gap-6 px-4 pt-2 pb-6 sm:px-6 md:grid-cols-[180px_minmax(0,1fr)]">
         <div className="grid content-start gap-3">
           <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
           <nav aria-label="Settings sections" className="flex gap-1 md:flex-col">
@@ -31,6 +32,6 @@ export function SettingsLayout() {
           <Outlet />
         </div>
       </div>
-    </div>
+    </PageFrame>
   );
 }

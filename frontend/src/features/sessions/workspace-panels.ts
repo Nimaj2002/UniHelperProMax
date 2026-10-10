@@ -9,6 +9,8 @@ export interface WorkspacePanel {
   id: string;
   title: string;
   component: ComponentType<WorkspacePanelProps>;
+  /** Buttons in the audio card's header, beside its title (008 FR-020: Record, Upload). */
+  headerActions?: ComponentType<WorkspacePanelProps>;
 }
 
 let panels: WorkspacePanel[] = [];

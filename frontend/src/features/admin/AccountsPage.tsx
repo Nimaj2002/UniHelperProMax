@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Navigate } from "react-router";
+import { PageFrame } from "@/app/shell/PageFrame";
 import { toast } from "sonner";
 import { Field } from "@/components/form/Field";
 import { FormError } from "@/components/form/FormError";
@@ -112,7 +113,8 @@ export function AccountsPage() {
   if (me && me.role !== "owner") return <Navigate to="/calendar" replace />;
 
   return (
-    <div className="mx-auto h-[calc(100dvh-3.5rem)] w-full max-w-3xl overflow-y-auto px-4 py-8">
+    <PageFrame>
+    <div className="mx-auto w-full max-w-3xl px-4 pt-2 pb-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Accounts</h1>
@@ -194,5 +196,6 @@ export function AccountsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </PageFrame>
   );
 }

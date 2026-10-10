@@ -6,3 +6,8 @@ export function CoursePanelSlot() {
   const Panel = panel.component;
   return <Panel />;
 }
+
+export function CourseSearchSlot() {
+  const Search = useCoursePanel()?.search;
+  return Search ? <Search /> : null;
+}

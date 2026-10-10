@@ -2,8 +2,9 @@
 import { GearSix } from "@phosphor-icons/react";
 import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, useNavigate, type RouteObject } from "react-router";
-import { registerAccountMenuItem, registerGlobalHost, registerTopBarAction } from "@/app/shell/registry";
+import { registerAccountMenuItem, registerGlobalHost, registerPanelAction, type PanelActionProps } from "@/app/shell/registry";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SettingsLayout } from "./SettingsLayout";
 import { ThemeSync } from "./ThemeSync";
 import { TranscriptionSettingsPage } from "./transcription/TranscriptionSettings";
@@ -14,16 +15,21 @@ const ThemeEditor = lazy(() => import("./themes/ThemeEditor").then((m) => ({ def
 
 const loading = (node: ReactNode) => <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Loading…</p>}>{node}</Suspense>;
 
-function SettingsButton() {
+function SettingsButton({ variant = "full" }: PanelActionProps) {
   const navigate = useNavigate();
   return (
-    <Button variant="ghost" size="icon" aria-label="Settings" onClick={() => navigate("/settings")}>
-      <GearSix size={18} />
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-8" aria-label="Settings" onClick={() => navigate("/settings")}>
+          <GearSix size={18} />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side={variant === "icon" ? "right" : "top"}>Settings</TooltipContent>
+    </Tooltip>
   );
 }
 
-registerTopBarAction({ id: "settings", component: SettingsButton, priority: 10 });
+registerPanelAction({ id: "settings", slot: "footer", component: SettingsButton, priority: 10 });
 registerAccountMenuItem({ id: "settings", label: "Settings", priority: 0, onSelect: (nav) => nav("/settings") });
 registerGlobalHost({ id: "theme-sync", component: ThemeSync });
 

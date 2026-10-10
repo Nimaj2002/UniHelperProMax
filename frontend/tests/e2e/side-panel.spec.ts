@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { signIn, tag } from "./helpers";
 import { seedCourse, workspaceUrl } from "./notes-helpers";
 
-test("Side panel: academic years, notes, documents and sessions are collapsible, resizable sections; resizable side panel", async ({ page }, testInfo) => {
+test("Side panel: courses, notes, documents and sessions are collapsible, resizable sections; resizable side panel", async ({ page }, testInfo) => {
   const t = tag(testInfo.project.name);
   const shot = async (name: string) => {
     if (testInfo.project.name.endsWith("light")) await page.screenshot({ path: testInfo.outputPath(`${name}.png`) });
@@ -12,7 +12,7 @@ test("Side panel: academic years, notes, documents and sessions are collapsible,
   await page.goto(workspaceUrl(courseId, lineageId, "2026-10-05"));
 
   const side = page.getByRole("complementary", { name: "Side panel" });
-  const years = side.getByRole("region", { name: "Academic years" });
+  const years = side.getByRole("region", { name: "Courses" });
   const notes = side.getByRole("region", { name: "Notes" });
   const docs = side.getByRole("region", { name: "Documents" });
   const sessions = side.getByRole("region", { name: "Sessions" });
@@ -34,7 +34,7 @@ test("Side panel: academic years, notes, documents and sessions are collapsible,
   await expect(splitter).toHaveAttribute("aria-valuenow", "55");
 
   // each header collapses and expands its section
-  for (const [region, name] of [[years, "Academic years"], [notes, "Notes"], [docs, "Documents"], [sessions, "Sessions"]] as const) {
+  for (const [region, name] of [[years, "Courses"], [notes, "Notes"], [docs, "Documents"], [sessions, "Sessions"]] as const) {
     const header = region.getByRole("button", { name, exact: true });
     await header.click();
     await expect(header).toHaveAttribute("aria-expanded", "false");
@@ -65,11 +65,13 @@ test("Side panel: academic years, notes, documents and sessions are collapsible,
   const headers = [notesHeader, docs.getByRole("button", { name: "Documents", exact: true }), sessions.getByRole("button", { name: "Sessions", exact: true })];
   await page.keyboard.press("Alt+[");
   for (const h of headers) await expect(h).toHaveAttribute("aria-expanded", "false");
-  await expect(years.getByRole("button", { name: "Academic years" })).toHaveAttribute("aria-expanded", "true");
+  await expect(years.getByRole("button", { name: "Courses" })).toHaveAttribute("aria-expanded", "true");
+  // "[" closes the panel to its rail (008 FR-011); Alt+[ brings it back with the sections open
   await page.keyboard.press("[");
-  await expect(side).toBeHidden();
+  await expect(side.getByRole("button", { name: "Show side panel" })).toBeVisible();
+  await expect(years).toBeHidden();
   await page.keyboard.press("Alt+[");
-  await expect(side).toBeVisible();
+  await expect(years).toBeVisible();
   for (const h of headers) await expect(h).toHaveAttribute("aria-expanded", "true");
   await shot("restored");
 });

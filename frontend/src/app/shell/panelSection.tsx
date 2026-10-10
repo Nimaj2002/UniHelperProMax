@@ -89,28 +89,33 @@ interface SectionProps {
   style?: CSSProperties;
   /** A resize handle on the section's top edge. */
   handle?: ReactNode;
+  /** Small buttons beside the heading (e.g. "New class" beside Courses). */
+  actions?: ReactNode;
   className?: string;
 }
 
 /** One collapsible section of the left panel: a header that collapses and expands the body. */
-export function CollapsibleSection({ id, title, collapsed, onToggle, children, bodyRef, bodyClassName, sectionRef, style, handle, className }: SectionProps) {
+export function CollapsibleSection({ id, title, collapsed, onToggle, children, bodyRef, bodyClassName, sectionRef, style, handle, actions, className }: SectionProps) {
   const headingId = `panel-section-${id}-title`;
   const bodyId = `panel-section-${id}-body`;
   return (
     <section ref={sectionRef} aria-labelledby={headingId} className={cn("relative flex min-h-0 flex-col", className)} style={style}>
       {handle}
-      <h2 id={headingId}>
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-expanded={!collapsed}
-          aria-controls={bodyId}
-          className="flex w-full items-center gap-1.5 px-3 py-2 text-left text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <CaretDown size={12} weight="bold" aria-hidden className={cn("transition-transform motion-reduce:transition-none", collapsed && "-rotate-90")} />
-          {title}
-        </button>
-      </h2>
+      <div className="flex items-center gap-1 pr-1">
+        <h2 id={headingId} className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={!collapsed}
+            aria-controls={bodyId}
+            className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground uppercase hover:bg-accent hover:text-foreground"
+          >
+            <CaretDown size={12} weight="bold" aria-hidden className={cn("transition-transform motion-reduce:transition-none", collapsed && "-rotate-90")} />
+            {title}
+          </button>
+        </h2>
+        {actions}
+      </div>
       <div id={bodyId} ref={bodyRef} hidden={collapsed} className={cn("min-h-0 flex-1", bodyClassName)}>
         {children}
       </div>

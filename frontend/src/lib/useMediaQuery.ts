@@ -13,3 +13,5 @@ export function useMediaQuery(query: string): boolean {
 }
 
 export const DESKTOP_QUERY = "(min-width: 1024px)";
+/** The side cards dock beside the main card from this width; below it they open over it (008). */
+export const WIDE_QUERY = "(min-width: 1100px)";

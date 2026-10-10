@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router";
+import { PageFrame } from "@/app/shell/PageFrame";
 import { SessionTimeline } from "@/features/sessions/SessionTimeline";
 import { useTimeline } from "@/features/sessions/api";
 import { swatchStyle, type ColorKey } from "@/lib/palette";
@@ -10,22 +11,24 @@ export function CoursePage() {
   const course = useCourse(courseId);
   const timeline = useTimeline(courseId);
 
-  if (course.isPending) return <p role="status" className="p-8 text-sm text-muted-foreground">Loading…</p>;
+  if (course.isPending) return <PageFrame><p role="status" className="p-8 text-sm text-muted-foreground">Loading…</p></PageFrame>;
   if (course.isError || !course.data)
     return (
+      <PageFrame>
       <div className="p-8">
         <h1 className="text-xl font-semibold">Course not found</h1>
         <p className="mt-2 text-sm text-muted-foreground">
           It may have been deleted. <Link to="/calendar" className="text-primary underline underline-offset-4">Back to the calendar</Link>
         </p>
       </div>
+      </PageFrame>
     );
   const c = course.data;
   const entries = timeline.data?.entries ?? [];
 
   return (
-    <div className="h-[calc(100dvh-3.5rem)] overflow-y-auto">
-      <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
+    <PageFrame>
+      <div className="mx-auto w-full max-w-3xl px-4 pt-2 pb-8 sm:px-6">
         <p className="text-sm text-muted-foreground">{c.year.name} · {c.semester.name}</p>
         <h1 className="mt-1 flex items-center gap-3 text-3xl font-semibold tracking-tight">
           <span aria-hidden className="size-4 shrink-0 rounded" style={swatchStyle(c.defaultColor as ColorKey)} />
@@ -43,6 +46,6 @@ export function CoursePage() {
           {entries.length > 0 && <SessionTimeline entries={entries} variant="page" />}
         </div>
       </div>
-    </div>
+    </PageFrame>
   );
 }

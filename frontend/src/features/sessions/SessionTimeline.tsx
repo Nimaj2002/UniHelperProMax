@@ -60,7 +60,7 @@ export function SessionTimeline({ entries, variant, activeKey }: Props) {
           <h2
             id={`month-${month}-${variant}`}
             className={cn(
-              "sticky top-0 z-10 bg-surface font-semibold",
+              "sticky top-0 z-10 bg-surface-elevated font-semibold",
               compact ? "px-2 py-1 text-xs text-muted-foreground" : "py-2 text-sm",
             )}
           >

@@ -66,6 +66,10 @@
   #root {
     min-height: 100dvh;
   }
+  /* the card layout never scrolls the window; each card scrolls its own content (008 FR-004) */
+  html[data-shell] body {
+    overflow: hidden;
+  }
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: "ss01", "cv11";

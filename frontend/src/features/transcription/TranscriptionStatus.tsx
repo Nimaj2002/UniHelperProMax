@@ -19,18 +19,23 @@ function day(iso: string | null) {
   return iso ? formatDay(iso.slice(0, 10), "d MMM") : "";
 }
 
-export function RunningJob({ job, compact = false }: { job: TranscriptionJob; compact?: boolean }) {
+/** Cancels a running job (FR-014); the active job's state refreshes either way. */
+export function useCancelTranscription(job: TranscriptionJob) {
   const qc = useQueryClient();
-  const since = job.stageStartedAt ? Date.parse(job.stageStartedAt) : null;
-  const elapsed = useElapsed(job.status === "transcribing" ? since : null);
-  const label = stageLabel(job);
-  const cancel = async () => {
+  return async () => {
     try {
       qc.setQueryData(activeKey, await cancelTranscription(job.id));
     } finally {
       void qc.invalidateQueries({ queryKey: activeKey });
     }
   };
+}
+
+export function RunningJob({ job, compact = false }: { job: TranscriptionJob; compact?: boolean }) {
+  const since = job.stageStartedAt ? Date.parse(job.stageStartedAt) : null;
+  const elapsed = useElapsed(job.status === "transcribing" ? since : null);
+  const label = stageLabel(job);
+  const cancel = useCancelTranscription(job);
   return (
     <div className="grid min-w-0 gap-1">
       <div className="flex min-w-0 items-center gap-2 text-xs">

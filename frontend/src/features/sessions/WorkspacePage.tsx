@@ -1,11 +1,15 @@
+import { SidebarSimple } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { CollapsibleSection, usePanelSections, type PanelSection } from "@/app/shell/panelSection";
+import { RIGHT_CARD_ID, useLayout, useRightCard, type RightCard } from "@/app/shell/layout";
+import { FocusModeButton, ShowSidePanelButton } from "@/app/shell/MainBarControls";
+import { usePanelSections, type PanelSection } from "@/app/shell/panelSection";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSession } from "@/features/classes/api";
 import { useDocuments } from "@/features/documents/api";
@@ -13,21 +17,21 @@ import { confirmCloseDocument } from "@/features/documents/leaveGuards";
 import { DOC_ATTACH, DOC_DETACH, DocumentTabView } from "@/features/documents/reader/DocumentTabView";
 import { useNoteImporter } from "@/features/imports/useNoteImporter";
 import { isApiError } from "@/lib/api";
-import { readLocal, writeLocal } from "@/lib/storage";
-import { DESKTOP_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
+import { formatDay, wallTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import {
   fetchNote, fetchWorkspace, notesKey, putWorkspace, saveNoteContent, useCreateNote, useDeleteNote,
   useNotes, usePreferences, useRenameNote, useTimeline, useUpdatePreferences, type Note, type NoteMeta,
 } from "./api";
 import { ensureSaver, getSaver, onServerAppend, onServerReplace, readDraft, removeSaver, useSaveStatus, type SaveFn } from "./autosave";
+import { AudioReopenButton } from "./AudioReopenButton";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor, type EditorMode, type MarkdownEditorHandle } from "./editor/MarkdownEditor";
 import { NoteList } from "./NoteList";
 import { DeleteNoteDialog, NoteNameDialog } from "./NoteDialogs";
 import { SessionTimeline } from "./SessionTimeline";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
-import { WorkspaceHeader } from "./WorkspaceHeader";
+import { SessionChip } from "./SessionChip";
 import { paneId, StatusLabel, tabDomId, WorkspaceTabs } from "./WorkspaceTabs";
 import {
   EMPTY, fromServer, panes, reduceTabs, same, toServer, type Side, type TabAction, type TabRef, type WorkspaceTabs as TabsState,
@@ -55,60 +59,24 @@ async function loadNote(id: string): Promise<Note> {
   return note;
 }
 
-const RIGHT_DEFAULT = 300;
-const RIGHT_MIN = 260;
-const RIGHT_MAX = 640;
-const EDITOR_MIN = 360;
-const RIGHT_WIDTH_KEY = "uh.workspace.rightWidth";
-
-/** Audio panel width, remembered in this browser (a per-device layout convenience). */
-function useRightWidth() {
-  const [width, setWidth] = useState(() => {
-    const v = readLocal(RIGHT_WIDTH_KEY, RIGHT_DEFAULT);
-    return v >= RIGHT_MIN && v <= RIGHT_MAX ? v : RIGHT_DEFAULT;
-  });
-  useEffect(() => writeLocal(RIGHT_WIDTH_KEY, width), [width]);
-  return [width, setWidth] as const;
-}
-
-/**
- * Editor | audio columns. Owns the audio panel's width, so committing a resize re-renders only
- * this wrapper (its children are unchanged elements), not the whole workspace.
- */
-function AudioColumns({ desktop, rightOpen, panel, children }: { desktop: boolean; rightOpen: boolean; panel: ReactNode; children: ReactNode }) {
-  const [width, setWidth] = useRightWidth();
-  const grid = useRef<HTMLDivElement>(null);
+/** The audio card's header (008 FR-020): title, the panel's actions (Record, Upload) and close. */
+function AudioCardHeader({ sessionKey }: { sessionKey: string }) {
+  const panels = useWorkspacePanels();
+  const { toggleRight } = useLayout();
   return (
-    <div
-      ref={grid}
-      className="grid min-h-0 flex-1"
-      style={{
-        "--audio-w": `${width}px`,
-        // the editor always keeps at least EDITOR_MIN px, also while the window resizes
-        gridTemplateColumns: desktop
-          ? `minmax(0,1fr)${rightOpen ? ` min(var(--audio-w), max(${RIGHT_MIN}px, 100% - ${EDITOR_MIN}px))` : ""}`
-          : "minmax(0,1fr)",
-      } as CSSProperties}
-    >
-      {children}
-      {desktop && rightOpen && (
-        <div className="relative min-h-0 min-w-0">
-          <PanelResizeHandle
-            value={width}
-            min={RIGHT_MIN}
-            max={RIGHT_MAX}
-            limit={() => (grid.current?.clientWidth ?? Infinity) - EDITOR_MIN}
-            defaultValue={RIGHT_DEFAULT}
-            onResize={setWidth}
-            onDrag={(w) => grid.current?.style.setProperty("--audio-w", `${w}px`)}
-            grow="left"
-            label="Resize audio panel"
-            controls="workspace-audio-panel"
-            className="left-0"
-          />
-          {panel}
-        </div>
-      )}
+    <div className="flex h-10 shrink-0 items-center gap-1 border-b border-divider pr-1 pl-3">
+      <h2 className="mr-auto text-sm font-semibold">Audio</h2>
+      {panels.map(({ id, headerActions: Actions }) => Actions && <Actions key={id} sessionKey={sessionKey} />)}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button variant="ghost" size="icon" className="size-8" onClick={toggleRight} aria-controls={RIGHT_CARD_ID} aria-label="Hide audio panel" aria-keyshortcuts="Alt+BracketRight">
+            <SidebarSimple size={18} className="-scale-x-100" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          Hide audio panel <kbd className="ml-1 font-mono">Alt+]</kbd>
+        </TooltipContent>
+      </Tooltip>
     </div>
   );
 }
@@ -117,8 +85,7 @@ function RightPanel({ sessionKey }: { sessionKey: string }) {
   const panels = useWorkspacePanels();
   if (!panels.length)
     return (
-      <section aria-labelledby="audio-heading" className="grid gap-2 p-4">
-        <h2 id="audio-heading" className="text-sm font-semibold">Audio</h2>
+      <section aria-label="Audio" className="grid gap-2 p-4">
         <p className="text-sm leading-relaxed text-muted-foreground">Recordings arrive in the next update.</p>
       </section>
     );
@@ -206,7 +173,12 @@ function NotePane({ noteId, meta, visible, mode, editorRef, onToggleMode }: Note
           onEscape={() => document.getElementById(tabDomId({ kind: "note", id: noteId }))?.focus()}
         />
       </div>
-      <p className="pointer-events-none absolute right-3 bottom-2 text-xs" aria-live="polite">
+      {/* the save state floats over the corner, using no layout space (008 FR-017) */}
+      <p
+        className="pointer-events-none absolute right-3 bottom-3 z-10 rounded-full border border-divider bg-surface-elevated/90 px-2 py-0.5 text-xs backdrop-blur-sm"
+        aria-live="polite"
+        data-testid="note-save-state"
+      >
         <StatusLabel noteId={noteId} />
       </p>
     </div>
@@ -219,7 +191,7 @@ export function WorkspacePage() {
   const [searchParams] = useSearchParams();
   const linkedNote = searchParams.get("note");
   const qc = useQueryClient();
-  const isDesktop = useMediaQuery(DESKTOP_QUERY);
+  const layout = useLayout();
   const session = useSession(sessionKey);
   const timeline = useTimeline(courseId);
   const notes = useNotes(sessionKey);
@@ -242,25 +214,22 @@ export function WorkspacePage() {
   const [tabState, setTabState] = useState<{ ws: TabsState; sessionKey: string | null }>({ ws: EMPTY, sessionKey: null });
   const [dialog, setDialog] = useState<{ kind: "new" } | { kind: "rename" | "delete"; note: NoteMeta } | null>(null);
   const [deleteError, setDeleteError] = useState<string>();
-  const [drawer, setDrawer] = useState<"left" | "right" | null>(null);
 
   const mode: EditorMode = prefs.data?.editorMode ?? "live";
-  // notes, documents and sessions are collapsible sections of the app's left panel (on mobile, of
-  // the workspace's drawer)
+  // notes, documents and sessions are collapsible sections of the side panel card, docked or
+  // opened over the page on narrow windows
   const sideSections = useSidePanelSections();
   const leftSections = useMemo<PanelSection[]>(
     () => [{ id: "notes", title: "Notes" }, ...sideSections.map(({ id, title }) => ({ id, title })), { id: "sessions", title: "Sessions" }],
     [sideSections],
   );
-  const sidePanel = usePanelSections(isDesktop ? leftSections : null);
+  const sidePanel = usePanelSections(leftSections);
   const leftIds = useMemo(() => leftSections.map((s) => s.id), [leftSections]);
   const leftCollapsed = leftIds.every((id) => sidePanel.collapsed[id]);
-  const leftOpen = isDesktop ? sidePanel.panelVisible && !leftCollapsed : drawer === "left";
-  const rightOpen = isDesktop ? !prefs.data?.workspaceRightCollapsed : drawer === "right";
   const noteList = useMemo(() => notes.data ?? [], [notes.data]);
   const docList = useMemo(() => documents.data ?? [], [documents.data]);
   const ws = tabState.sessionKey === sessionKey ? tabState.ws : EMPTY;
-  const splitAvailable = isDesktop && mainWidth >= SPLIT_MIN_WIDTH;
+  const splitAvailable = mainWidth >= SPLIT_MIN_WIDTH;
   const view = panes(ws, splitAvailable);
   const activeId = ws.active?.kind === "note" ? ws.active.id : null;
   const openIds = ws.tabs.filter((t) => t.kind === "note").map((t) => t.id);
@@ -320,22 +289,25 @@ export function WorkspacePage() {
     [act, eachEditor],
   );
 
-  const togglePanel = useCallback(
-    (side: "left" | "right") => {
-      if (!isDesktop) return setDrawer((d) => (d === side ? null : side));
-      if (side === "left") {
-        // the app's left panel is hidden: bring it back with the sections open; else collapse
-        // the workspace's sections together (or expand them all when all are collapsed)
-        if (!sidePanel.panelVisible) {
-          sidePanel.showPanel();
-          sidePanel.setCollapsed(leftIds, false);
-        } else sidePanel.setCollapsed(leftIds, !leftCollapsed);
-        return;
-      }
-      updatePrefs.mutate({ workspaceRightCollapsed: !(prefs.data?.workspaceRightCollapsed ?? false) });
-    },
-    [isDesktop, prefs.data, updatePrefs, sidePanel, leftIds, leftCollapsed],
+  // Alt+[: the side panel is hidden: bring it back with the sections open; else collapse the
+  // workspace's sections together (or expand them all when all are collapsed)
+  const toggleSections = useCallback(() => {
+    if (!sidePanel.panelVisible) {
+      sidePanel.showPanel();
+      sidePanel.setCollapsed(leftIds, false);
+    } else sidePanel.setCollapsed(leftIds, !leftCollapsed);
+  }, [sidePanel, leftIds, leftCollapsed]);
+
+  // the audio card lives in the shell's right column (008 R2); its open state stays the account
+  // preference it was before
+  const mutatePrefs = updatePrefs.mutate;
+  const audioOpen = !(prefs.data?.workspaceRightCollapsed ?? false);
+  const setAudioOpen = useCallback((open: boolean) => mutatePrefs({ workspaceRightCollapsed: !open }), [mutatePrefs]);
+  const audioCard = useMemo<RightCard>(
+    () => ({ header: <AudioCardHeader sessionKey={sessionKey} />, body: <RightPanel sessionKey={sessionKey} />, open: audioOpen, setOpen: setAudioOpen }),
+    [sessionKey, audioOpen, setAudioOpen],
   );
+  useRightCard(session.isError ? null : audioCard);
 
   const toggleMode = useCallback(
     () => updatePrefs.mutate({ editorMode: mode === "live" ? "raw" : "live" }),
@@ -350,8 +322,8 @@ export function WorkspacePage() {
     closeTab: () => ws.active && closeTab(ws.active),
     nextTab: () => act({ type: "cycle", dir: 1 }),
     prevTab: () => act({ type: "cycle", dir: -1 }),
-    toggleLeft: () => togglePanel("left"),
-    toggleRight: () => togglePanel("right"),
+    toggleLeft: toggleSections,
+    toggleRight: layout.toggleRight,
     toggleSplit: () => splitAvailable && act({ type: "toggleSplit" }),
   });
 
@@ -470,24 +442,6 @@ export function WorkspacePage() {
     ),
   };
   const leftBody = (id: string) => <div className="py-2">{leftContent[id]}</div>;
-  // mobile drawer: the same collapsible sections, stacked and scrolling together
-  const left = (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto">
-      {leftSections.map(({ id, title }, i) => (
-        <CollapsibleSection
-          key={id}
-          id={id}
-          title={title}
-          collapsed={sidePanel.collapsed[id] ?? false}
-          onToggle={() => sidePanel.setCollapsed([id], !sidePanel.collapsed[id])}
-          className={cn("shrink-0", i > 0 && "border-t border-divider")}
-        >
-          {leftBody(id)}
-        </CollapsibleSection>
-      ))}
-    </div>
-  );
-
   const emptyPane = (
     <div className="grid h-full place-items-center p-8 text-center">
       <div className="grid max-w-sm gap-3">
@@ -541,31 +495,41 @@ export function WorkspacePage() {
   const showsNote = view.left?.kind === "note" || view.right?.kind === "note";
   const editorArea = (
     <div className="flex h-full min-h-0 flex-col">
-      <div className="flex min-w-0 items-end justify-between gap-2 bg-surface">
-        <WorkspaceTabs
-          state={ws}
-          titleOf={titleOf}
-          splitAvailable={splitAvailable}
-          onSelect={(tab) => act({ type: "open", tab })}
-          onClose={closeTab}
-          onToggleSplit={() => act({ type: "toggleSplit" })}
-          onMoveToOtherPane={(tab) => act({ type: "moveToOtherPane", tab })}
-        />
-        {showsNote && (
-          <ToggleGroup
-            type="single"
-            size="sm"
-            variant="outline"
-            value={mode}
-            onValueChange={(v) => v && v !== mode && toggleMode()}
-            aria-label="Editing mode"
-            className="mr-2 mb-1 shrink-0"
-          >
-            <ToggleGroupItem value="live" aria-keyshortcuts="Control+E Meta+E">Live</ToggleGroupItem>
-            <ToggleGroupItem value="raw" aria-keyshortcuts="Control+E Meta+E">Raw</ToggleGroupItem>
-          </ToggleGroup>
-        )}
-      </div>
+      <WorkspaceTabs
+        state={ws}
+        titleOf={titleOf}
+        splitAvailable={splitAvailable}
+        onSelect={(tab) => act({ type: "open", tab })}
+        onClose={closeTab}
+        onToggleSplit={() => act({ type: "toggleSplit" })}
+        onMoveToOtherPane={(tab) => act({ type: "moveToOtherPane", tab })}
+        start={<ShowSidePanelButton />}
+        actions={
+          <>
+            {showsNote && (
+              <ToggleGroup
+                type="single"
+                size="sm"
+                variant="outline"
+                value={mode}
+                onValueChange={(v) => v && v !== mode && toggleMode()}
+                aria-label="Editing mode"
+                className="shrink-0 [&>button]:h-7"
+              >
+                <ToggleGroupItem value="live" aria-keyshortcuts="Control+E Meta+E">Live</ToggleGroupItem>
+                <ToggleGroupItem value="raw" aria-keyshortcuts="Control+E Meta+E">Raw</ToggleGroupItem>
+              </ToggleGroup>
+            )}
+            {session.data && <SessionChip session={session.data} />}
+          </>
+        }
+        end={
+          <>
+            {!layout.rightVisible && !layout.focus && <AudioReopenButton onOpen={layout.showRight} />}
+            <FocusModeButton />
+          </>
+        }
+      />
       <div
         ref={panesRef}
         className="grid min-h-0 flex-1"
@@ -608,45 +572,32 @@ export function WorkspacePage() {
   );
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)] min-h-0 flex-col">
-      <WorkspaceHeader
-        courseId={courseId}
-        session={session.data}
-        leftOpen={leftOpen}
-        rightOpen={rightOpen}
-        onToggleLeft={isDesktop ? undefined : () => togglePanel("left")}
-        onToggleRight={() => togglePanel("right")}
-      />
+    <div className="flex h-full min-h-0 flex-col">
+      {/* the page's title for assistive tech; the session chip shows it visually (008 FR-015) */}
+      {session.data && (
+        <h1 className="sr-only">
+          {formatDay(session.data.date, "EEE d MMM yyyy")} · {wallTime(session.data.start)}–{wallTime(session.data.end)}
+          {session.data.title && ` · ${session.data.title}`} — {session.data.courseName}
+        </h1>
+      )}
       {session.isError ? (
-        <p role="alert" className="p-8 text-sm text-danger">This session doesn't exist.</p>
+        <>
+          <div className="flex h-10 shrink-0 items-center gap-1 border-b border-divider px-1">
+            <ShowSidePanelButton />
+            <div className="flex-1" />
+            <FocusModeButton />
+          </div>
+          <p role="alert" className="p-8 text-sm text-danger">This session doesn't exist.</p>
+        </>
       ) : (
-        <AudioColumns
-          desktop={isDesktop}
-          rightOpen={rightOpen}
-          panel={
-            <aside id="workspace-audio-panel" aria-label="Audio" className="h-full min-h-0 overflow-x-hidden overflow-y-auto border-l border-divider bg-surface">
-              <RightPanel sessionKey={sessionKey} />
-            </aside>
-          }
-        >
-          {isDesktop &&
-            leftSections.map(({ id }) => {
-              const target = sidePanel.targets[id];
-              return target ? createPortal(leftBody(id), target, id) : null;
-            })}
-          <main ref={mainRef} className="min-h-0 min-w-0" aria-label="Notes and documents">{editorArea}</main>
-        </AudioColumns>
+        <section ref={mainRef} className="flex min-h-0 min-w-0 flex-1 flex-col" aria-label="Notes and documents">
+          {editorArea}
+        </section>
       )}
-
-      {!isDesktop && (
-        <Sheet open={drawer !== null} onOpenChange={(o) => !o && setDrawer(null)}>
-          <SheetContent side={drawer === "right" ? "right" : "left"} className="w-[min(320px,88vw)] p-0">
-            <SheetTitle className="sr-only">{drawer === "right" ? "Audio" : "Sessions and notes"}</SheetTitle>
-            <SheetDescription className="sr-only">Workspace panel</SheetDescription>
-            {drawer === "right" ? <RightPanel sessionKey={sessionKey} /> : left}
-          </SheetContent>
-        </Sheet>
-      )}
+      {leftSections.map(({ id }) => {
+        const target = sidePanel.targets[id];
+        return target ? createPortal(leftBody(id), target, id) : null;
+      })}
 
       {noteImporter.element}
       {dialog?.kind === "new" && (

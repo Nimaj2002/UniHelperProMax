@@ -168,7 +168,12 @@ export interface ContrastPair {
   label: string;
 }
 
-const pair = (fg: Token, bg: Token, min = 4.5): ContrastPair => ({ fg, bg, min, label: `${TOKEN_LABELS[fg]} on ${TOKEN_LABELS[bg]}` });
+const pair = (fg: Token, bg: Token, min = 4.5, note?: string): ContrastPair => ({
+  fg,
+  bg,
+  min,
+  label: `${TOKEN_LABELS[fg]} on ${TOKEN_LABELS[bg]}${note ? ` — ${note}` : ""}`,
+});
 
 export const CONTRAST_PAIRS: ContrastPair[] = [
   pair("text-primary", "surface"),
@@ -186,7 +191,8 @@ export const CONTRAST_PAIRS: ContrastPair[] = [
   pair("success", "surface"),
   pair("warning", "surface"),
   pair("danger-foreground", "danger"),
-  pair("border", "surface", 3),
+  // the cards' edge against the window background (008 FR-041)
+  pair("border", "surface", 3, "card edges"),
   pair("focus-ring", "surface", 3),
 ];
 

@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { axe } from "vitest-axe";
-import { CoursePanel } from "@/features/courses/CoursePanel";
+import { CoursePanel, CourseSearch } from "@/features/courses/CoursePanel";
 import type { YearNode } from "@/features/courses/api";
 import { json, mockFetch, on, problem, renderRoutes } from "./test-utils";
 
@@ -45,7 +45,7 @@ function render(t = tree(), orderResponse?: (body: unknown) => Response) {
   );
   const utils = renderRoutes(
     [
-      { path: "/", element: <CoursePanel /> },
+      { path: "/", element: <><CourseSearch /><CoursePanel /></> },
       { path: "/courses/:id", element: <p>course page</p> },
     ],
     "/",

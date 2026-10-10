@@ -1,7 +1,6 @@
 import { motion, useReducedMotion } from "motion/react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { useParams } from "react-router";
-import { usePageToolbar } from "@/app/shell/toolbar";
 import { useMe } from "@/features/auth/api";
 import { useSessions } from "@/features/classes/api";
 import { monthRange, todayISO, weekRange } from "@/lib/dates";
@@ -41,12 +40,10 @@ export function CalendarPage() {
   const openHelp = useCallback(() => setHelp(true), []);
   useCalendarKeyboard(view, date, tz, openHelp);
 
-  const toolbar = useMemo(() => <CalendarToolbar view={view} date={date} tz={tz} />, [view, date, tz]);
-  usePageToolbar(toolbar);
-
   const list = sessions.data ?? [];
   return (
-    <section aria-label="Calendar" className="flex h-[calc(100dvh-3.5rem)] min-h-0 flex-col" aria-busy={sessions.isFetching}>
+    <section aria-label="Calendar" className="flex h-full min-h-0 flex-col" aria-busy={sessions.isFetching}>
+      <CalendarToolbar view={view} date={date} tz={tz} />
       {sessions.isError && (
         <p role="alert" className="border-b border-divider px-4 py-2 text-sm text-danger">
           Couldn't load sessions. Check your connection; the calendar retries automatically.

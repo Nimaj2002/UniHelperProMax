@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  BUILT_IN, contrast, contrastIssues, derive, ensureContrast, keyColorsOf, resolve, TOKENS, type KeyColors,
+  BUILT_IN, contrast, contrastIssues, derive, ensureContrast, KEY_COLORS, keyColorsOf, resolve, TOKENS, type KeyColors,
 } from "@/features/settings/themes/colors";
 import { readThemes } from "./tokens";
 
@@ -46,5 +46,16 @@ describe("theme colours", () => {
     const fixed = ensureContrast("#999999", ["#ffffff"], 4.5);
     expect(contrast(fixed, "#ffffff")).toBeGreaterThanOrEqual(4.5);
     expect(ensureContrast("#000000", ["#ffffff"], 4.5)).toBe("#000000");
+  });
+
+  it("warns when the card edges vanish into the window background, without new colours (008 FR-039–FR-041)", () => {
+    // the layout reuses Background, Surface / card and Border: the editable colour set is unchanged
+    expect(TOKENS).toHaveLength(18);
+    expect(KEY_COLORS).toEqual(["background", "surface", "text", "accent"]);
+    for (const b of ["light", "dark"] as const) expect(contrastIssues(BUILT_IN[b])).toEqual([]);
+    const faint = { ...BUILT_IN.light, surface: "#f8f8f9", border: "#f0f0f0" };
+    const edge = contrastIssues(faint).find((i) => i.pair.fg === "border" && i.pair.bg === "surface");
+    expect(edge?.pair.label).toBe("Border on Background — card edges");
+    expect(edge?.pair.min).toBe(3);
   });
 });

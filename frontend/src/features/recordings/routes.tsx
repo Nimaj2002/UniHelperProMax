@@ -2,7 +2,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { registerActivity, registerGlobalHost, registerSignOutGuard } from "@/app/shell/registry";
+import { registerActivity, registerActivitySignal, registerGlobalHost, registerSignOutGuard } from "@/app/shell/registry";
 import {
   AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -10,9 +10,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { registerWorkspacePanel } from "@/features/sessions/workspace-panels";
 import { recordingsKey } from "./api";
-import { recorder } from "./recorder";
+import { recorder, useRecorderState } from "./recorder";
 import { RecordingBar } from "./RecordingBar";
-import { RecordingPanel } from "./RecordingPanel";
+import { RecordingHeaderActions, RecordingPanel } from "./RecordingPanel";
 
 let pendingSignOut: (() => void) | null = null;
 const signOutListeners = new Set<() => void>();
@@ -74,8 +74,18 @@ function RecordingLifecycle() {
   return null;
 }
 
-registerWorkspacePanel({ id: "audio", title: "Audio", component: RecordingPanel });
+registerWorkspacePanel({ id: "audio", title: "Audio", component: RecordingPanel, headerActions: RecordingHeaderActions });
 registerActivity({ id: "recording-bar", component: RecordingBar, priority: 0 });
+registerActivitySignal({
+  id: "recording",
+  kind: "recording",
+  description: "recording in progress",
+  priority: 0,
+  useActive: () => {
+    const { status } = useRecorderState();
+    return status === "recording" || status === "stopping";
+  },
+});
 registerGlobalHost({ id: "recording-lifecycle", component: RecordingLifecycle });
 registerGlobalHost({ id: "recording-signout", component: SignOutWhileRecording });
 registerSignOutGuard((proceed) => {

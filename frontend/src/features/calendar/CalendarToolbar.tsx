@@ -3,6 +3,8 @@ import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { MainBarControls } from "@/app/shell/MainBarControls";
+import { NewClassButton } from "@/features/classes/NewClassButton";
 import { formatRangeLabel, formatShortRangeLabel, todayISO } from "@/lib/dates";
 import { PERIOD_NOUN, shiftPeriod } from "./navigation";
 import { calendarPath, type CalendarView } from "./state";
@@ -15,7 +17,8 @@ export function CalendarToolbar({ view, date, tz }: { view: CalendarView; date: 
   const noun = PERIOD_NOUN[view];
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-1 sm:gap-2">
+    <div className="flex h-12 min-w-0 shrink-0 items-center gap-1 border-b border-divider px-2 sm:gap-2">
+      <MainBarControls position="start" />
       <Tooltip>
         <TooltipTrigger asChild>
           <Button variant="outline" size="sm" className="px-2 sm:px-3" onClick={() => go(todayISO(tz))} aria-keyshortcuts="t">Today</Button>
@@ -32,6 +35,9 @@ export function CalendarToolbar({ view, date, tz }: { view: CalendarView; date: 
         <span aria-hidden className="sm:hidden">{formatShortRangeLabel(view, date)}</span>
         <span aria-hidden className="hidden sm:inline">{formatRangeLabel(view, date)}</span>
       </h1>
+      <div className="ml-auto shrink-0">
+        <NewClassButton />
+      </div>
       <ToggleGroup
         type="single"
         variant="outline"
@@ -39,7 +45,7 @@ export function CalendarToolbar({ view, date, tz }: { view: CalendarView; date: 
         value={view}
         onValueChange={(v) => v && go(date, v as CalendarView)}
         aria-label="Calendar view"
-        className="ml-auto"
+        className="shrink-0"
       >
         {(Object.keys(VIEW_LABELS) as CalendarView[]).map((v) => (
           <ToggleGroupItem key={v} value={v} aria-label={`${VIEW_LABELS[v][1]} view`} aria-keyshortcuts={v[0]} className="px-2.5">
@@ -48,6 +54,7 @@ export function CalendarToolbar({ view, date, tz }: { view: CalendarView; date: 
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
+      <MainBarControls position="end" />
     </div>
   );
 }

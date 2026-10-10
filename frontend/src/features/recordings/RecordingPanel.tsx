@@ -39,14 +39,49 @@ function localStart(iso: string) {
   return `${formatDay(date, "d MMM yyyy")} · ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-/** Workspace right panel: record, list and play the session's recordings (US1, US4, US5). */
-export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
+/** Starts and stops this session's recording, refreshing its lists. */
+function useRecordControl(sessionKey: string) {
   const rec = recorder();
   const state = useRecorderState(rec);
-  const pending = usePendingUploads(rec.uploader);
   const session = useSession(sessionKey);
-  const recordings = useRecordings(sessionKey);
   const qc = useQueryClient();
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: recordingsKey(sessionKey) });
+    void qc.invalidateQueries({ queryKey: ["timeline"] });
+  };
+  const start = async () => {
+    const s = session.data;
+    if (!s) return;
+    const label = `${s.courseName} · ${formatDay(s.date, "EEE d MMM")}`;
+    if (await rec.start({ sessionKey, courseId: s.courseId, label })) refresh();
+  };
+  const stop = async () => {
+    await rec.stop();
+    refresh();
+  };
+  return { rec, state, canStart: !!session.data && state.status === "idle", start, stop, refresh };
+}
+
+/** The audio card's header actions (008 FR-020): Record and Upload. */
+export function RecordingHeaderActions({ sessionKey }: WorkspacePanelProps) {
+  const { rec, canStart, start } = useRecordControl(sessionKey);
+  return (
+    <>
+      {!rec.active && (
+        <Button size="sm" className="h-7" onClick={() => void start()} disabled={!canStart}>
+          <Microphone size={14} weight="fill" aria-hidden /> Record
+        </Button>
+      )}
+      <UploadAudioButton sessionKey={sessionKey} compact />
+    </>
+  );
+}
+
+/** Workspace right panel: record, list and play the session's recordings (US1, US4, US5). */
+export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
+  const { rec, state, stop: stopRec, refresh } = useRecordControl(sessionKey);
+  const pending = usePendingUploads(rec.uploader);
+  const recordings = useRecordings(sessionKey);
   const elapsed = useElapsed(state.status === "recording" ? state.startedAt : null);
   const [selected, setSelected] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ kind: "rename" | "delete"; recording: Recording } | null>(null);
@@ -57,36 +92,9 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
   const list = recordings.data ?? [];
   const playable = list.find((r) => r.id === selected && r.status !== "recording");
 
-  const refresh = () => {
-    void qc.invalidateQueries({ queryKey: recordingsKey(sessionKey) });
-    void qc.invalidateQueries({ queryKey: ["timeline"] });
-  };
-
-  const startRec = async () => {
-    const s = session.data;
-    if (!s) return;
-    const label = `${s.courseName} · ${formatDay(s.date, "EEE d MMM")}`;
-    if (await rec.start({ sessionKey, courseId: s.courseId, label })) refresh();
-  };
-
-  const stopRec = async () => {
-    await rec.stop();
-    refresh();
-  };
-
   return (
     <AudioDropZone sessionKey={sessionKey}>
-    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 p-4">
-      <h2 className="text-sm font-semibold">Audio</h2>
-
-      <div className="flex flex-wrap gap-2">
-        {!rec.active && (
-          <Button onClick={() => void startRec()} disabled={!session.data || state.status !== "idle"}>
-            <Microphone size={16} weight="fill" aria-hidden /> Record
-          </Button>
-        )}
-        <UploadAudioButton sessionKey={sessionKey} />
-      </div>
+    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4 p-3">
       {thisSession && (
         <div className="grid gap-2 rounded-lg border border-divider bg-surface-elevated p-3">
           <div className="flex items-center gap-2">

@@ -6,7 +6,7 @@ test("US1: create a recurring class with inline year/semester/course and see it 
   const [year, semester, course] = [`2026 ${t}`, `Fall 2026 ${t}`, `CS 201 ${t}`];
   await signIn(page);
   await page.goto("/calendar/week/2026-10-05");
-  await page.getByRole("button", { name: "New class", exact: true }).click();
+  await page.getByRole("main", { name: "Workspace" }).getByRole("button", { name: "New class", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "New class" });
 
   for (const [label, name] of [["Year", year], ["Semester", semester]] as const) {

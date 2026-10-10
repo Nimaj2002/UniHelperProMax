@@ -33,7 +33,7 @@ function createRegistry<T extends { id: string; priority?: number }>() {
 }
 
 const activities = createRegistry<ActivityRegistration>();
-/** Global activity bar (003: recording bar, 004: transcription progress). Empty in 001. */
+/** Activity pills floating over the main card (003: recording, 004: transcription progress). */
 export const registerActivity = activities.register;
 export function useActivities(): ActivityRegistration[] {
   return useSyncExternalStore(activities.subscribe, activities.snapshot, activities.snapshot);
@@ -42,6 +42,8 @@ export function useActivities(): ActivityRegistration[] {
 export interface PanelRegistration {
   id: string;
   component: ComponentType;
+  /** Search box shown above the panel's heading (001: course search). */
+  search?: ComponentType;
   priority?: number;
 }
 const panels = createRegistry<PanelRegistration>();
@@ -51,16 +53,42 @@ export function useCoursePanel(): PanelRegistration | undefined {
   return useSyncExternalStore(panels.subscribe, panels.snapshot, panels.snapshot)[0];
 }
 
-export interface TopBarActionRegistration {
+/** How a side panel action draws itself: with its label, or as an icon (the closed rail). */
+export interface PanelActionProps {
+  variant?: "full" | "icon";
+}
+export interface PanelActionRegistration {
   id: string;
-  component: ComponentType;
+  /** "courses-heading": beside the course list heading; "footer": the panel's pinned footer. */
+  slot: "courses-heading" | "footer";
+  component: ComponentType<PanelActionProps>;
   priority?: number;
 }
-const topBarActions = createRegistry<TopBarActionRegistration>();
-/** Global actions on the right of the top bar (001: "New class"). */
-export const registerTopBarAction = topBarActions.register;
-export function useTopBarActions(): TopBarActionRegistration[] {
-  return useSyncExternalStore(topBarActions.subscribe, topBarActions.snapshot, topBarActions.snapshot);
+const panelActions = createRegistry<PanelActionRegistration>();
+/** Actions in the side panel (001 "New class" beside Courses, 005 Settings in the footer). */
+export const registerPanelAction = panelActions.register;
+export function usePanelActions(slot: PanelActionRegistration["slot"]): PanelActionRegistration[] {
+  const all = useSyncExternalStore(panelActions.subscribe, panelActions.snapshot, panelActions.snapshot);
+  return all.filter((a) => a.slot === slot);
+}
+
+export interface ActivitySignal {
+  id: string;
+  /** Hook: true while the activity runs (e.g. a recording in progress). */
+  useActive: () => boolean;
+  /** Appended to the "Show audio panel" name, e.g. "recording in progress". */
+  description: string;
+  kind: "recording" | "transcription";
+  priority?: number;
+}
+const activitySignals = createRegistry<ActivitySignal>();
+/**
+ * Long-running work signalled on the closed audio card's reopen button (008 FR-022), so closing
+ * the card never hides a recording.
+ */
+export const registerActivitySignal = activitySignals.register;
+export function useActivitySignals(): ActivitySignal[] {
+  return useSyncExternalStore(activitySignals.subscribe, activitySignals.snapshot, activitySignals.snapshot);
 }
 
 export interface AccountMenuItem {

@@ -45,7 +45,7 @@ test("Accessibility: WCAG 2.1 AA and visible focus across screens", async ({ pag
   await page.locator("body").click({ position: { x: 1, y: 1 } });
   await focusVisibleOnTab(page);
 
-  await page.getByRole("button", { name: "New class", exact: true }).click();
+  await page.getByRole("main", { name: "Workspace" }).getByRole("button", { name: "New class", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "New class" })).toBeVisible();
   await axe(page, "class form");
   await page.keyboard.press("Escape");
@@ -276,4 +276,59 @@ test("Accessibility (007): documents, reader, search, annotations and split view
     await settledAxe(p, "reader in a user theme");
   }
   await ctx.close();
+});
+
+test("Accessibility (008): card layout landmarks, names and unclipped focus, open and with the rail", async ({ page }, testInfo) => {
+  const t = tag(testInfo.project.name);
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await signIn(page);
+  const cls = await seedClass(page, {
+    course: newHierarchy(`A11YLAY${t} 101`, `A11y lay ${t}`, `A11y lay year ${t}`), startDate: "2026-09-28", startTime: "21:00",
+    endTime: "21:30", location: "Room 2", color: "blue",
+    recurrence: { freq: "weekly", byWeekday: ["MO"], end: { kind: "semester_end" } },
+  });
+  const pages = [
+    ["calendar", "/calendar/week/2026-10-05"],
+    ["course page", `/courses/${cls.courseId}`],
+    ["session workspace", `/courses/${cls.courseId}/sessions/${encodeURIComponent(`${cls.lineageId}:2026-10-05`)}`],
+  ] as const;
+
+  /** Every Tab stop's focus ring (2 px outline + 2 px offset) fits inside its card. */
+  async function focusInsideCards(steps = 30) {
+    for (let i = 0; i < steps; i++) {
+      await page.keyboard.press("Tab");
+      const clipped = await page.evaluate(() => {
+        const el = document.activeElement as HTMLElement | null;
+        const card = el?.closest<HTMLElement>("#course-panel, #main, #workspace-audio-panel");
+        if (!el || !card || el === card) return null;
+        const r = el.getBoundingClientRect();
+        const c = card.getBoundingClientRect();
+        const ring = 4;
+        // only elements scrolled into view count (scroll containers clip the rest by design)
+        if (r.bottom < c.top || r.top > c.bottom) return null;
+        return r.left - ring < c.left - 0.5 || r.right + ring > c.right + 0.5 ? el.outerHTML.slice(0, 120) : null;
+      });
+      expect(clipped, `focus ring clipped at tab stop ${i + 1}`).toBeNull();
+    }
+  }
+
+  for (const [label, url] of pages) {
+    await page.goto(url);
+    await expect(page.getByRole("main", { name: "Workspace" })).toBeVisible();
+    await expect(page.getByRole("complementary", { name: "Side panel" })).toBeVisible();
+    if (label === "session workspace") await expect(page.getByRole("complementary", { name: "Audio" })).toBeVisible();
+    await axe(page, `${label} (cards)`);
+    const unnamed = await page.evaluate(() =>
+      [...document.querySelectorAll("button")].filter((b) => !b.closest("[aria-hidden=true]") && !(b.getAttribute("aria-label") || b.textContent?.trim() || b.getAttribute("aria-labelledby") || b.title)).map((b) => b.outerHTML.slice(0, 100)),
+    );
+    expect(unnamed).toEqual([]);
+    await page.locator("body").click({ position: { x: 2, y: 2 } });
+    await focusInsideCards();
+  }
+
+  // with the rail
+  await page.getByRole("button", { name: "Hide side panel" }).click();
+  await expect(page.getByRole("complementary", { name: "Side panel" }).getByRole("button", { name: "Show side panel" })).toBeVisible();
+  await axe(page, "session workspace (rail)");
+  await page.getByRole("button", { name: "Show side panel" }).click();
 });

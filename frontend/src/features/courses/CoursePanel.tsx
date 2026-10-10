@@ -1,5 +1,5 @@
 import { CaretDown, CaretRight, DotsSixVertical, MagnifyingGlass, X } from "@phosphor-icons/react";
-import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type KeyboardEvent } from "react";
 import { Link } from "react-router";
 import { Input } from "@/components/ui/input";
 import { hasModifier, isTypingTarget } from "@/lib/shortcuts";
@@ -25,21 +25,29 @@ export function filterTree(tree: YearNode[], query: string): YearNode[] {
     .filter((n) => n.semesters.length > 0);
 }
 
-/** Left panel: years (user order, reorderable) → semesters (most recent first) → courses. */
-export function CoursePanel() {
-  const tree = useCourseTree();
-  const reorder = useReorderYears();
-  const adornments = useCourseAdornments();
-  const [query, setQuery] = useState("");
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => readLocal(COLLAPSE_KEY, {}));
-  const [announcement, setAnnouncement] = useState("");
-  const [dragId, setDragId] = useState<string | null>(null);
+// the search box sits above the Courses heading (008 FR-007), the list below it: they share the query
+let courseQuery = "";
+const queryListeners = new Set<() => void>();
+function setCourseQuery(q: string) {
+  courseQuery = q;
+  queryListeners.forEach((l) => l());
+}
+function useCourseQuery() {
+  return useSyncExternalStore(
+    (l) => {
+      queryListeners.add(l);
+      return () => queryListeners.delete(l);
+    },
+    () => courseQuery,
+    () => courseQuery,
+  );
+}
+
+/** Course search ("/" focuses it from anywhere, FR-023). */
+export function CourseSearch() {
+  const query = useCourseQuery();
   const searchRef = useRef<HTMLInputElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
-
-  useEffect(() => writeLocal(COLLAPSE_KEY, collapsed), [collapsed]);
-
-  // "/" focuses the course search (FR-023)
+  // "/" focuses the search (FR-023); while the side panel is closed the shell opens it first
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
       if (e.key === "/" && !hasModifier(e) && !isTypingTarget(e.target)) {
@@ -50,6 +58,49 @@ export function CoursePanel() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+  return (
+    <div className="relative px-1">
+      <label htmlFor="course-search" className="sr-only">Search courses</label>
+      <MagnifyingGlass size={16} aria-hidden className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        ref={searchRef}
+        id="course-search"
+        type="search"
+        placeholder="Search courses"
+        aria-controls="course-list"
+        aria-keyshortcuts="/"
+        autoComplete="off"
+        value={query}
+        onChange={(e) => setCourseQuery(e.target.value)}
+        onKeyDown={(e) => e.key === "Escape" && query && (e.stopPropagation(), setCourseQuery(""))}
+        className="pr-8 pl-8 [&::-webkit-search-cancel-button]:hidden"
+      />
+      {query && (
+        <button
+          type="button"
+          aria-label="Clear search"
+          onClick={() => { setCourseQuery(""); searchRef.current?.focus(); }}
+          className="absolute top-1/2 right-2.5 grid size-6 -translate-y-1/2 place-items-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
+        >
+          <X size={14} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** Left panel: years (user order, reorderable) → semesters (most recent first) → courses. */
+export function CoursePanel() {
+  const tree = useCourseTree();
+  const reorder = useReorderYears();
+  const adornments = useCourseAdornments();
+  const query = useCourseQuery();
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => readLocal(COLLAPSE_KEY, {}));
+  const [announcement, setAnnouncement] = useState("");
+  const [dragId, setDragId] = useState<string | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  useEffect(() => writeLocal(COLLAPSE_KEY, collapsed), [collapsed]);
 
   const data = useMemo(() => tree.data ?? [], [tree.data]);
   const visible = useMemo(() => filterTree(data, query), [data, query]);
@@ -83,35 +134,8 @@ export function CoursePanel() {
 
   return (
     <nav aria-label="Courses" className="flex h-full flex-col">
-      <div className="relative px-3 pt-3 pb-2">
-        <label htmlFor="course-search" className="sr-only">Search courses</label>
-        <MagnifyingGlass size={16} aria-hidden className="pointer-events-none absolute top-1/2 left-5.5 mt-0.5 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          ref={searchRef}
-          id="course-search"
-          type="search"
-          placeholder="Search courses"
-          aria-controls="course-list"
-          aria-keyshortcuts="/"
-          autoComplete="off"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === "Escape" && query && (e.stopPropagation(), setQuery(""))}
-          className="pr-8 pl-8 [&::-webkit-search-cancel-button]:hidden"
-        />
-        {query && (
-          <button
-            type="button"
-            aria-label="Clear search"
-            onClick={() => { setQuery(""); searchRef.current?.focus(); }}
-            className="absolute top-1/2 right-4.5 mt-0.5 grid size-6 -translate-y-1/2 place-items-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
-          >
-            <X size={14} />
-          </button>
-        )}
-      </div>
       <p aria-live="polite" className="sr-only">{announcement}</p>
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-4">
+      <div className="min-h-0 flex-1 overflow-y-auto px-1 pb-2">
         {tree.isPending && (
           <ul aria-hidden className="grid gap-2 px-2 pt-2">
             {[60, 80, 70].map((w) => <li key={w} className="h-4 animate-pulse rounded bg-surface-sunken" style={{ width: `${w}%` }} />)}
@@ -127,13 +151,13 @@ export function CoursePanel() {
         )}
         {tree.isSuccess && data.length === 0 && (
           <p className="px-2 pt-1 text-sm leading-relaxed text-muted-foreground">
-            No courses yet. Use <span className="font-medium text-foreground">New class</span> to add your first one.
+            No courses yet. Use <span className="font-medium text-foreground">+</span> beside Courses (New class) to add your first one.
           </p>
         )}
         {tree.isSuccess && data.length > 0 && visible.length === 0 && (
           <div role="status" className="grid gap-2 px-2 pt-1 text-sm">
             <p className="text-muted-foreground">No courses match “{query.trim()}”.</p>
-            <button type="button" className="justify-self-start text-primary underline underline-offset-4" onClick={() => setQuery("")}>
+            <button type="button" className="justify-self-start text-primary underline underline-offset-4" onClick={() => setCourseQuery("")}>
               Show all courses
             </button>
           </div>

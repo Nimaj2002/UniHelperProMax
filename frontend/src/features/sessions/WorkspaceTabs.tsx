@@ -1,6 +1,7 @@
 import { CheckCircle, CircleNotch, Columns, FilePdf, WarningCircle, X } from "@phosphor-icons/react";
-import { useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { getSaver, useSaveStatus, type SaveStatus } from "./autosave";
 import { paneOf, same, tabKey, type Side, type TabRef, type WorkspaceTabs as TabsState } from "./tabState";
@@ -13,14 +14,15 @@ const STATUS: Record<SaveStatus, string> = {
   conflict: "Conflict",
 };
 
-export function StatusLabel({ noteId, className }: { noteId: string; className?: string }) {
+/** A note's save state; `iconOnly` keeps the words for screen readers (the compact tab row). */
+export function StatusLabel({ noteId, className, iconOnly = false }: { noteId: string; className?: string; iconOnly?: boolean }) {
   const snap = useSaveStatus(getSaver(noteId));
   const status = snap?.status ?? "saved";
   const Icon = status === "saved" ? CheckCircle : status === "error" || status === "conflict" ? WarningCircle : CircleNotch;
   return (
     <span className={cn("inline-flex items-center gap-1", status === "error" || status === "conflict" ? "text-danger" : "text-muted-foreground", className)}>
-      <Icon size={14} aria-hidden className={status === "saving" || status === "dirty" ? "animate-spin [animation-duration:1.5s]" : undefined} />
-      {STATUS[status]}
+      <Icon size={iconOnly ? 12 : 14} aria-hidden className={status === "saving" || status === "dirty" ? "animate-spin [animation-duration:1.5s] motion-reduce:animate-none" : undefined} />
+      <span className={iconOnly ? "sr-only" : undefined}>{STATUS[status]}</span>
     </span>
   );
 }
@@ -38,6 +40,12 @@ interface Props {
   onClose: (t: TabRef) => void;
   onToggleSplit: () => void;
   onMoveToOtherPane: (t: TabRef) => void;
+  /** Controls between the tabs and the split toggle (Live/Raw, session chip). */
+  actions?: ReactNode;
+  /** Controls after the split toggle (audio reopen, focus mode). */
+  end?: ReactNode;
+  /** Controls before the tabs (side panel opener on narrow windows). */
+  start?: ReactNode;
 }
 
 const SIDE_TEXT: Record<Side, { mark: string; sr: string }> = {
@@ -50,7 +58,7 @@ const SIDE_TEXT: Record<Side, { mark: string; sr: string }> = {
  * side; arrow keys move between tabs, Delete closes, the context menu (or Shift+F10) offers
  * "Show in other pane"; the split toggle sits at the end.
  */
-export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClose, onToggleSplit, onMoveToOtherPane }: Props) {
+export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClose, onToggleSplit, onMoveToOtherPane, actions, end, start }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
   const [menuFor, setMenuFor] = useState<TabRef | null>(null);
   const tabs = state.tabs.filter((t) => titleOf(t) !== undefined);
@@ -68,16 +76,26 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
     focusTab(t);
   };
 
-  if (!tabs.length) return null;
+  // the active tab stays in view when many tabs scroll sideways (008 edge case)
+  const activeKey = state.active ? tabKey(state.active) : null;
+  useEffect(() => {
+    if (!activeKey) return;
+    listRef.current?.querySelector<HTMLElement>(`[data-tab="${CSS.escape(activeKey)}"]`)?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
+  }, [activeKey, tabs.length]);
+
+  // the main card's only fixed bar in the session workspace (008 FR-015): 40 px
   return (
-    <div className="flex min-w-0 flex-1 items-end">
+    <div className="flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-divider px-1">
+      {start}
+      {tabs.length === 0 && <div className="min-w-0 flex-1" />}
+      {tabs.length > 0 && (
       <div
         ref={listRef}
         role="tablist"
         aria-label="Open notes and documents"
         tabIndex={-1}
         onKeyDown={onKey}
-        className="flex min-w-0 flex-1 items-end gap-0.5 overflow-x-auto border-b border-divider px-2 [scrollbar-width:thin]"
+        className="flex h-full min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {tabs.map((t) => {
           const selected = same(t, state.active);
@@ -109,27 +127,22 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
                   } else if (e.key === "ContextMenu" || (e.key === "F10" && e.shiftKey)) openMenu(e);
                 }}
                 className={cn(
-                  "group flex max-w-60 items-center gap-1 rounded-t-md border border-b-0 border-transparent py-1.5 pr-1 pl-3 text-left",
-                  selected ? "border-divider bg-surface-elevated" : "hover:bg-accent",
+                  "group flex h-8 max-w-60 items-center gap-1.5 rounded-md pr-1 pl-2.5 text-left text-sm",
+                  selected ? "bg-surface-sunken text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
               >
-                {t.kind === "document" && <FilePdf size={16} aria-hidden className="shrink-0 text-muted-foreground" />}
-                <span className="flex min-w-0 flex-col items-start">
-                  <span className="flex max-w-48 items-baseline gap-1 text-sm">
-                    <span className={cn("truncate", selected && "font-medium")}>{name}</span>
-                    {side && (
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        <span aria-hidden>{SIDE_TEXT[side].mark}</span>
-                        <span className="sr-only">{SIDE_TEXT[side].sr}</span>
-                      </span>
-                    )}
-                  </span>
-                  {t.kind === "note" ? (
-                    <StatusLabel noteId={t.id} className="text-[11px]" />
-                  ) : (
-                    <span className="text-[11px] text-muted-foreground">PDF</span>
+                {t.kind === "document" && <FilePdf size={15} aria-hidden className="shrink-0" />}
+                <span className="flex min-w-0 max-w-48 items-baseline gap-1">
+                  <span className={cn("truncate", selected && "font-medium")}>{name}</span>
+                  {side && (
+                    <span className="shrink-0 text-xs text-muted-foreground">
+                      <span aria-hidden>{SIDE_TEXT[side].mark}</span>
+                      <span className="sr-only">{SIDE_TEXT[side].sr}</span>
+                    </span>
                   )}
+                  {t.kind === "document" && <span className="sr-only">PDF</span>}
                 </span>
+                {t.kind === "note" && <StatusLabel noteId={t.id} iconOnly className="shrink-0" />}
                 {/* pointer shortcut; keyboard users press Delete (or Alt+W) on the tab */}
                 <span
                   aria-hidden
@@ -138,7 +151,10 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
                     e.stopPropagation();
                     onClose(t);
                   }}
-                  className="grid size-6 place-items-center rounded text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+                  className={cn(
+                    "grid size-5 place-items-center rounded text-muted-foreground hover:bg-surface-sunken hover:text-foreground",
+                    !selected && "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
+                  )}
                 >
                   <X size={12} />
                 </span>
@@ -156,22 +172,33 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
           );
         })}
       </div>
-      {splitAvailable && (
-        <button
-          type="button"
-          aria-pressed={splitOn}
-          aria-keyshortcuts="Alt+Backslash"
-          title="Split view (Alt+\)"
-          onClick={onToggleSplit}
-          className={cn(
-            "mb-1 ml-1 inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border px-2 text-sm",
-            splitOn ? "border-primary bg-accent text-foreground" : "border-divider text-muted-foreground hover:bg-accent hover:text-foreground",
-          )}
-        >
-          <Columns size={16} aria-hidden />
-          Split
-        </button>
       )}
+      <div className="flex shrink-0 items-center gap-1">
+        {actions}
+        {splitAvailable && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Split"
+                aria-pressed={splitOn}
+                aria-keyshortcuts="Alt+Backslash"
+                onClick={onToggleSplit}
+                className={cn(
+                  "inline-flex size-8 shrink-0 items-center justify-center rounded-md",
+                  splitOn ? "bg-surface-hover text-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                )}
+              >
+                <Columns size={18} aria-hidden />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              Split view <kbd className="ml-1 font-mono">Alt+\</kbd>
+            </TooltipContent>
+          </Tooltip>
+        )}
+        {end}
+      </div>
     </div>
   );
 }
