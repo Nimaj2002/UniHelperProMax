@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Navigate, useLocation } from "react-router";
+import { SplashScreen } from "@/components/SplashScreen";
 import { useMe, useSetupStatus } from "./api";
 
 function FullPageStatus({ label }: { label: string }) {
@@ -16,7 +17,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
   const me = useMe();
   const location = useLocation();
 
-  if (status.isPending || me.isPending) return <FullPageStatus label="Loading…" />;
+  if (status.isPending || me.isPending) return <SplashScreen />;
   if (status.isError || me.isError) return <FullPageStatus label="Can't reach the server. Reload to retry." />;
   if (status.data.needsOwner) return <Navigate to="/setup" replace />;
   if (!me.data) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;

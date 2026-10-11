@@ -1,0 +1,16 @@
+/** Full-page app icon shown while the app loads; styled by the .uh-splash rules in index.html, so it matches the pre-load splash exactly. */
+export function SplashScreen({ label = "Loading UniHelperProMax" }: { label?: string }) {
+  return (
+    <div className="uh-splash" role="status" aria-label={label}>
+      <div className="uh-splash-icon">
+        <svg viewBox="0 0 100 100" aria-hidden>
+          <path
+            fill="currentColor"
+            fillRule="evenodd"
+            d="M18 32H22A6 6 0 0 1 28 38V62A6 6 0 0 1 22 68H18A6 6 0 0 1 12 62V38A6 6 0 0 1 18 32ZM18 35.5H22A2.5 2.5 0 0 1 24.5 38V62A2.5 2.5 0 0 1 22 64.5H18A2.5 2.5 0 0 1 15.5 62V38A2.5 2.5 0 0 1 18 35.5ZM45 18H55A11 11 0 0 1 66 29V71A11 11 0 0 1 55 82H45A11 11 0 0 1 34 71V29A11 11 0 0 1 45 18ZM42 33.75H58A2.25 2.25 0 0 1 60.25 36V36A2.25 2.25 0 0 1 58 38.25H42A2.25 2.25 0 0 1 39.75 36V36A2.25 2.25 0 0 1 42 33.75ZM42 43.75H58A2.25 2.25 0 0 1 60.25 46V46A2.25 2.25 0 0 1 58 48.25H42A2.25 2.25 0 0 1 39.75 46V46A2.25 2.25 0 0 1 42 43.75ZM42 53.75H52A2.25 2.25 0 0 1 54.25 56V56A2.25 2.25 0 0 1 52 58.25H42A2.25 2.25 0 0 1 39.75 56V56A2.25 2.25 0 0 1 42 53.75ZM78 37H82A6 6 0 0 1 88 43V57A6 6 0 0 1 82 63H78A6 6 0 0 1 72 57V43A6 6 0 0 1 78 37ZM76.5 50a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0Z"
+          />
+        </svg>
+      </div>
+    </div>
+  );
+}
