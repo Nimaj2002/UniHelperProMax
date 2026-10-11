@@ -167,7 +167,7 @@ def delete_semester(
 ) -> Response:
     sem = hs.get_semester(db, user, semester_id)
     check_version(version, sem.version)
-    hs.delete_entity(db, sem)
+    hs.delete_entity(db, user, sem)
     return _no_content()
 
 
@@ -195,7 +195,7 @@ def update_course(
 def delete_course(course_id: str, version: IfMatch, user: CurrentUser, db: DbSession) -> Response:
     course = hs.get_course(db, user, course_id)
     check_version(version, course.version)
-    hs.delete_entity(db, course)
+    hs.delete_entity(db, user, course)
     return _no_content()
 
 

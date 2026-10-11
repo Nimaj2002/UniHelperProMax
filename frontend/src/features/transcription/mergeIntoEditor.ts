@@ -3,6 +3,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { notesKey, noteKey } from "@/features/sessions/api";
 import { getSaver } from "@/features/sessions/autosave";
+import { workspacePath } from "@/features/sessions/SessionTimeline";
 import { historyKey, type TranscriptionJob } from "./api";
 
 export function applyFinishedJob(qc: QueryClient, job: TranscriptionJob) {
@@ -17,6 +18,6 @@ export function applyFinishedJob(qc: QueryClient, job: TranscriptionJob) {
 }
 
 export function notePath(job: Pick<TranscriptionJob, "courseId" | "sessionKey" | "noteId">) {
-  const base = `/courses/${job.courseId}/sessions/${encodeURIComponent(job.sessionKey)}`;
+  const base = workspacePath(job.courseId, job.sessionKey);
   return job.noteId ? `${base}?note=${encodeURIComponent(job.noteId)}` : base;
 }

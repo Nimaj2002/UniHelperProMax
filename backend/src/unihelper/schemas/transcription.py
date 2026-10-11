@@ -56,7 +56,7 @@ class TranscriptionJob(ApiModel):
     recording_id: str
     recording_name: str
     session_key: str
-    course_id: str
+    course_id: str | None  # 009: null for event recordings
     note_id: str | None
     note_name: str
     language: str

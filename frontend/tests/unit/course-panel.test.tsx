@@ -18,7 +18,8 @@ function year(name: string, position: number, semesters: [string, string | null,
       const sid = id();
       return {
         semester: { id: sid, yearId: yid, name: sname, folderName: sname, startDate: start, endDate: null, version: 1 },
-        courses: courses.map((c) => ({ id: id(), semesterId: sid, name: c, folderName: c, defaultColor: "blue", version: 1 })),
+        courses: courses.map((c) => ({ id: id(), semesterId: sid, name: c, folderName: c, defaultColor: "blue", version: 1, reservedNameConflict: false })),
+        eventCount: 0,
       };
     }),
   };
@@ -137,5 +138,38 @@ describe("CoursePanel", () => {
     fireEvent.dragOver(target);
     fireEvent.drop(target);
     await waitFor(() => expect(sent).toEqual([{ yearIds: [t[2].year.id, t[0].year.id, t[1].year.id] }]));
+  });
+
+  it("ends each semester with an Events link (count badge when > 0) that stays with its semester while searching", async () => {
+    localStorage.clear(); // groups collapsed by earlier tests
+    const t = tree();
+    t[0].semesters[0].eventCount = 3;
+    render(t);
+    const user = userEvent.setup();
+    await screen.findByText("CS 201");
+    const eventsOf = (semesterId: string) => document.querySelector<HTMLElement>(`[data-events-of="${semesterId}"]`);
+    const fall = eventsOf(t[0].semesters[0].semester.id)!;
+    expect(fall).toHaveAccessibleName("Events, 3 events");
+    expect(fall).toHaveAttribute("href", `/semesters/${t[0].semesters[0].semester.id}/events`);
+    // also shown for a semester without events
+    expect(eventsOf(t[0].semesters[1].semester.id)).toHaveAccessibleName("Events");
+    const list = fall.closest("ul")!;
+    expect(within(list).getAllByRole("link").at(-1)).toBe(fall); // after the courses
+
+    await user.type(screen.getByRole("searchbox", { name: "Search courses" }), "math");
+    expect(screen.getByRole("link", { name: "Math 203" })).toBeInTheDocument();
+    expect(eventsOf(t[0].semesters[0].semester.id)).toBeInTheDocument();
+    expect(eventsOf(t[0].semesters[1].semester.id)).toBeNull(); // its semester is hidden
+    await user.click(screen.getByRole("button", { name: "Clear search" })); // the query is shared module state
+  });
+
+  it("warns on a course that holds the reserved _Events folder", async () => {
+    const t = tree();
+    t[0].semesters[0].courses[0] = { ...t[0].semesters[0].courses[0], name: "_Events", reservedNameConflict: true };
+    const { container } = render(t);
+    const link = (await screen.findByText("_Events")).closest("a")!;
+    expect(link).toHaveAccessibleName(/Rename this course: “_Events” is reserved for events\.$/);
+    expect(screen.getByRole("link", { name: "Math 203" })).toBeInTheDocument();
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

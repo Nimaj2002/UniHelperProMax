@@ -319,7 +319,8 @@ test("SC-002: every action from before the redesign is still reachable by keyboa
   await left.getByRole("button", { name: "New class" }).click();
   await expect(page.getByRole("dialog", { name: /New class/ })).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.locator("body").click({ position: { x: 700, y: 400 } });
+  // (009: a click on the time grid now starts a new-entry draft, so click the period heading)
+  await page.getByRole("heading", { level: 1 }).click();
   await page.keyboard.press("n");
   await expect(page.getByRole("dialog", { name: /New class/ })).toBeVisible();
   await page.keyboard.press("Escape");

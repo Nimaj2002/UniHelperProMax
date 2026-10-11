@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
+from unihelper.domain.naming import is_reserved_course_folder
 from unihelper.models.base import Base, IdMixin, TimestampMixin, VersionMixin
 
 COLOR_KEYS = (
@@ -44,3 +45,8 @@ class Course(IdMixin, TimestampMixin, VersionMixin, Base):
     folder_name: Mapped[str] = mapped_column(String, nullable=False)
     folder_key: Mapped[str] = mapped_column(String, nullable=False)
     default_color: Mapped[str] = mapped_column(String(16), nullable=False, default="blue")
+
+    @property
+    def reserved_name_conflict(self) -> bool:
+        """A course created before 009 whose folder is the reserved `_Events` (research R1)."""
+        return is_reserved_course_folder(self.folder_name)

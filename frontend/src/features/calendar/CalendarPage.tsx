@@ -1,16 +1,20 @@
 import { motion, useReducedMotion } from "motion/react";
-import { useCallback, useState } from "react";
-import { useParams } from "react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation, useParams } from "react-router";
 import { useMe } from "@/features/auth/api";
 import { useSessions } from "@/features/classes/api";
 import { monthRange, todayISO, weekRange } from "@/lib/dates";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { CalendarToolbar } from "./CalendarToolbar";
 import { DayView } from "./DayView";
+import { announcement, MONTH_DRAFT } from "./draft";
+import { EntryGuardProvider, focusQuickForm } from "./entryGuard";
 import { MonthView } from "./MonthView";
+import { QuickCreate } from "./QuickCreateForm";
 import { ShortcutsDialog } from "./ShortcutsDialog";
 import { lastCalendar, rememberCalendar, VIEWS, type CalendarView } from "./state";
 import { useCalendarKeyboard } from "./useCalendarKeyboard";
+import { useDraft, type DraftControls } from "./useDraft";
 import { WeekView } from "./WeekView";
 
 function isView(v: string | undefined): v is CalendarView {
@@ -40,27 +44,99 @@ export function CalendarPage() {
   const openHelp = useCallback(() => setHelp(true), []);
   useCalendarKeyboard(view, date, tz, openHelp);
 
+  const drafts = useDraft();
+  useDraftLifecycle(drafts, range);
+  const message = useDraftAnnouncement(drafts);
+  const blocked = useFilledFormGuard(drafts);
+
   const list = sessions.data ?? [];
   return (
-    <section aria-label="Calendar" className="flex h-full min-h-0 flex-col" aria-busy={sessions.isFetching}>
-      <CalendarToolbar view={view} date={date} tz={tz} />
-      {sessions.isError && (
-        <p role="alert" className="border-b border-divider px-4 py-2 text-sm text-danger">
-          Couldn't load sessions. Check your connection; the calendar retries automatically.
-        </p>
-      )}
-      <motion.div
-        key={`${view}:${range.from}`}
-        className="flex min-h-0 flex-1 flex-col"
-        initial={reduceMotion ? false : { opacity: 0, y: 4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15, ease: "easeOut" }}
-      >
-        {view === "day" && <DayView date={date} sessions={list} tz={tz} />}
-        {view === "week" && <WeekView date={date} sessions={list} tz={tz} />}
-        {view === "month" && <MonthView date={date} sessions={list} tz={tz} />}
-      </motion.div>
-      <ShortcutsDialog open={help} onOpenChange={setHelp} />
-    </section>
+    <EntryGuardProvider blocked={blocked}>
+      <section aria-label="Calendar" className="flex h-full min-h-0 flex-col" aria-busy={sessions.isFetching}>
+        <CalendarToolbar view={view} date={date} tz={tz} />
+        {sessions.isError && (
+          <p role="alert" className="border-b border-divider px-4 py-2 text-sm text-danger">
+            Couldn't load sessions. Check your connection; the calendar retries automatically.
+          </p>
+        )}
+        <motion.div
+          key={`${view}:${range.from}`}
+          className="flex min-h-0 flex-1 flex-col"
+          initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+        >
+          {view === "day" && <DayView date={date} sessions={list} tz={tz} drafts={drafts} />}
+          {view === "week" && <WeekView date={date} sessions={list} tz={tz} drafts={drafts} />}
+          {view === "month" && (
+            <MonthView
+              date={date}
+              sessions={list}
+              tz={tz}
+              draft={drafts.state.draft}
+              onCreateDraft={(d) => drafts.start(d, MONTH_DRAFT, "month", "open")}
+            />
+          )}
+        </motion.div>
+        <QuickCreate drafts={drafts} />
+        {/* 009 FR-043: drafts are announced, not their aria-hidden blocks */}
+        <div role="status" aria-live="polite" className="sr-only" data-testid="draft-announcer">
+          {message}
+        </div>
+        <ShortcutsDialog open={help} onOpenChange={setHelp} />
+      </section>
+    </EntryGuardProvider>
   );
+}
+
+/** A filled quick form blocks clicks that would open an entry or another day: they would leave
+ * the calendar and lose what was entered (009 FR-039). Focus goes back to the form instead. */
+function useFilledFormGuard(drafts: DraftControls): () => boolean {
+  const latest = useRef(drafts.state);
+  useEffect(() => {
+    latest.current = drafts.state;
+  });
+  return useCallback(() => {
+    const { draft, phase, dirty } = latest.current;
+    const filled = !!draft && phase === "open" && dirty;
+    if (filled) focusQuickForm();
+    return filled;
+  }, []);
+}
+
+/** Leaving the page (or showing a period without the draft's day) discards an unsaved draft;
+ * one with something entered survives a view change that still shows its day (009 FR-039). */
+function useDraftLifecycle(drafts: DraftControls, range: { from: string; to: string }) {
+  const { pathname } = useLocation();
+  const { draft, dirty } = drafts.state;
+  const { discard } = drafts;
+  const first = useRef(true);
+  const latest = useRef({ draft, dirty, range });
+  useEffect(() => {
+    latest.current = { draft, dirty, range };
+  });
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    const { draft, dirty, range } = latest.current;
+    if (!draft) return;
+    const shown = pathname.startsWith("/calendar") && draft.date >= range.from && draft.date <= range.to;
+    if (!(dirty && shown)) discard(draft.id);
+  }, [pathname, discard]);
+}
+
+/** "New entry, from 13:00 to 14:45" on creation and every change; while dragging only after
+ * the pointer rests for 300 ms (009 FR-043, research R12). */
+function useDraftAnnouncement(drafts: DraftControls): string {
+  const { draft, phase } = drafts.state;
+  const [message, setMessage] = useState("");
+  const text = draft ? announcement(draft) : "";
+  useEffect(() => {
+    if (!text) return;
+    const id = window.setTimeout(() => setMessage(text), phase === "drag" ? 300 : 0);
+    return () => window.clearTimeout(id);
+  }, [text, phase]);
+  return draft ? message : "";
 }

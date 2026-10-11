@@ -52,7 +52,7 @@ function useRecordControl(sessionKey: string) {
   const start = async () => {
     const s = session.data;
     if (!s) return;
-    const label = `${s.courseName} · ${formatDay(s.date, "EEE d MMM")}`;
+    const label = `${s.kind === "event" ? s.title : s.courseName} · ${formatDay(s.date, "EEE d MMM")}`;
     if (await rec.start({ sessionKey, courseId: s.courseId, label })) refresh();
   };
   const stop = async () => {
@@ -114,7 +114,7 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
       {otherSession && (
         <p className="text-sm text-muted-foreground">
           Recording another session.{" "}
-          {state.courseId && state.sessionKey && (
+          {state.sessionKey && (
             <Link className="text-primary underline underline-offset-4" to={workspacePath(state.courseId, state.sessionKey)}>
               Go to it
             </Link>

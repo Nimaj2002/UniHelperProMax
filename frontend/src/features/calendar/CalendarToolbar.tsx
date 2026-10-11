@@ -5,6 +5,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { MainBarControls } from "@/app/shell/MainBarControls";
 import { NewClassButton } from "@/features/classes/NewClassButton";
+import { NewEventButton } from "@/features/events/NewEventButton";
 import { formatRangeLabel, formatShortRangeLabel, todayISO } from "@/lib/dates";
 import { PERIOD_NOUN, shiftPeriod } from "./navigation";
 import { calendarPath, type CalendarView } from "./state";
@@ -35,8 +36,9 @@ export function CalendarToolbar({ view, date, tz }: { view: CalendarView; date: 
         <span aria-hidden className="sm:hidden">{formatShortRangeLabel(view, date)}</span>
         <span aria-hidden className="hidden sm:inline">{formatRangeLabel(view, date)}</span>
       </h1>
-      <div className="ml-auto shrink-0">
+      <div className="ml-auto flex shrink-0 gap-1 sm:gap-2">
         <NewClassButton />
+        <NewEventButton />
       </div>
       <ToggleGroup
         type="single"

@@ -4,6 +4,7 @@ import { apiFetch, type Schemas } from "@/lib/api";
 export type Session = Schemas["SessionOut"];
 export type ClassSeries = Schemas["ClassSeriesOut"];
 export type ClassCreate = Schemas["ClassCreate"];
+export type ClassCreated = Schemas["ClassCreated"];
 
 export const sessionsKey = (from: string, to: string, courseId?: string) =>
   ["sessions", from, to, courseId ?? null] as const;
@@ -24,10 +25,10 @@ export function useSession(key: string | undefined) {
   });
 }
 
-/** Invalidate everything derived from classes and the hierarchy. */
+/** Invalidate everything derived from classes, (009) events and the hierarchy. */
 export function invalidateSchedule(qc: ReturnType<typeof useQueryClient>) {
   return Promise.all(
-    ["sessions", "session", "course-tree", "years", "semesters", "courses", "course", "class"].map((k) =>
+    ["sessions", "session", "course-tree", "years", "semesters", "courses", "course", "class", "events"].map((k) =>
       qc.invalidateQueries({ queryKey: [k] }),
     ),
   );
@@ -36,7 +37,7 @@ export function invalidateSchedule(qc: ReturnType<typeof useQueryClient>) {
 export function useCreateClass() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (body: ClassCreate) => apiFetch<ClassSeries>("/classes", { method: "POST", body }),
+    mutationFn: (body: ClassCreate) => apiFetch<ClassCreated>("/classes", { method: "POST", body }),
     onSuccess: () => invalidateSchedule(qc),
   });
 }

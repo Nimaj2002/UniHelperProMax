@@ -67,3 +67,19 @@ def class_date_folder_name(day: date, start: time, existing: Iterable[str]) -> s
     if plain.casefold() not in {t.casefold() for t in taken}:
         return plain
     return unique_sibling(f"{plain} {start.strftime('%H%M')}", taken)
+
+
+# ---- events (feature 009, research R1) ---------------------------------------------------
+
+EVENTS_DIR = "_Events"  # <year>/<semester>/_Events/<event folder>/ — no course may take it
+
+
+def is_reserved_course_folder(name: str) -> bool:
+    """True when a course named `name` would get the reserved events folder (checked on the
+    sanitized folder name, so `" _events. "` and `"_EVENTS"` are refused too)."""
+    return safe_name(name).casefold() == EVENTS_DIR.casefold()
+
+
+def event_folder_name(day: date, title: str) -> str:
+    """Readable folder of one event occurrence: `YYYY-MM-DD Title` (made unique by the caller)."""
+    return safe_name(f"{day:%Y-%m-%d} {title}")

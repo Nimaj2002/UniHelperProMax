@@ -318,3 +318,5 @@ components:
         playerMuted: { type: boolean, description: "added by feature 003" }
         theme: { type: string, minLength: 1, maxLength: 64, description: "005: system | light | dark | a custom theme id (per account)" }
         readerDarkPages: { type: boolean, description: "added by feature 007 (FR-022a)" }
+        lastSemesterId: { type: [string, "null"], description: "added by feature 009 (research R9)" }
+        quickCreateType: { type: string, enum: [class, event], description: "added by feature 009" }

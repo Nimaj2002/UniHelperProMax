@@ -42,7 +42,9 @@ def test_traversal_rejected(tmp_path: Path, bad: list[str]) -> None:
 def test_only_note_files_can_be_deleted() -> None:
     names = {n for n in dir(StorageService) if not n.startswith("_")}
     deleting = {n for n in names for w in ("delete", "remove", "unlink", "rmtree") if w in n}
-    assert deleting == {"delete_content_file"}
+    # 009: `delete_tree` — one session/event folder, only for a permanent delete from the Trash
+    # 009: `remove_empty_dir` — only folders without any file inside (creation Undo)
+    assert deleting == {"delete_content_file", "delete_tree", "remove_empty_dir"}
 
 
 def test_delete_content_file_scope(tmp_path: Path) -> None:
@@ -266,3 +268,112 @@ def test_move_aside_keeps_the_file_under_a_new_name(tmp_path: Path) -> None:
     second = s.move_aside(parts, "unreadable-20261008-101500")
     assert second is not None and second.name.endswith("-2.json")
     assert s.move_aside(parts, "x") is None  # nothing left to move
+
+
+# ---- 009: permanent delete of one session/event folder (Trash → Delete → Yes) -------------
+
+FOLDER = ["alice", "2026", "Fall 2026", "_Events", "2026-10-15 AI Seminar"]
+
+
+def test_delete_tree_removes_exactly_one_folder(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    s.ensure_dir([*FOLDER, "notes"])
+    (tmp_path.joinpath(*FOLDER) / "notes" / "a.md").write_text("x")
+    sibling = s.ensure_dir(["alice", "2026", "Fall 2026", "_Events", "2026-10-16 Other"])
+    (sibling / "keep.md").write_text("keep")
+    assert s.delete_tree(FOLDER) == []
+    assert not tmp_path.joinpath(*FOLDER).exists()
+    assert (sibling / "keep.md").read_text() == "keep"
+    assert s.delete_tree(FOLDER) == []  # already gone: nothing to do, no error
+
+
+@pytest.mark.parametrize(
+    "parts",
+    [
+        ["alice"],
+        ["alice", "2026"],
+        ["alice", "2026", "Fall 2026"],
+        ["alice", "2026", "Fall 2026", "_Events"],
+        [*FOLDER, "notes"],
+        ["alice", "2026", "..", "_Events", "x"],
+        ["alice", "2026", "Fall 2026", "_Events", "a/b"],
+    ],
+)
+def test_delete_tree_refuses_other_depths_and_traversal(tmp_path: Path, parts: list[str]) -> None:
+    s = StorageService(tmp_path)
+    s.ensure_dir([*FOLDER, "notes"])
+    with pytest.raises(StoragePathError):
+        s.delete_tree(parts)
+    assert tmp_path.joinpath(*FOLDER, "notes").is_dir()
+
+
+def test_delete_tree_never_follows_links(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "precious.txt").write_text("keep")
+    root = tmp_path / "files"
+    s = StorageService(root)
+    s.ensure_dir(FOLDER[:4])
+    link = root.joinpath(*FOLDER)
+    try:
+        link.symlink_to(outside, target_is_directory=True)
+    except OSError:  # pragma: no cover - symlinks need privileges on some Windows setups
+        pytest.skip("symlinks not available")
+    with pytest.raises(StoragePathError):
+        s.delete_tree(FOLDER)
+    # a link higher up the path is refused too
+    s2 = StorageService(tmp_path / "files2")
+    (tmp_path / "files2" / "alice").mkdir(parents=True)
+    (tmp_path / "files2" / "alice" / "2026").symlink_to(outside, target_is_directory=True)
+    (outside / "Fall 2026" / "_Events" / "x").mkdir(parents=True)
+    with pytest.raises(StoragePathError):
+        s2.delete_tree(["alice", "2026", "Fall 2026", "_Events", "x"])
+    assert (outside / "precious.txt").read_text() == "keep"
+    assert (outside / "Fall 2026" / "_Events" / "x").is_dir()
+
+
+def test_delete_tree_refuses_a_file(tmp_path: Path) -> None:
+    s = StorageService(tmp_path)
+    s.ensure_dir(FOLDER[:4])
+    tmp_path.joinpath(*FOLDER).write_text("not a folder")
+    with pytest.raises(StoragePathError):
+        s.delete_tree(FOLDER)
+
+
+def test_delete_tree_reports_what_it_could_not_remove(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import os
+
+    s = StorageService(tmp_path)
+    s.ensure_dir([*FOLDER, "audios"])
+    locked = tmp_path.joinpath(*FOLDER, "audios", "talk.webm")
+    locked.write_bytes(b"x")
+    real_unlink = os.unlink
+
+    def unlink(path: object, *a: object, **kw: object) -> None:
+        if str(path).endswith("talk.webm") or getattr(path, "name", "") == "talk.webm":
+            raise PermissionError("locked")
+        real_unlink(path, *a, **kw)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "unlink", unlink)
+    failed = s.delete_tree(FOLDER)
+    assert "2026/Fall 2026/_Events/2026-10-15 AI Seminar/audios/talk.webm" in failed
+    assert locked.exists()
+
+
+def test_remove_empty_dir_only_removes_empty_folders(tmp_path: Path) -> None:
+    storage = StorageService(tmp_path)
+    storage.ensure_dir(["u", "2026", "Fall", "CS", "2026-10-01", "notes"])
+    assert storage.remove_empty_dir(["u", "2026"]) is True
+    assert not (tmp_path / "u" / "2026").exists()
+    assert (tmp_path / "u").is_dir()
+
+    storage.ensure_dir(["u", "2027", "Spring", "empty"])
+    (tmp_path / "u" / "2027" / "Spring" / "keep.txt").write_text("x", encoding="utf-8")
+    assert storage.remove_empty_dir(["u", "2027"]) is False
+    assert (tmp_path / "u" / "2027" / "Spring" / "keep.txt").exists()
+    assert not (tmp_path / "u" / "2027" / "Spring" / "empty").exists()
+    assert storage.remove_empty_dir(["u", "missing"]) is True
+    with pytest.raises(StoragePathError):
+        storage.remove_empty_dir(["u"])

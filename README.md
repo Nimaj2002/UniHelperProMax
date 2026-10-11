@@ -3,7 +3,9 @@
 Class schedules, per-class Markdown notes, lecture recordings, and transcription for university
 students. Released: 001 accounts, calendar and courses; 002 course timelines and the session
 notes workspace; 003 session audio recording and playback; 004 transcription into notes; 005
-settings (transcription providers, light/dark/custom themes). Specs and plans are in `specs/`.
+settings (transcription providers, light/dark/custom themes); 006 imports; 007 documents and the
+PDF reader; 008 floating card layout; 009 events, press-and-drag creation and the Trash. Specs
+and plans are in `specs/`.
 
 - Python/FastAPI backend with a versioned JSON API (`/api/v1`) over SQLite
 - React + shadcn/ui frontend, light, dark and your own themes, fully keyboard operable
@@ -65,8 +67,14 @@ server process is already using …").
 ```text
 data/
 ├── unihelper.sqlite3            metadata only
-└── files/<username>/<Year>/<Semester>/<Course>/<YYYY-MM-DD>/{notes,audios,documents}/
+└── files/<username>/<Year>/<Semester>/
+    ├── <Course>/<YYYY-MM-DD>/{notes,audios,documents}/
+    └── _Events/<YYYY-MM-DD Title>/{notes,audios,documents}/
 ```
+
+Events (seminars, exams, office hours…) belong to a semester, not a course, so their folders live
+in the semester's `_Events` folder. No course can be named `_Events`; a course that already has
+that folder is flagged in the course list until you rename it.
 
 Each note is a plain Markdown file (`<Note name>.md`) in its session's `notes/` folder; you can
 open and edit it in any editor — the app picks up the change and never overwrites it silently.
@@ -82,12 +90,33 @@ A transcript is only ever **added at the end** of the note you choose, under a h
 changed. If the note is open, the text appears there without reloading and your typing is kept.
 
 Folder names follow the names you type (made safe for Windows/macOS/Linux) and are renamed when
-you rename things in the app. Deleting a year, semester, course, class, or account **never**
-deletes files; the only files the app ever removes are a note's `.md`, a recording's (or imported
+you rename things in the app. Deleting a class or an event — or a year, semester or course, which
+deletes the classes and events inside it — moves each of them to **Settings → Trash** and leaves
+every file where it is. From the Trash you can **Restore** an entry (it comes back with its notes,
+recordings and documents; a deleted year, semester or course is recreated with the same name) or
+**Delete** it for good after "Are you sure?", which removes its session or event folder from disk.
+Apart from that, the only files the app removes are a note's `.md`, a recording's (or imported
 audio's) file, or a document's PDF and its annotations file, when you delete that item and
-confirm — and its own upload staging files in `files/.uploads/`. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
+confirm — and its own upload staging files in `files/.uploads/`. Deleting an account never
+deletes files. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
 
 Back up by copying the whole data folder while the app is stopped.
+
+## Events and creating entries on the calendar
+
+- **New event** (calendar toolbar, or `e`): title, year and semester (the open course's, otherwise
+  the last one you used), date and times, location, links, colour (blue by default) and repeat.
+  Events show on the calendar with a calendar-star marker and "Event:" in their name, never on a
+  course timeline. Each semester in the left card has an **Events** page; an event opens the same
+  workspace as a class session (notes, recordings, transcription, documents).
+- **Press and drag** on an empty part of a day in day or week view to draw a new entry (15-minute
+  steps); a click makes a one-hour entry, and a click on an empty day in month view makes 09:00–
+  10:00. A small form opens next to it: choose **Class** or **Event**, fill in the required
+  fields and Save — or **More options** for the full form. Nothing is stored before Save, and
+  **Undo** in the message removes what was just created. Escape cancels; once you've typed
+  something, clicks elsewhere keep the form open.
+- **Keyboard**: Tab into the time grid, move with the arrow keys, extend with Shift+↑/↓, press
+  Enter for the form and Escape to cancel.
 
 ## Importing audio and notes
 

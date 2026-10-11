@@ -67,3 +67,34 @@ def test_scenarios_8_and_9(owner_client: TestClient) -> None:
     assert set(keys_before) - set(after) == {"2026-10-19"}
     # session keys are stable across every operation
     assert {d: after[d]["key"] for d in after} == {d: keys_before[d] for d in after}
+
+
+def test_deleted_sessions_with_content_go_to_the_trash(owner_client: TestClient) -> None:
+    """009 behaviour change (FR-021a): a deleted session with notes is no longer listed as
+    "No longer scheduled" on the course timeline — it is in the Trash, its notes kept."""
+    from tests.contract.notes_helpers import create_note
+
+    c = owner_client
+    cls = c.post(f"{API}/classes", json=new_class_body()).json()
+    lin = cls["lineageId"]
+    create_note(c, f"{lin}:2026-10-05", "Week 2", "kept")
+    create_note(c, f"{lin}:2026-10-19", "Week 4", "kept too")
+    c.delete(
+        f"{API}/sessions/{lin}:2026-10-05",
+        params={"scope": "this"},
+        headers={"If-Match": f'"{cls["version"]}"'},
+    )
+    c.delete(
+        f"{API}/sessions/{lin}:2026-10-14",
+        params={"scope": "following"},
+        headers={"If-Match": f'"{cls["version"]}"'},
+    )
+    entries = c.get(f"{API}/courses/{cls['courseId']}/timeline").json()["entries"]
+    assert all(e["scheduled"] for e in entries)
+    assert max(e["date"] for e in entries) == "2026-10-12"
+    assert "2026-10-05" not in {e["date"] for e in entries}
+    trash = c.get(f"{API}/trash", params={"kind": "class"}).json()
+    assert [(e["firstDate"], e["occurrenceCount"], e["noteCount"]) for e in trash] == [
+        ("2026-10-14", 5, 1),  # newest first: Wed 14 Oct … Wed 28 Oct
+        ("2026-10-05", 1, 1),
+    ]

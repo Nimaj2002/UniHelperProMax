@@ -47,7 +47,8 @@ def test_timeline(owner_client: TestClient, make_member: Callable[..., TestClien
     assert by_key[key]["noteCount"] == 2 and by_key[key]["audioCount"] == 0
     assert all(e["scheduled"] for e in entries)
 
-    # cancel the session that has notes → stays, marked unscheduled; cancel one without → gone
+    # 009: cancelling a session moves it to the Trash, with or without notes — it leaves the
+    # timeline (its notes stay with the Trash entry)
     c.delete(
         f"{API}/sessions/{key}",
         params={"scope": "this"},
@@ -61,8 +62,9 @@ def test_timeline(owner_client: TestClient, make_member: Callable[..., TestClien
     )
     entries = c.get(f"{API}/courses/{course}/timeline").json()["entries"]
     by_key = {e["key"]: e for e in entries}
-    assert by_key[key]["scheduled"] is False and by_key[key]["noteCount"] == 2
-    assert plain not in by_key
+    assert key not in by_key and plain not in by_key
+    trashed = {e["firstDate"]: e for e in c.get(f"{API}/trash").json()}
+    assert trashed["2026-09-30"]["noteCount"] == 2 and trashed["2026-10-05"]["noteCount"] == 0
 
     member = make_member()
     assert_problem(member.get(f"{API}/courses/{course}/timeline"), 404, "not_found")

@@ -12,6 +12,8 @@ import { TranscriptionSettingsPage } from "./transcription/TranscriptionSettings
 // the theme editor and its colour maths load only when Appearance is opened
 const AppearanceSettings = lazy(() => import("./themes/AppearanceSettings").then((m) => ({ default: m.AppearanceSettings })));
 const ThemeEditor = lazy(() => import("./themes/ThemeEditor").then((m) => ({ default: m.ThemeEditor })));
+// 009 US4: Settings → Trash
+const TrashPage = lazy(() => import("./trash/TrashPage").then((m) => ({ default: m.TrashPage })));
 
 const loading = (node: ReactNode) => <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Loading…</p>}>{node}</Suspense>;
 
@@ -43,6 +45,7 @@ export const routes: RouteObject[] = [
       { path: "appearance", element: loading(<AppearanceSettings />) },
       { path: "appearance/themes/new", element: loading(<ThemeEditor />) },
       { path: "appearance/themes/:themeId", element: loading(<ThemeEditor />) },
+      { path: "trash", element: loading(<TrashPage />) },
     ],
   },
 ];

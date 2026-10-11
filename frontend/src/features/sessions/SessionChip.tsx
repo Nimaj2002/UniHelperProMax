@@ -1,9 +1,10 @@
-import { ArrowSquareOut, CalendarBlank } from "@phosphor-icons/react";
+import { ArrowSquareOut, CalendarBlank, CalendarStar } from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Session } from "@/features/classes/api";
+import { eventsPagePath } from "@/features/events/api";
 import { formatDay, wallTime } from "@/lib/dates";
 import { useNow } from "./useNow";
 
@@ -24,12 +25,14 @@ export function SessionChip({ session }: { session: Session }) {
   const phase = sessionPhase(session, now);
   const upcoming = phase === "upcoming";
   const time = `${wallTime(session.start)}–${wallTime(session.end)}`;
-  const name = `Session details: ${formatDay(session.date, "EEEE d MMMM yyyy")}, ${time}${upcoming ? ", upcoming" : ""}`;
+  // 009: an event's chip carries the Event marker (icon and name), never colour alone
+  const event = session.kind === "event";
+  const name = `${event ? "Event" : "Session"} details: ${formatDay(session.date, "EEEE d MMMM yyyy")}, ${time}${upcoming ? ", upcoming" : ""}`;
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" aria-label={name} className="h-7 shrink-0 gap-1.5 rounded-full px-2.5 font-normal">
-          <CalendarBlank size={14} aria-hidden />
+          {event ? <CalendarStar size={14} aria-hidden data-testid="event-marker" /> : <CalendarBlank size={14} aria-hidden />}
           <span className="whitespace-nowrap">
             {formatDay(session.date, "EEE d MMM")}
             <span className="hidden @[40rem]/main:inline"> · {time}</span>
@@ -44,13 +47,19 @@ export function SessionChip({ session }: { session: Session }) {
       <PopoverContent align="end" className="w-80">
         <div className="grid gap-3 text-sm">
           <div className="grid gap-0.5">
-            <Link to={`/courses/${session.courseId}`} className="justify-self-start font-medium text-primary underline-offset-4 hover:underline">
-              {session.courseName}
-            </Link>
+            {event ? (
+              <Link to={eventsPagePath(session.semesterId)} className="justify-self-start font-medium text-primary underline-offset-4 hover:underline">
+                Event: {session.title}
+              </Link>
+            ) : (
+              <Link to={`/courses/${session.courseId}`} className="justify-self-start font-medium text-primary underline-offset-4 hover:underline">
+                {session.courseName}
+              </Link>
+            )}
             <p className="text-muted-foreground">
               {formatDay(session.date, "EEEE d MMMM yyyy")} · {time}
             </p>
-            {session.title && <p>{session.title}</p>}
+            {!event && session.title && <p>{session.title}</p>}
           </div>
           {session.location && (
             <div className="grid gap-0.5">

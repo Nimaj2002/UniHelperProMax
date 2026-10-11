@@ -29,3 +29,21 @@ it as `save_content` does. **Test**: the same interleaving as
 `test_save_racing_an_append_keeps_the_transcript` in
 `backend/tests/integration/test_transcribe_append_flow.py`, pausing the rename or delete
 inside its file operation while `append_result` runs.
+
+## Not scheduled
+
+### Flaky end-to-end tests (found 2026-10-11, 009 T075)
+
+- **`frontend/tests/e2e/annotations.spec.ts`**: a different test fails on some runs (timeouts
+  waiting for the PDF reader, or "two windows editing the same comment"). It predates 009: on a
+  clean checkout of `6ed05df` (before 009) one of three runs of the spec failed
+  ("US6: by keyboard — …", element not visible), the other two passed.
+- **Dev-server hiccups during the full suite**: in long `pnpm e2e` runs a page sometimes stays
+  blank because the Vite dev server fails to deliver a module (`ERR_NETWORK_CHANGED`, or module
+  requests aborted), or a request times out after 60 s. Seen in `a11y-themes`, `transcription`,
+  `calendar-performance` and `quick-create-performance`; each passed when re-run on its own.
+
+**When**: only in Playwright runs, more often in the full 45-minute suite on WSL `/mnt/c`.
+
+**Fix**: not investigated yet. Running the suite against the production build
+(`pnpm build` + the backend serving `UNIHELPER_STATIC_DIR`) would rule out the dev server.

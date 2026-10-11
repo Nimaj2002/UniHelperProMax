@@ -57,6 +57,7 @@ folder.
 | Create year/semester/course (incl. inline via `POST /classes`) | `mkdir -p` its folder before the DB commit |
 | Rename year/semester/course | compute new `safe_name`; `os.replace(old, new)`; on DB failure rename back |
 | Delete class / course / semester / year | **no deletion** — folders and files stay (FR-019); API returns `keptFolder` |
+| Trash → Delete → "Yes" (009) | that class session's or event's folder (`…/<date>/` or `…/_Events/<date title>/`) and everything in it is removed; nothing else |
 | Delete member account | DB rows removed; `files/<username>/` kept; owner told the path |
 | Folder renamed or deleted outside the app | next create/rename recreates as needed; 002 reports missing files instead of failing |
 

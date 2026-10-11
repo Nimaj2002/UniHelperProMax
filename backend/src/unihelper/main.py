@@ -21,6 +21,7 @@ from unihelper.api.v1 import (
     auth,
     classes,
     documents,
+    events,
     health,
     hierarchy,
     notes,
@@ -31,6 +32,7 @@ from unihelper.api.v1 import (
     themes,
     timeline,
     transcription,
+    trash,
     workspace,
 )
 from unihelper.config import Settings, load_settings
@@ -55,6 +57,7 @@ def build_api_router() -> APIRouter:
         admin,
         hierarchy,
         classes,
+        events,
         sessions,
         notes,
         timeline,
@@ -64,6 +67,7 @@ def build_api_router() -> APIRouter:
         transcription,
         settings,
         themes,
+        trash,
     ):
         api.include_router(module.router)
     return api

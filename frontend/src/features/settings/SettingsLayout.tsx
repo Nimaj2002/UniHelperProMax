@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 const SECTIONS = [
   { to: "/settings/transcription", label: "Transcription" },
   { to: "/settings/appearance", label: "Appearance" },
+  { to: "/settings/trash", label: "Trash" },
 ];
 
 /** Settings area (005 FR-001): section nav + content. */

@@ -10,11 +10,13 @@ export const CALENDAR_SHORTCUTS: [string, string][] = [
   ["D / W / M", "Day, week or month view"],
   ["← / →  or  K / J", "Previous / next period"],
   ["N", "New class"],
+  ["E", "New event"],
   ["/", "Search courses"],
   ["[", "Show or hide the course panel"],
-  ["Arrow keys", "Move between time slots (inside the calendar grid)"],
-  ["Enter", "Create a class in the focused slot, or open the focused session"],
-  ["Esc", "Close a dialog"],
+  ["Arrow keys", "Move between 15-minute slots, or a day left/right (inside the calendar grid)"],
+  ["Shift + ↑ / ↓", "Shorten or extend the highlighted range (inside the calendar grid)"],
+  ["Enter", "New class or event for the highlighted range, or open the focused session"],
+  ["Esc", "Clear the range, cancel a new entry, or close a dialog"],
   ["?", "Show keyboard shortcuts"],
 ];
 
@@ -48,6 +50,7 @@ export function useCalendarKeyboard(view: CalendarView, date: string, tz: string
         case "ArrowRight": if (inGrid) return; go(shiftPeriod(view, date, 1)); break;
         case "ArrowLeft": if (inGrid) return; go(shiftPeriod(view, date, -1)); break;
         case "n": navigate("/classes/new"); break;
+        case "e": navigate("/events/new"); break;
         case "?": onHelp(); break;
         default: return;
       }

@@ -67,9 +67,10 @@ test("US4: edit scopes (this, following, all) and cancelling one session", async
   await openSession(page, new RegExp(`^${course}, Monday 19 October`));
   await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
   await chooseScope(page, "This session");
-  const confirm = page.getByRole("alertdialog", { name: "Cancel this session?" });
-  await expect(confirm).toContainText("Notes and recordings are never deleted");
-  await confirm.getByRole("button", { name: "Cancel session" }).click();
+  // 009: the confirmation names what moves to the Trash (FR-021)
+  const confirm = page.getByRole("alertdialog", { name: "Delete this session?" });
+  await expect(confirm).toContainText(`This will move 1 session of ${course} to the Trash. You can restore it from Settings → Trash.`);
+  await confirm.getByRole("button", { name: "Move to Trash" }).click();
   await expect(events()).toHaveCount(1);
   await expect(page.getByRole("button", { name: new RegExp(`^${course}, Wednesday 21 October`) })).toBeVisible();
 });

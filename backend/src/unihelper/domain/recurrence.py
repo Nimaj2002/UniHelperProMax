@@ -6,9 +6,10 @@ for the requested range, then single-session exceptions are applied.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
+from typing import Protocol
 from zoneinfo import ZoneInfo
 
 from dateutil import rrule as du
@@ -59,6 +60,46 @@ class Rule:
     end_time: time
 
 
+class SegmentLike(Protocol):
+    """The rule columns shared by `class_series` and (009) `event_series` rows."""
+
+    @property
+    def freq(self) -> str: ...
+    @property
+    def interval_weeks(self) -> int: ...
+    @property
+    def weekdays(self) -> tuple[str, ...]: ...
+    @property
+    def end_kind(self) -> str: ...
+    @property
+    def until_date(self) -> date | None: ...
+    @property
+    def count(self) -> int | None: ...
+    @property
+    def start_date(self) -> date: ...
+    @property
+    def start_time(self) -> time: ...
+    @property
+    def end_time(self) -> time: ...
+
+
+def rule_of(s: SegmentLike) -> Rule:
+    return Rule(
+        freq=s.freq,
+        interval_weeks=s.interval_weeks,
+        by_weekday=s.weekdays,
+        end_kind=s.end_kind,
+        until_date=s.until_date,
+        count=s.count,
+        start_date=s.start_date,
+        start_time=s.start_time,
+        end_time=s.end_time,
+    )
+
+
+Links = tuple[tuple[str | None, str], ...]
+
+
 @dataclass(frozen=True)
 class ExceptionView:
     original_date: date
@@ -67,6 +108,12 @@ class ExceptionView:
     end_time: time | None
     location: str | None
     version: int
+    # 009 (events only): overrides, a moved date, and frozen occurrences (research R3, R4)
+    title: str | None = None
+    color: str | None = None
+    links: Links | None = None
+    moved_date: date | None = None
+    detached: bool = False
 
 
 @dataclass(frozen=True)
@@ -74,13 +121,18 @@ class SessionView:
     key: str
     lineage_id: str
     series_id: str
-    date: date
+    date: date  # the day it takes place (a moved occurrence's `moved_date`)
     start: datetime
     end: datetime
     location: str | None
     status: str  # "upcoming" | "past"
     is_exception: bool
     exception_version: int | None
+    # 009: None = use the series' value
+    title: str | None = None
+    color: str | None = None
+    links: Links | None = None
+    detached: bool = False
 
 
 def session_key(lineage_id: str, day: date) -> str:
@@ -192,6 +244,45 @@ def validate_rule(rule: Rule, semester_end: date | None) -> None:
             )
 
 
+def occurrence_view(
+    day: date,
+    exc: ExceptionView | None,
+    *,
+    lineage_id: str,
+    series_id: str,
+    start_time: time,
+    end_time: time,
+    location: str | None,
+    zone: ZoneInfo,
+    now: datetime,
+) -> SessionView:
+    """One occurrence keyed by its original `day`, with a modified exception's overrides."""
+    modified = exc is not None and exc.kind == "modified"
+    mod = exc if modified else None
+    st = (mod.start_time if mod else None) or start_time
+    et = (mod.end_time if mod else None) or end_time
+    loc = mod.location if mod and mod.location is not None else location
+    shown = (mod.moved_date if mod else None) or day
+    start = datetime.combine(shown, st, tzinfo=zone)
+    end = datetime.combine(shown, et, tzinfo=zone)
+    return SessionView(
+        key=session_key(lineage_id, day),
+        lineage_id=lineage_id,
+        series_id=series_id,
+        date=shown,
+        start=start,
+        end=end,
+        location=loc,
+        status="upcoming" if now < start else "past",
+        is_exception=modified,
+        exception_version=exc.version if exc is not None else None,
+        title=mod.title if mod else None,
+        color=mod.color if mod else None,
+        links=mod.links if mod else None,
+        detached=bool(mod and mod.detached),
+    )
+
+
 def expand(
     rule: Rule,
     *,
@@ -205,33 +296,79 @@ def expand(
     exceptions: Sequence[ExceptionView] = (),
     location: str | None = None,
 ) -> list[SessionView]:
+    """Occurrences of one segment shown within the range. A moved occurrence (009) is shown on
+    its `moved_date` — included when that date is in range even if its original date is not —
+    and keeps its original key."""
     zone = ZoneInfo(tz)
     by_date = {e.original_date: e for e in exceptions}
+    days = occurrence_dates(rule, semester_end, range_from, range_to)
+    moved_in = [
+        e.original_date
+        for e in exceptions
+        if e.kind == "modified"
+        and e.moved_date is not None
+        and range_from <= e.moved_date <= range_to
+        and not range_from <= e.original_date <= range_to
+        and generates(rule, semester_end, e.original_date)
+    ]
     out: list[SessionView] = []
-    for day in occurrence_dates(rule, semester_end, range_from, range_to):
+    for day in sorted({*days, *moved_in}):
         exc = by_date.get(day)
         if exc is not None and exc.kind == "cancelled":
             continue
-        modified = exc is not None and exc.kind == "modified"
-        st = (exc.start_time if modified and exc and exc.start_time else None) or rule.start_time
-        et = (exc.end_time if modified and exc and exc.end_time else None) or rule.end_time
-        loc = exc.location if modified and exc and exc.location is not None else location
-        start = datetime.combine(day, st, tzinfo=zone)
-        end = datetime.combine(day, et, tzinfo=zone)
-        out.append(
-            SessionView(
-                key=session_key(lineage_id, day),
-                lineage_id=lineage_id,
-                series_id=series_id,
-                date=day,
-                start=start,
-                end=end,
-                location=loc,
-                status="upcoming" if now < start else "past",
-                is_exception=modified,
-                exception_version=exc.version if exc is not None else None,
-            )
+        view = occurrence_view(
+            day,
+            exc,
+            lineage_id=lineage_id,
+            series_id=series_id,
+            start_time=rule.start_time,
+            end_time=rule.end_time,
+            location=location,
+            zone=zone,
+            now=now,
         )
+        if range_from <= view.date <= range_to:
+            out.append(view)
+    out.sort(key=lambda v: (v.start, v.key))  # a moved occurrence may change places
+    return out
+
+
+def expand_detached(
+    exceptions: Sequence[ExceptionView],
+    generated: Callable[[date], bool],
+    *,
+    lineage_id: str,
+    series_id: str,
+    range_from: date,
+    range_to: date,
+    tz: str,
+    now: datetime,
+    start_time: time,
+    end_time: time,
+    location: str | None = None,
+) -> list[SessionView]:
+    """Frozen occurrences (009 research R4) that no segment of the lineage generates any more:
+    `detached` modified exceptions stay scheduled on their own. `generated(day)` tells whether
+    some segment still produces `day` (those are emitted by `expand`). The fallback times and
+    location only fill gaps; a freeze stores the occurrence's full values."""
+    zone = ZoneInfo(tz)
+    out: list[SessionView] = []
+    for e in sorted(exceptions, key=lambda x: x.original_date):
+        if e.kind != "modified" or not e.detached or generated(e.original_date):
+            continue
+        view = occurrence_view(
+            e.original_date,
+            e,
+            lineage_id=lineage_id,
+            series_id=series_id,
+            start_time=start_time,
+            end_time=end_time,
+            location=location,
+            zone=zone,
+            now=now,
+        )
+        if range_from <= view.date <= range_to:
+            out.append(view)
     return out
 
 

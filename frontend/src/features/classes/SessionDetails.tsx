@@ -1,10 +1,11 @@
-import { ArrowSquareOut, Clock, MapPin, Repeat } from "@phosphor-icons/react";
+import { ArrowSquareOut, CalendarStar, Clock, MapPin, Repeat } from "@phosphor-icons/react";
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
 import { lastCalendarPath } from "@/features/calendar/state";
 import { useCourse } from "@/features/courses/api";
+import { eventsPagePath, useEventDetail } from "@/features/events/api";
 import { formatDay, wallTime } from "@/lib/dates";
 import { swatchStyle, type ColorKey } from "@/lib/palette";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
@@ -16,22 +17,30 @@ function findEventElement(key: string): HTMLElement | null {
 }
 
 function Details({ session, close }: { session: Session; close: () => void }) {
-  const course = useCourse(session.courseId);
+  const event = session.kind === "event";
+  const course = useCourse(session.courseId ?? undefined);
+  const eventDetail = useEventDetail(event ? session.lineageId : undefined);
   const actions = useSessionActions();
+  const where = course.data
+    ? `${course.data.semester.name} · ${course.data.year.name}`
+    : eventDetail.data
+      ? `${eventDetail.data.semesterName} · ${eventDetail.data.yearName}`
+      : null;
   return (
     <div className="grid gap-4 text-sm">
       <div className="flex items-start gap-3">
         <span aria-hidden className="mt-1.5 size-3 shrink-0 rounded-sm" style={swatchStyle(session.color as ColorKey)} />
         <div className="min-w-0">
-          <p className="break-words text-base font-semibold leading-snug">
-            {session.courseName}
-            {session.title && <span className="font-normal"> · {session.title}</span>}
-          </p>
-          {course.data && (
-            <p className="text-muted-foreground">
-              {course.data.semester.name} · {course.data.year.name}
+          {event && (
+            <p className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+              <CalendarStar size={14} aria-hidden /> Event
             </p>
           )}
+          <p className="break-words text-base font-semibold leading-snug">
+            {event ? session.title : session.courseName}
+            {!event && session.title && <span className="font-normal"> · {session.title}</span>}
+          </p>
+          {where && <p className="text-muted-foreground">{where}</p>}
         </div>
       </div>
       <ul className="grid gap-2">
@@ -62,10 +71,10 @@ function Details({ session, close }: { session: Session; close: () => void }) {
       )}
       <div className="flex flex-wrap gap-2 border-t border-divider pt-3">
         <Link
-          to={`/courses/${session.courseId}`}
+          to={event ? eventsPagePath(session.semesterId) : `/courses/${session.courseId}`}
           className="inline-flex h-8 items-center rounded-md border border-input px-3 text-sm font-medium hover:bg-accent"
         >
-          Open course
+          {event ? "Semester events" : "Open course"}
         </Link>
         {actions.map(({ id, component: A }) => (
           <A key={id} session={session} close={close} />
@@ -104,7 +113,9 @@ export function SessionDetails({ sessionKey }: { sessionKey: string }) {
   };
 
   const title = session.data
-    ? `${session.data.courseName}${session.data.title ? ` · ${session.data.title}` : ""}`
+    ? session.data.kind === "event"
+      ? `Event: ${session.data.title}`
+      : `${session.data.courseName}${session.data.title ? ` · ${session.data.title}` : ""}`
     : "Session";
   const body = session.isError ? (
     <p className="text-sm text-danger">This session no longer exists.</p>

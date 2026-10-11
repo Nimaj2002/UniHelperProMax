@@ -116,7 +116,7 @@ export class RecorderController {
     this.set({ error: null, notice: null });
   }
 
-  async start(target: { sessionKey: string; courseId: string; label: string }): Promise<boolean> {
+  async start(target: { sessionKey: string; courseId: string | null; label: string }): Promise<boolean> {
     if (this.state.status !== "idle") return false;
     const mime = pickMime(this.deps.MediaRecorder);
     if (!mime || !this.deps.MediaRecorder) {

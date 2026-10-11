@@ -1,4 +1,5 @@
 import { DotsThree } from "@phosphor-icons/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import { Field } from "@/components/form/Field";
@@ -13,6 +14,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { trashKey } from "@/features/settings/trash/api";
 import { isApiError } from "@/lib/api";
 import {
   conflictMessage, fetchDeletionImpact, useDeleteHierarchy, useUpdateHierarchy,
@@ -146,18 +148,39 @@ function DatesDialog({ target, onClose }: { target: MenuTarget; onClose: () => v
 }
 
 function plural(n: number, word: string) {
-  return `${n} ${word}${n === 1 ? "" : "s"}`;
+  return `${n} ${word}${n === 1 ? "" : word.endsWith("s") ? "es" : "s"}`;
 }
 
+function list(parts: string[]) {
+  return parts.length <= 1 ? parts.join("") : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
+}
+
+/** What a year/semester/course delete removes from the app and (009 FR-022a) moves to the
+ * Trash: every class and event, with its notes, recordings and documents. */
 export function impactSentence(kind: HierarchyKind, impact: DeletionImpact): string {
   const parts: string[] = [];
   if (impact.semesters) parts.push(plural(impact.semesters, "semester"));
   if (impact.courses) parts.push(plural(impact.courses, "course"));
-  if (impact.classes) parts.push(plural(impact.classes, "class"));
-  return parts.length ? `This also removes ${parts.join(", ")} from the app.` : `This ${NOUN[kind]} is empty.`;
+  if (!parts.length && !impact.classes && !impact.events) return `This ${NOUN[kind]} is empty.`;
+  const moved = [
+    impact.classes ? plural(impact.classes, "class") : "",
+    impact.events ? plural(impact.events, "event") : "",
+  ].filter(Boolean);
+  const content = [
+    impact.notes ? plural(impact.notes, "note") : "",
+    impact.recordings ? plural(impact.recordings, "recording") : "",
+    impact.documents ? plural(impact.documents, "document") : "",
+  ].filter(Boolean);
+  const removes = parts.length ? `This also removes ${list(parts)} from the app.` : "";
+  const verb = (impact.classes ?? 0) + (impact.events ?? 0) === 1 ? "moves" : "move";
+  const trash = moved.length
+    ? `Its ${list(moved)}${content.length ? `, with ${list(content)},` : ""} ${verb} to the Trash — each class and event can be restored from Settings → Trash.`
+    : "";
+  return [removes, trash].filter(Boolean).join(" ");
 }
 
 function DeleteDialog({ target, onClose }: { target: MenuTarget; onClose: () => void }) {
+  const qc = useQueryClient();
   const del = useDeleteHierarchy();
   const [impact, setImpact] = useState<DeletionImpact | null>(null);
   const [error, setError] = useState<string>();
@@ -181,7 +204,7 @@ function DeleteDialog({ target, onClose }: { target: MenuTarget; onClose: () => 
               {impact ? <p>{impactSentence(target.kind, impact)}</p> : !error && <p>Checking what this includes…</p>}
               {impact && (
                 <p>
-                  Notes and recordings are never deleted: they stay in the folder{" "}
+                  No file is deleted: notes, recordings and documents stay in the folder{" "}
                   <span className="font-medium text-foreground">“{impact.keptFolder}”</span> on disk.
                 </p>
               )}
@@ -198,7 +221,11 @@ function DeleteDialog({ target, onClose }: { target: MenuTarget; onClose: () => 
               del.mutate(
                 { kind: target.kind, id: target.id, version: target.version },
                 {
-                  onSuccess: () => { toast.success(`Deleted “${target.name}”. Files were kept.`); onClose(); },
+                  onSuccess: () => {
+                    void qc.invalidateQueries({ queryKey: trashKey });
+                    toast.success(`Deleted “${target.name}”. Its classes and events are in the Trash.`);
+                    onClose();
+                  },
                   onError: (err) => setError(conflictMessage(err)),
                 },
               )

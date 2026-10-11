@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { contrastIssues, contrast, derive } from "@/features/settings/themes/colors";
+import { derivedCalendarVars } from "@/app/theme";
+import { contrastIssues, contrast, cssVars, derive } from "@/features/settings/themes/colors";
 import { meetAA, PRESETS, presetById } from "@/features/settings/themes/presets";
 
 describe("preset themes", () => {
@@ -44,5 +45,15 @@ describe("preset themes", () => {
   it("meetAA returns a passing set for an arbitrary low-contrast palette", () => {
     const key = meetAA("light", { background: "#ffffff", surface: "#f4f4f4", text: "#999999", accent: "#ffcc00" });
     expect(contrastIssues(derive("light", key))).toEqual([]);
+  });
+
+  it("derives AA calendar draft and Event marker tokens for every preset (009)", () => {
+    for (const p of PRESETS) {
+      const vars = cssVars(p.colors);
+      const v = derivedCalendarVars(vars);
+      expect(contrast(v["--draft-fg"], v["--draft-bg"]), p.name).toBeGreaterThanOrEqual(4.5);
+      expect(contrast(v["--event-marker"], vars["--surface"]), p.name).toBeGreaterThanOrEqual(3);
+      expect(contrast(v["--draft-border"], v["--draft-bg"]), p.name).toBeGreaterThanOrEqual(3);
+    }
   });
 });

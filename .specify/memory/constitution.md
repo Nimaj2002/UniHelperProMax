@@ -1,15 +1,15 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.0.0 → 1.1.0
-Bump rationale: MINOR — Principle II materially expanded: a third session folder (`documents/`)
-for uploaded PDFs, plus two new rules (original uploads are never modified; annotations are kept
-outside the original file in plain files). No principle removed or redefined incompatibly.
+Version change: 1.1.0 → 1.2.0
+Bump rationale: MINOR — Principle II materially expanded: semesters may now contain events,
+stored at the semester level in a reserved folder
+(`<year>/<semester>/<reserved-events-folder>/<date-and-title>/` with `notes/`, `audios/`,
+`documents/`), plus a rule that course names can never take the reserved folder name. No
+principle removed or redefined incompatibly.
 
 Modified principles:
-  - II. Data Ownership & Open Formats (title unchanged; rules expanded)
-Modified sections:
-  - Technical Constraints → Storage (now names document content alongside notes and audio)
+  - II. Data Ownership & Open Formats (title unchanged; two rules added)
 Added sections: none
 Removed sections: none
 
@@ -19,8 +19,8 @@ Templates reviewed (not modified by this command; they read the constitution at 
   - .specify/templates/tasks-template.md     ✅ no change required
 
 Dependent specs to review for compliance (Governance):
-  - specs/007-session-pdf-reader/spec.md — its `documents/` assumption is now covered by
-    Principle II; the plan's Constitution Check should confirm it.
+  - Any spec/plan that creates or renames courses must enforce the reserved-name rule.
+  - The upcoming events feature's plan must fix the exact reserved folder name.
 
 Deferred TODOs: none
 -->
@@ -57,6 +57,13 @@ promise of the product and outranks every other concern.
   `<year>/<semester>/<syllabus>/<class-date>/notes/`, `.../<class-date>/audios/` and, for
   uploaded PDFs, `.../<class-date>/documents/`.
   Folder and file names MUST be readable by a person (no opaque IDs as the only identifier).
+- Besides courses, a semester MAY contain events. Events MUST be stored at the semester level
+  in a single reserved folder, as `<year>/<semester>/<reserved-events-folder>/<date-and-title>/`
+  with `notes/`, `audios/` and `documents/` inside, following the same file rules as class
+  sessions so they stay plain files the user can browse outside the app.
+- The reserved events folder name MUST NOT be able to collide with any course folder: course
+  names MUST be rejected (or otherwise prevented) from taking the reserved name. The exact
+  reserved name is fixed by the feature's plan.
 - Original uploaded PDFs MUST never be modified by the app. Annotations MUST be stored outside
   the original file — as a sidecar file or as a separate annotated copy next to it, as the
   feature's plan decides — so the original stays byte-for-byte intact and the user's work stays
@@ -175,4 +182,4 @@ spec discipline keeps the product focused.
 - **Compliance review**: every plan's Constitution Check and every code review MUST verify
   compliance with Principles I–VII. Unjustified violations block merge.
 
-**Version**: 1.1.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-08
+**Version**: 1.2.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-10

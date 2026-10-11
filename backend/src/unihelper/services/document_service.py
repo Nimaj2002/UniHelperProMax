@@ -6,6 +6,8 @@ per-session lock, so concurrent uploads never clash on the session folder or on 
 
 A document is stored in the session it was uploaded to but belongs to the whole course: every
 session of the course, of any of its classes, lists it, and names are unique across the course.
+009 (research R5): an event's documents are shared by the occurrences of that event series (its
+lineage) the same way. Folders in the Trash are outside every scope.
 """
 
 from __future__ import annotations
@@ -15,6 +17,7 @@ import logging
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -67,25 +70,43 @@ def get_owned(db: Session, user: User, document_id: str) -> Document:
     return d
 
 
-def course_folder_ids(user: User, course_id: str) -> Select[str]:
-    """Ids of the session folders of one course: its documents are shared by all its sessions."""
-    return select(SessionFolder.id).where(
-        SessionFolder.user_id == user.id, SessionFolder.course_id == course_id
-    )
+@dataclass(frozen=True)
+class DocumentScope:
+    """Session folders whose documents are listed together and share one name space: a
+    course's (classes), or one event series' (009 events)."""
+
+    lock_key: str
+    folder_ids: Select[str]
+
+    def documents(self, user: User) -> Select[Document]:
+        return select(Document).where(
+            Document.user_id == user.id, Document.session_folder_id.in_(self.folder_ids)
+        )
 
 
-def course_documents(user: User, course_id: str) -> Select[Document]:
-    return select(Document).where(
-        Document.user_id == user.id,
-        Document.session_folder_id.in_(course_folder_ids(user, course_id)),
+def _scope(user: User, kind: str, course_id: str | None, lineage_id: str) -> DocumentScope:
+    stmt = select(SessionFolder.id).where(
+        SessionFolder.user_id == user.id, SessionFolder.trash_entry_id.is_(None)
     )
+    if kind == "event":
+        stmt = stmt.where(SessionFolder.kind == "event", SessionFolder.lineage_id == lineage_id)
+        return DocumentScope(f"event:{lineage_id}", stmt)
+    return DocumentScope(f"course:{course_id}", stmt.where(SessionFolder.course_id == course_id))
+
+
+def scope_of(user: User, r: sfs.ResolvedSession) -> DocumentScope:
+    return _scope(user, r.kind, r.course.id if r.course else None, r.lineage_id)
+
+
+def scope_of_folder(user: User, folder: SessionFolder) -> DocumentScope:
+    return _scope(user, folder.kind, folder.course_id, folder.lineage_id)
 
 
 @contextmanager
-def course_import_lock(user_id: str, course_id: str) -> Iterator[None]:
-    """Serialize choosing a document name across the course's sessions until the row is
+def scope_import_lock(user_id: str, scope: DocumentScope) -> Iterator[None]:
+    """Serialize choosing a document name across the scope's sessions until the row is
     committed: two sessions of one course uploading at once must not pick the same name."""
-    with session_import_lock(user_id, f"course:{course_id}"):
+    with session_import_lock(user_id, scope.lock_key):
         yield
 
 
@@ -129,12 +150,13 @@ def view(db: Session, storage: StorageService, user: User, d: Document) -> dict[
 def list_documents(
     db: Session, storage: StorageService, user: User, key: str
 ) -> list[dict[str, Any]]:
-    """The documents of the session's course, whichever of its sessions they were uploaded to."""
+    """The documents of the session's course (or event series), whichever of its sessions they
+    were uploaded to."""
     resolved = sfs.resolve(db, user, key)
     rows = db.scalars(
-        course_documents(user, resolved.course.id).order_by(
-            Document.uploaded_at.desc(), Document.id.desc()
-        )
+        scope_of(user, resolved)
+        .documents(user)
+        .order_by(Document.uploaded_at.desc(), Document.id.desc())
     )
     return [view(db, storage, user, d) for d in rows]
 
@@ -228,12 +250,11 @@ def import_document(
     with session_import_lock(user.id, key):
         resolved = sfs.resolve(db, user, key)
         folder = sfs.get_or_create_folder(db, storage, user, resolved)
-        with course_import_lock(user.id, resolved.course.id):
+        scope = scope_of(user, resolved)
+        with scope_import_lock(user.id, scope):
             rows = list(db.scalars(select(Document).where(Document.session_folder_id == folder.id)))
             course_names = set(
-                db.scalars(
-                    course_documents(user, resolved.course.id).with_only_columns(Document.name_key)
-                )
+                db.scalars(scope.documents(user).with_only_columns(Document.name_key))
             )
             name = _unique_name(_document_name(original_file_name), course_names)
             folder_parts = sfs.folder_parts(user, resolved, folder)
@@ -281,8 +302,9 @@ def set_page_count(
     return view(db, storage, user, d)
 
 
-def _name_taken() -> ApiError:
-    msg = "A document with this name already exists in this course."
+def _name_taken(scope: DocumentScope) -> ApiError:
+    where = "event" if scope.lock_key.startswith("event:") else "course"
+    msg = f"A document with this name already exists in this {where}."
     return ApiError(
         409, "name_taken", msg, errors=[{"field": "/name", "code": "name_taken", "message": msg}]
     )
@@ -304,15 +326,16 @@ def rename_document(
         raise validation_error("/name", "name_too_long", "Use at most 120 characters.")
     with document_file_lock(d.id):
         parts, folder = pdf_parts(db, user, d)
-        # names are unique across the course: its sessions all list the document
-        with course_import_lock(user.id, folder.course_id):
+        # names are unique across the course (or event series): its sessions all list it
+        scope = scope_of_folder(user, folder)
+        with scope_import_lock(user.id, scope):
             clash = db.scalar(
-                course_documents(user, folder.course_id).where(
+                scope.documents(user).where(
                     Document.name_key == name_key(name), Document.id != d.id
                 )
             )
             if clash is not None:
-                raise _name_taken()
+                raise _name_taken(scope)
             folder_parts = parts[:-2]
             others = list(
                 db.scalars(

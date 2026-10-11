@@ -9,6 +9,7 @@ from unihelper.domain.recurrence import (
     Rule,
     RuleError,
     expand,
+    expand_detached,
     occurrence_dates,
     recurrence_summary,
     session_key,
@@ -180,6 +181,120 @@ def test_exceptions_cancel_and_modify() -> None:
         mod.exception_version,
     ) == (12, 13, "Room B", True, 3)
     assert s[0].location == "Room A" and not s[0].is_exception
+
+
+def _moved(original: date, to: date, **kw: object) -> ExceptionView:
+    return ExceptionView(
+        original_date=original,
+        kind="modified",
+        start_time=kw.get("start"),  # type: ignore[arg-type]
+        end_time=kw.get("end"),  # type: ignore[arg-type]
+        location=None,
+        version=2,
+        title=kw.get("title"),  # type: ignore[arg-type]
+        color=kw.get("color"),  # type: ignore[arg-type]
+        moved_date=to,
+        detached=bool(kw.get("detached", False)),
+    )
+
+
+def _expand(r: Rule, a: date, b: date, exc: list[ExceptionView]) -> list[object]:
+    return expand(  # type: ignore[return-value]
+        r,
+        lineage_id="L",
+        series_id="S",
+        semester_end=None,
+        range_from=a,
+        range_to=b,
+        tz="UTC",
+        now=datetime(2026, 1, 1, tzinfo=UTC),
+        exceptions=exc,
+        location="Room A",
+    )
+
+
+def test_moved_occurrence_shows_on_its_new_date_and_keeps_its_key() -> None:
+    """009 research R3: an event moved from Mon 5 Oct to Fri 9 Oct."""
+    r = rule(until_date=date(2026, 10, 14))
+    exc = [_moved(date(2026, 10, 5), date(2026, 10, 9), title="Moved", color="red")]
+    week = _expand(r, date(2026, 10, 5), date(2026, 10, 11), exc)
+    assert [(x.date, x.key) for x in week] == [  # type: ignore[attr-defined]
+        (date(2026, 10, 7), "L:2026-10-07"),
+        (date(2026, 10, 9), "L:2026-10-05"),
+    ]
+    moved = week[1]
+    assert (moved.start.date(), moved.title, moved.color, moved.is_exception) == (  # type: ignore[attr-defined]
+        date(2026, 10, 9),
+        "Moved",
+        "red",
+        True,
+    )
+    # shown when only its new date is in range, hidden when only its original date is
+    later = _expand(r, date(2026, 10, 8), date(2026, 10, 9), exc)
+    assert [x.key for x in later] == ["L:2026-10-05"]  # type: ignore[attr-defined]
+    assert _expand(r, date(2026, 10, 5), date(2026, 10, 5), exc) == []
+    # a moved date whose original date the rule doesn't generate shows nothing
+    stray = [_moved(date(2026, 10, 6), date(2026, 10, 9))]
+    assert [x.key for x in _expand(r, date(2026, 10, 9), date(2026, 10, 9), stray)] == []  # type: ignore[attr-defined]
+
+
+def test_detached_occurrence_outlives_its_rule() -> None:
+    """009 research R4: a frozen occurrence stays scheduled when no rule generates it."""
+    r = rule(until_date=date(2026, 10, 7))
+    frozen = ExceptionView(
+        original_date=date(2026, 10, 12),
+        kind="modified",
+        start_time=time(14, 0),
+        end_time=time(15, 0),
+        location="Hall",
+        version=4,
+        title="AI Seminar",
+        detached=True,
+    )
+    other = ExceptionView(
+        original_date=date(2026, 10, 14),
+        kind="modified",
+        start_time=time(9, 0),
+        end_time=time(10, 0),
+        location=None,
+        version=1,
+    )
+    assert _expand(r, date(2026, 10, 12), date(2026, 10, 18), [frozen, other]) == []
+
+    def generated(day: date) -> bool:
+        return bool(occurrence_dates(r, None, day, day))
+
+    views = expand_detached(
+        [frozen, other],
+        generated,
+        lineage_id="L",
+        series_id="S",
+        range_from=date(2026, 10, 12),
+        range_to=date(2026, 10, 18),
+        tz="UTC",
+        now=datetime(2026, 1, 1, tzinfo=UTC),
+        start_time=time(10, 0),
+        end_time=time(11, 30),
+    )
+    assert [(v.key, v.start.hour, v.location, v.title, v.detached) for v in views] == [
+        ("L:2026-10-12", 14, "Hall", "AI Seminar", True)
+    ]
+    # still generated → `expand` emits it (with its overrides), `expand_detached` does not
+    assert (
+        expand_detached(
+            [frozen],
+            lambda _d: True,
+            lineage_id="L",
+            series_id="S",
+            range_from=date(2026, 10, 1),
+            range_to=date(2026, 10, 31),
+            tz="UTC",
+            now=datetime(2026, 1, 1, tzinfo=UTC),
+            start_time=time(10, 0),
+            end_time=time(11, 30),
+        )
+        == []
+    )
 
 
 def test_summary() -> None:

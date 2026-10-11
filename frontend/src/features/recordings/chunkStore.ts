@@ -13,7 +13,7 @@ export interface StoredChunk {
 export interface StoredRecording {
   recordingId: string;
   sessionKey: string;
-  courseId: string;
+  courseId: string | null; // 009: null for an event
   label: string;
   startedAt: number;
   /** Set when the recorder stopped (or a crashed page was found): finalize after the upload. */

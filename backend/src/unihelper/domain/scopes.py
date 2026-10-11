@@ -3,15 +3,26 @@
 Pure planning: given a class lineage (its segments + single-session exceptions), a target
 session date, a scope and the requested changes, return a ChangeSet the service applies in
 one transaction. Session keys ({lineage_id}:{original_date}) never change.
+
+009: events use the same planners — any row satisfying `SeriesRow` becomes a `Segment`
+(`segment_of`), and exceptions may carry `moved_date` / `detached` (frozen occurrences).
 """
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
 from datetime import date, time, timedelta
-from typing import Any
+from typing import Any, Protocol
 
-from unihelper.domain.recurrence import ExceptionView, Rule, RuleError, occurrence_dates
+from unihelper.domain.recurrence import (
+    ExceptionView,
+    Rule,
+    RuleError,
+    SegmentLike,
+    occurrence_dates,
+    rule_of,
+)
 
 SCOPES = ("this", "following", "all")
 THIS_FIELDS = {"start_time", "end_time", "location"}
@@ -28,6 +39,34 @@ class Segment:
     color: str
     links: tuple[tuple[str | None, str], ...]
     semester_end: date | None
+
+
+class SeriesRow(SegmentLike, Protocol):
+    """A series row of either kind (`class_series`, 009 `event_series`) as the planners see it."""
+
+    @property
+    def id(self) -> str: ...
+    @property
+    def title(self) -> str | None: ...
+    @property
+    def location(self) -> str | None: ...
+    @property
+    def color(self) -> str: ...
+    @property
+    def links(self) -> Sequence[Any]: ...  # rows with `label` and `url`
+
+
+def segment_of(row: SeriesRow, semester_end: date | None) -> Segment:
+    return Segment(
+        id=row.id,
+        start_date=row.start_date,
+        rule=rule_of(row),
+        title=row.title,
+        location=row.location,
+        color=row.color,
+        links=tuple((link.label, link.url) for link in row.links),
+        semester_end=semester_end,
+    )
 
 
 @dataclass
@@ -155,13 +194,16 @@ def _reconcile_exceptions(
     still_generated: Any,
     since: date | None = None,
 ) -> None:
-    """Drop exceptions whose date the new rules no longer generate; count kept overrides."""
+    """Drop exceptions whose date the new rules no longer generate; count kept overrides.
+    A `detached` (frozen, 009) occurrence stays scheduled whatever the rules generate."""
     for e in exceptions:
         if since is not None and e.original_date < since:
             continue
         if e.original_date in cs.exception_upserts:
             continue
-        if not still_generated(e.original_date):
+        if e.detached and e.kind == "modified":
+            cs.preserved_overrides += 1
+        elif not still_generated(e.original_date):
             cs.exception_deletes.add(e.original_date)
             if e.kind == "modified":
                 cs.removed_overrides += 1

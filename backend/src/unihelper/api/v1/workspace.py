@@ -28,4 +28,4 @@ def get_preferences(user: CurrentUser, db: DbSession) -> Any:
 
 @router.patch("/preferences", response_model=Preferences)
 def patch_preferences(body: Preferences, user: CurrentUser, db: DbSession) -> Any:
-    return workspace_service.patch_preferences(db, user, body.model_dump())
+    return workspace_service.patch_preferences(db, user, body.model_dump(exclude_unset=True))

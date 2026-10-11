@@ -29,6 +29,11 @@
   --success: #1b7339;
   --warning: #8a5300;
   --now-line: #c8331f;
+  /* 009 calendar: new-entry draft block, and the non-colour Event marker (dashed edge) */
+  --draft-bg: #dce5fb;
+  --draft-border: #2650c9;
+  --draft-fg: #14306f;
+  --event-marker: #3f3f46;
   --shadow-tint: rgb(24 24 27 / 0.08);
   --overlay: rgb(24 24 27 / 0.45);
   --event-slate-bg: #e7eaee;
@@ -92,6 +97,11 @@
   --success: #6fd08c;
   --warning: #f0c050;
   --now-line: #ff7362;
+  /* 009 calendar: new-entry draft block, and the non-colour Event marker (dashed edge) */
+  --draft-bg: #1f2b4d;
+  --draft-border: #8ba7ff;
+  --draft-fg: #dce4ff;
+  --event-marker: #c4c4cc;
   --shadow-tint: rgb(0 0 0 / 0.4);
   --overlay: rgb(5 5 7 / 0.6);
   --event-slate-bg: #33373d;

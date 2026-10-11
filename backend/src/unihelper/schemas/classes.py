@@ -113,6 +113,22 @@ class ClassCreate(ClassFields):
     links: list[Link] = Field(default_factory=list, max_length=10)
 
 
+class CreatedRefs(ApiModel):
+    """Rows a create request made (for the quick form's Undo, 009 research R10)."""
+
+    lineage_id: str
+    year_id: str | None = None
+    semester_id: str | None = None
+    course_id: str | None = None
+
+
+class UndoCreation(ApiModel):
+    """`POST /creations/undo` body: what a create returned, and its series version."""
+
+    created: CreatedRefs
+    version: int
+
+
 class ClassSeriesOut(ApiModel):
     id: str
     lineage_id: str
@@ -136,12 +152,18 @@ class ClassDetail(ApiModel):
 
 
 class SessionOut(ApiModel):
+    """A class session or (009) an event occurrence (`kind`). Events have no course or class
+    series: `courseId`, `courseName` and `seriesId` are null and `title` is the event's title;
+    for classes `title` keeps 001's meaning (the class's own title, if any)."""
+
     key: str
+    kind: Literal["class", "event"] = "class"
     lineage_id: str
-    series_id: str
+    series_id: str | None
     series_version: int
-    course_id: str
-    course_name: str
+    course_id: str | None
+    course_name: str | None
+    semester_id: str
     title: str | None
     date: date
     start: str
@@ -157,7 +179,16 @@ class SessionOut(ApiModel):
 
 
 class SessionEdit(ClassFields):
-    """Fields to change. With scope=this only startTime, endTime and location are allowed."""
+    """Fields to change. With scope=this only startTime, endTime and location are allowed.
+    009: unknown fields are refused, so `PATCH /sessions/{key}` can tell it from `EventEdit`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+
+class ClassCreated(ClassSeriesOut):
+    """`POST /classes` 201: the series plus the rows the request created (009 research R10)."""
+
+    created: CreatedRefs
 
 
 class ScopeResult(ApiModel):
@@ -165,3 +196,7 @@ class ScopeResult(ApiModel):
     affected_series_ids: list[str]
     preserved_overrides: int = 0
     removed_overrides: int = 0
+    # 009: occurrences a series edit left unchanged (events: content or edited individually;
+    # classes: = preservedOverrides) and the Trash entry a delete created
+    unchanged_count: int = 0
+    trash_entry_id: str | None = None

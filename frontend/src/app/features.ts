@@ -8,6 +8,7 @@ import { routes as adminRoutes } from "@/features/admin/routes";
 import { routes as calendarRoutes } from "@/features/calendar/routes";
 import { routes as courseRoutes } from "@/features/courses/routes";
 import "@/features/documents/routes";
+import { routes as eventRoutes } from "@/features/events/routes";
 import "@/features/imports/routes";
 import "@/features/recordings/routes";
 import { routes as sessionRoutes } from "@/features/sessions/routes";
@@ -18,6 +19,7 @@ export const featureRoutes: RouteObject[] = [
   ...authShellRoutes,
   ...calendarRoutes,
   ...courseRoutes,
+  ...eventRoutes,
   ...sessionRoutes,
   ...settingsRoutes,
   ...adminRoutes,

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { lastCalendarPath } from "@/features/calendar/state";
 import { useCourse } from "@/features/courses/api";
+import { EditEventFlow } from "@/features/events/EditEventFlow";
 import { isApiError } from "@/lib/api";
 import { formatDay, wallTime } from "@/lib/dates";
 import type { ColorKey } from "@/lib/palette";
@@ -13,21 +14,8 @@ import {
   type ClassSeries, type Scope, type Session,
 } from "./api";
 import { ClassForm, initialClassForm, sessionEditPayload, type ClassFormMode, type ClassFormValue } from "./ClassForm";
-import { defaultRecurrence, type RecurrenceValue, type WeekdayCode } from "./RecurrenceFields";
+import { recurrenceFrom } from "./RecurrenceFields";
 import { ScopeDialog } from "./ScopeDialog";
-
-function recurrenceFrom(seg: ClassSeries): RecurrenceValue {
-  const r = seg.recurrence;
-  if (r.freq === "none") return { ...defaultRecurrence, freq: "none" };
-  return {
-    freq: "weekly",
-    intervalWeeks: r.intervalWeeks ?? 1,
-    byWeekday: (r.byWeekday ?? []) as WeekdayCode[],
-    endKind: (r.end?.kind ?? "semester_end") as RecurrenceValue["endKind"],
-    untilDate: r.end?.untilDate ?? "",
-    count: r.end?.count ? String(r.end.count) : "14",
-  };
-}
 
 export function formFromSession(session: Session, seg: ClassSeries | undefined): ClassFormValue {
   const base = initialClassForm({ date: session.date, start: wallTime(session.start), end: wallTime(session.end) });
@@ -46,20 +34,25 @@ function successMessage(scope: Scope, preserved: number) {
   return preserved > 0 ? `${what}. ${preserved} individually changed session${preserved === 1 ? " was" : "s were"} kept.` : `${what}.`;
 }
 
-/** Route /sessions/:sessionKey/edit — scope choice (recurring only) then the class form. */
+/** Route /sessions/:sessionKey/edit — scope choice (recurring only) then the class form;
+ * (009) an event occurrence gets the event flow. */
 export function EditSessionFlow() {
   const { sessionKey = "" } = useParams();
+  const session = useSession(sessionKey);
+  if (!session.data) return null;
+  if (session.data.kind === "event") return <EditEventFlow session={session.data} />;
+  return <EditClassFlow session={session.data} />;
+}
+
+function EditClassFlow({ session: s }: { session: Session }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const session = useSession(sessionKey);
-  const detail = useClassDetail(session.data?.lineageId);
-  const course = useCourse(session.data?.courseId);
+  const detail = useClassDetail(s.lineageId);
+  const course = useCourse(s.courseId ?? undefined);
   const edit = useEditSession();
   const [scope, setScope] = useState<Scope | null>(null);
   const close = () => navigate(lastCalendarPath());
 
-  if (!session.data) return null;
-  const s = session.data;
   const recurring = isRecurring(s);
   const chosen: Scope | null = recurring ? scope : "all";
   if (recurring && !chosen) return <ScopeDialog action="edit" onChoose={setScope} onCancel={close} />;

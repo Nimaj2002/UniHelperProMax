@@ -1,4 +1,4 @@
-import { Microphone, NotePencil } from "@phosphor-icons/react";
+import { FilePdf, Microphone, NotePencil } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router";
 import { Badge } from "@/components/ui/badge";
@@ -7,12 +7,28 @@ import { cn } from "@/lib/utils";
 import type { TimelineEntry } from "./api";
 import { statusAt, useNow } from "./useNow";
 
-export function workspacePath(courseId: string, key: string) {
-  return `/courses/${courseId}/sessions/${encodeURIComponent(key)}`;
+/** A session's workspace: under its course, or (009) an event's under its semester. Without
+ * either (a recording or transcription job of an event) `/workspace/:key` finds the right one. */
+export function workspacePath(courseId: string | null | undefined, key: string, semesterId?: string | null) {
+  if (courseId) return `/courses/${courseId}/sessions/${encodeURIComponent(key)}`;
+  if (semesterId) return `/semesters/${semesterId}/events/${encodeURIComponent(key)}`;
+  return `/workspace/${encodeURIComponent(key)}`;
 }
 
+/** The workspace path of a calendar entry (class session or event occurrence). */
+export function entryWorkspacePath(s: { kind: string; courseId: string | null; semesterId: string; key: string }) {
+  return workspacePath(s.courseId, s.key, s.kind === "event" ? s.semesterId : null);
+}
+
+/** One row of the timeline: a course timeline entry, or (009) an event occurrence. */
+export type TimelineItem = Omit<TimelineEntry, "courseId"> & {
+  courseId: string | null;
+  semesterId?: string | null;
+  documentCount?: number;
+};
+
 /** Key of the current or next session (where the timeline scrolls to, FR-004). */
-export function focusKey(entries: TimelineEntry[], now: number): string | undefined {
+export function focusKey(entries: TimelineItem[], now: number): string | undefined {
   const current = entries.find((e) => Date.parse(e.start) <= now && Date.parse(e.end) > now);
   if (current) return current.key;
   return entries.find((e) => Date.parse(e.start) > now)?.key ?? entries[entries.length - 1]?.key;
@@ -23,7 +39,7 @@ function monthLabel(iso: string) {
 }
 
 interface Props {
-  entries: TimelineEntry[];
+  entries: TimelineItem[];
   variant: "page" | "compact";
   activeKey?: string;
 }
@@ -36,7 +52,7 @@ export function SessionTimeline({ entries, variant, activeKey }: Props) {
   const target = activeKey ?? focusKey(entries, now);
 
   const groups = useMemo(() => {
-    const out: { month: string; items: TimelineEntry[] }[] = [];
+    const out: { month: string; items: TimelineItem[] }[] = [];
     for (const e of entries) {
       const m = e.date.slice(0, 7);
       if (out[out.length - 1]?.month !== m) out.push({ month: m, items: [] });
@@ -73,7 +89,7 @@ export function SessionTimeline({ entries, variant, activeKey }: Props) {
               return (
                 <li key={e.key}>
                   <Link
-                    to={workspacePath(e.courseId, e.key)}
+                    to={workspacePath(e.courseId, e.key, e.semesterId)}
                     data-timeline-key={e.key}
                     aria-current={active ? "page" : undefined}
                     className={cn(
@@ -112,6 +128,12 @@ export function SessionTimeline({ entries, variant, activeKey }: Props) {
                         {e.audioCount > 0 && (
                           <span className="flex items-center gap-1">
                             <Microphone size={16} aria-hidden /> audio
+                          </span>
+                        )}
+                        {!!e.documentCount && (
+                          <span className="flex items-center gap-1">
+                            <FilePdf size={16} aria-hidden />
+                            {e.documentCount} {e.documentCount === 1 ? "document" : "documents"}
                           </span>
                         )}
                       </span>

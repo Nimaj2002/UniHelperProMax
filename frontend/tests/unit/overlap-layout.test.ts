@@ -35,4 +35,30 @@ describe("layoutOverlaps", () => {
     const r = layoutOverlaps([ev("a", 0, 60), ev("b", 30, 90), ev("c", 200, 260)]);
     expect(r.get("c")).toEqual({ column: 0, columns: 1 });
   });
+
+  it("classes and events share the layout: four overlapping entries get four columns (009 FR-008)", () => {
+    // keys as the calendar uses them: class sessions and event occurrences in one list
+    const r = layoutOverlaps([ev("class-a", 600, 690), ev("event-b", 630, 720), ev("event-c", 640, 700), ev("class-d", 650, 680)]);
+    expect([...r.values()].every((p) => p.columns === 4)).toBe(true);
+    expect(new Set([...r.values()].map((p) => p.column))).toEqual(new Set([0, 1, 2, 3]));
+  });
+
+  it("touching class and event share a column", () => {
+    const r = layoutOverlaps([ev("class-a", 600, 690), ev("event-b", 690, 750)]);
+    expect(r.get("class-a")).toEqual({ column: 0, columns: 1 });
+    expect(r.get("event-b")).toEqual({ column: 0, columns: 1 });
+  });
+});
+
+describe("layoutOverlaps with a draft (009 FR-028)", () => {
+  it("places the draft beside overlapping entries without moving the others further", () => {
+    const r = layoutOverlaps([ev("a", 600, 690), ev("__draft__", 630, 720), ev("c", 780, 840)]);
+    expect(r.get("a")).toEqual({ column: 0, columns: 2 });
+    expect(r.get("__draft__")).toEqual({ column: 1, columns: 2 });
+    expect(r.get("c")).toEqual({ column: 0, columns: 1 }); // not overlapping: full width
+  });
+
+  it("a draft that overlaps nothing takes the full width", () => {
+    expect(layoutOverlaps([ev("a", 600, 660), ev("__draft__", 660, 720)]).get("__draft__")).toEqual({ column: 0, columns: 1 });
+  });
 });

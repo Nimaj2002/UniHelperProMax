@@ -19,6 +19,7 @@ const TEXT_PAIRS: [string, string][] = [
   ["success", "surface"],
   ["warning", "surface"],
   ["reader-page-dark-fg", "reader-page-dark-bg"], // 007 dark pages
+  ["draft-fg", "draft-bg"], // 009 new-entry draft
 ];
 
 const UI_PAIRS: [string, string][] = [
@@ -27,6 +28,8 @@ const UI_PAIRS: [string, string][] = [
   ["border", "surface"],
   ["border", "surface-elevated"],
   ["now-line", "surface"],
+  ["event-marker", "surface"], // 009 Event marker
+  ["draft-border", "draft-bg"], // 009 draft outline
 ];
 
 describe.each(["light", "dark"] as const)("%s theme tokens", (theme) => {

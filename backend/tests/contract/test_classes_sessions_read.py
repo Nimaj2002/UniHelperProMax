@@ -163,17 +163,26 @@ def test_unscheduled_session_with_content_is_still_found(owner_client: TestClien
     key = f"{cls['lineageId']}:2026-09-30"
     assert c.get(f"{API}/sessions/{key}").json()["scheduled"] is True
     create_note(c, key, "Notes")
-    c.delete(
-        f"{API}/sessions/{key}",
-        params={"scope": "this"},
+    # a series edit that drops the Wednesday leaves the session unscheduled, with its notes
+    r = c.patch(
+        f"{API}/sessions/{cls['lineageId']}:2026-09-28",
+        params={"scope": "all"},
+        json={"recurrence": {**new_class_body()["recurrence"], "byWeekday": ["MO"]}},
         headers={"If-Match": f'"{cls["version"]}"'},
     )
+    assert r.status_code == 200, r.text
     r = c.get(f"{API}/sessions/{key}")
     assert r.status_code == 200
     check(r.json(), "Session")
     assert r.json()["scheduled"] is False and r.json()["start"].startswith("2026-09-30T10:00")
+    # 009: a deleted session goes to the Trash with its content, so it is not found any more
+    mon = f"{cls['lineageId']}:2026-10-05"
+    create_note(c, mon, "Notes")
+    v = c.get(f"{API}/sessions/{mon}").json()["seriesVersion"]
+    c.delete(f"{API}/sessions/{mon}", params={"scope": "this"}, headers={"If-Match": f'"{v}"'})
+    assert_problem(c.get(f"{API}/sessions/{mon}"), 404, "not_found")
     # without content a cancelled session stays gone
-    other = f"{cls['lineageId']}:2026-10-05"
+    other = f"{cls['lineageId']}:2026-10-12"
     v = c.get(f"{API}/sessions/{other}").json()["seriesVersion"]
     c.delete(f"{API}/sessions/{other}", params={"scope": "this"}, headers={"If-Match": f'"{v}"'})
     assert_problem(c.get(f"{API}/sessions/{other}"), 404, "not_found")

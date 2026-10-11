@@ -15,6 +15,8 @@ async function seed(page: Page, t: string) {
 }
 
 async function axe(page: Page) {
+  // the view's fade-in (motion) must finish first: half-transparent text fails contrast
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(", ")}`)).toEqual([]);
 }
@@ -65,20 +67,22 @@ test("US2: keyboard-only calendar navigation", async ({ page }, testInfo) => {
   await expect(details).toBeHidden();
   await expect(cs).toBeFocused();
 
-  // roving focus across slots, Enter opens a pre-filled class form
-  const slot = page.getByRole("button", { name: "New class on Monday 5 October at 09:00" });
+  // roving focus across 15-minute slots; Enter opens the quick form for a one-hour draft (009)
+  const slot = page.getByRole("button", { name: "New entry on Monday 5 October at 09:00" });
   await slot.focus();
   await page.keyboard.press("ArrowDown");
-  await expect(page.getByRole("button", { name: "New class on Monday 5 October at 09:30" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "New entry on Monday 5 October at 09:15" })).toBeFocused();
   await page.keyboard.press("ArrowRight");
-  await expect(page.getByRole("button", { name: "New class on Tuesday 6 October at 09:30" })).toBeFocused();
+  const tuesday = page.getByRole("button", { name: "New entry on Tuesday 6 October at 09:15" });
+  await expect(tuesday).toBeFocused();
   await page.keyboard.press("Enter");
-  const form = page.getByRole("dialog", { name: "New class" });
-  await expect(form.getByLabel("First session")).toHaveValue("2026-10-06");
-  await expect(form.getByLabel("Start time")).toHaveValue("09:30");
-  await expect(form.getByLabel("End time")).toHaveValue("10:30");
+  const form = page.getByRole("dialog", { name: "New entry" });
+  await expect(form.getByLabel("Date")).toHaveValue("2026-10-06");
+  await expect(form.getByLabel("Start time")).toHaveValue("09:15");
+  await expect(form.getByLabel("End time")).toHaveValue("10:15");
   await page.keyboard.press("Escape");
   await expect(form).toBeHidden();
+  await expect(tuesday).toBeFocused();
 
   // shortcut help
   await page.locator("body").press("?");

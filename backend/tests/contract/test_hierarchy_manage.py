@@ -95,9 +95,22 @@ def test_deletion_impact_and_delete(owner_client: TestClient, tmp_data_dir: Path
     imp = c.get(f"{API}/years/{t['year']['id']}/deletion-impact")
     assert imp.status_code == 200
     check(imp.json(), "DeletionImpact")
-    assert imp.json() == {"semesters": 1, "courses": 1, "classes": 1, "keptFolder": "2026"}
+    none = {"events": 0, "notes": 0, "recordings": 0, "documents": 0}  # 009 additions
+    assert imp.json() == {
+        "semesters": 1,
+        "courses": 1,
+        "classes": 1,
+        **none,
+        "keptFolder": "2026",
+    }
     simp = c.get(f"{API}/semesters/{t['semester']['id']}/deletion-impact").json()
-    assert simp == {"semesters": 0, "courses": 1, "classes": 1, "keptFolder": "2026/Fall 2026"}
+    assert simp == {
+        "semesters": 0,
+        "courses": 1,
+        "classes": 1,
+        **none,
+        "keptFolder": "2026/Fall 2026",
+    }
     cimp = c.get(f"{API}/courses/{t['course']['id']}/deletion-impact").json()
     assert cimp["classes"] == 1 and cimp["keptFolder"] == "2026/Fall 2026/CS 201"
 

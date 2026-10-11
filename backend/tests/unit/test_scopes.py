@@ -194,3 +194,57 @@ def test_all_recurrence_change_keeps_split_boundaries() -> None:
     assert cs.updates["A"]["until_date"] == date(2026, 10, 11)  # boundary kept
     assert cs.updates["A"]["by_weekday"] == "MO,WE,FR"
     assert cs.updates["B"]["until_date"] == date(2026, 11, 30)  # last segment takes the end
+
+
+# ---- 009: moved and detached exceptions ---------------------------------------------------
+
+END = {"kind": "until", "until_date": date(2026, 12, 31), "count": None}
+
+
+def test_series_edit_keeps_detached_occurrences() -> None:
+    """A frozen (detached) occurrence stays even when the new rule drops its date; it counts as
+    kept, like an individually edited one (009 research R4)."""
+    frozen = ExceptionView(
+        original_date=date(2026, 10, 5),  # a Monday
+        kind="modified",
+        start_time=time(10, 0),
+        end_time=time(11, 30),
+        location="Room A",
+        version=1,
+        title="Lecture",
+        detached=True,
+    )
+    plain = exc(date(2026, 10, 12))  # another Monday, modified but not frozen
+    cs = plan_edit(
+        [seg()],
+        [frozen, plain],
+        MON,
+        "all",
+        {"recurrence": {"freq": "weekly", "by_weekday": ["WE"], "end": END}},
+    )
+    assert date(2026, 10, 5) not in cs.exception_deletes
+    assert date(2026, 10, 12) in cs.exception_deletes
+    assert (cs.preserved_overrides, cs.removed_overrides) == (1, 1)
+
+
+def test_moved_exception_is_keyed_by_its_original_date() -> None:
+    """Rules decide on the original date; where it is shown (`moved_date`) doesn't matter."""
+    moved = ExceptionView(
+        original_date=date(2026, 9, 30),
+        kind="modified",
+        start_time=None,
+        end_time=None,
+        location=None,
+        version=1,
+        moved_date=date(2026, 10, 2),
+    )
+    keep = plan_edit([seg()], [moved], MON, "all", {"location": "Room C"})
+    assert not keep.exception_deletes and keep.preserved_overrides == 1
+    drop = plan_edit(
+        [seg()],
+        [moved],
+        MON,
+        "all",
+        {"recurrence": {"freq": "weekly", "by_weekday": ["MO"], "end": END}},
+    )
+    assert drop.exception_deletes == {date(2026, 9, 30)}

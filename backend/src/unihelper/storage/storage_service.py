@@ -5,7 +5,8 @@ It never deletes folders, and deleting metadata keeps user files (FR-019). Two e
 `audios/`) or document (a `.pdf` and its `.annotations.json` sidecar in `documents/`) — 002
 research N6, 003 research A7, 007; and the import staging files `*.part` in `files/.uploads/`,
 which are never user content (006 research I5). Uploaded PDFs are never written after the upload
-is committed (Constitution II).
+is committed (Constitution II). 009: `delete_tree` removes one session/event folder — only for
+a permanent delete from the Trash after the user answered "Yes" (FR-021d).
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ import hashlib
 import os
 import secrets
 import shutil
+import stat
 import time
 from collections.abc import Callable, Sequence
 from datetime import timedelta
@@ -24,6 +26,8 @@ from unihelper.domain.naming import safe_name
 
 UPLOADS_DIR = ".uploads"  # staging for imports; usernames can't start with "." (safe_name)
 SIDECAR_SUFFIX = ".annotations.json"  # 007: annotations next to the PDF, never inside it
+# <user>/<year>/<semester>/<course or _Events>/<session or event folder>
+FOLDER_DEPTH = 5
 AUDIO_EXTENSIONS = {".webm", ".m4a", ".mp3", ".aac", ".wav", ".ogg", ".oga", ".opus", ".flac"}
 
 
@@ -57,6 +61,10 @@ class StorageService:
         return str(PurePosixPath(*rel_parts[1:])) if len(rel_parts) > 1 else ""
 
     # ---- operations --------------------------------------------------------------------
+    def exists(self, rel_parts: Sequence[str]) -> bool:
+        """Whether a file or folder is already there (e.g. one the user made by hand)."""
+        return self.path_for(rel_parts).exists()
+
     def ensure_dir(self, rel_parts: Sequence[str]) -> Path:
         path = self.path_for(rel_parts)
         path.mkdir(parents=True, exist_ok=True)
@@ -210,6 +218,68 @@ class StorageService:
         except FileNotFoundError:
             pass
 
+    def delete_tree(self, rel_parts: Sequence[str]) -> list[str]:
+        """Permanently remove one session or event folder and everything in it (009 Trash →
+        Delete → "Yes"). Strict: the path must be exactly at session/event-folder depth inside
+        the user's root, made of real directories (a symbolic link or junction anywhere on the
+        way is refused, so nothing outside the root is ever reached). The caller only passes
+        folders recorded as session/event folders. A missing folder is not an error. Returns the
+        paths (relative to the user's root) that could not be removed."""
+        if len(rel_parts) != FOLDER_DEPTH:
+            raise StoragePathError("Only a session or event folder can be deleted")
+        for part in rel_parts:
+            self._check_part(part)
+        current = self.files_root
+        for part in rel_parts:
+            current = current / part
+            try:
+                mode = current.lstat().st_mode
+            except FileNotFoundError:
+                return []  # already gone (removed outside the app, or a retried purge)
+            if stat.S_ISLNK(mode) or _is_junction(current):
+                raise StoragePathError("Links are never followed")
+        if not stat.S_ISDIR(mode):
+            raise StoragePathError("Only a folder can be deleted")
+        user_root = (self.files_root / rel_parts[0]).resolve(strict=True)
+        target = current.resolve(strict=True)
+        if user_root not in target.parents:
+            raise StoragePathError("Path escapes the user's folder")
+        failed: list[str] = []
+
+        def on_error(_fn: Callable[..., object], path: str, _exc: BaseException) -> None:
+            failed.append(Path(path).relative_to(user_root).as_posix())
+
+        shutil.rmtree(current, onexc=on_error)
+        return failed
+
+    def remove_empty_dir(self, rel_parts: Sequence[str]) -> bool:
+        """Remove a folder only when no file is anywhere inside it (empty sub-folders go with
+        it), e.g. folders a creation made that its Undo takes back (009 research R10). Links are
+        never followed or removed; a file anywhere keeps the folder. Returns whether it is gone."""
+        if len(rel_parts) < 2:  # never a user's root
+            raise StoragePathError("Only a folder inside a user's root can be removed")
+        path = self.path_for(rel_parts)
+        try:
+            mode = path.lstat().st_mode
+        except FileNotFoundError:
+            return True
+        if stat.S_ISLNK(mode) or _is_junction(path) or not stat.S_ISDIR(mode):
+            return False
+        for current, dirs, _files in os.walk(path, topdown=False, followlinks=False):
+            for d in dirs:
+                sub = Path(current) / d
+                if sub.is_symlink() or _is_junction(sub):
+                    continue
+                try:
+                    sub.rmdir()  # fails (and is kept) when anything is inside
+                except OSError:
+                    pass
+        try:
+            path.rmdir()
+        except OSError:
+            return False
+        return True
+
     # ---- import staging (feature 006) --------------------------------------------------
     @property
     def uploads_dir(self) -> Path:
@@ -271,6 +341,11 @@ class StorageService:
 
     def free_bytes(self) -> int:
         return shutil.disk_usage(self.files_root).free
+
+
+def _is_junction(path: Path) -> bool:
+    """Windows directory junctions are links too (Path.is_junction, Python ≥ 3.12)."""
+    return bool(getattr(path, "is_junction", lambda: False)())
 
 
 def _replace_with_retry(src: Path, dst: Path, attempts: int = 5) -> None:

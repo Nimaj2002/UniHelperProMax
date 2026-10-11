@@ -5,13 +5,31 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
-from sqlalchemy import func, select, update
+from sqlalchemy import false, func, select, update
 from sqlalchemy.orm import Session
 
 from unihelper.api.errors import ApiError, not_found, validation_error
 from unihelper.db.engine import on_rollback
-from unihelper.domain.naming import name_key, normalize_display, safe_name, unique_sibling
-from unihelper.models import ClassSeries, Course, Semester, User, Year
+from unihelper.domain.naming import (
+    EVENTS_DIR,
+    is_reserved_course_folder,
+    name_key,
+    normalize_display,
+    safe_name,
+    unique_sibling,
+)
+from unihelper.models import (
+    ClassSeries,
+    Course,
+    Document,
+    EventSeries,
+    Note,
+    Recording,
+    Semester,
+    SessionFolder,
+    User,
+    Year,
+)
 from unihelper.storage.storage_service import StorageService
 
 # ---- lookups (always scoped to the user; foreign ids are "not found") -------------------
@@ -66,10 +84,22 @@ def _folder_for(name: str, siblings: list[str]) -> tuple[str, str]:
     return folder, folder.casefold()
 
 
+def _course_folder_for(name: str, siblings: list[str]) -> tuple[str, str]:
+    """A course folder never takes the semester's `_Events` folder (009 research R1)."""
+    return _folder_for(name, [*siblings, EVENTS_DIR])
+
+
 def _clean(name: str, field: str = "/name") -> str:
     cleaned = normalize_display(name)
     if not cleaned:
         raise validation_error(field, "name_required", "Enter a name.")
+    return cleaned
+
+
+def _clean_course(name: str, field: str = "/name") -> str:
+    cleaned = _clean(name, field)
+    if is_reserved_course_folder(cleaned):
+        raise validation_error(field, "reserved_name", "“_Events” is reserved for events.")
     return cleaned
 
 
@@ -168,7 +198,7 @@ def get_or_create_course(
     name: str,
     default_color: str | None = None,
 ) -> tuple[Course, bool]:
-    name = _clean(name)
+    name = _clean_course(name)
     key = name_key(name)
     existing = db.scalar(
         select(Course).where(Course.semester_id == semester.id, Course.name_key == key)
@@ -178,7 +208,7 @@ def get_or_create_course(
     year = db.get(Year, semester.year_id)
     assert year is not None
     siblings = list(db.scalars(select(Course.folder_name).where(Course.semester_id == semester.id)))
-    folder, folder_key = _folder_for(name, siblings)
+    folder, folder_key = _course_folder_for(name, siblings)
     course = Course(
         user_id=user.id,
         semester_id=semester.id,
@@ -235,15 +265,29 @@ def course_tree(db: Session, user: User, q: str | None = None) -> list[dict[str,
     by_year: dict[str, list[Semester]] = {}
     for s in semesters:
         by_year.setdefault(s.year_id, []).append(s)
+    events = event_counts(db, user)
     out: list[dict[str, object]] = []
     for y in years:
-        nodes = [{"semester": s, "courses": by_sem.get(s.id, [])} for s in by_year.get(y.id, [])]
+        nodes = [
+            {"semester": s, "courses": by_sem.get(s.id, []), "event_count": events.get(s.id, 0)}
+            for s in by_year.get(y.id, [])
+        ]
         if q:
             nodes = [n for n in nodes if n["courses"]]
             if not nodes:
                 continue
         out.append({"year": y, "semesters": nodes})
     return out
+
+
+def event_counts(db: Session, user: User) -> dict[str, int]:
+    """Events (lineages) per semester id, for the course panel's "Events" row (009)."""
+    rows = db.execute(
+        select(EventSeries.semester_id, func.count(func.distinct(EventSeries.lineage_id)))
+        .where(EventSeries.user_id == user.id)
+        .group_by(EventSeries.semester_id)
+    ).all()
+    return {sem_id: int(n) for sem_id, n in rows}
 
 
 def class_count(db: Session, *conditions: Any) -> int:
@@ -269,17 +313,34 @@ def _rename(
     parts_before: list[str],
 ) -> None:
     """Rename entity + its folder. The folder move is compensated if the transaction fails."""
-    new_name = _clean(new_name)
+    is_course = isinstance(entity, Course)
+    new_name = _clean_course(new_name) if is_course else _clean(new_name)
     entity.name = new_name
     entity.name_key = name_key(new_name)
     others = [f for f in sibling_folders if f.casefold() != entity.folder_key]
-    folder, folder_key = _folder_for(new_name, others)
+    folder, folder_key = (_course_folder_for if is_course else _folder_for)(new_name, others)
     if folder != entity.folder_name:
         undo = storage.rename_dir(parts_before, [*parts_before[:-1], folder])
         on_rollback(db, undo)
         entity.folder_name = folder
         entity.folder_key = folder_key
+        _follow_rename(db, entity.user_id, parts_before, [*parts_before[:-1], folder])
     db.flush()
+
+
+def _follow_rename(db: Session, user_id: str, before: list[str], after: list[str]) -> None:
+    """009: folders in the Trash whose parents were deleted remember their directory by path
+    (`origin_path`); a renamed year/semester/course folder takes them along on disk."""
+    old = StorageService.relative_path(before) + "/"
+    new = StorageService.relative_path(after) + "/"
+    for f in db.scalars(
+        select(SessionFolder).where(
+            SessionFolder.user_id == user_id,
+            SessionFolder.origin_path.startswith(old, autoescape=True),
+        )
+    ):
+        assert f.origin_path is not None
+        f.origin_path = new + f.origin_path[len(old) :]
 
 
 def rename_year(db: Session, storage: StorageService, user: User, year: Year, name: str) -> Year:
@@ -306,11 +367,19 @@ def update_semester(
             ClassSeries.end_kind == "semester_end",
             ClassSeries.course_id.in_(select(Course.id).where(Course.semester_id == sem.id)),
         )
+        in_use += int(
+            db.scalar(
+                select(func.count())
+                .select_from(EventSeries)
+                .where(EventSeries.semester_id == sem.id, EventSeries.end_kind == "semester_end")
+            )
+            or 0
+        )
         if in_use:
             raise validation_error(
                 "/endDate",
                 "semester_end_in_use",
-                "Classes in this semester repeat until the semester ends. "
+                "Classes or events in this semester repeat until the semester ends. "
                 "Change them before removing the end date.",
             )
     if "name" in fields and fields["name"] is not None:
@@ -340,7 +409,7 @@ def update_course(
     db: Session, storage: StorageService, user: User, course: Course, fields: dict[str, Any]
 ) -> Course:
     if fields.get("name") is not None:
-        key = name_key(_clean(fields["name"]))
+        key = name_key(_clean_course(fields["name"]))
         clash = db.scalar(
             select(Course).where(
                 Course.semester_id == course.semester_id,
@@ -411,6 +480,7 @@ def deletion_impact(db: Session, user: User, kind: str, entity_id: str) -> dict[
         year = db.get(Year, sem.year_id)
         assert year is not None
         course_ids = select(Course.id).where(Course.semester_id == sem.id)
+        sem_ids = select(Semester.id).where(Semester.id == sem.id)
         sems = 0
         courses = int(
             db.scalar(select(func.count()).select_from(Course).where(Course.semester_id == sem.id))
@@ -421,6 +491,7 @@ def deletion_impact(db: Session, user: User, kind: str, entity_id: str) -> dict[
         course = get_course(db, user, entity_id)
         semester, year = course_parents(db, course)
         course_ids = select(Course.id).where(Course.id == course.id)
+        sem_ids = select(Semester.id).where(false())
         sems = 0
         courses = 0
         parts = course_parts(user, year, semester, course)
@@ -432,21 +503,91 @@ def deletion_impact(db: Session, user: User, kind: str, entity_id: str) -> dict[
         )
         or 0
     )
+    events = int(
+        db.scalar(
+            select(func.count(func.distinct(EventSeries.lineage_id))).where(
+                EventSeries.semester_id.in_(sem_ids)
+            )
+        )
+        or 0
+    )
+    folder_ids = select(SessionFolder.id).where(
+        (SessionFolder.course_id.in_(course_ids)) | (SessionFolder.semester_id.in_(sem_ids)),
+        SessionFolder.trash_entry_id.is_(None),
+    )
+
+    def count(model: Any) -> int:
+        return int(
+            db.scalar(
+                select(func.count())
+                .select_from(model)
+                .where(model.session_folder_id.in_(folder_ids))
+            )
+            or 0
+        )
+
     return {
         "semesters": sems,
         "courses": courses,
         "classes": classes,
+        "events": events,
+        "notes": count(Note),
+        "recordings": count(Recording),
+        "documents": count(Document),
         "kept_folder": StorageService.relative_path(parts),
     }
 
 
+def _trash_contents(db: Session, user: User, course_ids: Any, semester_ids: Any) -> None:
+    """009 FR-022a: before courses/semesters go, every class and event lineage inside moves to
+    the Trash as its own entry ("all" scope; unscheduled folders with content go with their
+    lineage). Every folder left under them — also ones already in the Trash — is detached
+    (owner NULL, `origin_path` = where its directory is), so no content row is lost with the
+    deleted rows. No file is touched."""
+    from unihelper.services import trash_service
+
+    class_lineages = set(
+        db.scalars(select(ClassSeries.lineage_id).where(ClassSeries.course_id.in_(course_ids)))
+    )
+    event_lineages = set(
+        db.scalars(select(EventSeries.lineage_id).where(EventSeries.semester_id.in_(semester_ids)))
+    )
+    under = (SessionFolder.course_id.in_(course_ids)) | (
+        SessionFolder.semester_id.in_(semester_ids)
+    )
+    for f in db.scalars(select(SessionFolder).where(under, SessionFolder.trash_entry_id.is_(None))):
+        (class_lineages if f.kind == "class" else event_lineages).add(f.lineage_id)
+    for lineage_id in sorted(class_lineages):
+        trash_service.move_lineage_to_trash(db, user, "class", lineage_id)
+    for lineage_id in sorted(event_lineages):
+        trash_service.move_lineage_to_trash(db, user, "event", lineage_id)
+    trash_service.detach_folders(db, user, list(db.scalars(select(SessionFolder).where(under))))
+
+
 def delete_year(db: Session, user: User, year: Year) -> None:
+    sem_ids = select(Semester.id).where(Semester.year_id == year.id)
+    _trash_contents(db, user, select(Course.id).where(Course.semester_id.in_(sem_ids)), sem_ids)
     db.delete(year)
     db.flush()
     _renumber_years(db, list_years(db, user))
 
 
-def delete_entity(db: Session, entity: Semester | Course) -> None:
-    """Metadata only; folders and files are never deleted (FR-019)."""
+def delete_entity(db: Session, user: User, entity: Semester | Course) -> None:
+    """Metadata only; folders and files are never deleted (FR-019). 009: its classes and
+    events go to the Trash first."""
+    if isinstance(entity, Semester):
+        _trash_contents(
+            db,
+            user,
+            select(Course.id).where(Course.semester_id == entity.id),
+            select(Semester.id).where(Semester.id == entity.id),
+        )
+    else:
+        _trash_contents(
+            db,
+            user,
+            select(Course.id).where(Course.id == entity.id),
+            select(Semester.id).where(false()),
+        )
     db.delete(entity)
     db.flush()

@@ -421,6 +421,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Event */
+        post: operations["create_event_api_v1_events_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/{lineage_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Event */
+        get: operations["get_event_api_v1_events__lineage_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/semesters/{semester_id}/events/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Semester Events Timeline */
+        get: operations["semester_events_timeline_api_v1_semesters__semester_id__events_timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/creations/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Undo Creation
+         * @description The quick form's Undo (009 research R10): removes only what one create made.
+         */
+        post: operations["undo_creation_api_v1_creations_undo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sessions": {
         parameters: {
             query?: never;
@@ -449,12 +520,36 @@ export interface paths {
         get: operations["get_session_api_v1_sessions__session_key__get"];
         put?: never;
         post?: never;
-        /** Delete Session */
+        /**
+         * Delete Session
+         * @description Classes and (009) events: what the scope removes moves to the Trash (no file touched).
+         */
         delete: operations["delete_session_api_v1_sessions__session_key__delete"];
         options?: never;
         head?: never;
-        /** Edit Session */
+        /**
+         * Edit Session
+         * @description `SessionEdit` for a class session, (009) `EventEdit` for an event occurrence. The
+         *     union only documents both shapes: the body is validated again against the key's kind.
+         */
         patch: operations["edit_session_api_v1_sessions__session_key__patch"];
+        trace?: never;
+    };
+    "/api/v1/sessions/{session_key}/deletion-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Deletion Impact */
+        get: operations["deletion_impact_api_v1_sessions__session_key__deletion_impact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/sessions/{session_key}/notes": {
@@ -759,6 +854,84 @@ export interface paths {
         get: operations["get_document_api_v1_documents__document_id__get"];
         put?: never;
         post?: never;
+        /** Delete Document */
+        delete: operations["delete_document_api_v1_documents__document_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Document */
+        patch: operations["patch_document_api_v1_documents__document_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get File
+         * @description The PDF exactly as uploaded; Range requests give progressive loading (research R2).
+         */
+        get: operations["get_file_api_v1_documents__document_id__file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/position": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Position */
+        get: operations["get_position_api_v1_documents__document_id__position_get"];
+        /** Put Position */
+        put: operations["put_position_api_v1_documents__document_id__position_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/annotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Annotations */
+        get: operations["list_annotations_api_v1_documents__document_id__annotations_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/documents/{document_id}/annotations/ops": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Annotation Ops
+         * @description Merged per annotation; idempotent by opId (research R7). The service already shapes the
+         *     body (absent fields omitted, `notice` always present), so it is returned as is.
+         */
+        post: operations["apply_annotation_ops_api_v1_documents__document_id__annotations_ops_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1007,6 +1180,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/trash": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Trash */
+        get: operations["list_trash_api_v1_trash_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trash/{entry_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore */
+        post: operations["restore_api_v1_trash__entry_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trash/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Purge
+         * @description Permanent: the entry, its notes, recordings and documents, and their folders on disk.
+         */
+        delete: operations["purge_api_v1_trash__entry_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1033,6 +1260,89 @@ export interface components {
         AccountUpdate: {
             /** Disabled */
             disabled: boolean;
+        };
+        /** Annotation */
+        Annotation: {
+            /** Id */
+            id: string;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "highlight" | "ink" | "textbox" | "comment";
+            /** Page */
+            page: number;
+            /**
+             * Color
+             * @enum {string}
+             */
+            color: "yellow" | "green" | "blue" | "pink" | "orange" | "purple";
+            /** Rects */
+            rects?: number[][] | null;
+            /** Quoted */
+            quoted?: string | null;
+            /** Strokes */
+            strokes?: number[][][] | null;
+            /** Width */
+            width?: number | null;
+            /** Box */
+            box?: number[] | null;
+            /** Anchor */
+            anchor?: number[] | null;
+            /** Text */
+            text?: string | null;
+            /** Rev */
+            rev?: number | null;
+            /** Conflictof */
+            conflictOf?: string | null;
+            /** Createdat */
+            createdAt?: string | null;
+            /** Updatedat */
+            updatedAt?: string | null;
+        };
+        /** AnnotationOp */
+        AnnotationOp: {
+            /** Opid */
+            opId: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "upsert" | "delete";
+            annotation?: components["schemas"]["Annotation"] | null;
+            /** Id */
+            id?: string | null;
+            /** Baserev */
+            baseRev?: number | null;
+        };
+        /** AnnotationOpResult */
+        AnnotationOpResult: {
+            /** Opid */
+            opId: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "kept_both" | "kept_changed";
+            annotation?: components["schemas"]["Annotation"] | null;
+            copy?: components["schemas"]["Annotation"] | null;
+        };
+        /** AnnotationOpsRequest */
+        AnnotationOpsRequest: {
+            /** Ops */
+            ops: components["schemas"]["AnnotationOp"][];
+        };
+        /** AnnotationOpsResponse */
+        AnnotationOpsResponse: {
+            /** Results */
+            results: components["schemas"]["AnnotationOpResult"][];
+            /** Notice */
+            notice?: string | null;
+        };
+        /** AnnotationSet */
+        AnnotationSet: {
+            /** Annotations */
+            annotations: components["schemas"]["Annotation"][];
         };
         /** AppendResult */
         AppendResult: {
@@ -1077,6 +1387,42 @@ export interface components {
              * Format: date
              */
             startDate: string;
+        };
+        /**
+         * ClassCreated
+         * @description `POST /classes` 201: the series plus the rows the request created (009 research R10).
+         */
+        ClassCreated: {
+            /** Id */
+            id: string;
+            /** Lineageid */
+            lineageId: string;
+            /** Courseid */
+            courseId: string;
+            /** Title */
+            title: string | null;
+            /** Location */
+            location: string | null;
+            /**
+             * Color
+             * @enum {string}
+             */
+            color: "slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink";
+            /**
+             * Startdate
+             * Format: date
+             */
+            startDate: string;
+            /** Starttime */
+            startTime: string;
+            /** Endtime */
+            endTime: string;
+            /** Links */
+            links: components["schemas"]["Link"][];
+            recurrence: components["schemas"]["Recurrence"];
+            /** Version */
+            version: number;
+            created: components["schemas"]["CreatedRefs"];
         };
         /** ClassDetail */
         ClassDetail: {
@@ -1172,6 +1518,11 @@ export interface components {
             defaultColor: "slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink";
             /** Version */
             version: number;
+            /**
+             * Reservednameconflict
+             * @default false
+             */
+            reservedNameConflict: boolean;
         };
         /** CourseCreate */
         CourseCreate: {
@@ -1199,6 +1550,11 @@ export interface components {
             defaultColor: "slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink";
             /** Version */
             version: number;
+            /**
+             * Reservednameconflict
+             * @default false
+             */
+            reservedNameConflict: boolean;
             year: components["schemas"]["Year"];
             semester: components["schemas"]["Semester"];
         };
@@ -1208,6 +1564,20 @@ export interface components {
             name?: string | null;
             /** Defaultcolor */
             defaultColor?: ("slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink") | null;
+        };
+        /**
+         * CreatedRefs
+         * @description Rows a create request made (for the quick form's Undo, 009 research R10).
+         */
+        CreatedRefs: {
+            /** Lineageid */
+            lineageId: string;
+            /** Yearid */
+            yearId?: string | null;
+            /** Semesterid */
+            semesterId?: string | null;
+            /** Courseid */
+            courseId?: string | null;
         };
         /** DeletionImpact */
         DeletionImpact: {
@@ -1226,6 +1596,26 @@ export interface components {
              * @default 0
              */
             classes: number;
+            /**
+             * Events
+             * @default 0
+             */
+            events: number;
+            /**
+             * Notes
+             * @default 0
+             */
+            notes: number;
+            /**
+             * Recordings
+             * @default 0
+             */
+            recordings: number;
+            /**
+             * Documents
+             * @default 0
+             */
+            documents: number;
             /** Keptfolder */
             keptFolder: string;
         };
@@ -1255,6 +1645,161 @@ export interface components {
             missing: boolean;
             /** Version */
             version: number;
+        };
+        /** DocumentPatch */
+        DocumentPatch: {
+            /** Name */
+            name?: string | null;
+            /** Pagecount */
+            pageCount?: number | null;
+        };
+        /** EventCreate */
+        EventCreate: {
+            /** Title */
+            title: string;
+            /** Semester */
+            semester: components["schemas"]["RefId"] | components["schemas"]["RefNewSemester"];
+            /**
+             * Startdate
+             * Format: date
+             */
+            startDate: string;
+            /** Starttime */
+            startTime: string;
+            /** Endtime */
+            endTime: string;
+            /** Location */
+            location?: string | null;
+            /** Links */
+            links?: components["schemas"]["Link"][];
+            /**
+             * Color
+             * @default blue
+             * @enum {string}
+             */
+            color: "slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink";
+            recurrence?: components["schemas"]["Recurrence"];
+        };
+        /** EventCreated */
+        EventCreated: {
+            /** Lineageid */
+            lineageId: string;
+            /** Semesterid */
+            semesterId: string;
+            /** Version */
+            version: number;
+            created: components["schemas"]["CreatedRefs"];
+        };
+        /** EventDetail */
+        EventDetail: {
+            /** Lineageid */
+            lineageId: string;
+            /** Semesterid */
+            semesterId: string;
+            /** Semestername */
+            semesterName: string;
+            /** Yearname */
+            yearName: string;
+            /** Segments */
+            segments: components["schemas"]["EventSegment"][];
+            /** Exceptioncount */
+            exceptionCount: number;
+            /** Semesterlocked */
+            semesterLocked: boolean;
+        };
+        /**
+         * EventEdit
+         * @description `PATCH /sessions/{key}` for an event occurrence: only the fields to change. With
+         *     scope=this every field but `semesterId` and `recurrence` may change (`date` moves the
+         *     occurrence; its key keeps the original date). `semesterId` applies to the whole series
+         *     whatever the scope (FR-017) and is refused while the event has content (FR-018).
+         */
+        EventEdit: {
+            /** Title */
+            title?: string | null;
+            /** Semesterid */
+            semesterId?: string | null;
+            /** Date */
+            date?: string | null;
+            /** Starttime */
+            startTime?: string | null;
+            /** Endtime */
+            endTime?: string | null;
+            /** Location */
+            location?: string | null;
+            /** Links */
+            links?: components["schemas"]["Link"][] | null;
+            /** Color */
+            color?: ("slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink") | null;
+            recurrence?: components["schemas"]["Recurrence"] | null;
+        };
+        /** EventSegment */
+        EventSegment: {
+            /** Id */
+            id: string;
+            /** Title */
+            title: string;
+            /** Location */
+            location: string | null;
+            /**
+             * Color
+             * @enum {string}
+             */
+            color: "slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink";
+            /**
+             * Startdate
+             * Format: date
+             */
+            startDate: string;
+            /** Starttime */
+            startTime: string;
+            /** Endtime */
+            endTime: string;
+            recurrence: components["schemas"]["Recurrence"];
+            /** Links */
+            links: components["schemas"]["Link"][];
+            /** Version */
+            version: number;
+        };
+        /** EventTimelineEntry */
+        EventTimelineEntry: {
+            /** Sessionkey */
+            sessionKey: string;
+            /** Lineageid */
+            lineageId: string;
+            /** Title */
+            title: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Starttime */
+            startTime: string;
+            /** Endtime */
+            endTime: string;
+            /** Start */
+            start: string;
+            /** End */
+            end: string;
+            /** Location */
+            location: string | null;
+            /**
+             * Color
+             * @enum {string}
+             */
+            color: "slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "past" | "upcoming";
+            /** Notecount */
+            noteCount: number;
+            /** Audiocount */
+            audioCount: number;
+            /** Documentcount */
+            documentCount: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1407,6 +1952,16 @@ export interface components {
             /** Newpassword */
             newPassword: string;
         };
+        /** Position */
+        Position: {
+            /** Page */
+            page: number | null;
+        };
+        /** PositionPut */
+        PositionPut: {
+            /** Page */
+            page: number;
+        };
         /** Preferences */
         Preferences: {
             /** Editormode */
@@ -1423,6 +1978,10 @@ export interface components {
             theme?: string | null;
             /** Readerdarkpages */
             readerDarkPages?: boolean | null;
+            /** Lastsemesterid */
+            lastSemesterId?: string | null;
+            /** Quickcreatetype */
+            quickCreateType?: ("class" | "event") | null;
         };
         /** ProfileUpdate */
         ProfileUpdate: {
@@ -1551,6 +2110,24 @@ export interface components {
             /** Durationms */
             durationMs?: number | null;
         };
+        /** Recreated */
+        Recreated: {
+            /**
+             * Year
+             * @default false
+             */
+            year: boolean;
+            /**
+             * Semester
+             * @default false
+             */
+            semester: boolean;
+            /**
+             * Course
+             * @default false
+             */
+            course: boolean;
+        };
         /** Recurrence */
         Recurrence: {
             /**
@@ -1596,6 +2173,24 @@ export interface components {
         RefNewYear: {
             new: components["schemas"]["NewYear"];
         };
+        /** RestoreResult */
+        RestoreResult: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "class" | "event";
+            /** Lineageid */
+            lineageId: string;
+            /** Firstsessionkey */
+            firstSessionKey: string;
+            recreated: components["schemas"]["Recreated"];
+            /**
+             * Movedfolders
+             * @default 0
+             */
+            movedFolders: number;
+        };
         /** SaveResult */
         SaveResult: {
             /** Version */
@@ -1623,6 +2218,13 @@ export interface components {
              * @default 0
              */
             removedOverrides: number;
+            /**
+             * Unchangedcount
+             * @default 0
+             */
+            unchangedCount: number;
+            /** Trashentryid */
+            trashEntryId?: string | null;
         };
         /** SecretState */
         SecretState: {
@@ -1664,6 +2266,11 @@ export interface components {
             semester: components["schemas"]["Semester"];
             /** Courses */
             courses: components["schemas"]["Course"][];
+            /**
+             * Eventcount
+             * @default 0
+             */
+            eventCount: number;
         };
         /** SemesterUpdate */
         SemesterUpdate: {
@@ -1675,8 +2282,28 @@ export interface components {
             endDate?: string | null;
         };
         /**
+         * SessionDeletionImpact
+         * @description `GET /sessions/{key}/deletion-impact?scope=` (contract schema `DeletionImpact`).
+         */
+        SessionDeletionImpact: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "class" | "event";
+            /** Occurrences */
+            occurrences: number;
+            /** Notes */
+            notes: number;
+            /** Recordings */
+            recordings: number;
+            /** Documents */
+            documents: number;
+        };
+        /**
          * SessionEdit
          * @description Fields to change. With scope=this only startTime, endTime and location are allowed.
+         *     009: unknown fields are refused, so `PATCH /sessions/{key}` can tell it from `EventEdit`.
          */
         SessionEdit: {
             /** Title */
@@ -1693,20 +2320,33 @@ export interface components {
             links?: components["schemas"]["Link"][] | null;
             recurrence?: components["schemas"]["Recurrence"] | null;
         };
-        /** SessionOut */
+        /**
+         * SessionOut
+         * @description A class session or (009) an event occurrence (`kind`). Events have no course or class
+         *     series: `courseId`, `courseName` and `seriesId` are null and `title` is the event's title;
+         *     for classes `title` keeps 001's meaning (the class's own title, if any).
+         */
         SessionOut: {
             /** Key */
             key: string;
+            /**
+             * Kind
+             * @default class
+             * @enum {string}
+             */
+            kind: "class" | "event";
             /** Lineageid */
             lineageId: string;
             /** Seriesid */
-            seriesId: string;
+            seriesId: string | null;
             /** Seriesversion */
             seriesVersion: number;
             /** Courseid */
-            courseId: string;
+            courseId: string | null;
             /** Coursename */
-            courseName: string;
+            courseName: string | null;
+            /** Semesterid */
+            semesterId: string;
             /** Title */
             title: string | null;
             /**
@@ -1910,7 +2550,7 @@ export interface components {
             /** Sessionkey */
             sessionKey: string;
             /** Courseid */
-            courseId: string;
+            courseId: string | null;
             /** Noteid */
             noteId: string | null;
             /** Notename */
@@ -1992,6 +2632,63 @@ export interface components {
             providerName: string | null;
             /** Defaultlanguage */
             defaultLanguage: string;
+        };
+        /** TrashEntryOut */
+        TrashEntryOut: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "class" | "event";
+            /** Label */
+            label: string;
+            /** Yearname */
+            yearName: string;
+            /** Semestername */
+            semesterName: string;
+            /** Coursename */
+            courseName: string | null;
+            /**
+             * Firstdate
+             * Format: date
+             */
+            firstDate: string;
+            /**
+             * Lastdate
+             * Format: date
+             */
+            lastDate: string;
+            /** Starttime */
+            startTime: string | null;
+            /** Endtime */
+            endTime: string | null;
+            /** Occurrencecount */
+            occurrenceCount: number;
+            /** Notecount */
+            noteCount: number;
+            /** Recordingcount */
+            recordingCount: number;
+            /** Documentcount */
+            documentCount: number;
+            /** Deletedat */
+            deletedAt: string;
+            /** Purgeerror */
+            purgeError: string | null;
+            /** Missingfiles */
+            missingFiles: number;
+            /** Version */
+            version: number;
+        };
+        /**
+         * UndoCreation
+         * @description `POST /creations/undo` body: what a create returned, and its series version.
+         */
+        UndoCreation: {
+            created: components["schemas"]["CreatedRefs"];
+            /** Version */
+            version: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -3037,7 +3734,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ClassSeriesOut"];
+                    "application/json": components["schemas"]["ClassCreated"];
                 };
             };
             /** @description Validation Error */
@@ -3070,6 +3767,132 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ClassDetail"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_event_api_v1_events_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_event_api_v1_events__lineage_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lineage_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    semester_events_timeline_api_v1_semesters__semester_id__events_timeline_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                semester_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventTimelineEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undo_creation_api_v1_creations_undo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UndoCreation"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -3196,7 +4019,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["SessionEdit"];
+                "application/json": components["schemas"]["SessionEdit"] | components["schemas"]["EventEdit"];
             };
         };
         responses: {
@@ -3207,6 +4030,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScopeResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deletion_impact_api_v1_sessions__session_key__deletion_impact_get: {
+        parameters: {
+            query: {
+                scope: "this" | "following" | "all";
+            };
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDeletionImpact"];
                 };
             };
             /** @description Validation Error */
@@ -4019,6 +4875,235 @@ export interface operations {
             };
         };
     };
+    delete_document_api_v1_documents__document_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_document_api_v1_documents__document_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_file_api_v1_documents__document_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_position_api_v1_documents__document_id__position_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Position"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_position_api_v1_documents__document_id__position_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PositionPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Position"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_annotations_api_v1_documents__document_id__annotations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnotationSet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_annotation_ops_api_v1_documents__document_id__annotations_ops_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnotationOpsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnnotationOpsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     providers_api_v1_transcription_providers_get: {
         parameters: {
             query?: never;
@@ -4533,6 +5618,108 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    list_trash_api_v1_trash_get: {
+        parameters: {
+            query?: {
+                kind?: ("class" | "event") | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrashEntryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_api_v1_trash__entry_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RestoreResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purge_api_v1_trash__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Some files could not be removed (entry kept) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

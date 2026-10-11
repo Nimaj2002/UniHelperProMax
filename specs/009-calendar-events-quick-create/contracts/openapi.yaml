@@ -1,0 +1,372 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 009 additions
+  version: 1.8.0
+  description: |
+    Additive to the 001–008 contracts (same conventions: camelCase JSON, RFC 9457 problems, CSRF
+    header on writes, `If-Match` versions, `sessionKey` = `{lineageId}:{YYYY-MM-DD}`).
+
+    Changes to existing operations (additive unless stated):
+    - `GET /sessions` and `GET /sessions/{sessionKey}` return events too: `Session` gains `kind`
+      (`class` | `event`), `title`, `semesterId`; `courseId`, `courseName`, `seriesId` become
+      nullable (null for events). `?courseId=` never returns events.
+    - `PATCH /sessions/{sessionKey}` accepts `EventEdit` when the key is an event occurrence.
+      `ScopeResult` gains `unchangedCount` (events: occurrences left unchanged because they have
+      content or were edited individually; classes: equals `preservedOverrides`).
+    - `DELETE /sessions/{sessionKey}` (classes **and** events) now moves what it removes to the
+      Trash and returns `ScopeResult` with `trashEntryId`. **Behaviour change**: deleted occurrences
+      with content no longer show on the course timeline as "No longer scheduled"; they are in the
+      Trash.
+    - `DELETE /years|semesters|courses/{id}` move each class and event lineage inside to the Trash
+      (one entry each) before deleting the rows; their `deletion-impact` gains `events`, `notes`,
+      `recordings`, `documents`.
+    - `POST /courses`, `PATCH /courses/{id}`, `POST /classes` (inline course): 422 `reserved_name`
+      when the course's folder name would be `_Events` (case-insensitive).
+    - `POST /classes` 201 body gains `created` (`CreatedRefs`).
+    - `GET /course-tree`: each semester gains `eventCount`; each course gains `reservedNameConflict`.
+    - `GET/PATCH /preferences` gain `lastSemesterId` and `quickCreateType`.
+servers:
+  - url: /api/v1
+
+paths:
+  /events:
+    post:
+      tags: [events]
+      summary: Create an event (one-off or repeating) in a semester; year/semester may be created inline
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/EventCreate" } } }
+      responses:
+        "201":
+          description: Created
+          content: { application/json: { schema: { $ref: "#/components/schemas/EventCreated" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }   # validation · semester_end_missing · no_sessions
+
+  /events/{lineageId}:
+    parameters: [{ $ref: "#/components/parameters/LineageId" }]
+    get:
+      tags: [events]
+      summary: All segments of an event series with links, exception count and the semester lock state
+      responses:
+        "200":
+          description: OK
+          content: { application/json: { schema: { $ref: "#/components/schemas/EventDetail" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /semesters/{semesterId}/events/timeline:
+    parameters: [{ $ref: "#/components/parameters/SemesterId" }]
+    get:
+      tags: [events]
+      summary: Every event occurrence of the semester in date order with past/upcoming status and counts
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/EventTimelineEntry" } }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /sessions/{sessionKey}/deletion-impact:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [sessions]
+      summary: What a delete with the given scope would move to the Trash (class or event)
+      parameters: [{ $ref: "#/components/parameters/Scope" }]
+      responses:
+        "200":
+          description: OK
+          content: { application/json: { schema: { $ref: "#/components/schemas/DeletionImpact" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /trash:
+    get:
+      tags: [trash]
+      summary: Trash entries, newest first, split by kind on the client
+      parameters:
+        - { name: kind, in: query, schema: { type: string, enum: [class, event] } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/TrashEntry" } }
+
+  /trash/{entryId}:
+    parameters: [{ $ref: "#/components/parameters/EntryId" }]
+    delete:
+      tags: [trash]
+      summary: Permanently delete the entry and all its notes, recordings and documents from disk
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "204": { description: Deleted from the app and disk }
+        "404": { $ref: "#/components/responses/Problem" }
+        "412": { $ref: "#/components/responses/Problem" }
+        "500":
+          description: Some files could not be removed; the entry is kept with `purgeError` (retry allowed)
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/PurgeProblem" }
+
+  /trash/{entryId}/restore:
+    parameters: [{ $ref: "#/components/parameters/EntryId" }]
+    post:
+      tags: [trash]
+      summary: Put the class or event back with its data; recreates a missing year, semester or course by name
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200":
+          description: Restored
+          content: { application/json: { schema: { $ref: "#/components/schemas/RestoreResult" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # reserved_name (course recreated under the reserved name)
+        "412": { $ref: "#/components/responses/Problem" }
+
+  /creations/undo:
+    post:
+      tags: [classes, events]
+      summary: Undo a just-made class or event (quick form Undo); removes only what that creation made
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/UndoCreation" } } }
+      responses:
+        "204": { description: Removed }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # undo_unavailable (content added or hierarchy in use)
+        "412": { $ref: "#/components/responses/Problem" }
+
+components:
+  parameters:
+    SessionKey: { name: sessionKey, in: path, required: true, schema: { type: string } }
+    LineageId: { name: lineageId, in: path, required: true, schema: { type: string } }
+    SemesterId: { name: semesterId, in: path, required: true, schema: { type: string } }
+    EntryId: { name: entryId, in: path, required: true, schema: { type: string } }
+    Scope: { name: scope, in: query, required: true, schema: { type: string, enum: [this, following, all] } }
+    IfMatch: { name: If-Match, in: header, required: true, schema: { type: string } }
+
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+
+    PurgeProblem:
+      allOf:
+        - { $ref: "#/components/schemas/Problem" }
+        - type: object
+          properties:
+            failedPaths: { type: array, items: { type: string } }
+
+    Link:
+      type: object
+      required: [label, url]
+      properties:
+        label: { type: string, maxLength: 60 }
+        url: { type: string, format: uri, maxLength: 2000 }
+
+    Recurrence:
+      description: Same shape and rules as the 001 `Recurrence` schema.
+      type: object
+
+    RefOrNew:
+      description: Same shape as the 001 `RefOrNew` (`{id}` or `{name, …}` with nested parents).
+      type: object
+
+    ColorKey:
+      type: string
+      enum: [slate, red, orange, amber, lime, green, teal, cyan, blue, indigo, violet, pink]
+
+    EventCreate:
+      type: object
+      required: [title, semester, startDate, startTime, endTime]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        semester: { $ref: "#/components/schemas/RefOrNew" }
+        startDate: { type: string, format: date }
+        startTime: { type: string, pattern: "^\\d{2}:\\d{2}$" }
+        endTime: { type: string, pattern: "^\\d{2}:\\d{2}$" }
+        location: { type: [string, "null"], maxLength: 200 }
+        links: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/Link" } }
+        color: { $ref: "#/components/schemas/ColorKey" }
+        recurrence: { $ref: "#/components/schemas/Recurrence" }
+
+    CreatedRefs:
+      description: Rows created by this request (for Undo)
+      type: object
+      required: [lineageId]
+      properties:
+        lineageId: { type: string }
+        yearId: { type: [string, "null"] }
+        semesterId: { type: [string, "null"] }
+        courseId: { type: [string, "null"] }
+
+    EventCreated:
+      type: object
+      required: [lineageId, semesterId, version, created]
+      properties:
+        lineageId: { type: string }
+        semesterId: { type: string }
+        version: { type: integer }
+        created: { $ref: "#/components/schemas/CreatedRefs" }
+
+    EventSegment:
+      type: object
+      required: [id, title, color, startDate, startTime, endTime, recurrence, links, version]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        location: { type: [string, "null"] }
+        color: { $ref: "#/components/schemas/ColorKey" }
+        startDate: { type: string, format: date }
+        startTime: { type: string }
+        endTime: { type: string }
+        recurrence: { $ref: "#/components/schemas/Recurrence" }
+        links: { type: array, items: { $ref: "#/components/schemas/Link" } }
+        version: { type: integer }
+
+    EventDetail:
+      type: object
+      required: [lineageId, semesterId, semesterName, yearName, segments, exceptionCount, semesterLocked]
+      properties:
+        lineageId: { type: string }
+        semesterId: { type: string }
+        semesterName: { type: string }
+        yearName: { type: string }
+        segments: { type: array, items: { $ref: "#/components/schemas/EventSegment" } }
+        exceptionCount: { type: integer }
+        semesterLocked:
+          type: boolean
+          description: true when any occurrence has notes, recordings or documents (FR-018)
+
+    EventEdit:
+      description: |
+        Body of `PATCH /sessions/{sessionKey}` for an event occurrence. Only changed fields.
+        `scope=this` may change every field except `semesterId` (incl. `date`, which moves the
+        occurrence; its key keeps the original date). `semesterId` applies to the whole series with
+        any scope and is refused with 409 `semester_locked` when content exists.
+      type: object
+      minProperties: 1
+      properties:
+        title: { type: string, minLength: 1, maxLength: 120 }
+        semesterId: { type: string }
+        date: { type: string, format: date }
+        startTime: { type: string }
+        endTime: { type: string }
+        location: { type: [string, "null"] }
+        links: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/Link" } }
+        color: { $ref: "#/components/schemas/ColorKey" }
+        recurrence: { $ref: "#/components/schemas/Recurrence" }
+
+    ScopeResultAddition:
+      type: object
+      properties:
+        unchangedCount: { type: integer, minimum: 0 }
+        trashEntryId: { type: [string, "null"] }
+
+    SessionAddition:
+      description: Fields added to the 001 `Session`
+      type: object
+      required: [kind, title, semesterId]
+      properties:
+        kind: { type: string, enum: [class, event] }
+        title: { type: string, description: course name for classes, event title for events }
+        semesterId: { type: string }
+        courseId: { type: [string, "null"] }
+        courseName: { type: [string, "null"] }
+        seriesId: { type: [string, "null"] }
+
+    EventTimelineEntry:
+      type: object
+      required: [sessionKey, title, date, startTime, endTime, status, color, noteCount, audioCount, documentCount]
+      properties:
+        sessionKey: { type: string }
+        title: { type: string }
+        date: { type: string, format: date }
+        startTime: { type: string }
+        endTime: { type: string }
+        location: { type: [string, "null"] }
+        color: { $ref: "#/components/schemas/ColorKey" }
+        status: { type: string, enum: [past, upcoming] }
+        noteCount: { type: integer }
+        audioCount: { type: integer }
+        documentCount: { type: integer }
+
+    DeletionImpact:
+      type: object
+      required: [kind, occurrences, notes, recordings, documents]
+      properties:
+        kind: { type: string, enum: [class, event] }
+        occurrences: { type: integer }
+        notes: { type: integer }
+        recordings: { type: integer }
+        documents: { type: integer }
+
+    HierarchyDeletionImpactAddition:
+      type: object
+      properties:
+        events: { type: integer }
+        notes: { type: integer }
+        recordings: { type: integer }
+        documents: { type: integer }
+
+    TrashEntry:
+      type: object
+      required: [id, kind, label, yearName, semesterName, firstDate, lastDate, occurrenceCount, noteCount, recordingCount, documentCount, deletedAt, version]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [class, event] }
+        label: { type: string }
+        yearName: { type: string }
+        semesterName: { type: string }
+        courseName: { type: [string, "null"] }
+        firstDate: { type: string, format: date }
+        lastDate: { type: string, format: date }
+        startTime: { type: [string, "null"], description: set when all occurrences share one time }
+        endTime: { type: [string, "null"] }
+        occurrenceCount: { type: integer }
+        noteCount: { type: integer }
+        recordingCount: { type: integer }
+        documentCount: { type: integer }
+        deletedAt: { type: string, format: date-time }
+        purgeError: { type: [string, "null"] }
+        missingFiles: { type: integer, description: files recorded but no longer on disk }
+        version: { type: integer }
+
+    RestoreResult:
+      type: object
+      required: [kind, lineageId, firstSessionKey, recreated]
+      properties:
+        kind: { type: string, enum: [class, event] }
+        lineageId: { type: string }
+        firstSessionKey: { type: string }
+        recreated:
+          type: object
+          properties:
+            year: { type: boolean }
+            semester: { type: boolean }
+            course: { type: boolean }
+        movedFolders: { type: integer, description: folders moved to a new readable path }
+
+    UndoCreation:
+      type: object
+      required: [created, version]
+      properties:
+        created: { $ref: "#/components/schemas/CreatedRefs" }
+        version: { type: integer, description: version of the created series segment }
+
+    PreferencesAddition:
+      type: object
+      properties:
+        lastSemesterId: { type: [string, "null"] }
+        quickCreateType: { type: string, enum: [class, event] }

@@ -20,7 +20,7 @@ export function RecordingBar() {
       <span className="shrink-0 font-medium">Recording</span>
       <span className="shrink-0 font-mono tabular-nums" aria-label={`Elapsed ${spokenDuration(elapsed)}`}>{formatDuration(elapsed)}</span>
       <span className="min-w-0 truncate text-muted-foreground">{state.label}</span>
-      {state.courseId && state.sessionKey && (
+      {state.sessionKey && (
         <Button asChild size="sm" variant="ghost" className="h-7 shrink-0 rounded-full">
           <Link to={workspacePath(state.courseId, state.sessionKey)}>Go to session</Link>
         </Button>

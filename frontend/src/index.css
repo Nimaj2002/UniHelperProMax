@@ -51,6 +51,10 @@
   --color-divider: var(--divider);
   --color-grid-line: var(--grid-line);
   --color-now-line: var(--now-line);
+  --color-draft-bg: var(--draft-bg);
+  --color-draft-border: var(--draft-border);
+  --color-draft-fg: var(--draft-fg);
+  --color-event-marker: var(--event-marker);
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-warning: var(--warning);

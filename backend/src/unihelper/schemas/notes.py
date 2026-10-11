@@ -107,3 +107,5 @@ class Preferences(ApiModel):
     # 005: "system" | "light" | "dark" | a custom theme id (per account)
     theme: str | None = Field(default=None, min_length=1, max_length=64)
     reader_dark_pages: bool | None = None  # 007 FR-022a
+    last_semester_id: str | None = Field(default=None, min_length=1, max_length=64)  # 009 R9
+    quick_create_type: Literal["class", "event"] | None = None  # 009

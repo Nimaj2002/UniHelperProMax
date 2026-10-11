@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from unihelper.api.errors import validation_error
 from unihelper.models import Document, Note, SessionFolder, UiPreferences, User, WorkspaceState
 from unihelper.services import session_folder_service as sfs
-from unihelper.services.document_service import course_documents
+from unihelper.services.document_service import scope_of
 
 DEFAULT_PREFERENCES: dict[str, Any] = {
     "editor_mode": "live",
@@ -22,13 +22,17 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
     "player_muted": False,
     "theme": "system",
     "reader_dark_pages": False,  # 007 FR-022a
+    "last_semester_id": None,  # 009 research R9: preselected semester in the forms
+    "quick_create_type": "class",  # 009: type the quick form opens with
 }
+NULLABLE_PREFERENCES = {"last_semester_id"}  # an explicit null clears these
 MAX_TABS = 50
 
 
 def _session_items(db: Session, user: User, r: sfs.ResolvedSession) -> dict[str, set[str]]:
-    """Ids that can be open as tabs in this session: its notes and (007) its course's documents."""
-    docs = set(db.scalars(course_documents(user, r.course.id).with_only_columns(Document.id)))
+    """Ids that can be open as tabs in this session: its notes and (007) its course's (009: its
+    event series') documents."""
+    docs = set(db.scalars(scope_of(user, r).documents(user).with_only_columns(Document.id)))
     if r.folder is None:
         return {"note": set(), "document": docs}
     notes = db.scalars(
@@ -145,7 +149,10 @@ def patch_preferences(db: Session, user: User, changes: dict[str, Any]) -> dict[
 
         if not valid_theme_choice(db, user, theme):
             raise validation_error("/theme", "unknown_theme", "Choose one of your themes.")
-    merged = {**get_preferences(db, user), **{k: v for k, v in changes.items() if v is not None}}
+    merged = {
+        **get_preferences(db, user),
+        **{k: v for k, v in changes.items() if v is not None or k in NULLABLE_PREFERENCES},
+    }
     row = db.get(UiPreferences, user.id)
     if row is None:
         row = UiPreferences(user_id=user.id)

@@ -54,7 +54,8 @@ def test_0009_keeps_existing_data(tmp_path: Path) -> None:
     assert ws == [('["n1"]', "n1", None, None)]
     tables = {r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     assert {"documents", "document_positions", "annotation_ops"} <= tables
-    assert con.execute("SELECT version_num FROM alembic_version").fetchone() == ("0009",)
+    (version,) = con.execute("SELECT version_num FROM alembic_version").fetchone()
+    assert version >= "0009"  # upgraded through 0009 (later migrations may follow)
     con.close()
 
 

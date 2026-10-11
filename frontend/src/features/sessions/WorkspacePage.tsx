@@ -13,6 +13,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSession } from "@/features/classes/api";
 import { useDocuments } from "@/features/documents/api";
+import { useEventDetail, useEventTimeline } from "@/features/events/api";
+import { eventTimelineItems } from "@/features/events/timeline";
 import { confirmCloseDocument } from "@/features/documents/leaveGuards";
 import { DOC_ATTACH, DOC_DETACH, DocumentTabView } from "@/features/documents/reader/DocumentTabView";
 import { useNoteImporter } from "@/features/imports/useNoteImporter";
@@ -29,7 +31,7 @@ import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor, type EditorMode, type MarkdownEditorHandle } from "./editor/MarkdownEditor";
 import { NoteList } from "./NoteList";
 import { DeleteNoteDialog, NoteNameDialog } from "./NoteDialogs";
-import { SessionTimeline } from "./SessionTimeline";
+import { SessionTimeline, type TimelineItem } from "./SessionTimeline";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import { SessionChip } from "./SessionChip";
 import { paneId, StatusLabel, tabDomId, WorkspaceTabs } from "./WorkspaceTabs";
@@ -187,13 +189,21 @@ function NotePane({ noteId, meta, visible, mode, editorRef, onToggleMode }: Note
 
 /** Session workspace (FR-007–FR-024, 007 FR-011–FR-014a): sessions + notes | tabs + panes | audio. */
 export function WorkspacePage() {
-  const { courseId = "", sessionKey = "" } = useParams();
+  // a class session lives under its course; (009) an event occurrence under its semester
+  const { courseId = "", semesterId = "", sessionKey = "" } = useParams();
   const [searchParams] = useSearchParams();
   const linkedNote = searchParams.get("note");
   const qc = useQueryClient();
   const layout = useLayout();
   const session = useSession(sessionKey);
-  const timeline = useTimeline(courseId);
+  const timeline = useTimeline(courseId || undefined);
+  const eventTimeline = useEventTimeline(semesterId || undefined);
+  const eventDetail = useEventDetail(semesterId ? session.data?.lineageId : undefined);
+  const timelineEntries = useMemo<TimelineItem[] | undefined>(
+    () => (semesterId ? eventTimeline.data && eventTimelineItems(eventTimeline.data, semesterId) : timeline.data?.entries),
+    [semesterId, eventTimeline.data, timeline.data],
+  );
+  const sessionsTitle = semesterId ? `Events · ${eventDetail.data?.semesterName ?? "Semester"}` : "Sessions";
   const notes = useNotes(sessionKey);
   const documents = useDocuments(sessionKey);
   const prefs = usePreferences();
@@ -220,8 +230,8 @@ export function WorkspacePage() {
   // opened over the page on narrow windows
   const sideSections = useSidePanelSections();
   const leftSections = useMemo<PanelSection[]>(
-    () => [{ id: "notes", title: "Notes" }, ...sideSections.map(({ id, title }) => ({ id, title })), { id: "sessions", title: "Sessions" }],
-    [sideSections],
+    () => [{ id: "notes", title: "Notes" }, ...sideSections.map(({ id, title }) => ({ id, title })), { id: "sessions", title: sessionsTitle }],
+    [sideSections, sessionsTitle],
   );
   const sidePanel = usePanelSections(leftSections);
   const leftIds = useMemo(() => leftSections.map((s) => s.id), [leftSections]);
@@ -436,8 +446,8 @@ export function WorkspacePage() {
       ]),
     ),
     sessions: (
-      <nav aria-label="Sessions of this course" className="py-1">
-        {timeline.data && <SessionTimeline entries={timeline.data.entries} variant="compact" activeKey={sessionKey} />}
+      <nav aria-label={semesterId ? "Events of this semester" : "Sessions of this course"} className="py-1">
+        {timelineEntries && <SessionTimeline entries={timelineEntries} variant="compact" activeKey={sessionKey} />}
       </nav>
     ),
   };
@@ -577,7 +587,13 @@ export function WorkspacePage() {
       {session.data && (
         <h1 className="sr-only">
           {formatDay(session.data.date, "EEE d MMM yyyy")} · {wallTime(session.data.start)}–{wallTime(session.data.end)}
-          {session.data.title && ` · ${session.data.title}`} — {session.data.courseName}
+          {session.data.kind === "event" ? (
+            <> — Event: {session.data.title}</>
+          ) : (
+            <>
+              {session.data.title && ` · ${session.data.title}`} — {session.data.courseName}
+            </>
+          )}
         </h1>
       )}
       {session.isError ? (

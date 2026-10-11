@@ -1,10 +1,11 @@
 import { useLayoutEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Session } from "@/features/classes/api";
 import { formatDay, monthGrid, sameMonth, todayISO } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { rangeLabel, type Draft } from "./draft";
 import { EventBlock } from "./EventBlock";
+import { useGuardedNavigate } from "./entryGuard";
 import { calendarPath } from "./state";
 
 const CHIP_PX = 22;
@@ -16,12 +17,19 @@ interface Props {
   tz: string;
   /** Chips shown before "+N more" (tests); otherwise computed from the cell height. */
   maxChips?: number;
+  /** 009: the new-entry draft, shown as a chip in its day. */
+  draft?: Draft | null;
+  /** 009 FR-029: a click on empty day space creates a 09:00–10:00 draft for that date. */
+  onCreateDraft?: (date: string) => void;
 }
 
-export function MonthView({ date, sessions, tz, maxChips }: Props) {
+/** Clicks on these are their own actions, never "empty day space". */
+const OWN_ACTION = "button,a,[data-session-key],[data-draft],[role='dialog']";
+
+export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft }: Props) {
   const days = monthGrid(date);
   const today = todayISO(tz);
-  const navigate = useNavigate();
+  const navigate = useGuardedNavigate();
   const gridRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState(maxChips ?? 3);
 
@@ -60,16 +68,25 @@ export function MonthView({ date, sessions, tz, maxChips }: Props) {
               const hidden = list.length - shown.length;
               const inMonth = sameMonth(d, date);
               return (
+                // a pointer shortcut only: keyboard users create entries from the time grid
+                // (day view), which the day number opens
+                // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus
                 <div
                   key={d}
                   role="gridcell"
                   aria-label={formatDay(d)}
+                  data-month-cell={d}
                   className={cn("min-h-0 overflow-hidden border-b border-l border-grid-line p-1", !inMonth && "bg-surface-sunken")}
+                  onClick={(e) => {
+                    if (!onCreateDraft || (e.target as Element).closest(OWN_ACTION)) return;
+                    onCreateDraft(d);
+                  }}
                 >
                   <button
                     type="button"
                     onClick={() => navigate(calendarPath("day", d))}
                     aria-label={`Open ${formatDay(d)} in day view`}
+                    data-month-day={d}
                     className={cn(
                       "mb-0.5 grid size-6 place-items-center rounded-full text-xs tabular-nums hover:bg-accent",
                       !inMonth && "text-muted-foreground",
@@ -79,10 +96,20 @@ export function MonthView({ date, sessions, tz, maxChips }: Props) {
                     {formatDay(d, "d")}
                   </button>
                   <div className="grid gap-0.5">
+                    {draft?.date === d && (
+                      <div
+                        data-draft
+                        aria-hidden
+                        className="flex h-5 items-center truncate rounded-[6px] border-2 border-dashed border-draft-border bg-draft-bg px-1 text-xs font-semibold text-draft-fg"
+                      >
+                        <span className="truncate tabular-nums">{rangeLabel(draft)} New entry</span>
+                      </div>
+                    )}
                     {shown.map((s) => (
                       <EventBlock
                         key={s.key}
                         session={s}
+                        kind={s.kind}
                         compact
                         className="h-5 py-0"
                         onClick={() => navigate(`/sessions/${encodeURIComponent(s.key)}`)}
@@ -106,6 +133,7 @@ export function MonthView({ date, sessions, tz, maxChips }: Props) {
                               <EventBlock
                                 key={s.key}
                                 session={s}
+                                kind={s.kind}
                                 onClick={() => navigate(`/sessions/${encodeURIComponent(s.key)}`)}
                               />
                             ))}

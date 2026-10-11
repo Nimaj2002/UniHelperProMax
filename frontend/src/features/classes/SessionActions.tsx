@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import type { SessionActionProps } from "./session-actions";
 
+// 009: the same routes edit and delete events (the flows branch on `kind`)
 export function EditSessionAction({ session }: SessionActionProps) {
   const navigate = useNavigate();
   return (

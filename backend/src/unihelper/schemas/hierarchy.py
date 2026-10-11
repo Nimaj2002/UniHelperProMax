@@ -50,6 +50,8 @@ class Course(ApiModel):
     folder_name: str
     default_color: ColorKey
     version: int
+    # 009: the course already sits in the semester's reserved `_Events` folder (rename it)
+    reserved_name_conflict: bool = False
 
 
 class CourseCreate(ApiModel):
@@ -71,6 +73,7 @@ class CourseDetail(Course):
 class SemesterNode(ApiModel):
     semester: Semester
     courses: list[Course]
+    event_count: int = 0  # 009: events in this semester
 
 
 class YearNode(ApiModel):
@@ -82,6 +85,11 @@ class DeletionImpact(ApiModel):
     semesters: int = 0
     courses: int = 0
     classes: int = 0
+    # 009: what moves to the Trash with it (content in folders not already in the Trash)
+    events: int = 0
+    notes: int = 0
+    recordings: int = 0
+    documents: int = 0
     kept_folder: str
 
 

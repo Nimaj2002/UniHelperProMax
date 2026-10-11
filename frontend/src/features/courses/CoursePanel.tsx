@@ -1,4 +1,4 @@
-import { CaretDown, CaretRight, DotsSixVertical, MagnifyingGlass, X } from "@phosphor-icons/react";
+import { CalendarStar, CaretDown, CaretRight, DotsSixVertical, MagnifyingGlass, Warning, X } from "@phosphor-icons/react";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type KeyboardEvent } from "react";
 import { Link } from "react-router";
 import { Input } from "@/components/ui/input";
@@ -6,12 +6,16 @@ import { hasModifier, isTypingTarget } from "@/lib/shortcuts";
 import { readLocal, writeLocal } from "@/lib/storage";
 import { swatchStyle, type ColorKey } from "@/lib/palette";
 import { cn } from "@/lib/utils";
+import { eventsPagePath } from "@/features/events/api";
 import { useCourseAdornments } from "./adornments";
 import { useCourseTree, useReorderYears, type YearNode } from "./api";
 import { HierarchyMenu } from "./HierarchyMenu";
 
 const COLLAPSE_KEY = "uh.panel.collapsedGroups";
+const RESERVED_WARNING = "Rename this course: “_Events” is reserved for events.";
 
+/** Courses matching the query, grouped as in the tree. A semester's "Events" row (009 FR-011a)
+ * travels with its semester node, so it stays whenever the semester is shown. */
 export function filterTree(tree: YearNode[], query: string): YearNode[] {
   const q = query.trim().toLocaleLowerCase();
   if (!q) return tree;
@@ -209,7 +213,7 @@ export function CoursePanel() {
                 </div>
                 {open && (
                   <ul className="mt-0.5 grid gap-1 pl-3">
-                    {semesters.map(({ semester, courses }) => {
+                    {semesters.map(({ semester, courses, eventCount }) => {
                       const semOpen = filtering || !collapsed[semester.id];
                       return (
                         <li key={semester.id}>
@@ -239,11 +243,34 @@ export function CoursePanel() {
                                   >
                                     <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={swatchStyle(c.defaultColor as ColorKey)} />
                                     <span className="truncate" title={c.name}>{c.name}</span>
+                                    {c.reservedNameConflict && (
+                                      <span className="ml-auto flex shrink-0 items-center text-danger" title={RESERVED_WARNING}>
+                                        <Warning size={14} weight="bold" aria-hidden />
+                                        <span className="sr-only">{RESERVED_WARNING}</span>
+                                      </span>
+                                    )}
                                     {adornments.map(({ id, component: A }) => <A key={id} course={c} />)}
                                   </Link>
                                   <HierarchyMenu target={{ kind: "course", id: c.id, name: c.name, version: c.version }} />
                                 </li>
                               ))}
+                              <li>
+                                <Link
+                                  to={eventsPagePath(semester.id)}
+                                  data-events-of={semester.id}
+                                  aria-label={eventCount ? `Events, ${eventCount} ${eventCount === 1 ? "event" : "events"}` : undefined}
+                                  className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-accent hover:text-foreground"
+                                >
+                                  <CalendarStar size={14} aria-hidden className="shrink-0" />
+                                  <span className="truncate">Events</span>
+                                  {/* the name stays "Events…": a semester name may contain a course's */}
+                                  {!!eventCount && (
+                                    <span aria-hidden className="ml-auto rounded-full bg-surface-sunken px-1.5 text-xs tabular-nums">
+                                      {eventCount}
+                                    </span>
+                                  )}
+                                </Link>
+                              </li>
                             </ul>
                           )}
                         </li>

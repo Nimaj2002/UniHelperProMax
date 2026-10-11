@@ -3,6 +3,9 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import type { Schemas } from "@/lib/api";
+
+type RecurrencePayload = Schemas["Recurrence"];
 
 export const WEEKDAYS = [
   ["MO", "Mon", "Monday"], ["TU", "Tue", "Tuesday"], ["WE", "Wed", "Wednesday"], ["TH", "Thu", "Thursday"],
@@ -153,4 +156,18 @@ export function RecurrenceFields({ value, onChange, semesterHasEnd, errors }: Pr
       )}
     </fieldset>
   );
+}
+
+/** The form value of a stored segment's repetition (class or, 009, event). */
+export function recurrenceFrom(seg: { recurrence: RecurrencePayload }): RecurrenceValue {
+  const r = seg.recurrence;
+  if (r.freq === "none") return { ...defaultRecurrence, freq: "none" };
+  return {
+    freq: "weekly",
+    intervalWeeks: r.intervalWeeks ?? 1,
+    byWeekday: (r.byWeekday ?? []) as WeekdayCode[],
+    endKind: (r.end?.kind ?? "semester_end") as RecurrenceValue["endKind"],
+    untilDate: r.end?.untilDate ?? "",
+    count: r.end?.count ? String(r.end.count) : "14",
+  };
 }

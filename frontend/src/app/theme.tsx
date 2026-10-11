@@ -5,6 +5,7 @@
  * Custom themes = `data-theme` of their base + their colours as inline CSS variables on <html>.
  */
 import { createContext, useContext, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
+import { ensureContrast, HEX, mix } from "@/features/settings/themes/colors";
 
 export type ResolvedTheme = "light" | "dark";
 export type ThemeChoice =
@@ -59,14 +60,32 @@ export function useThemeChoice(): ThemeChoice {
   );
 }
 
+/**
+ * 009 calendar tokens for a custom or preset theme, derived from its colours (they are not part
+ * of the editable token set): the draft block is an accent tint with readable text, and the
+ * Event marker a strong neutral — AA on the theme's background (text ≥ 4.5:1, marks ≥ 3:1).
+ */
+export function derivedCalendarVars(vars: Record<string, string>): Record<string, string> {
+  const [bg, text, accent] = [vars["--surface"], vars["--text-primary"], vars["--accent"]];
+  if (![bg, text, accent].every((c) => c !== undefined && HEX.test(c))) return {};
+  const draftBg = mix(bg, accent, 0.18);
+  return {
+    "--draft-bg": draftBg,
+    "--draft-border": ensureContrast(accent, [draftBg, bg], 3),
+    "--draft-fg": ensureContrast(text, [draftBg], 4.5),
+    "--event-marker": ensureContrast(mix(text, bg, 0.2), [bg], 3),
+  };
+}
+
 let appliedVars: string[] = [];
 
 export function applyTheme(theme: ResolvedTheme, vars: Record<string, string> = {}): void {
   const root = document.documentElement;
   root.dataset.theme = theme;
-  for (const name of appliedVars) if (!(name in vars)) root.style.removeProperty(name);
-  for (const [name, value] of Object.entries(vars)) root.style.setProperty(name, value);
-  appliedVars = Object.keys(vars);
+  const all = { ...derivedCalendarVars(vars), ...vars };
+  for (const name of appliedVars) if (!(name in all)) root.style.removeProperty(name);
+  for (const [name, value] of Object.entries(all)) root.style.setProperty(name, value);
+  appliedVars = Object.keys(all);
 }
 
 const ThemeContext = createContext<ResolvedTheme>("light");

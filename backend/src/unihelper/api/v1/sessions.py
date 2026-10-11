@@ -3,13 +3,27 @@ from __future__ import annotations
 from datetime import date
 from typing import Any, Literal
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Body, Query
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 
-from unihelper.api.deps import CurrentUser, DbSession, IfMatch
+from unihelper.api.deps import CurrentUser, DbSession, IfMatch, Storage
+from unihelper.domain.recurrence import parse_session_key
 from unihelper.schemas.classes import ScopeResult, SessionEdit, SessionOut
-from unihelper.services import class_service, session_folder_service, session_query
+from unihelper.schemas.events import EventEdit
+from unihelper.schemas.trash import SessionDeletionImpact
+from unihelper.services import (
+    class_service,
+    event_service,
+    lineage,
+    session_folder_service,
+    session_query,
+    trash_service,
+)
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
+
+Scope = Literal["this", "following", "all"]
 
 
 @router.get("", response_model=list[SessionOut])
@@ -29,16 +43,35 @@ def get_session(session_key: str, user: CurrentUser, db: DbSession) -> Any:
     return session_folder_service.resolve(db, user, session_key).session
 
 
+def _validated(model: type[SessionEdit] | type[EventEdit], raw: dict[str, Any]) -> Any:
+    try:
+        return model.model_validate(raw)
+    except ValidationError as err:
+        raise RequestValidationError(
+            [{**e, "loc": ("body", *e["loc"])} for e in err.errors()]
+        ) from err
+
+
 @router.patch("/{session_key}", response_model=ScopeResult)
 def edit_session(
     session_key: str,
-    body: SessionEdit,
     version: IfMatch,
     user: CurrentUser,
     db: DbSession,
-    scope: Literal["this", "following", "all"] = Query(),
+    storage: Storage,
+    body: SessionEdit | EventEdit = Body(),
+    scope: Scope = Query(),
 ) -> Any:
-    return class_service.apply_scope_edit(db, user, session_key, scope, body, version)
+    """`SessionEdit` for a class session, (009) `EventEdit` for an event occurrence. The
+    union only documents both shapes: the body is validated again against the key's kind."""
+    raw = body.model_dump(exclude_unset=True, by_alias=True, mode="json")
+    parsed = parse_session_key(session_key)
+    if parsed is not None and lineage.kind_of(db, user, parsed[0]) == "event":
+        edit = _validated(EventEdit, raw)
+        return event_service.apply_scope_edit(db, storage, user, session_key, scope, edit, version)
+    return class_service.apply_scope_edit(
+        db, user, session_key, scope, _validated(SessionEdit, raw), version
+    )
 
 
 @router.delete("/{session_key}", response_model=ScopeResult)
@@ -47,6 +80,14 @@ def delete_session(
     version: IfMatch,
     user: CurrentUser,
     db: DbSession,
-    scope: Literal["this", "following", "all"] = Query(),
+    scope: Scope = Query(),
 ) -> Any:
-    return class_service.apply_scope_delete(db, user, session_key, scope, version)
+    """Classes and (009) events: what the scope removes moves to the Trash (no file touched)."""
+    return trash_service.move_to_trash(db, user, session_key, scope, version)
+
+
+@router.get("/{session_key}/deletion-impact", response_model=SessionDeletionImpact)
+def deletion_impact(
+    session_key: str, user: CurrentUser, db: DbSession, scope: Scope = Query()
+) -> Any:
+    return trash_service.deletion_impact(db, user, session_key, scope)

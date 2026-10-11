@@ -4,6 +4,8 @@ import { newHierarchy, seedClass, signIn, tag } from "./helpers";
 import { textPdf } from "./pdf-fixtures";
 
 async function axe(page: Page, label: string) {
+  // fade/zoom-in animations (views, tooltips) must finish: half-transparent text fails contrast
+  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
   const r = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   expect(r.violations.map((v) => `${label}: ${v.id} → ${v.nodes.map((n) => n.target).join(", ")}`)).toEqual([]);
 }
@@ -331,4 +333,97 @@ test("Accessibility (008): card layout landmarks, names and unclipped focus, ope
   await expect(page.getByRole("complementary", { name: "Side panel" }).getByRole("button", { name: "Show side panel" })).toBeVisible();
   await axe(page, "session workspace (rail)");
   await page.getByRole("button", { name: "Show side panel" }).click();
+});
+
+test("Accessibility (009): events, draft + quick form, Events page and Trash; themes and reduced motion", async ({ page, browser }, testInfo) => {
+  test.setTimeout(240_000);
+  const t = tag(testInfo.project.name);
+  await signIn(page);
+  const { p, ctx, csrf } = await memberPage(browser, page, `events-${t.toLowerCase()}`);
+  const post = async (url: string, data: unknown) => {
+    const r = await p.request.post(url, { data, headers: { "X-CSRF-Token": await csrf() } });
+    expect(r.ok(), await r.text()).toBe(true);
+    return r.json();
+  };
+  // a weekly class overlapped by two events, and one deleted event in the Trash
+  const cls = await seedClass(p, {
+    course: newHierarchy(`A11YEV${t} 101`, `A11y ev ${t}`, `A11y ev year ${t}`), startDate: "2026-10-05", startTime: "10:00",
+    endTime: "12:00", location: "Room 1", color: "teal", recurrence: { freq: "weekly", byWeekday: ["MO", "WE"], end: { kind: "semester_end" } },
+  });
+  const semesterId = (await (await p.request.get(`/api/v1/courses/${cls.courseId}`)).json()).semesterId as string;
+  await post("/api/v1/events", { title: "Career fair with a rather long title", semester: { id: semesterId }, startDate: "2026-10-07", startTime: "10:30", endTime: "11:30", location: "Hall" });
+  await post("/api/v1/events", { title: "Office hour", semester: { id: semesterId }, startDate: "2026-10-07", startTime: "11:00", endTime: "12:30", color: "pink" });
+  const gone = await post("/api/v1/events", { title: "Cancelled talk", semester: { id: semesterId }, startDate: "2026-10-08", startTime: "15:00", endTime: "16:00" });
+  const del = await p.request.delete(`/api/v1/sessions/${encodeURIComponent(`${gone.lineageId}:2026-10-08`)}?scope=all`, {
+    headers: { "X-CSRF-Token": await csrf(), "If-Match": `"${gone.version}"` },
+  });
+  expect(del.ok(), await del.text()).toBe(true);
+
+  const quickForm = p.getByRole("dialog", { name: "New entry" });
+  async function calendarWithForm(label: string) {
+    await p.goto("/calendar/week/2026-10-05");
+    await expect(p.locator("[data-kind=event]")).toHaveCount(2);
+    // keyboard: a slot, a range, the quick form (US7)
+    await p.locator("[data-calendar-grid] [data-slot-at][tabindex='0']").focus();
+    await p.keyboard.press("Shift+ArrowDown");
+    await p.keyboard.press("Enter");
+    await expect(quickForm).toBeVisible();
+    await settledAxe(p, label);
+    await p.keyboard.press("Escape");
+    await expect(quickForm).toBeHidden();
+  }
+
+  await calendarWithForm("calendar with events, draft and quick form");
+  await p.getByRole("button", { name: /^Event: Office hour/ }).focus();
+  await expect(p.getByRole("tooltip")).toContainText("Office hour");
+  await settledAxe(p, "event tooltip on focus");
+
+  await p.goto(`/semesters/${semesterId}/events`);
+  await expect(p.getByText("Career fair with a rather long title").first()).toBeVisible();
+  await settledAxe(p, "Events page");
+
+  await p.goto("/settings/trash");
+  const card = p.getByRole("region", { name: "Deleted events" }).getByRole("listitem").filter({ hasText: "Cancelled talk" });
+  await card.getByRole("button", { name: "Delete Cancelled talk permanently" }).click();
+  const sure = p.getByRole("alertdialog");
+  await expect(sure).toContainText("Are you sure?");
+  await expect(sure.getByRole("button", { name: "No" })).toBeFocused();
+  await settledAxe(p, "Trash page with the Are you sure? dialog");
+  await p.keyboard.press("Escape");
+  await settledAxe(p, "Trash page");
+
+  // reduced motion (FR-045): nothing animates when the form opens
+  await p.emulateMedia({ reducedMotion: "reduce" });
+  await p.goto("/calendar/week/2026-10-05");
+  await p.locator("[data-calendar-grid] [data-slot-at][tabindex='0']").focus();
+  await p.keyboard.press("Enter");
+  await expect(quickForm).toBeVisible();
+  const running = await p.evaluate(
+    () => new Promise<number>((done) => requestAnimationFrame(() => requestAnimationFrame(() =>
+      done(document.getAnimations().filter((a) => a.playState === "running" && Number(a.effect?.getComputedTiming().duration) > 1).length)))),
+  );
+  expect(running).toBe(0);
+  await p.keyboard.press("Escape");
+  await p.emulateMedia({ reducedMotion: "no-preference" });
+
+  if (!testInfo.project.name.includes("dark")) {
+    // one built-in preset and one user-created theme (both colour schemes are the two projects)
+    const setTheme = async (theme: string) =>
+      expect((await p.request.patch("/api/v1/preferences", { data: { theme }, headers: { "X-CSRF-Token": await csrf() } })).ok()).toBe(true);
+    await p.goto("/settings/appearance");
+    const preset = await p.locator("[role=radio][value^='preset:']").first().getAttribute("value");
+    await setTheme(preset!);
+    await calendarWithForm(`calendar and quick form in ${preset}`);
+
+    await p.goto("/settings/appearance");
+    await p.getByRole("button", { name: "New theme…" }).click();
+    await p.getByRole("dialog").getByRole("textbox", { name: "Name" }).fill("Events a11y");
+    await p.getByRole("button", { name: "Create and edit" }).click();
+    await p.getByRole("button", { name: "Save theme" }).click();
+    await p.getByRole("radio", { name: /Events a11y/ }).click();
+    await calendarWithForm("calendar and quick form in a user theme");
+    await p.goto("/settings/trash");
+    await settledAxe(p, "Trash page in a user theme");
+  }
+  await ctx.close();
 });

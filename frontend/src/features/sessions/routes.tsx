@@ -3,7 +3,8 @@ import { lazy, Suspense } from "react";
 import { useNavigate, type RouteObject } from "react-router";
 import { Button } from "@/components/ui/button";
 import { registerSessionAction, type SessionActionProps } from "@/features/classes/session-actions";
-import { workspacePath } from "./SessionTimeline";
+import { entryWorkspacePath } from "./SessionTimeline";
+import { WorkspaceRedirect } from "./WorkspaceRedirect";
 
 // CodeMirror only loads when a workspace is opened
 const WorkspacePage = lazy(() => import("./WorkspacePage").then((m) => ({ default: m.WorkspacePage })));
@@ -11,7 +12,7 @@ const WorkspacePage = lazy(() => import("./WorkspacePage").then((m) => ({ defaul
 function OpenNotesAction({ session }: SessionActionProps) {
   const navigate = useNavigate();
   return (
-    <Button size="sm" onClick={() => navigate(workspacePath(session.courseId, session.key))}>
+    <Button size="sm" onClick={() => navigate(entryWorkspacePath(session))}>
       <NotePencil size={14} aria-hidden /> Open notes
     </Button>
   );
@@ -20,6 +21,8 @@ function OpenNotesAction({ session }: SessionActionProps) {
 registerSessionAction({ id: "open-notes", component: OpenNotesAction, priority: 0 });
 
 export const routes: RouteObject[] = [
+  // 009: a session key without its course or semester (an event's recording or transcription)
+  { path: "workspace/:sessionKey", element: <WorkspaceRedirect /> },
   {
     path: "courses/:courseId/sessions/:sessionKey",
     element: (
