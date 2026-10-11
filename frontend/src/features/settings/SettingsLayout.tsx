@@ -6,6 +6,7 @@ const SECTIONS = [
   { to: "/settings/transcription", label: "Transcription" },
   { to: "/settings/appearance", label: "Appearance" },
   { to: "/settings/trash", label: "Trash" },
+  { to: "/settings/account", label: "Account" },
 ];
 
 /** Settings area (005 FR-001): section nav + content. */

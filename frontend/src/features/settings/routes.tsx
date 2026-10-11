@@ -5,6 +5,7 @@ import { Navigate, useNavigate, type RouteObject } from "react-router";
 import { registerAccountMenuItem, registerGlobalHost, registerPanelAction, type PanelActionProps } from "@/app/shell/registry";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { AccountSettings } from "./account/AccountSettings";
 import { SettingsLayout } from "./SettingsLayout";
 import { ThemeSync } from "./ThemeSync";
 import { TranscriptionSettingsPage } from "./transcription/TranscriptionSettings";
@@ -46,6 +47,7 @@ export const routes: RouteObject[] = [
       { path: "appearance/themes/new", element: loading(<ThemeEditor />) },
       { path: "appearance/themes/:themeId", element: loading(<ThemeEditor />) },
       { path: "trash", element: loading(<TrashPage />) },
+      { path: "account", element: <AccountSettings /> },
     ],
   },
 ];
