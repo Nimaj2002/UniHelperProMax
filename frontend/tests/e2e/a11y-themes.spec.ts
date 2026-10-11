@@ -427,3 +427,47 @@ test("Accessibility (009): events, draft + quick form, Events page and Trash; th
   }
   await ctx.close();
 });
+
+test("Accessibility (010): calendar import and export in a user-created theme, keyboard focus visible", async ({ page }, testInfo) => {
+  const t = tag(testInfo.project.name);
+  await signIn(page);
+  await page.goto("/settings/appearance");
+  await page.getByRole("button", { name: "New theme…" }).click();
+  await page.getByRole("dialog").getByRole("textbox", { name: "Name" }).fill(`Calendar io ${t}`);
+  await page.getByRole("button", { name: "Create and edit" }).click();
+  await page.getByRole("button", { name: "Save theme" }).click();
+  await expect(page).toHaveURL(/\/settings\/appearance$/);
+  const theme = page.getByRole("radio", { name: new RegExp(`Calendar io ${t}`) });
+  await theme.click();
+  await expect(theme).toBeChecked();
+
+  await page.goto("/settings/import-export");
+  await settledAxe(page, "import and export page (custom theme)");
+  const ics = [
+    "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//T//T//EN",
+    "BEGIN:VEVENT", `UID:a11y-io-${t}`, "DTSTART;TZID=Europe/Istanbul:20271206T230000",
+    "DTEND;TZID=Europe/Istanbul:20271206T233000", "RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=2", `SUMMARY:A11y io ${t}`, "END:VEVENT",
+    "BEGIN:VEVENT", `UID:a11y-monthly-${t}`, "DTSTART;TZID=Europe/Istanbul:20271207T230000",
+    "DTEND;TZID=Europe/Istanbul:20271207T233000", "RRULE:FREQ=MONTHLY;BYDAY=1TU", `SUMMARY:A11y monthly ${t}`, "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+  await page.getByTestId("ics-input").setInputFiles({ name: "a11y.ics", mimeType: "text/calendar", buffer: Buffer.from(ics) });
+  await expect(page.getByRole("heading", { name: "Preview of a11y.ics" })).toBeFocused();
+  await expect(page.getByText("Not supported").first()).toBeVisible();
+  await settledAxe(page, "import preview with an unsupported group (custom theme)");
+  await focusVisibleOnTab(page, 15);
+
+  await page.getByRole("radio", { name: "New semester" }).click();
+  await page.getByLabel("New year name").fill(`A11y io year ${t}`);
+  await page.getByLabel("Semester name").fill(`A11y io term ${t}`);
+  await page.getByRole("button", { name: /^Import \d+ entr/ }).click();
+  await expect(page.getByText(/choose what to do with this repetition/i).first()).toBeVisible();
+  await page.getByRole("radio", { name: "Skip" }).click();
+  await page.getByRole("button", { name: /^Import \d+ entr/ }).click();
+  await expect(page.getByRole("heading", { name: "Import finished" })).toBeFocused();
+  await settledAxe(page, "import result (custom theme)");
+  await page.getByRole("button", { name: "Undo import" }).click();
+  await settledAxe(page, "undo confirmation (custom theme)");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("button", { name: "Undo import" })).toBeFocused();
+});

@@ -2,6 +2,11 @@
 
 from unihelper.models.auth_session import AuthSession
 from unihelper.models.base import Base
+from unihelper.models.calendar_import import (
+    CalendarImportRun,
+    CalendarImportSource,
+    CalendarImportUpload,
+)
 from unihelper.models.class_series import ClassLink, ClassSeries
 from unihelper.models.course import Course
 from unihelper.models.document import AnnotationOp, Document, DocumentPosition
@@ -23,6 +28,9 @@ __all__ = [
     "AnnotationOp",
     "AuthSession",
     "Base",
+    "CalendarImportRun",
+    "CalendarImportSource",
+    "CalendarImportUpload",
     "ClassLink",
     "ClassSeries",
     "Course",

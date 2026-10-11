@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 const SECTIONS = [
   { to: "/settings/transcription", label: "Transcription" },
   { to: "/settings/appearance", label: "Appearance" },
+  { to: "/settings/import-export", label: "Import and export" },
   { to: "/settings/trash", label: "Trash" },
   { to: "/settings/account", label: "Account" },
 ];

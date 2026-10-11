@@ -1,0 +1,310 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 010 additions
+  version: 1.9.0
+  description: |
+    Additive to the 001–009 contracts (same conventions: camelCase JSON, RFC 9457 problems, CSRF
+    header on writes). No existing operation changes. Imported classes and events are ordinary
+    classes/events afterwards and are read and edited through the existing operations.
+servers:
+  - url: /api/v1
+
+paths:
+  /calendar-imports:
+    post:
+      tags: [calendar-io]
+      summary: Upload an .ics file (raw body, ≤ 5 MB), stage it, and return the preview
+      parameters:
+        - { name: fileName, in: query, required: true, schema: { type: string, maxLength: 255 } }
+        - { name: Content-Length, in: header, required: true, schema: { type: integer, maximum: 5242880 } }
+      requestBody:
+        required: true
+        content:
+          text/calendar: { schema: { type: string, format: binary } }
+          application/octet-stream: { schema: { type: string, format: binary } }
+      responses:
+        "201":
+          description: Staged and parsed
+          content: { application/json: { schema: { $ref: "#/components/schemas/ImportPreview" } } }
+        "411": { $ref: "#/components/responses/Problem" }   # length_required
+        "413": { $ref: "#/components/responses/Problem" }   # file_too_large
+        "422": { $ref: "#/components/responses/Problem" }   # file_empty · not_icalendar · too_many_events
+        "507": { $ref: "#/components/responses/Problem" }   # insufficient_storage
+
+  /calendar-imports/{uploadId}:
+    parameters: [{ $ref: "#/components/parameters/UploadId" }]
+    delete:
+      tags: [calendar-io]
+      summary: Discard a staged file (Cancel before confirming)
+      responses:
+        "204": { description: Discarded (also when already gone) }
+
+  /calendar-imports/{uploadId}/apply:
+    parameters: [{ $ref: "#/components/parameters/UploadId" }]
+    post:
+      tags: [calendar-io]
+      summary: Apply the plan to the staged file in one transaction
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ImportPlan" } } }
+      responses:
+        "200":
+          description: Applied; the staged file is deleted
+          content: { application/json: { schema: { $ref: "#/components/schemas/ImportResult" } } }
+        "404": { $ref: "#/components/responses/Problem" }   # destination/course not found
+        "409": { $ref: "#/components/responses/Problem" }   # upload_expired
+        "422": { $ref: "#/components/responses/Problem" }   # nothing_selected · destination_required · choice_required · invalid_end_date · title_required · reserved_name · validation
+        "500": { $ref: "#/components/responses/Problem" }   # import_failed (nothing changed)
+
+  /calendar-imports/runs/{runId}/undo:
+    parameters: [{ $ref: "#/components/parameters/RunId" }]
+    post:
+      tags: [calendar-io]
+      summary: Remove the classes, events and courses this import created that have no content
+      responses:
+        "200":
+          description: Undone
+          content: { application/json: { schema: { $ref: "#/components/schemas/UndoResult" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # undo_unavailable (already undone)
+
+  /calendar-export:
+    get:
+      tags: [calendar-io]
+      summary: Download classes and events as one .ics file
+      parameters:
+        - { name: semesterId, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: |
+            iCalendar file. `Content-Disposition: attachment; filename="UniHelperProMax-…-YYYY-MM-DD.ics"`.
+          headers:
+            X-Export-Counts:
+              description: Lineages written per kind, e.g. `classes=2; events=1` (for the toast)
+              schema: { type: string }
+          content: { text/calendar: { schema: { type: string } } }
+        "404": { $ref: "#/components/responses/Problem" }   # semester not found
+        "409": { $ref: "#/components/responses/Problem" }   # nothing_to_export
+
+components:
+  parameters:
+    UploadId: { name: uploadId, in: path, required: true, schema: { type: string } }
+    RunId: { name: runId, in: path, required: true, schema: { type: string } }
+
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string, description: "JSON pointer, e.g. /groups/3f2a9c1b0d4e/course" }
+              code: { type: string }
+              message: { type: string }
+
+    Link:
+      type: object
+      required: [label, url]
+      properties:
+        label: { type: [string, "null"], maxLength: 60 }
+        url: { type: string, format: uri, maxLength: 2048 }
+
+    Weekday: { type: string, enum: [MO, TU, WE, TH, FR, SA, SU] }
+
+    Pattern:
+      type: object
+      required: [weekdays, startTime, endTime]
+      properties:
+        weekdays: { type: array, items: { $ref: "#/components/schemas/Weekday" } }
+        startTime: { type: string, pattern: "^\\d{2}:\\d{2}$" }
+        endTime: { type: string, pattern: "^\\d{2}:\\d{2}$" }
+
+    SkipReason:
+      type: string
+      enum:
+        - all_day            # "all-day events are not supported yet"
+        - cancelled          # cancelled in the file
+        - invalid_times
+        - has_content        # occurrence holds notes, recordings or documents
+        - in_trash
+        - kind_mismatch      # already imported as the other type
+        - unsupported_skipped
+        - not_selected
+
+    SkippedItem:
+      type: object
+      required: [title, reason, message]
+      properties:
+        title: { type: string }
+        date: { type: [string, "null"], format: date }
+        startTime: { type: [string, "null"] }
+        reason: { $ref: "#/components/schemas/SkipReason" }
+        message: { type: string, description: User-facing reason text }
+
+    SemesterRef:
+      description: Same shapes as `POST /events` `semester` (009)
+      oneOf:
+        - type: object
+          required: [id]
+          properties: { id: { type: string } }
+        - type: object
+          required: [new]
+          properties:
+            new:
+              type: object
+              required: [name, year]
+              properties:
+                name: { type: string, minLength: 1, maxLength: 80 }
+                year:
+                  oneOf:
+                    - { type: object, required: [id], properties: { id: { type: string } } }
+                    - type: object
+                      required: [new]
+                      properties:
+                        new: { type: object, required: [name], properties: { name: { type: string, minLength: 1, maxLength: 80 } } }
+
+    SavedTarget:
+      description: Values carried by a file this app exported (null when absent)
+      type: [object, "null"]
+      properties:
+        kind: { type: string, enum: [class, event] }
+        yearName: { type: string }
+        semesterName: { type: string }
+        courseName: { type: [string, "null"] }
+        color: { type: [string, "null"] }
+
+    ImportGroup:
+      type: object
+      required: [groupId, title, occurrenceCount, patterns, repeating, defaults, matches, issues, notes, skipped]
+      properties:
+        groupId: { type: string }
+        title: { type: string, description: '"(No title)" when empty' }
+        titleMissing: { type: boolean }
+        occurrenceCount: { type: integer, description: Entries it would create }
+        patterns: { type: array, items: { $ref: "#/components/schemas/Pattern" } }
+        location: { type: [string, "null"] }
+        repeating: { type: boolean }
+        unsupported: { type: [string, "null"], description: Reason text when the repetition can't be represented }
+        openEnded:
+          type: [object, "null"]
+          properties: { suggestedEndDate: { type: string, format: date } }
+        firstDate: { type: string, format: date }
+        saved: { $ref: "#/components/schemas/SavedTarget" }
+        defaults:
+          type: object
+          required: [selected, importAs]
+          properties:
+            selected: { type: boolean }
+            importAs: { type: string, enum: [class, event] }
+            color: { type: [string, "null"] }
+        matches:
+          type: object
+          description: How existing entries relate (FR-018), for the chosen type
+          properties:
+            create: { type: integer }
+            update: { type: integer }
+            unchanged: { type: integer }
+            skip: { type: integer }
+        issues: { type: array, items: { type: string, enum: [reserved_name, title_required, kind_mismatch] } }
+        notes: { type: array, items: { type: string }, description: Truncations, dropped links, DST changes }
+        skipped: { type: array, items: { $ref: "#/components/schemas/SkippedItem" } }
+
+    ImportPreview:
+      type: object
+      required: [uploadId, fileName, eventCount, groups, skipped, timezone, expiresAt]
+      properties:
+        uploadId: { type: string }
+        fileName: { type: string }
+        eventCount: { type: integer }
+        timezone: { type: string, description: The user's zone all times are shown in }
+        fromThisApp: { type: boolean }
+        groups: { type: array, items: { $ref: "#/components/schemas/ImportGroup" } }
+        skipped:
+          type: array
+          description: Entries skipped before grouping (all-day, cancelled, invalid times)
+          items: { $ref: "#/components/schemas/SkippedItem" }
+        expiresAt: { type: string, format: date-time }
+
+    GroupPlan:
+      type: object
+      required: [groupId, selected, importAs]
+      properties:
+        groupId: { type: string }
+        selected: { type: boolean }
+        importAs: { type: string, enum: [class, event] }
+        title: { type: string, minLength: 1, maxLength: 120, description: Required when the file title is empty and importAs = event }
+        course:
+          description: Class only; default = name match in the target semester, else new
+          oneOf:
+            - { type: object, required: [existing], properties: { existing: { type: string } } }
+            - { type: object, required: [new], properties: { new: { type: string, minLength: 1, maxLength: 120 } } }
+        semester: { type: string, enum: [saved, destination], default: saved }
+        endDate: { type: string, format: date, description: Open-ended repeating groups }
+        unsupported: { type: string, enum: [first_only, skip] }
+
+    ImportPlan:
+      type: object
+      required: [destination, groups]
+      properties:
+        destination: { $ref: "#/components/schemas/SemesterRef" }
+        groups: { type: array, items: { $ref: "#/components/schemas/GroupPlan" } }
+
+    Counts:
+      type: object
+      required: [created, updated, skipped]
+      properties:
+        created: { type: integer }
+        updated: { type: integer }
+        skipped: { type: integer }
+
+    ImportResult:
+      type: object
+      required: [runId, classes, events, unchanged, skipped, coursesCreated, notes]
+      properties:
+        runId: { type: string }
+        classes: { $ref: "#/components/schemas/Counts" }
+        events: { $ref: "#/components/schemas/Counts" }
+        unchanged: { type: integer }
+        coursesCreated: { type: array, items: { type: object, required: [id, name], properties: { id: { type: string }, name: { type: string } } } }
+        semesterId: { type: string }
+        skipped: { type: array, items: { $ref: "#/components/schemas/SkippedItem" } }
+        notes: { type: array, items: { type: string }, description: e.g. moved class occurrence imported as a single class }
+        undoAvailable: { type: boolean }
+
+    UndoResult:
+      type: object
+      required: [removed, kept]
+      properties:
+        removed:
+          type: object
+          required: [classes, events, courses]
+          properties:
+            classes: { type: integer }
+            events: { type: integer }
+            courses: { type: integer }
+            semesters: { type: integer }
+            years: { type: integer }
+        kept:
+          type: array
+          items:
+            type: object
+            required: [title, message]
+            properties:
+              title: { type: string }
+              message: { type: string, description: e.g. "has notes", "in the Trash", "course still has classes" }

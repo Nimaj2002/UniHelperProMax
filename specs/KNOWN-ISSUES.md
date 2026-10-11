@@ -47,3 +47,14 @@ inside its file operation while `append_result` runs.
 
 **Fix**: not investigated yet. Running the suite against the production build
 (`pnpm build` + the backend serving `UNIHELPER_STATIC_DIR`) would rule out the dev server.
+
+### Calendar import: what is deferred (010)
+
+- **All-day and multi-day events** are skipped ("all-day events are not supported yet"): the app's
+  entries have start and end times on one day.
+- **Daily rules** (`FREQ=DAILY`) are reported as not supported, as the spec says, even when they
+  could be written exactly as "weekly on every day". Easy to add in `domain/ical_rules.parse_rule`
+  if wanted.
+- **Interoperability is checked by hand**: the import into Google Calendar, Apple Calendar and
+  Outlook of an exported file (quickstart scenario 6) needs those apps; results are recorded in
+  `specs/010-calendar-ics-import-export/checklists/interop.md`.

@@ -19,6 +19,7 @@ from unihelper.api.errors import install_error_handlers, problem_response
 from unihelper.api.v1 import (
     admin,
     auth,
+    calendar_io,
     classes,
     documents,
     events,
@@ -38,7 +39,7 @@ from unihelper.api.v1 import (
 from unihelper.config import Settings, load_settings
 from unihelper.db.engine import make_engine, make_sessionmaker
 from unihelper.db.migrate import upgrade_to_head
-from unihelper.services import annotation_service
+from unihelper.services import annotation_service, calendar_import_service
 from unihelper.services.login_throttle import LoginThrottle
 from unihelper.storage.storage_service import StorageService
 from unihelper.transcription.worker import TranscriptionWorker
@@ -68,6 +69,7 @@ def build_api_router() -> APIRouter:
         settings,
         themes,
         trash,
+        calendar_io,
     ):
         api.include_router(module.router)
     return api
@@ -93,6 +95,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 app.state.storage.sweep_uploads(timedelta(hours=1))
             except OSError:
                 log.exception("could not clean up the import staging folder")
+            try:  # calendar previews that expired while the server was down (010 R2)
+                with Session(app.state.engine) as db:
+                    calendar_import_service.forget_expired(db)
+            except SQLAlchemyError:
+                log.exception("could not clean up expired calendar import previews")
             worker: TranscriptionWorker = app.state.transcription_worker
             if settings.transcription_autorun:
                 await worker.start()

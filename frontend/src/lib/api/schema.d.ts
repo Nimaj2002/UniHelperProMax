@@ -1234,6 +1234,95 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/calendar-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload Calendar
+         * @description Stream an .ics file into staging, check it and return the preview (research R2, R3).
+         *     Nothing in the calendar changes until the plan is applied.
+         */
+        post: operations["upload_calendar_api_v1_calendar_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar-imports/{upload_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Discard Upload */
+        delete: operations["discard_upload_api_v1_calendar_imports__upload_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar-imports/{upload_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Import */
+        post: operations["apply_import_api_v1_calendar_imports__upload_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar-imports/runs/{run_id}/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Undo Import */
+        post: operations["undo_import_api_v1_calendar_imports_runs__run_id__undo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/calendar-export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Calendar */
+        get: operations["export_calendar_api_v1_calendar_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1501,6 +1590,24 @@ export interface components {
             /** Basehash */
             baseHash: string;
         };
+        /** Counts */
+        Counts: {
+            /**
+             * Created
+             * @default 0
+             */
+            created: number;
+            /**
+             * Updated
+             * @default 0
+             */
+            updated: number;
+            /**
+             * Skipped
+             * @default 0
+             */
+            skipped: number;
+        };
         /** Course */
         Course: {
             /** Id */
@@ -1558,12 +1665,29 @@ export interface components {
             year: components["schemas"]["Year"];
             semester: components["schemas"]["Semester"];
         };
+        /** CourseExisting */
+        CourseExisting: {
+            /** Existing */
+            existing: string;
+        };
+        /** CourseNew */
+        CourseNew: {
+            /** New */
+            new: string;
+        };
         /** CourseUpdate */
         CourseUpdate: {
             /** Name */
             name?: string | null;
             /** Defaultcolor */
             defaultColor?: ("slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink") | null;
+        };
+        /** CreatedCourse */
+        CreatedCourse: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
         };
         /**
          * CreatedRefs
@@ -1801,15 +1925,171 @@ export interface components {
             /** Documentcount */
             documentCount: number;
         };
+        /** GroupDefaults */
+        GroupDefaults: {
+            /** Selected */
+            selected: boolean;
+            /**
+             * Importas
+             * @enum {string}
+             */
+            importAs: "class" | "event";
+            /** Color */
+            color?: ("slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink") | null;
+        };
+        /** GroupMatches */
+        GroupMatches: {
+            /**
+             * Create
+             * @default 0
+             */
+            create: number;
+            /**
+             * Update
+             * @default 0
+             */
+            update: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged: number;
+            /**
+             * Skip
+             * @default 0
+             */
+            skip: number;
+        };
+        /** GroupPlan */
+        GroupPlan: {
+            /** Groupid */
+            groupId: string;
+            /** Selected */
+            selected: boolean;
+            /**
+             * Importas
+             * @enum {string}
+             */
+            importAs: "class" | "event";
+            /** Title */
+            title?: string | null;
+            /** Course */
+            course?: components["schemas"]["CourseExisting"] | components["schemas"]["CourseNew"] | null;
+            /**
+             * Semester
+             * @default saved
+             * @enum {string}
+             */
+            semester: "saved" | "destination";
+            /** Enddate */
+            endDate?: string | null;
+            /** Unsupported */
+            unsupported?: ("first_only" | "skip") | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** ImportGroup */
+        ImportGroup: {
+            /** Groupid */
+            groupId: string;
+            /** Title */
+            title: string;
+            /**
+             * Titlemissing
+             * @default false
+             */
+            titleMissing: boolean;
+            /** Occurrencecount */
+            occurrenceCount: number;
+            /** Patterns */
+            patterns: components["schemas"]["Pattern"][];
+            /** Location */
+            location?: string | null;
+            /** Repeating */
+            repeating: boolean;
+            /** Unsupported */
+            unsupported?: string | null;
+            openEnded?: components["schemas"]["OpenEnded"] | null;
+            /** Firstdate */
+            firstDate?: string | null;
+            saved?: components["schemas"]["SavedTarget"] | null;
+            defaults: components["schemas"]["GroupDefaults"];
+            matches: components["schemas"]["GroupMatches"];
+            /** Issues */
+            issues: ("reserved_name" | "title_required" | "kind_mismatch")[];
+            /** Notes */
+            notes: string[];
+            /** Skipped */
+            skipped: components["schemas"]["SkippedItem"][];
+        };
+        /** ImportPlan */
+        ImportPlan: {
+            /** Destination */
+            destination: components["schemas"]["RefId"] | components["schemas"]["RefNewSemester"];
+            /** Groups */
+            groups: components["schemas"]["GroupPlan"][];
+        };
+        /** ImportPreview */
+        ImportPreview: {
+            /** Uploadid */
+            uploadId: string;
+            /** Filename */
+            fileName: string;
+            /** Eventcount */
+            eventCount: number;
+            /** Timezone */
+            timezone: string;
+            /**
+             * Fromthisapp
+             * @default false
+             */
+            fromThisApp: boolean;
+            /** Groups */
+            groups: components["schemas"]["ImportGroup"][];
+            /** Skipped */
+            skipped: components["schemas"]["SkippedItem"][];
+            /** Expiresat */
+            expiresAt: string;
+        };
+        /** ImportResult */
+        ImportResult: {
+            /** Runid */
+            runId: string;
+            classes: components["schemas"]["Counts"];
+            events: components["schemas"]["Counts"];
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged: number;
+            /** Coursescreated */
+            coursesCreated: components["schemas"]["CreatedCourse"][];
+            /** Semesterid */
+            semesterId?: string | null;
+            /** Skipped */
+            skipped: components["schemas"]["SkippedItem"][];
+            /** Notes */
+            notes: string[];
+            /**
+             * Undoavailable
+             * @default true
+             */
+            undoAvailable: boolean;
+        };
         /** KeptFolder */
         KeptFolder: {
             /** Keptfolder */
             keptFolder: string;
+        };
+        /** KeptItem */
+        KeptItem: {
+            /** Title */
+            title: string;
+            /** Message */
+            message: string;
         };
         /** Link */
         Link: {
@@ -1940,6 +2220,14 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** OpenEnded */
+        OpenEnded: {
+            /**
+             * Suggestedenddate
+             * Format: date
+             */
+            suggestedEndDate: string;
+        };
         /** PasswordChange */
         PasswordChange: {
             /** Currentpassword */
@@ -1951,6 +2239,15 @@ export interface components {
         PasswordReset: {
             /** Newpassword */
             newPassword: string;
+        };
+        /** Pattern */
+        Pattern: {
+            /** Weekdays */
+            weekdays: ("MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU")[];
+            /** Starttime */
+            startTime: string;
+            /** Endtime */
+            endTime: string;
         };
         /** Position */
         Position: {
@@ -2173,6 +2470,34 @@ export interface components {
         RefNewYear: {
             new: components["schemas"]["NewYear"];
         };
+        /** RemovedCounts */
+        RemovedCounts: {
+            /**
+             * Classes
+             * @default 0
+             */
+            classes: number;
+            /**
+             * Events
+             * @default 0
+             */
+            events: number;
+            /**
+             * Courses
+             * @default 0
+             */
+            courses: number;
+            /**
+             * Semesters
+             * @default 0
+             */
+            semesters: number;
+            /**
+             * Years
+             * @default 0
+             */
+            years: number;
+        };
         /** RestoreResult */
         RestoreResult: {
             /**
@@ -2201,6 +2526,22 @@ export interface components {
             size: number;
             /** Updatedat */
             updatedAt: string;
+        };
+        /** SavedTarget */
+        SavedTarget: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "class" | "event";
+            /** Yearname */
+            yearName: string;
+            /** Semestername */
+            semesterName: string;
+            /** Coursename */
+            courseName?: string | null;
+            /** Color */
+            color?: ("slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink") | null;
         };
         /** ScopeResult */
         ScopeResult: {
@@ -2388,6 +2729,22 @@ export interface components {
         SetupStatus: {
             /** Needsowner */
             needsOwner: boolean;
+        };
+        /** SkippedItem */
+        SkippedItem: {
+            /** Title */
+            title: string;
+            /** Date */
+            date?: string | null;
+            /** Starttime */
+            startTime?: string | null;
+            /**
+             * Reason
+             * @enum {string}
+             */
+            reason: "all_day" | "cancelled" | "invalid_times" | "has_content" | "in_trash" | "kind_mismatch" | "unsupported_skipped" | "not_selected";
+            /** Message */
+            message: string;
         };
         /** SplitState */
         SplitState: {
@@ -2689,6 +3046,12 @@ export interface components {
             created: components["schemas"]["CreatedRefs"];
             /** Version */
             version: number;
+        };
+        /** UndoResult */
+        UndoResult: {
+            removed: components["schemas"]["RemovedCounts"];
+            /** Kept */
+            kept: components["schemas"]["KeptItem"][];
         };
         /** ValidationError */
         ValidationError: {
@@ -5720,6 +6083,163 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    upload_calendar_api_v1_calendar_imports_post: {
+        parameters: {
+            query: {
+                fileName: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discard_upload_api_v1_calendar_imports__upload_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_import_api_v1_calendar_imports__upload_id__apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportPlan"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undo_import_api_v1_calendar_imports_runs__run_id__undo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UndoResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_calendar_api_v1_calendar_export_get: {
+        parameters: {
+            query?: {
+                semesterId?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/calendar": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };

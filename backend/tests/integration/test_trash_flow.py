@@ -324,3 +324,28 @@ def test_two_deletions_of_one_series_restore_independently(owner_client: TestCli
     r = c.post(f"{API}/trash/{rest['id']}/restore", headers=im(rest["version"]))
     assert r.status_code == 200, r.text
     assert sorted(sessions(c, lin)) == everything  # no date twice, none missing
+
+
+def test_permanent_delete_forgets_the_import_source(app: Any, owner_client: TestClient) -> None:
+    """010 R11: a re-import skips an imported entry while it is in the Trash, and creates it
+    again once it has been deleted for good."""
+    from tests.contract.calendar_io_helpers import import_file, sessions
+    from unihelper.models import CalendarImportSource
+
+    c = owner_client
+    semester = {"new": {"name": "Fall 2026", "year": {"new": {"name": "2026"}}}}
+    import_file(c, "google-fall.ics", semester)
+    phys = next(s for s in sessions(c) if s["courseName"] == "Physics II")
+    r = c.delete(f"{API}/sessions/{phys['key']}", params={"scope": "all"},
+                 headers=im(phys["seriesVersion"]))  # fmt: skip
+    assert r.status_code == 200, r.text
+    with app.state.sessionmaker() as db:
+        assert db.scalar(select(CalendarImportSource).where(
+            CalendarImportSource.lineage_id == phys["lineageId"])) is not None  # fmt: skip
+    (entry,) = trash(c)
+    assert c.delete(f"{API}/trash/{entry['id']}", headers=im(entry["version"])).status_code == 204
+    with app.state.sessionmaker() as db:
+        assert db.scalar(select(CalendarImportSource).where(
+            CalendarImportSource.lineage_id == phys["lineageId"])) is None  # fmt: skip
+    again = import_file(c, "google-fall.ics", semester)
+    assert again["classes"]["created"] == 17

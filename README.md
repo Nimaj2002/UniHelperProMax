@@ -118,6 +118,36 @@ Back up by copying the whole data folder while the app is stopped.
 - **Keyboard**: Tab into the time grid, move with the arrow keys, extend with Shift+↑/↓, press
   Enter for the form and Escape to cancel.
 
+## Importing and exporting the calendar (.ics)
+
+**Settings → Import and export** works with iCalendar files, so a timetable can come from (or go
+to) Google Calendar, Apple Calendar or Outlook. Only the schedule moves: notes, recordings,
+documents and annotations are never imported or exported.
+
+- **Import calendar (.ics)**: choose or drop a file (up to 5 MB and 5,000 events). Nothing changes
+  until you confirm. The preview groups entries by title; repeating groups are selected and set
+  to **Class**, one-time groups are not selected and set to **Event** — change either per group.
+  Classes go to a course of the destination semester with the same name (case and spaces ignored)
+  or to a new course with its own palette colour. Repeating entries without an end get one you
+  can change (16 weeks after the first by default). Times are converted to your time zone and keep
+  their local time across daylight saving; if the file's zone changes at other dates than yours,
+  the series is split where its local time changes, and the preview says so.
+- **Not imported, always with a reason**: all-day and multi-day events ("all-day events are not
+  supported yet"), events cancelled in the file, and — after you choose "first occurrence only"
+  or "Skip" — repetitions the app can't represent (daily, monthly, yearly, numbered weekdays).
+  Reminders, attendees and descriptions are ignored; web links in the description, the event's
+  URL, the Google Meet link and attachment links are kept. Only `http(s)` links are stored.
+- **Importing again** (the same file or a newer export of the same calendar) updates what an
+  earlier import made instead of duplicating it. A session that already has notes, recordings or
+  documents is never moved: it stays as it is and is listed as skipped. Entries missing from the
+  newer file are left alone; one that is in the Trash is not recreated.
+- **Undo import** on the result screen removes the classes, events and courses that import created
+  and nobody has added notes, recordings or documents to since. Updates are not reverted.
+- **Export calendar (.ics)**: everything or one semester as `UniHelperProMax-…-<date>.ics`. Weekly
+  classes are one repeating event, single changes are changed occurrences and cancelled sessions
+  are excluded dates. Extra `X-UNIHELPER-*` fields (ignored by other apps) let a file exported here
+  restore type, year, semester, course and colour when imported here — a portable backup.
+
 ## Importing audio and notes
 
 - **Upload audio** (next to Record, or drop files on the audio panel): MP3, M4A, AAC, WAV, OGG,

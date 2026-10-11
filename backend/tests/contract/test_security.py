@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -66,3 +67,18 @@ def test_spa_csp(tmp_path: Any) -> None:
         r = c.get("/calendar")
         assert "default-src 'self'" in r.headers["Content-Security-Policy"]
         assert "frame-ancestors 'none'" in r.headers["Content-Security-Policy"]
+
+
+def test_calendar_import_file_name_is_display_only(
+    owner_client: TestClient, tmp_data_dir: Path
+) -> None:
+    """010 T059: the upload's name never becomes a path; the staged file stays in `.uploads`."""
+    from tests.contract.calendar_io_helpers import upload_bytes
+    from tests.fixtures.ics.make_large import fixture
+
+    r = upload_bytes(owner_client, fixture("apple-floating.ics"), "../../../owner/evil.ics")
+    assert r.status_code == 201, r.text
+    assert r.json()["fileName"] == "../../../owner/evil.ics"
+    assert not (tmp_data_dir / "files" / "owner" / "evil.ics").exists()
+    staged = list((tmp_data_dir / "files" / ".uploads").iterdir())
+    assert [p.suffix for p in staged] == [".part"]

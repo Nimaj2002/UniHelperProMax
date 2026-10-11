@@ -18,7 +18,7 @@ from datetime import date, time
 from pathlib import PurePosixPath
 from typing import Any
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, exists, func, select
 from sqlalchemy.orm import Session
 
 from unihelper.api.deps import check_version
@@ -37,8 +37,11 @@ from unihelper.domain.trash_payload import (
     build,
 )
 from unihelper.models import (
+    CalendarImportSource,
+    ClassSeries,
     Course,
     Document,
+    EventSeries,
     Note,
     Recording,
     Semester,
@@ -810,5 +813,27 @@ def purge(db: Session, storage: StorageService, user: User, entry_id: str, versi
         )
         db.delete(f)
     db.flush()
+    lineage_id = entry.lineage_id
     db.delete(entry)
     db.flush()
+    _forget_import_source(db, user, lineage_id)
+
+
+def _forget_import_source(db: Session, user: User, lineage_id: str) -> None:
+    """A lineage gone for good no longer blocks a re-import of its file entry (010 R11): the
+    next import of that entry creates it again. Kept while any of it is live or in the Trash."""
+    still_there = db.scalar(
+        select(
+            exists().where(ClassSeries.user_id == user.id, ClassSeries.lineage_id == lineage_id)
+            | exists().where(EventSeries.user_id == user.id, EventSeries.lineage_id == lineage_id)
+            | exists().where(TrashEntry.user_id == user.id, TrashEntry.lineage_id == lineage_id)
+        )
+    )
+    if not still_there:
+        db.execute(
+            delete(CalendarImportSource).where(
+                CalendarImportSource.user_id == user.id,
+                CalendarImportSource.lineage_id == lineage_id,
+            )
+        )
+        db.flush()
