@@ -10,6 +10,7 @@ import { AccountMenu } from "./AccountMenu";
 import { Card } from "./Card";
 import { CoursePanelSlot, CourseSearchSlot } from "./CoursePanelSlot";
 import { LEFT_CARD_ID, useLayout } from "./layout";
+import { MadeBy } from "./MadeBy";
 import { CollapsibleSection, usePanelSectionSlot } from "./panelSection";
 import { usePanelActions } from "./registry";
 
@@ -157,11 +158,14 @@ export function LeftCard({ className, onNavigate }: { className?: string; onNavi
         </div>
       }
       footer={
-        <div className="flex shrink-0 items-center gap-1 border-t border-divider px-2 py-2">
-          <div className="min-w-0 flex-1">
-            <AccountMenu variant="full" />
+        <div className="flex shrink-0 flex-col gap-1 border-t border-divider px-2 py-2">
+          <div className="flex items-center gap-1">
+            <div className="min-w-0 flex-1">
+              <AccountMenu variant="full" />
+            </div>
+            <PanelActions slot="footer" variant="full" />
           </div>
-          <PanelActions slot="footer" variant="full" />
+          <MadeBy variant="full" />
         </div>
       }
     >

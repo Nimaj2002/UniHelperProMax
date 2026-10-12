@@ -6,6 +6,7 @@ import { AccountMenu } from "./AccountMenu";
 import { Card } from "./Card";
 import { AppMark } from "./LeftCard";
 import { LEFT_CARD_ID, SHOW_LEFT_ID, useLayout } from "./layout";
+import { MadeBy } from "./MadeBy";
 import { usePanelActions } from "./registry";
 
 /** The closed side panel on wide windows (008 FR-011): reopen, app mark, Account and Settings. */
@@ -43,6 +44,7 @@ export function Rail() {
           {footer.map(({ id, component: C }) => (
             <C key={id} variant="icon" />
           ))}
+          <MadeBy variant="icon" />
         </div>
       </div>
     </Card>
