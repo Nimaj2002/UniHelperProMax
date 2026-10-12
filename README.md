@@ -1,52 +1,141 @@
-# UniHelperProMax
+<div align="center">
 
-Class schedules, per-class Markdown notes, lecture recordings, and transcription for university
-students. Released: 001 accounts, calendar and courses; 002 course timelines and the session
-notes workspace; 003 session audio recording and playback; 004 transcription into notes; 005
-settings (transcription providers, light/dark/custom themes); 006 imports; 007 documents and the
-PDF reader; 008 floating card layout; 009 events, press-and-drag creation and the Trash. Specs
-and plans are in `specs/`.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="icons/svg/lockup-dark.svg">
+  <img src="icons/svg/lockup.svg" alt="UniHelperProMax" width="440">
+</picture>
 
-- Python/FastAPI backend with a versioned JSON API (`/api/v1`) over SQLite
-- React + shadcn/ui frontend, light, dark and your own themes, fully keyboard operable
-- Your files stay yours: a plain, human-readable folder tree on disk
+### Your whole semester in one calm place.
 
-## Requirements
+Timetable, lecture notes, slides, recordings and transcripts, organised by class and stored as
+plain files you own.
 
-- Python 3.12+ and [`uv`](https://docs.astral.sh/uv/)
-- Node.js 22 LTS with `pnpm` (`corepack pnpm …` works without a global install) — only needed to
-  build the frontend, not at runtime
+![Self-hosted](https://img.shields.io/badge/self--hosted-your_data_stays_yours-7A3DB8)
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
+![React](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=black)
+![Themes](https://img.shields.io/badge/themes-18_built--in_%2B_your_own-C49BFF)
+![Accessible](https://img.shields.io/badge/WCAG-AA-2E7D32)
 
-## Setup
+<img src="docs/screenshots/workspace-split.png" alt="Lecture notes next to the lecture slides in split view, with the recording in the audio panel" width="100%">
+
+<sub>Lecture 9: notes on the left, the professor's slides on the right, the recording on the side.</sub>
+
+</div>
+
+---
+
+## Why you'll love it
+
+Most students keep their schedule in one app, notes in another, slides in a downloads folder and
+recordings on their phone. When the exam comes, nothing is where you need it.
+
+UniHelperProMax gives every class session its own space. Open Monday's Data Structures lecture and
+its notes, slides, recording and transcript are already there. Two clicks from the calendar.
+
+- 🗓️ **A calendar built for university.** Weekly classes, exams, office hours and seminars, with years and semesters.
+- 📝 **Notes that belong to a class.** A Markdown editor with tables, code blocks and checklists.
+- 📑 **Slides next to your notes.** A built-in PDF reader with highlights, drawings and comments, in split view.
+- 🎙️ **Record the lecture.** Recording keeps going if the tab closes or the Wi-Fi drops.
+- ✨ **Transcribe it into your notes.** The transcript is added to the end of your note and nothing you wrote changes.
+- 🎨 **Make it yours.** 18 built-in themes (Catppuccin, Dracula, Tokyo Night, Nord…) or design your own.
+- 🔒 **Your files stay yours.** Everything is a normal folder of `.md`, `.pdf` and audio files on your own disk.
+
+## A quick tour
+
+### 🗓️ See your whole week at a glance
+
+Every course gets its own colour, a red line marks the current time, and exams or events stand out
+with their own marker. Switch between day, week and month, or import your existing timetable from
+Google Calendar, Apple Calendar or Outlook (`.ics`).
+
+<img src="docs/screenshots/calendar-week.png" alt="Week view with colour-coded classes and events" width="100%">
+
+### ⚡ Draw a study session straight onto the calendar
+
+Press and drag on an empty slot. A small form opens with the semester already filled in. Pick
+**Class** or **Event**, give it a name and save. Made a mistake? Click **Undo**.
+
+<img src="docs/screenshots/quick-create.png" alt="Dragging on the calendar opens a quick New entry form" width="100%">
+
+### 📝 Notes that look as good as they read
+
+A live Markdown editor with headings, tables, syntax-highlighted code and to-do lists. Each note is
+a plain `.md` file in that class's folder, so you can also open it in VS Code, Obsidian or any
+other editor.
+
+<img src="docs/screenshots/notes.png" alt="Markdown note with headings, a code block and a table" width="100%">
+
+### 🎙️ Record now, read later
+
+Hit **Record** during the lecture or upload an audio file you already have. Afterwards click
+**Transcribe**, choose a note, and the transcript is added to the end of it. It runs on the
+server, so you can close the laptop and come back later. Works with any OpenAI-compatible speech
+API, including one you host yourself.
+
+<img src="docs/screenshots/transcribe.png" alt="Transcribe dialog: choose the note and the spoken language" width="100%">
+
+### 🎨 Light, dark, or something with more personality
+
+Pick from 18 built-in themes, or make your own from four colours. The editor flags any colour pair
+that's hard to read. Your theme follows you to every device.
+
+<img src="docs/screenshots/themes.png" alt="The app in Catppuccin Mocha, Rosé Pine Dawn and Tokyo Night" width="100%">
+
+<details>
+<summary>See all built-in themes</summary>
+<br>
+<img src="docs/screenshots/appearance.png" alt="Appearance settings with all built-in themes" width="100%">
+</details>
+
+### ⌨️ And a lot of small things
+
+- **Works with only a keyboard**: every screen, including the calendar, PDF reader and audio player ([shortcuts](#notes-workspace-shortcuts)).
+- **Split view**: slides on one side, notes on the other (`Alt+\`).
+- **Trash with restore**: deleted classes come back with all their notes, recordings and documents.
+- **Multiple accounts** on one install for you and your friends, with no public sign-up.
+- **Calendar export** to `.ics`, which also works as a portable backup of your schedule.
+
+---
+
+## Get started in 3 minutes
+
+You need **Python 3.12+** with [`uv`](https://docs.astral.sh/uv/) and **Node.js 22 LTS** (only to build
+the frontend once).
 
 ```bash
+# 1. Get the code
+git clone https://github.com/Nimaj2002/UniHelperProMax.git
+cd UniHelperProMax
+
+# 2. Install dependencies
 cd backend && uv sync
 cd ../frontend && corepack pnpm install
+
+# 3. Build the app and start it
+corepack pnpm build
+cd ../backend && UNIHELPER_DATA_DIR=./data UNIHELPER_STATIC_DIR=../frontend/dist \
+  uv run uvicorn unihelper.main:app --port 8000
 ```
+
+Open **http://localhost:8000**, create your account, and add your first class. 🎉
+
+The first visit asks you to create the **owner** account. The owner can add accounts for other
+people (Account menu → Manage accounts).
 
 > **WSL tip:** on `/mnt/c` drives, reading `node_modules` is slow. A local, git-ignored
 > `frontend/pnpm-workspace.yaml` with `virtualStoreDir: /home/<you>/.cache/unihelper/pnpm-virtual-store`
 > keeps the package store on the Linux filesystem and makes tests and type-checks ~50× faster.
 
-## Run
+### Development mode
 
-Development (two terminals):
+Two terminals, with hot reload:
 
 ```bash
 cd backend && UNIHELPER_DATA_DIR=./data uv run uvicorn unihelper.main:app --reload --port 8000
 cd frontend && corepack pnpm dev        # http://localhost:5173 (proxies /api to :8000)
 ```
 
-Production-like, one process:
-
-```bash
-cd frontend && corepack pnpm build
-cd ../backend && UNIHELPER_DATA_DIR=./data UNIHELPER_STATIC_DIR=../frontend/dist \
-  uv run uvicorn unihelper.main:app --port 8000      # http://localhost:8000
-```
-
-The first visit asks you to create the **owner** account. The owner can add accounts for other
-people (Account menu → Manage accounts); there is no public sign-up.
+### Configuration
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -61,6 +150,14 @@ inside the server process, so a second process could overwrite a transcript. Don
 `--workers` (or pass `--workers 1`), and don't start two servers on the same `UNIHELPER_DATA_DIR`:
 the server holds `<data>/server.lock`, and a second process refuses to start ("Another UniHelper
 server process is already using …").
+
+### Under the hood
+
+- Python/FastAPI backend with a versioned JSON API (`/api/v1`) over SQLite
+- React + shadcn/ui frontend, fully keyboard operable, tested against WCAG AA in light and dark
+- Built spec-first: every feature has a spec, plan and task list in [`specs/`](specs/)
+
+---
 
 ## Your data
 
@@ -296,3 +393,13 @@ The owner must choose a new password at the next sign-in.
 - Feature 001: [spec](specs/001-class-schedule-calendar/spec.md) ·
   [plan](specs/001-class-schedule-calendar/plan.md) ·
   [quickstart & validation](specs/001-class-schedule-calendar/quickstart.md)
+
+---
+
+<div align="center">
+
+Made with ❤️ by [Nima](https://github.com/Nimaj2002) for every student who has lost a lecture note the night before an exam.
+
+If UniHelperProMax makes your semester easier, a ⭐ on the repo helps other students find it.
+
+</div>
