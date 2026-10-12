@@ -27,16 +27,16 @@ async function pdfBytes(page: Page, url: string, name: string) {
   return (await page.request.get(`/api/v1/documents/${doc.id}/file`)).body();
 }
 
+/** Select the first line of textPdf's page ("<label> - page N" at 72 pt, baseline 720 pt) by dragging over it. */
 async function selectFirstLine(page: Page, pageNumber = 1) {
-  const span = page.locator(`[id^=workspace-pane-] .page[data-page-number='${pageNumber}'] .textLayer span`).first();
-  await expect(span).toHaveText(/\S/);
-  await span.evaluate((el) => {
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    const sel = document.getSelection()!;
-    sel.removeAllRanges();
-    sel.addRange(range);
-  });
+  const frame = page.locator(`[id^=workspace-pane-] .page[data-page-number='${pageNumber}']`);
+  await expect(frame.locator(".uh-page-base")).toBeVisible();
+  const box = (await frame.boundingBox())!;
+  const at = (x: number, y: number) => [box.x + (x / 612) * box.width, box.y + ((792 - y) / 792) * box.height] as const;
+  await page.mouse.move(...at(73, 725));
+  await page.mouse.down();
+  await page.mouse.move(...at(400, 725), { steps: 30 });
+  await page.mouse.up();
 }
 
 test("US6: every tool by pointer; saved within 2 s; back after reload and in another browser; PDF unchanged", async ({ page, browser }, testInfo) => {
@@ -212,6 +212,6 @@ test("US6: scanned PDFs can't be highlighted; a PDF's own annotations show but a
   await expect(tool(scan, "Draw")).toBeEnabled();
 
   const own = await openPdf(page, docs, "Marked.pdf", annotatedPdf());
-  await expect(own.locator(".annotationLayer section").first()).toBeAttached();
+  await expect(own.locator(".page[data-page-number='1'] .uh-page-base")).toBeVisible(); // drawn with the page
   await expect(own.locator("[data-annotation]")).toHaveCount(0);
 });

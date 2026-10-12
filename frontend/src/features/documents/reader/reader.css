@@ -1,20 +1,27 @@
-/* 007 reader: pdf.js viewer styles mapped to theme tokens (Constitution V). Pages stay paper
-   (white) unless "dark pages" is on; the chrome around them follows the theme. */
+/* 007 reader: EmbedPDF pages with theme tokens (Constitution V). Pages stay paper (white)
+   unless "dark pages" is on; the chrome around them follows the theme. */
+
+.uh-reader {
+  --reader-selection: color-mix(in srgb, var(--accent) 30%, transparent);
+}
 
 .uh-reader-pages {
   background: var(--surface-sunken);
-  --page-margin: 12px auto;
-  --page-border: none;
-  --spreadHorizontalWrapped-margin-LR: -3.5px;
 }
 
-.uh-reader-pages .pdfViewer .page {
-  border: none;
+.uh-reader-pages .page {
   box-shadow: 0 1px 3px var(--shadow-tint), 0 0 0 1px var(--shadow-tint);
+  background: var(--surface-elevated);
 }
 
-.uh-reader[data-dark-pages] .uh-reader-pages .pdfViewer .page {
+.uh-reader[data-dark-pages] .uh-reader-pages .page {
   background-color: var(--reader-page-dark-bg);
+}
+
+/* page images (base and zoom tiles) never start a native image drag: text selection gets the pointer */
+.uh-page-image {
+  pointer-events: none;
+  user-select: none;
 }
 
 /* a page whose rendering failed keeps its place and says so; other pages stay readable */
@@ -32,23 +39,40 @@
 }
 
 /* links in the PDF are keyboard-reachable; show focus with the theme's ring */
-.uh-reader-pages .annotationLayer a:focus-visible {
+.uh-links a {
+  position: absolute;
+  z-index: 2;
+}
+
+.uh-links a:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
 /* search matches (FR-018): theme colours; the current match also gets an outline (not colour alone) */
-.uh-reader-pages .textLayer .highlight {
-  --highlight-bg-color: color-mix(in srgb, var(--warning) 35%, transparent);
-  --highlight-selected-bg-color: color-mix(in srgb, var(--accent) 40%, transparent);
+.uh-search-marks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
-.uh-reader-pages .textLayer .highlight.selected {
+.uh-search-mark {
+  position: absolute;
+  background: color-mix(in srgb, var(--warning) 35%, transparent);
+  mix-blend-mode: multiply;
+}
+
+.uh-search-mark.selected {
+  background: color-mix(in srgb, var(--accent) 40%, transparent);
   outline: 2px solid var(--focus-ring);
   outline-offset: 1px;
 }
 
-/* the user's annotations (US6): one overlay per page, above pdf.js's text and annotation layers.
+.uh-reader[data-dark-pages] .uh-search-mark {
+  mix-blend-mode: normal;
+}
+
+/* the user's annotations (US6): one overlay per page, above the page, its links and selection.
    With Select it lets the pointer through (text selection, PDF links) except on annotations. */
 .uh-reader-pages .uh-annot-page {
   position: absolute;

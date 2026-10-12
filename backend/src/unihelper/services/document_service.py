@@ -123,10 +123,14 @@ def annotation_count(storage: StorageService, parts: list[str]) -> int:
     if data is None:
         return 0
     try:
-        items = json.loads(data).get("annotations", [])
+        model = json.loads(data)
+        items = model.get("annotations", [])
+        viewer = model.get("viewer") or {}
+        viewer_items = viewer.get("items", []) if isinstance(viewer, dict) else []
     except (ValueError, AttributeError):
         return 0
-    return len(items) if isinstance(items, list) else 0
+    count = len(items) if isinstance(items, list) else 0
+    return count + (len(viewer_items) if isinstance(viewer_items, list) else 0)
 
 
 def view(db: Session, storage: StorageService, user: User, d: Document) -> dict[str, Any]:

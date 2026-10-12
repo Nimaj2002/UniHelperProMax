@@ -200,3 +200,49 @@ def test_limits_and_foreign_documents(
     other = make_member()
     assert_problem(other.get(f"{API}/documents/{doc['id']}/annotations"), 404, "not_found")
     assert_problem(_ops(other, doc["id"], _upserts(FOUR[:1])), 404, "not_found")
+
+
+def test_viewer_annotations_round_trip_next_to_the_untouched_pdf(
+    owner_client: TestClient, tmp_data_dir: Path
+) -> None:
+    """The EmbedPDF viewer's annotations: stored under the sidecar's "viewer" key, PDF untouched,
+    kept apart from the app's own annotations, counted when the document is listed."""
+    c = owner_client
+    original = fx.text_pdf(2)
+    doc = _doc(c, "Viewer.pdf", original)
+    url = f"{API}/documents/{doc['id']}/viewer-annotations"
+
+    empty = c.get(url)
+    assert empty.status_code == 200 and empty.json() == {"items": [], "removed": []}
+    check(empty.json(), "ViewerAnnotations", spec="007")
+
+    square = {
+        "annotation": {
+            "type": 5,
+            "id": "sq-1",
+            "pageIndex": 0,
+            "rect": {"origin": {"x": 100, "y": 100}, "size": {"width": 120, "height": 60}},
+            "created": {"$date": "2026-10-12T10:00:00.000Z"},
+        }
+    }
+    body = {"items": [square], "removed": ["0|5|10,10,20,20"]}
+    r = c.put(url, json=body)
+    assert r.status_code == 200, r.text
+    check(r.json(), "ViewerAnnotations", spec="007")
+    assert c.get(url).json() == body
+
+    # beside the app's own annotations, in the same sidecar; the PDF is unchanged
+    assert _ops(c, doc["id"], _upserts(FOUR[:1])).status_code == 200
+    assert c.get(url).json() == body
+    folder = documents_dir(tmp_data_dir)
+    sidecar = json.loads((folder / "Viewer.annotations.json").read_text(encoding="utf-8"))
+    assert sidecar["viewer"]["items"] == [square]
+    assert [a["id"] for a in sidecar["annotations"]] == ["a-highlight"]
+    assert (folder / "Viewer.pdf").read_bytes() == original
+
+    # replaced as a whole
+    assert c.put(url, json={"items": [], "removed": []}).json() == {"items": [], "removed": []}
+
+    # someone else's or a missing document
+    assert_problem(c.get(f"{API}/documents/nope/viewer-annotations"), 404, "not_found")
+    assert_problem(c.put(f"{API}/documents/nope/viewer-annotations", json=body), 404, "not_found")

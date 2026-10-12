@@ -140,7 +140,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not request.url.path.startswith(API_PREFIX):
             response.headers.setdefault(
                 "Content-Security-Policy",
-                "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+                # the PDF reader (EmbedPDF) compiles PDFium's WebAssembly in a blob: worker
+                # and shows rendered pages as blob: images
+                "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; "
+                "worker-src 'self' blob:; img-src 'self' data: blob:; "
+                "style-src 'self' 'unsafe-inline'; "
                 "object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
             )
         return response

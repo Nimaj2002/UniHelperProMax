@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import Field, model_validator
 
@@ -103,3 +103,12 @@ class AnnotationOpResult(ApiModel):
 class AnnotationOpsResponse(ApiModel):
     results: list[AnnotationOpResult]
     notice: str | None = None
+
+
+class ViewerAnnotations(ApiModel):
+    """The PDF viewer's (EmbedPDF) own annotations, kept as it exports them: `items` are the
+    annotations made or changed in the app, `removed` the PDF's own annotations taken away
+    (by page, type and position, since the PDF may not give them stable ids)."""
+
+    items: list[dict[str, Any]] = Field(default_factory=list, max_length=10_000)
+    removed: list[str] = Field(default_factory=list, max_length=10_000)

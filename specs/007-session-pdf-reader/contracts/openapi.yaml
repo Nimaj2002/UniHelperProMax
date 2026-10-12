@@ -170,6 +170,36 @@ paths:
         "413": { $ref: "#/components/responses/Problem" }   # too_many_annotations
         "422": { $ref: "#/components/responses/Problem" }   # invalid annotation (page, geometry, sizes)
 
+  /documents/{documentId}/viewer-annotations:
+    parameters: [{ $ref: "#/components/parameters/DocumentId" }]
+    get:
+      tags: [annotations]
+      summary: The PDF viewer's (EmbedPDF) annotations, from the sidecar's "viewer" key (empty when none)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ViewerAnnotations" }
+        "404": { $ref: "#/components/responses/Problem" }
+    put:
+      tags: [annotations]
+      summary: Replace the viewer's annotations (the viewer sends its whole set; the PDF is never changed)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ViewerAnnotations" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ViewerAnnotations" }
+        "404": { $ref: "#/components/responses/Problem" }
+        "413": { $ref: "#/components/responses/Problem" }   # too_many_annotations (25 MB)
+        "422": { $ref: "#/components/responses/Problem" }
+
   /documents/{documentId}/position:
     parameters: [{ $ref: "#/components/parameters/DocumentId" }]
     get:
@@ -275,6 +305,22 @@ components:
         conflictOf: { type: string }
         createdAt: { type: string }
         updatedAt: { type: string }
+
+    ViewerAnnotations:
+      type: object
+      description: >
+        As EmbedPDF exports them (opaque to the server). `items` are annotations made or changed
+        in the app; `removed` are fingerprints ("page|type|x,y,w,h") of the PDF's own annotations
+        that were deleted or changed.
+      properties:
+        items:
+          type: array
+          maxItems: 10000
+          items: { type: object }
+        removed:
+          type: array
+          maxItems: 10000
+          items: { type: string }
 
     AnnotationSet:
       type: object

@@ -20,6 +20,7 @@ from unihelper.schemas.documents import (
     DocumentPatch,
     Position,
     PositionPut,
+    ViewerAnnotations,
 )
 from unihelper.services import annotation_service
 from unihelper.services import document_service as svc
@@ -138,3 +139,26 @@ def apply_annotation_ops(
     """Merged per annotation; idempotent by opId (research R7). The service already shapes the
     body (absent fields omitted, `notice` always present), so it is returned as is."""
     return JSONResponse(annotation_service.apply(db, storage, user, document_id, body.ops))
+
+
+@router.get(
+    "/documents/{document_id}/viewer-annotations",
+    response_model=ViewerAnnotations,
+    tags=["annotations"],
+)
+def get_viewer_annotations(
+    document_id: str, user: CurrentUser, db: DbSession, storage: Storage
+) -> Any:
+    return annotation_service.get_viewer(db, storage, user, document_id)
+
+
+@router.put(
+    "/documents/{document_id}/viewer-annotations",
+    response_model=ViewerAnnotations,
+    tags=["annotations"],
+)
+def put_viewer_annotations(
+    document_id: str, body: ViewerAnnotations, user: CurrentUser, db: DbSession, storage: Storage
+) -> Any:
+    """Replaces the viewer's annotations of the document (the viewer sends its whole set)."""
+    return annotation_service.put_viewer(db, storage, user, document_id, body)

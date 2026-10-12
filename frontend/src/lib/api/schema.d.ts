@@ -938,6 +938,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/documents/{document_id}/viewer-annotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Viewer Annotations */
+        get: operations["get_viewer_annotations_api_v1_documents__document_id__viewer_annotations_get"];
+        /**
+         * Put Viewer Annotations
+         * @description Replaces the viewer's annotations of the document (the viewer sends its whole set).
+         */
+        put: operations["put_viewer_annotations_api_v1_documents__document_id__viewer_annotations_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/transcription/providers": {
         parameters: {
             query?: never;
@@ -3065,6 +3086,20 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /**
+         * ViewerAnnotations
+         * @description The PDF viewer's (EmbedPDF) own annotations, kept as it exports them: `items` are the
+         *     annotations made or changed in the app, `removed` the PDF's own annotations taken away
+         *     (by page, type and position, since the PDF may not give them stable ids).
+         */
+        ViewerAnnotations: {
+            /** Items */
+            items?: {
+                [key: string]: unknown;
+            }[];
+            /** Removed */
+            removed?: string[];
         };
         /** WorkspaceState */
         WorkspaceState: {
@@ -5454,6 +5489,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnnotationOpsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_viewer_annotations_api_v1_documents__document_id__viewer_annotations_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewerAnnotations"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_viewer_annotations_api_v1_documents__document_id__viewer_annotations_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewerAnnotations"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewerAnnotations"];
                 };
             };
             /** @description Validation Error */

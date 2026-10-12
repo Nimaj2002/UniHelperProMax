@@ -22,7 +22,7 @@ from unihelper.db.engine import on_rollback
 from unihelper.domain import annotations as domain
 from unihelper.models import AnnotationOp, User
 from unihelper.models.base import new_id
-from unihelper.schemas.documents import Annotation
+from unihelper.schemas.documents import Annotation, ViewerAnnotations
 from unihelper.schemas.documents import AnnotationOp as AnnotationOpIn
 from unihelper.services.document_service import document_file_lock, get_owned, pdf_parts
 from unihelper.storage.storage_service import StorageService
@@ -177,3 +177,56 @@ def prune_applied_ops(db: Session) -> int:
     )
     db.commit()
     return int(result.rowcount or 0)
+
+
+# ---- the PDF viewer's annotations (EmbedPDF) -----------------------------------------------
+# Kept in the same sidecar under "viewer", so rename, delete and trash carry them along.
+
+VIEWER_MAX_BYTES = 25 * 1024 * 1024  # stamps and signatures travel as embedded images
+
+
+def get_viewer(
+    db: Session, storage: StorageService, user: User, document_id: str
+) -> dict[str, Any]:
+    d = get_owned(db, user, document_id)
+    parts, _ = pdf_parts(db, user, d)
+    model, _unreadable = _read_model(storage, storage.sidecar_parts(parts))
+    viewer = (model or {}).get("viewer") or {}
+    items = viewer.get("items") if isinstance(viewer, dict) else None
+    removed = viewer.get("removed") if isinstance(viewer, dict) else None
+    return {
+        "items": items if isinstance(items, list) else [],
+        "removed": removed if isinstance(removed, list) else [],
+    }
+
+
+def put_viewer(
+    db: Session, storage: StorageService, user: User, document_id: str, body: ViewerAnnotations
+) -> dict[str, Any]:
+    d = get_owned(db, user, document_id)
+    viewer = {"items": body.items, "removed": body.removed, "updatedAt": _now()}
+    with document_file_lock(d.id):
+        parts, _ = pdf_parts(db, user, d)
+        sidecar = storage.sidecar_parts(parts)
+        model, unreadable = _read_model(storage, sidecar)
+        if unreadable:
+            stamp = datetime.now(UTC).strftime("%Y%m%d-%H%M%S")
+            storage.move_aside(sidecar, f"unreadable-{stamp}")
+            log.warning("unreadable annotation file of document %s moved aside", d.id)
+        if model is None:
+            model = domain.empty_model(d.file_name, d.sha256)
+        model["document"] = {
+            **model.get("document", {}),
+            "fileName": d.file_name,
+            "sha256": d.sha256,
+        }
+        model["viewer"] = viewer
+        text = domain.dumps(model)
+        if len(text.encode("utf-8")) > VIEWER_MAX_BYTES:
+            raise ApiError(
+                413,
+                "too_many_annotations",
+                "This document's annotations are too large to save (at most 25 MB).",
+            )
+        storage.write_text_atomic(sidecar, text)
+    return {"items": body.items, "removed": body.removed}

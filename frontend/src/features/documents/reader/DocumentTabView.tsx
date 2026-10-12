@@ -1,5 +1,5 @@
 /**
- * The content of a document tab (007 FR-011–FR-024). The reader and pdf.js load lazily, the first
+ * The content of a document tab (007 FR-011–FR-024). The reader and EmbedPDF load lazily, the first
  * time a document tab opens, so the notes workspace doesn't pay for them (research R14).
  */
 import { lazy, Suspense } from "react";

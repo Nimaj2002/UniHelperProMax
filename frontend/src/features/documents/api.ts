@@ -38,7 +38,6 @@ export function useDocument(id: string) {
 export function prefetchReader() {
   const load = () => {
     void import("./reader/PdfReader");
-    void import("./reader/pdfjs").then((m) => m.sharedWorker());
   };
   if ("requestIdleCallback" in window) window.requestIdleCallback(load, { timeout: 1000 });
   else setTimeout(load, 500);
@@ -72,6 +71,21 @@ export function fetchPosition(id: string) {
 
 export function savePosition(id: string, page: number, keepalive = false) {
   return apiFetch<{ page: number }>(`/documents/${enc(id)}/position`, { method: "PUT", body: { page }, keepalive });
+}
+
+/** The PDF viewer's (EmbedPDF) annotations, as the viewer exports them (JSON-safe encoded). */
+export interface ViewerAnnotations {
+  items: Record<string, unknown>[];
+  /** The PDF's own annotations taken away, by page, type and position. */
+  removed: string[];
+}
+
+export function fetchViewerAnnotations(id: string) {
+  return apiFetch<ViewerAnnotations>(`/documents/${enc(id)}/viewer-annotations`);
+}
+
+export function saveViewerAnnotations(id: string, body: ViewerAnnotations) {
+  return apiFetch<ViewerAnnotations>(`/documents/${enc(id)}/viewer-annotations`, { method: "PUT", body });
 }
 
 export function fetchAnnotations(id: string) {

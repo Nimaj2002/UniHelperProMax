@@ -4,13 +4,16 @@
  * rotation and split view never move them.
  */
 
-/** Affine matrix [a, b, c, d, e, f] as used by pdf.js (`viewport.transform`). */
+/** Affine matrix [a, b, c, d, e, f] (the PDF viewport-transform convention). */
 export type Matrix = readonly [number, number, number, number, number, number];
 export type Point = [number, number];
 /** [x1, y1, x2, y2] in page space. */
 export type Rect = [number, number, number, number];
 
-/** The same transform pdf.js's PageViewport computes (here so the maths can be unit-tested). */
+/**
+ * PDF space → a page shown at `scale`, turned by `rotation`: the transform pdf.js's PageViewport
+ * computed, which stored annotations were made with (here so the maths can be unit-tested).
+ */
 export function viewportTransform({ viewBox, scale, rotation }: { viewBox: readonly number[]; scale: number; rotation: number }): Matrix {
   const [x0, y0, x1, y1] = viewBox;
   const cx = (x1 + x0) / 2;
@@ -64,8 +67,8 @@ interface ClientRect {
 }
 
 /**
- * The rects of a text selection (`range.getClientRects()`, screen px) on one page as page-space
- * rects, merged into one rect per line (FR-025 Highlight). `page` is the page's on-screen origin.
+ * The rects of a text selection on one page as page-space rects, merged into one rect per line
+ * (FR-025 Highlight). `page` is the rects' origin and `inverse` maps from their space to PDF space.
  */
 export function selectionToRects(rects: ClientRect[], page: { left: number; top: number }, inverse: Matrix): Rect[] {
   const boxes = rects

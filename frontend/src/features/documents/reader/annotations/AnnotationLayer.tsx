@@ -1,22 +1,22 @@
 /**
- * The user's annotations drawn over pdf.js pages (007 FR-025–FR-034, research R6): one overlay per
- * rendered page (re-attached on every `pagerendered`, since pdf.js clears unknown children when it
- * evicts a page), geometry converted from page space with the page's viewport, and the tools:
- * Draw (pointer strokes, simplified), Text (a box typed in place), Comment (a marker with a note)
- * and Highlight (the current text selection).
+ * The user's annotations drawn over the reader's pages (007 FR-025–FR-034, research R6): one
+ * overlay per shown page (the reader reports each page's overlay element and transform),
+ * geometry converted from page space with the page's transform, and the tools: Draw (pointer
+ * strokes, simplified), Text (a box typed in place) and Comment (a marker with a note).
+ * Highlight (the current text selection) is made by the reader from EmbedPDF's selection.
  */
-import { useCallback, useEffect, useImperativeHandle, useRef, useState, type PointerEvent, type Ref } from "react";
+import { useCallback, useImperativeHandle, useState, type PointerEvent, type Ref } from "react";
 import { createPortal } from "react-dom";
-import type { EventBus } from "../pdfjs";
 import { AnnotationItem, NoteEditor } from "./AnnotationItem";
 import { bounds } from "./edit";
-import { invert, pageToViewport, rectToViewport, selectionToRects, viewportToPage, type Matrix, type Point } from "./geometry";
+import { invert, pageToViewport, rectToViewport, viewportToPage, type Matrix, type Point } from "./geometry";
 import type { AnnotationModel } from "./model";
 import { simplify } from "./simplify";
 import { INK_WIDTH, TEXTBOX_SIZE, type Tool } from "./tools";
 import { colorOf, type Annotation, type ColorId } from "./types";
 
-interface PageInfo {
+/** A shown page: the overlay to draw in, the page box, and PDF space → page box (CSS px). */
+export interface PageInfo {
   el: HTMLDivElement;
   div: HTMLElement;
   transform: Matrix;
@@ -25,32 +25,9 @@ interface PageInfo {
   height: number;
 }
 
-interface PageViewLike {
-  id: number;
-  div: HTMLElement;
-  viewport: { transform: number[]; scale: number; width: number; height: number };
-}
-
-/** Text nodes of `root` inside `range`: their screen rects and text (element boxes excluded). */
-function selectedText(range: Range, root: Element): { rects: DOMRect[]; text: string } {
-  const rects: DOMRect[] = [];
-  let text = "";
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-  for (let n = walker.nextNode(); n; n = walker.nextNode()) {
-    if (!range.intersectsNode(n)) continue;
-    const part = document.createRange();
-    const len = (n as Text).length;
-    part.setStart(n, n === range.startContainer ? range.startOffset : 0);
-    part.setEnd(n, n === range.endContainer ? range.endOffset : len);
-    if (part.collapsed) continue;
-    rects.push(...part.getClientRects());
-    text += part.toString();
-  }
-  return { rects, text: text.replace(/\s+/g, " ").trim() };
-}
-
 interface Props {
-  bus: EventBus | null;
+  /** Shown pages by page number. */
+  pages: Map<number, PageInfo>;
   model: AnnotationModel;
   tool: Tool;
   color: ColorId;
@@ -62,61 +39,14 @@ interface Props {
 }
 
 export interface AnnotationLayerHandle {
-  /** Highlight the current text selection: one highlight per page it covers, one undo step. */
-  highlightSelection(): void;
   /** Keyboard path for Text/Comment: open an editor in the middle of the visible part of `page`. */
   placeOnPage(page: number): void;
 }
 
-export function AnnotationLayer({ bus, model, tool, color, darkPages, selected, onSelect, onEscape, ref }: Props) {
-  const [pages, setPages] = useState<Map<number, PageInfo>>(new Map());
+export function AnnotationLayer({ pages, model, tool, color, darkPages, selected, onSelect, onEscape, ref }: Props) {
   const [placement, setPlacement] = useState<{ page: number; at: Point; n: number } | null>(null);
 
-  const overlays = useRef(new Map<number, HTMLDivElement>());
-
-  useEffect(() => {
-    if (!bus) return;
-    const made = overlays.current;
-    const onRendered = (e: { source: PageViewLike; pageNumber: number; isDetailView?: boolean }) => {
-      if (e.isDetailView) return;
-      const { div, viewport } = e.source;
-      let el = made.get(e.pageNumber);
-      if (!el) {
-        el = document.createElement("div");
-        el.className = "uh-annot-page";
-        made.set(e.pageNumber, el);
-      }
-      if (el.parentNode !== div) div.append(el);
-      const info: PageInfo = { el, div, transform: viewport.transform as unknown as Matrix, scale: viewport.scale, width: viewport.width, height: viewport.height };
-      setPages((prev) => new Map(prev).set(e.pageNumber, info));
-    };
-    bus.on("pagerendered", onRendered);
-    return () => {
-      bus.off("pagerendered", onRendered);
-      setPages(new Map());
-      made.forEach((el) => el.remove());
-      made.clear();
-    };
-  }, [bus]);
-
   useImperativeHandle(ref, () => ({
-    highlightSelection() {
-      const sel = document.getSelection();
-      if (!sel || sel.isCollapsed || !sel.rangeCount) return;
-      const range = sel.getRangeAt(0);
-      const created: Omit<Annotation, "id">[] = [];
-      for (const [page, info] of pages) {
-        const textLayer = info.div.querySelector(".textLayer");
-        if (!textLayer || !range.intersectsNode(textLayer)) continue;
-        const { rects, text } = selectedText(range, textLayer);
-        const origin = info.div.getBoundingClientRect();
-        const quads = selectionToRects(rects, { left: origin.left + info.div.clientLeft, top: origin.top + info.div.clientTop }, invert(info.transform));
-        if (quads.length) created.push({ type: "highlight", page, color, rects: quads, quoted: text.slice(0, 2000) });
-      }
-      if (!created.length) return;
-      model.createAll(created.sort((x, y) => x.page - y.page));
-      sel.removeAllRanges();
-    },
     placeOnPage(page: number) {
       const info = pages.get(page);
       const scroller = info?.div.closest(".uh-reader-pages");
@@ -127,7 +57,6 @@ export function AnnotationLayer({ bus, model, tool, color, darkPages, selected, 
       setPlacement((prev) => ({ page, at: viewportToPage(invert(info.transform), [p.width / 2 - 40, y]), n: (prev?.n ?? 0) + 1 }));
     },
   }));
-
 
   return [...pages].map(([page, info]) =>
     createPortal(

@@ -18,7 +18,6 @@ dist/
 build/
 coverage/
 frontend/openapi.json
-frontend/public/pdfjs/
 playwright-report/
 test-results/
 *.log

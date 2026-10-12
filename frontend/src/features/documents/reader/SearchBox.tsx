@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 export interface SearchResult {
-  /** pdf.js FindState: 0 found, 1 not found, 2 wrapped, 3 pending. */
-  state: number | null;
+  /** idle: nothing searched; pending: searching the pages; done: every page searched. */
+  state: "idle" | "pending" | "done";
   current: number;
   total: number;
   /** Every page's text is empty (scanned document). */
@@ -12,11 +12,10 @@ export interface SearchResult {
 }
 
 export function resultText(r: SearchResult, query: string): string {
-  if (!query.trim() || r.state === null) return "";
-  if (r.state === 3 && r.total === 0) return "Searching…";
+  if (!query.trim() || r.state === "idle") return "";
   if (r.total > 0) return `${r.current} of ${r.total}`;
-  if (r.state === 1) return r.noText ? "This document has no searchable text." : "No matches";
-  return "";
+  if (r.state === "pending") return "Searching…";
+  return r.noText ? "This document has no searchable text." : "No matches";
 }
 
 interface Props {
