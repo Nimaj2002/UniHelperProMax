@@ -10,7 +10,6 @@ import { usePanelSections, type PanelSection } from "@/app/shell/panelSection";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useSession } from "@/features/classes/api";
 import { useDocuments } from "@/features/documents/api";
 import { useEventDetail, useEventTimeline } from "@/features/events/api";
@@ -145,11 +144,10 @@ interface NotePaneProps {
   visible: boolean;
   mode: EditorMode;
   editorRef: RefObject<MarkdownEditorHandle | null>;
-  onToggleMode: () => void;
 }
 
 /** One pane's note editor; stays mounted (hidden) while the pane shows a document. */
-function NotePane({ noteId, meta, visible, mode, editorRef, onToggleMode }: NotePaneProps) {
+function NotePane({ noteId, meta, visible, mode, editorRef }: NotePaneProps) {
   const query = useQuery({ queryKey: ["note", noteId], queryFn: () => loadNote(noteId), staleTime: Infinity, gcTime: Infinity });
   const note = query.data;
   const snap = useSaveStatus(getSaver(noteId));
@@ -171,7 +169,6 @@ function NotePane({ noteId, meta, visible, mode, editorRef, onToggleMode }: Note
           label={`${meta.name} — Markdown note`}
           mode={mode}
           onChange={(id, text) => getSaver(id)?.update(text)}
-          onToggleMode={onToggleMode}
           onEscape={() => document.getElementById(tabDomId({ kind: "note", id: noteId }))?.focus()}
         />
       </div>
@@ -318,11 +315,6 @@ export function WorkspacePage() {
     [sessionKey, audioOpen, setAudioOpen],
   );
   useRightCard(session.isError ? null : audioCard);
-
-  const toggleMode = useCallback(
-    () => updatePrefs.mutate({ editorMode: mode === "live" ? "raw" : "live" }),
-    [mode, updatePrefs],
-  );
 
   const noteImporter = useNoteImporter({ sessionKey, notes: noteList, onOpen: openNote });
 
@@ -492,7 +484,6 @@ export function WorkspacePage() {
             visible={known?.kind === "note"}
             mode={mode}
             editorRef={editors[side]}
-            onToggleMode={toggleMode}
           />
         )}
         {known?.kind === "document" && <DocSlot host={hostFor(known.id)} parking={parking} />}
@@ -502,7 +493,6 @@ export function WorkspacePage() {
   };
 
   const ratio = ws.split?.ratio ?? 0.5;
-  const showsNote = view.left?.kind === "note" || view.right?.kind === "note";
   const editorArea = (
     <div className="flex h-full min-h-0 flex-col">
       <WorkspaceTabs
@@ -516,20 +506,6 @@ export function WorkspacePage() {
         start={<ShowSidePanelButton />}
         actions={
           <>
-            {showsNote && (
-              <ToggleGroup
-                type="single"
-                size="sm"
-                variant="outline"
-                value={mode}
-                onValueChange={(v) => v && v !== mode && toggleMode()}
-                aria-label="Editing mode"
-                className="shrink-0 [&>button]:h-7"
-              >
-                <ToggleGroupItem value="live" aria-keyshortcuts="Control+E Meta+E">Live</ToggleGroupItem>
-                <ToggleGroupItem value="raw" aria-keyshortcuts="Control+E Meta+E">Raw</ToggleGroupItem>
-              </ToggleGroup>
-            )}
             {session.data && <SessionChip session={session.data} />}
           </>
         }

@@ -1,18 +1,42 @@
-import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirror/commands";
-import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
-import { searchKeymap } from "@codemirror/search";
-import { Compartment, EditorState, Transaction, type Extension } from "@codemirror/state";
-import { EditorView, keymap, placeholder } from "@codemirror/view";
+import {
+  BlockTypeSelect,
+  BoldItalicUnderlineToggles,
+  CodeToggle,
+  CreateLink,
+  DiffSourceToggleWrapper,
+  InsertCodeBlock,
+  InsertImage,
+  InsertTable,
+  InsertThematicBreak,
+  ListsToggle,
+  MDXEditor,
+  type MDXEditorMethods,
+  Separator,
+  UndoRedo,
+  codeBlockPlugin,
+  codeMirrorPlugin,
+  diffSourcePlugin,
+  headingsPlugin,
+  imagePlugin,
+  linkDialogPlugin,
+  linkPlugin,
+  listsPlugin,
+  markdownShortcutPlugin,
+  quotePlugin,
+  tablePlugin,
+  thematicBreakPlugin,
+  toolbarPlugin,
+} from "@mdxeditor/editor";
+import "@mdxeditor/editor/style.css";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
-import { livePreview, openLinkCommand } from "./livePreview";
-import { editorTheme } from "./theme";
+import { useResolvedTheme } from "@/app/theme";
 
 export type EditorMode = "live" | "raw";
 
 export interface MarkdownEditorHandle {
   /** Replace a note's text (e.g. after "Use the file's version"). */
   replaceContent(noteId: string, text: string): void;
-  /** Add text at the end (a merged transcript): cursor, scroll and undo history stay as they are. */
+  /** Add text at the end (a merged transcript). */
   appendContent(noteId: string, text: string): void;
   /** Drop the cached state of a closed/deleted note. */
   forget(noteId: string): void;
@@ -21,140 +45,108 @@ export interface MarkdownEditorHandle {
 
 interface Props {
   noteId: string;
-  /** Text to start from when a note is shown for the first time. */
+  /** Text to start from when a note is shown. */
   initialContent: string;
   label: string;
+  /** View the editor opens in: rich text ("live") or Markdown source ("raw"). */
   mode: EditorMode;
   onChange: (noteId: string, text: string) => void;
-  onToggleMode: () => void;
   onEscape?: () => void;
 }
 
-interface Cached {
-  state: EditorState;
-  scrollTop: number;
-}
-
 /**
- * One CodeMirror view for the workspace. Each open note keeps its own EditorState (text,
- * cursor, selection, undo history) and scroll position, swapped when the tab changes (US1 #5).
+ * MDXEditor (https://mdxeditor.dev) with its own toolbar and editing UI. Each note gets a fresh
+ * editor instance (keyed by note id); its text comes from the note's saver, so unsaved edits
+ * survive a tab switch.
  */
 export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function MarkdownEditor(
-  { noteId, initialContent, label, mode, onChange, onToggleMode, onEscape },
+  { noteId, initialContent, label, mode, onChange, onEscape },
   ref,
 ) {
   const host = useRef<HTMLDivElement>(null);
-  const view = useRef<EditorView | null>(null);
-  const cache = useRef(new Map<string, Cached>());
-  const current = useRef<string | null>(null);
-  const modeCompartment = useRef(new Compartment());
-  const labelCompartment = useRef(new Compartment());
-  const callbacks = useRef({ onChange, onToggleMode, onEscape });
+  const editor = useRef<MDXEditorMethods>(null);
+  const theme = useResolvedTheme();
+  const callbacks = useRef({ onChange, onEscape });
   useEffect(() => {
-    callbacks.current = { onChange, onToggleMode, onEscape };
+    callbacks.current = { onChange, onEscape };
   });
 
-  const modeExtension = (m: EditorMode): Extension =>
-    m === "live" ? livePreview() : EditorView.editorAttributes.of({ class: "cm-raw" });
-
-  const labelExtension = (text: string): Extension =>
-    EditorView.contentAttributes.of({ "aria-label": text, "aria-multiline": "true" });
-
-  const makeState = (id: string, doc: string) =>
-    EditorState.create({
-      doc,
-      extensions: [
-        history(),
-        markdown({ base: markdownLanguage }),
-        EditorView.lineWrapping,
-        placeholder("Start writing… Markdown works: # heading, **bold**, - list, - [ ] task"),
-        keymap.of([
-          { key: "Mod-e", run: () => (callbacks.current.onToggleMode(), true) },
-          { key: "Mod-Enter", run: openLinkCommand },
-          { key: "Escape", run: () => (callbacks.current.onEscape?.(), !!callbacks.current.onEscape) },
-          indentWithTab,
-          ...defaultKeymap,
-          ...historyKeymap,
-          ...searchKeymap,
-        ]),
-        editorTheme,
-        modeCompartment.current.of(modeExtension(mode)),
-        labelCompartment.current.of(labelExtension(label)),
-        EditorView.updateListener.of((u) => {
-          if (u.docChanged) callbacks.current.onChange(id, u.state.doc.toString());
-        }),
-      ],
-    });
-
-  // create the view once
+  // Escape (when the editor's own popups don't use it) hands focus back to the note's tab
   useEffect(() => {
-    if (!host.current) return;
-    const v = new EditorView({ parent: host.current, state: makeState(noteId, initialContent) });
-    view.current = v;
-    current.current = noteId;
-    return () => {
-      v.destroy();
-      view.current = null;
+    const el = host.current;
+    if (!el) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) callbacks.current.onEscape?.();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    el.addEventListener("keydown", onKey);
+    return () => el.removeEventListener("keydown", onKey);
   }, []);
-
-  // swap the visible note
-  useEffect(() => {
-    const v = view.current;
-    if (!v || current.current === noteId) return;
-    if (current.current) cache.current.set(current.current, { state: v.state, scrollTop: v.scrollDOM.scrollTop });
-    const cached = cache.current.get(noteId);
-    v.setState(cached?.state ?? makeState(noteId, initialContent));
-    v.dispatch({
-      effects: [
-        modeCompartment.current.reconfigure(modeExtension(mode)),
-        labelCompartment.current.reconfigure(labelExtension(label)),
-      ],
-    });
-    current.current = noteId;
-    requestAnimationFrame(() => {
-      v.scrollDOM.scrollTop = cached?.scrollTop ?? 0;
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [noteId]);
-
-  // live ↔ raw keeps document, cursor and history (Compartment reconfigure)
-  useEffect(() => {
-    view.current?.dispatch({ effects: modeCompartment.current.reconfigure(modeExtension(mode)) });
-  }, [mode]);
-
-  useEffect(() => {
-    view.current?.dispatch({ effects: labelCompartment.current.reconfigure(labelExtension(label)) });
-  }, [label]);
 
   useImperativeHandle(ref, () => ({
     replaceContent(id, text) {
-      const v = view.current;
-      if (v && current.current === id) {
-        v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: text } });
-      } else {
-        cache.current.delete(id);
-      }
+      if (id === noteId) editor.current?.setMarkdown(text);
     },
     appendContent(id, text) {
-      const v = view.current;
-      if (v && current.current === id) {
-        v.dispatch({
-          changes: { from: v.state.doc.length, insert: text },
-          annotations: Transaction.addToHistory.of(false),
-        });
-      } else {
-        cache.current.delete(id); // rebuilt from the saver's content when shown again
-      }
+      const e = editor.current;
+      if (e && id === noteId) e.setMarkdown(e.getMarkdown() + text);
     },
-    forget(id) {
-      cache.current.delete(id);
+    forget() {
+      // nothing cached: a note's editor is rebuilt from its saver when shown again
     },
     focus() {
-      view.current?.focus();
+      editor.current?.focus();
     },
   }));
 
-  return <div ref={host} className="h-full min-h-0 overflow-hidden" data-note-editor={noteId} />;
+  return (
+    <div ref={host} role="group" aria-label={label} className="h-full min-h-0 overflow-auto" data-note-editor={noteId}>
+      <MDXEditor
+        key={noteId}
+        ref={editor}
+        markdown={initialContent}
+        className={theme === "dark" ? "dark-theme" : undefined}
+        contentEditableClassName="mdx-note-content"
+        placeholder="Start writing…"
+        onChange={(text, initialMarkdownNormalize) => {
+          if (!initialMarkdownNormalize) callbacks.current.onChange(noteId, text);
+        }}
+        plugins={[
+          headingsPlugin(),
+          listsPlugin(),
+          quotePlugin(),
+          thematicBreakPlugin(),
+          linkPlugin(),
+          linkDialogPlugin(),
+          imagePlugin(),
+          tablePlugin(),
+          codeBlockPlugin({ defaultCodeBlockLanguage: "" }),
+          codeMirrorPlugin({
+            codeBlockLanguages: { "": "Plain text", js: "JavaScript", ts: "TypeScript", py: "Python", css: "CSS", html: "HTML", json: "JSON", sql: "SQL", bash: "Bash" },
+          }),
+          markdownShortcutPlugin(),
+          diffSourcePlugin({ viewMode: mode === "raw" ? "source" : "rich-text" }),
+          toolbarPlugin({
+            toolbarContents: () => (
+              <DiffSourceToggleWrapper options={["rich-text", "source"]}>
+                <UndoRedo />
+                <Separator />
+                <BoldItalicUnderlineToggles />
+                <CodeToggle />
+                <Separator />
+                <BlockTypeSelect />
+                <Separator />
+                <ListsToggle />
+                <Separator />
+                <CreateLink />
+                <InsertImage />
+                <InsertTable />
+                <InsertThematicBreak />
+                <InsertCodeBlock />
+              </DiffSourceToggleWrapper>
+            ),
+          }),
+        ]}
+      />
+    </div>
+  );
 });
