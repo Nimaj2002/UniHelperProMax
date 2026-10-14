@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UniHelperProMax: your whole semester in one calm place</title>
+  <meta name="description" content="A self-hosted app for university students: timetable, lecture notes, slides, recordings and transcripts, organised by class and stored as plain files you own.">
+  <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400..600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="design/variables.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="nav">
+    <div class="container nav__inner">
+      <a class="brand" href="#top" aria-label="UniHelperProMax home">
+        <svg class="brand__mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#mark"/></svg>
+        <span>UniHelperProMax</span>
+      </a>
+      <nav class="nav__links" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#tour">Tour</a>
+        <a href="#install">Install</a>
+        <a href="#data">Your data</a>
+      </nav>
+      <div class="nav__cta">
+        <a class="link-arrow nav__gh" href="https://github.com/Nimaj2002/UniHelperProMax" target="_blank" rel="noopener">GitHub →</a>
+        <a class="btn btn--filled" href="#install">Get started</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero -->
+    <section class="hero" id="top">
+      <div class="container hero__inner">
+        <p class="tag">Self-hosted · Open source · For students</p>
+        <h1 class="display">Your whole semester<br>in <em>one calm place.</em></h1>
+        <p class="hero__sub">Timetable, lecture notes, slides, recordings and transcripts, organised by class and stored as plain files you own.</p>
+        <div class="btn-row">
+          <a class="btn btn--filled" href="#install">Install in 3 minutes</a>
+          <a class="btn btn--ghost" href="https://github.com/Nimaj2002/UniHelperProMax" target="_blank" rel="noopener">
+            <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            View on GitHub
+          </a>
+        </div>
+
+        <!-- Floating product artifacts -->
+        <div class="artifact artifact--session" aria-hidden="true">
+          <p class="artifact__label">Mon 12 Oct · 10:00–11:30</p>
+          <p class="artifact__title">CS 201 · Lecture 9</p>
+          <ul class="artifact__list">
+            <li><span class="dot"></span>Lecture 9 — BSTs.md</li>
+            <li><span class="dot"></span>Binary Search Trees.pdf</li>
+            <li><span class="dot"></span>Recording 10:02.webm</li>
+          </ul>
+        </div>
+        <div class="artifact artifact--record" aria-hidden="true">
+          <div class="rec">
+            <span class="rec__btn"></span>
+            <div>
+              <p class="artifact__title">Recording</p>
+              <p class="artifact__meta">1h 24m · saved every few seconds</p>
+            </div>
+          </div>
+          <svg class="wave" viewBox="0 0 200 36" preserveAspectRatio="none"><path d="M0 18 Q10 4 20 18 T40 18 T60 18 Q70 2 80 18 T100 18 Q110 8 120 18 T140 18 Q150 0 160 18 T180 18 T200 18" fill="none" stroke="#5d2a1a" stroke-width="1.6" stroke-linecap="round"/></svg>
+        </div>
+        <div class="artifact artifact--transcript" aria-hidden="true">
+          <p class="artifact__label">Appended to your note</p>
+          <p class="artifact__mono">## Transcript — Recording 10:02</p>
+          <p class="artifact__meta">Nothing you wrote changes.</p>
+        </div>
+        <div class="artifact artifact--themes" aria-hidden="true">
+          <p class="artifact__title">18 themes</p>
+          <div class="swatches">
+            <span style="background:#1e1e2e"></span><span style="background:#282a36"></span><span style="background:#1a1b26"></span><span style="background:#2e3440"></span><span style="background:#faf4ed"></span><span style="background:#eff1f5"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="container">
+        <figure class="shot shot--hero">
+          <img src="assets/screenshots/workspace-split.png" width="2880" height="1620" alt="Lecture notes next to the lecture slides in split view, with the recording in the audio panel">
+          <figcaption>Lecture 9: notes on the left, the professor's slides on the right, the recording on the side.</figcaption>
+        </figure>
+        <ul class="badges" aria-label="Highlights">
+          <li>Self-hosted</li><li>Python 3.12+</li><li>React 19</li><li>18 built-in themes</li><li>WCAG AA</li><li>Plain .md, .pdf &amp; audio files</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Why -->
+    <section class="section section--fog" id="features">
+      <div class="container">
+        <div class="section__head">
+          <p class="tag">Why you'll love it</p>
+          <h2 class="heading-lg">Nothing is where you need it, <em>until now.</em></h2>
+          <p class="lead">Most students keep their schedule in one app, notes in another, slides in a downloads folder and recordings on their phone. UniHelperProMax gives every class session its own space. Open Monday's Data Structures lecture and its notes, slides, recording and transcript are already there, two clicks from the calendar.</p>
+        </div>
+
+        <div class="grid grid--3">
+          <article class="card">
+            <p class="tag">Calendar</p>
+            <h3 class="card__title">A calendar built for university</h3>
+            <p>Weekly classes, exams, office hours and seminars, with years and semesters.</p>
+          </article>
+          <article class="card">
+            <p class="tag">Notes</p>
+            <h3 class="card__title">Notes that belong to a class</h3>
+            <p>A Markdown editor with tables, code blocks and checklists.</p>
+          </article>
+          <article class="card">
+            <p class="tag">Documents</p>
+            <h3 class="card__title">Slides next to your notes</h3>
+            <p>A built-in PDF reader with highlights, drawings and comments, in split view.</p>
+          </article>
+          <article class="card">
+            <p class="tag">Audio</p>
+            <h3 class="card__title">Record the lecture</h3>
+            <p>Recording keeps going if the tab closes or the Wi-Fi drops.</p>
+          </article>
+          <article class="card">
+            <p class="tag">Transcription</p>
+            <h3 class="card__title">Transcribe it into your notes</h3>
+            <p>The transcript is added to the end of your note and nothing you wrote changes.</p>
+          </article>
+          <article class="card">
+            <p class="tag">Appearance</p>
+            <h3 class="card__title">Make it yours</h3>
+            <p>18 built-in themes (Catppuccin, Dracula, Tokyo Night, Nord…) or design your own.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tour -->
+    <section class="section" id="tour">
+      <div class="container">
+        <div class="section__head">
+          <p class="tag">A quick tour</p>
+          <h2 class="heading-lg">From timetable to transcript.</h2>
+        </div>
+
+        <div class="feature">
+          <div class="feature__text">
+            <p class="tag">01 · Calendar</p>
+            <h3 class="heading-sm">See your whole week at a glance</h3>
+            <p>Every course gets its own colour, a red line marks the current time, and exams or events stand out with their own marker. Switch between day, week and month, or import your existing timetable from Google Calendar, Apple Calendar or Outlook (<code>.ics</code>).</p>
+          </div>
+          <figure class="shot"><img src="assets/screenshots/calendar-week.png" width="2880" height="1800" loading="lazy" alt="Week view with colour-coded classes and events"></figure>
+        </div>
+
+        <div class="feature feature--flip">
+          <div class="feature__text">
+            <p class="tag">02 · Quick create</p>
+            <h3 class="heading-sm">Draw a study session straight onto the calendar</h3>
+            <p>Press and drag on an empty slot. A small form opens with the semester already filled in. Pick <strong>Class</strong> or <strong>Event</strong>, give it a name and save. Made a mistake? Click <strong>Undo</strong>.</p>
+          </div>
+          <figure class="shot"><img src="assets/screenshots/quick-create.png" width="2880" height="1800" loading="lazy" alt="Dragging on the calendar opens a quick New entry form"></figure>
+        </div>
+
+        <div class="feature">
+          <div class="feature__text">
+            <p class="tag">03 · Notes</p>
+            <h3 class="heading-sm">Notes that look as good as they read</h3>
+            <p>A live Markdown editor with headings, tables, syntax-highlighted code and to-do lists. Each note is a plain <code>.md</code> file in that class's folder, so you can also open it in VS Code, Obsidian or any other editor.</p>
+          </div>
+          <figure class="shot"><img src="assets/screenshots/notes.png" width="2880" height="1800" loading="lazy" alt="Markdown note with headings, a code block and a table"></figure>
+        </div>
+
+        <div class="feature feature--flip">
+          <div class="feature__text">
+            <p class="tag">04 · Record &amp; transcribe</p>
+            <h3 class="heading-sm">Record now, read later</h3>
+            <p>Hit <strong>Record</strong> during the lecture or upload an audio file you already have. Afterwards click <strong>Transcribe</strong>, choose a note, and the transcript is added to the end of it. It runs on the server, so you can close the laptop and come back later. Works with any OpenAI-compatible speech API, including one you host yourself.</p>
+          </div>
+          <figure class="shot"><img src="assets/screenshots/transcribe.png" width="2880" height="1800" loading="lazy" alt="Transcribe dialog: choose the note and the spoken language"></figure>
+        </div>
+
+        <div class="feature feature--wide">
+          <div class="feature__text">
+            <p class="tag">05 · Themes</p>
+            <h3 class="heading-sm">Light, dark, or something with more personality</h3>
+            <p>Pick from 18 built-in themes, or make your own from four colours. The editor flags any colour pair that's hard to read. Your theme follows you to every device.</p>
+          </div>
+          <figure class="shot"><img src="assets/screenshots/themes.png" width="3152" height="734" loading="lazy" alt="The app in Catppuccin Mocha, Rosé Pine Dawn and Tokyo Night"></figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- Small things -->
+    <section class="section section--fog">
+      <div class="container">
+        <div class="section__head">
+          <p class="tag">And a lot of small things</p>
+          <h2 class="heading">Details that save you on exam night.</h2>
+        </div>
+        <div class="grid grid--small">
+          <div class="mini"><h3>Keyboard only</h3><p>Every screen works with only a keyboard, including the calendar, PDF reader and audio player.</p></div>
+          <div class="mini"><h3>Split view</h3><p>Slides on one side, notes on the other. Toggle with <kbd>Alt</kbd>+<kbd>\</kbd>.</p></div>
+          <div class="mini"><h3>Trash with restore</h3><p>Deleted classes come back with all their notes, recordings and documents.</p></div>
+          <div class="mini"><h3>Multiple accounts</h3><p>One install for you and your friends, with no public sign-up.</p></div>
+          <div class="mini"><h3>Calendar export</h3><p>Export to <code>.ics</code>, which also works as a portable backup of your schedule.</p></div>
+          <div class="mini"><h3>PDF annotations</h3><p>Highlights, drawings, text boxes and comments, saved next to the PDF. The PDF itself is never modified.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Install -->
+    <section class="section" id="install">
+      <div class="container install">
+        <div class="install__intro">
+          <p class="tag">Installation</p>
+          <h2 class="heading">Get started<br>in <em>one command.</em></h2>
+          <p class="lead">The installer checks what you have, sets up the backend with <a class="link" href="https://docs.astral.sh/uv/" target="_blank" rel="noopener">uv</a>, builds the app and tells you exactly what's missing. Run it again any time to update. Your notes are never touched.</p>
+          <ul class="checklist">
+            <li>Node.js 22 LTS (only to build the app once)</li>
+            <li>uv: offered automatically if missing</li>
+            <li>Python 3.12+: uv fetches it if needed</li>
+          </ul>
+          <p class="install__alt">Or skip all of that with <strong>Docker</strong>: one small container (about 25 MB to download).</p>
+          <a class="link-arrow" href="https://github.com/Nimaj2002/UniHelperProMax#get-started-in-3-minutes" target="_blank" rel="noopener">Full guide on GitHub →</a>
+        </div>
+
+        <div class="install__panel">
+          <div class="tabs" role="tablist" aria-label="Choose how to install">
+            <button class="tab" role="tab" id="tab-unix" aria-controls="panel-unix" aria-selected="true">macOS / Linux</button>
+            <button class="tab" role="tab" id="tab-windows" aria-controls="panel-windows" aria-selected="false" tabindex="-1">Windows</button>
+            <button class="tab" role="tab" id="tab-docker" aria-controls="panel-docker" aria-selected="false" tabindex="-1">Docker</button>
+            <button class="tab" role="tab" id="tab-manual" aria-controls="panel-manual" aria-selected="false" tabindex="-1">Manual</button>
+          </div>
+
+          <div class="tabpanel" role="tabpanel" id="panel-unix" aria-labelledby="tab-unix" tabindex="0">
+            <ol class="steps">
+              <li class="step">
+                <div class="step__head"><span class="step__num">1</span><h3>Run the installer in a terminal</h3></div>
+                <div class="code code--wrap">
+                  <button class="code__copy" type="button" aria-label="Copy command">Copy</button>
+<pre><code>curl -fsSL https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.sh | bash</code></pre>
+                </div>
+                <p class="step__note">It clones into <code>./UniHelperProMax</code>. Prefer to read it first? Clone the repo and run <code>./install.sh</code>.</p>
+              </li>
+              <li class="step">
+                <div class="step__head"><span class="step__num">2</span><h3>Start it</h3></div>
+                <div class="code">
+                  <button class="code__copy" type="button" aria-label="Copy commands">Copy</button>
+<pre><code>cd UniHelperProMax &amp;&amp; ./start.sh</code></pre>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <div class="tabpanel" role="tabpanel" id="panel-windows" aria-labelledby="tab-windows" tabindex="0" hidden>
+            <ol class="steps">
+              <li class="step">
+                <div class="step__head"><span class="step__num">1</span><h3>Run the installer in PowerShell</h3></div>
+                <div class="code code--wrap">
+                  <button class="code__copy" type="button" aria-label="Copy command">Copy</button>
+<pre><code>irm https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.ps1 | iex</code></pre>
+                </div>
+                <p class="step__note">No Node.js yet? <code>winget install OpenJS.NodeJS.LTS</code>, then open a new PowerShell window.</p>
+              </li>
+              <li class="step">
+                <div class="step__head"><span class="step__num">2</span><h3>Start it</h3></div>
+                <div class="code">
+                  <button class="code__copy" type="button" aria-label="Copy commands">Copy</button>
+<pre><code>cd UniHelperProMax; .\start.ps1</code></pre>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <div class="tabpanel" role="tabpanel" id="panel-docker" aria-labelledby="tab-docker" tabindex="0" hidden>
+            <ol class="steps">
+              <li class="step">
+                <div class="step__head"><span class="step__num">1</span><h3>Get the code</h3></div>
+                <div class="code">
+                  <button class="code__copy" type="button" aria-label="Copy commands">Copy</button>
+<pre><code>git clone https://github.com/Nimaj2002/UniHelperProMax.git
+cd UniHelperProMax</code></pre>
+                </div>
+              </li>
+              <li class="step">
+                <div class="step__head"><span class="step__num">2</span><h3>Build and run the container</h3></div>
+                <div class="code">
+                  <button class="code__copy" type="button" aria-label="Copy commands">Copy</button>
+<pre><code>mkdir -p backend/data
+docker compose up -d --build</code></pre>
+                </div>
+                <p class="step__note">Your files live in <code>backend/data</code> on your own disk. <code>./install.sh --docker</code> (or <code>.\install.ps1 -Docker</code>) does both steps for you. Stop with <code>docker compose down</code>.</p>
+              </li>
+            </ol>
+          </div>
+
+          <div class="tabpanel" role="tabpanel" id="panel-manual" aria-labelledby="tab-manual" tabindex="0" hidden>
+            <ol class="steps">
+              <li class="step">
+                <div class="step__head"><span class="step__num">1</span><h3>Get the code</h3></div>
+                <div class="code">
+                  <button class="code__copy" type="button" aria-label="Copy commands">Copy</button>
+<pre><code>git clone https://github.com/Nimaj2002/UniHelperProMax.git
+cd UniHelperProMax</code></pre>
+                </div>
+              </li>
+              <li class="step">
+                <div class="step__head"><span class="step__num">2</span><h3>Install dependencies</h3></div>
+                <div class="code">
+                  <button class="code__copy" type="button" aria-label="Copy commands">Copy</button>
+<pre><code>cd backend &amp;&amp; uv sync
+cd ../frontend &amp;&amp; corepack pnpm install</code></pre>
+                </div>
+              </li>
+              <li class="step">
+                <div class="step__head"><span class="step__num">3</span><h3>Build the app and start it</h3></div>
+                <div class="code">
+                  <button class="code__copy" type="button" aria-label="Copy commands">Copy</button>
+<pre><code>corepack pnpm build
+cd ../backend &amp;&amp; UNIHELPER_DATA_DIR=./data UNIHELPER_STATIC_DIR=../frontend/dist \
+  uv run uvicorn unihelper.main:app --port 8000</code></pre>
+                </div>
+              </li>
+            </ol>
+          </div>
+
+          <div class="step step--done">
+            <div class="step__head"><span class="step__num">✓</span><h3>Open <a class="link" href="http://localhost:8000">http://localhost:8000</a></h3></div>
+            <p>Create your account and add your first class. The first visit asks you to create the <strong>owner</strong> account. The owner can add accounts for other people (Account menu → Manage accounts).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="container install__more">
+        <div class="card card--plain">
+          <h3 class="card__title">Development mode</h3>
+          <p>Two terminals, with hot reload:</p>
+          <div class="code">
+            <button class="code__copy" type="button" aria-label="Copy commands">Copy</button>
+<pre><code>cd backend &amp;&amp; UNIHELPER_DATA_DIR=./data uv run uvicorn unihelper.main:app --reload --port 8000
+cd frontend &amp;&amp; corepack pnpm dev   # http://localhost:5173</code></pre>
+          </div>
+        </div>
+
+        <div class="card card--plain">
+          <h3 class="card__title">Configuration</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead>
+              <tbody>
+                <tr><td><code>UNIHELPER_DATA_DIR</code></td><td><code>./data</code></td><td>SQLite database and the <code>files/</code> folder tree</td></tr>
+                <tr><td><code>UNIHELPER_STATIC_DIR</code></td><td>—</td><td>Built frontend to serve (production)</td></tr>
+                <tr><td><code>UNIHELPER_SECURE_COOKIES</code></td><td><code>false</code></td><td>Set <code>true</code> when served over HTTPS</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="note">The database schema is migrated automatically on startup. Run the backend as <strong>one process</strong>: don't pass <code>--workers</code> above 1, and don't start two servers on the same data folder.</p>
+        </div>
+
+        <div class="card card--plain">
+          <h3 class="card__title">WSL tip</h3>
+          <p>On <code>/mnt/c</code> drives, reading <code>node_modules</code> is slow. A local, git-ignored <code>frontend/pnpm-workspace.yaml</code> with <code>virtualStoreDir: /home/&lt;you&gt;/.cache/unihelper/pnpm-virtual-store</code> keeps the package store on the Linux filesystem and makes tests and type-checks ~50× faster.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Your data -->
+    <section class="section section--fog" id="data">
+      <div class="container data">
+        <div class="accent-card">
+          <p class="accent-card__label">Your files stay yours</p>
+          <h2 class="accent-card__title">Everything is a normal folder of <code>.md</code>, <code>.pdf</code> and audio files on your own disk.</h2>
+          <p>Notes open in any editor, and the app picks up the change without overwriting it. Transcripts are only ever added at the end. Back up by copying the data folder while the app is stopped.</p>
+<pre class="tree"><code>data/
+├── unihelper.sqlite3            metadata only
+└── files/&lt;username&gt;/&lt;Year&gt;/&lt;Semester&gt;/
+    ├── &lt;Course&gt;/&lt;YYYY-MM-DD&gt;/{notes,audios,documents}/
+    └── _Events/&lt;YYYY-MM-DD Title&gt;/{notes,audios,documents}/</code></pre>
+        </div>
+        <div class="data__side">
+          <h3 class="heading-sm">Under the hood</h3>
+          <ul class="plain-list">
+            <li>Python / FastAPI backend with a versioned JSON API (<code>/api/v1</code>) over SQLite</li>
+            <li>React + shadcn/ui frontend, fully keyboard operable, tested against WCAG AA in light and dark</li>
+            <li>Built spec-first: every feature has a spec, plan and task list in <code>specs/</code></li>
+          </ul>
+          <a class="link-arrow" href="https://github.com/Nimaj2002/UniHelperProMax/tree/main/specs" target="_blank" rel="noopener">Read the specs →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Closing CTA -->
+    <section class="section cta">
+      <div class="container cta__inner">
+        <h2 class="heading-lg">Never lose a lecture note <em>the night before an exam.</em></h2>
+        <p class="lead">If UniHelperProMax makes your semester easier, a star on the repo helps other students find it.</p>
+        <div class="btn-row">
+          <a class="btn btn--filled" href="https://github.com/Nimaj2002/UniHelperProMax" target="_blank" rel="noopener">Star on GitHub</a>
+          <a class="btn btn--ghost" href="#install">Install it</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer__inner">
+      <a class="brand" href="#top">
+        <svg class="brand__mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#mark"/></svg>
+        <span>UniHelperProMax</span>
+      </a>
+      <p>Made with ❤️ by <a href="https://github.com/Nimaj2002" target="_blank" rel="noopener">Nima</a> for every student.</p>
+      <nav class="footer__links" aria-label="Footer">
+        <a href="https://github.com/Nimaj2002/UniHelperProMax" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/Nimaj2002/UniHelperProMax/blob/main/specs/KNOWN-ISSUES.md" target="_blank" rel="noopener">Known issues</a>
+        <a href="#install">Install</a>
+      </nav>
+    </div>
+  </footer>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="mark" viewBox="0 0 100 100"><path fill="currentColor" fill-rule="evenodd" d="M18 32H22A6 6 0 0 1 28 38V62A6 6 0 0 1 22 68H18A6 6 0 0 1 12 62V38A6 6 0 0 1 18 32ZM18 35.5H22A2.5 2.5 0 0 1 24.5 38V62A2.5 2.5 0 0 1 22 64.5H18A2.5 2.5 0 0 1 15.5 62V38A2.5 2.5 0 0 1 18 35.5ZM45 18H55A11 11 0 0 1 66 29V71A11 11 0 0 1 55 82H45A11 11 0 0 1 34 71V29A11 11 0 0 1 45 18ZM42 33.75H58A2.25 2.25 0 0 1 60.25 36V36A2.25 2.25 0 0 1 58 38.25H42A2.25 2.25 0 0 1 39.75 36V36A2.25 2.25 0 0 1 42 33.75ZM42 43.75H58A2.25 2.25 0 0 1 60.25 46V46A2.25 2.25 0 0 1 58 48.25H42A2.25 2.25 0 0 1 39.75 46V46A2.25 2.25 0 0 1 42 43.75ZM42 53.75H52A2.25 2.25 0 0 1 54.25 56V56A2.25 2.25 0 0 1 52 58.25H42A2.25 2.25 0 0 1 39.75 56V56A2.25 2.25 0 0 1 42 53.75ZM78 37H82A6 6 0 0 1 88 43V57A6 6 0 0 1 82 63H78A6 6 0 0 1 72 57V43A6 6 0 0 1 78 37ZM76.5 50a3.5 3.5 0 1 0 7 0a3.5 3.5 0 1 0 -7 0Z"/></symbol>
+  </svg>
+
+  <script src="script.js"></script>
+</body>
+</html>

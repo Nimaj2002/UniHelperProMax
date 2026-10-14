@@ -1,0 +1,17 @@
+# Only backend/ and frontend/ sources are needed to build the image.
+*
+!backend/pyproject.toml
+!backend/uv.lock
+!backend/src/
+!frontend/
+
+# never send local builds, deps, data or machine-specific config
+**/__pycache__
+**/*.pyc
+frontend/node_modules
+frontend/dist
+frontend/pnpm-workspace.yaml
+frontend/playwright-report
+frontend/test-results
+frontend/tests
+frontend/coverage

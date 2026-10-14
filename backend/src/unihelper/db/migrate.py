@@ -28,7 +28,9 @@ class ForeignKeyCheckError(RuntimeError):
 def alembic_config(db_url: str) -> Config:
     cfg = Config()
     cfg.set_main_option("script_location", str(MIGRATIONS_DIR))
-    cfg.set_main_option("sqlalchemy.url", db_url)
+    # Config values go through ConfigParser interpolation; a rendered URL percent-encodes Windows
+    # paths (C%3A%5C...), so escape '%' as Alembic documents.
+    cfg.set_main_option("sqlalchemy.url", db_url.replace("%", "%%"))
     return cfg
 
 

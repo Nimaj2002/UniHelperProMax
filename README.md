@@ -99,8 +99,39 @@ that's hard to read. Your theme follows you to every device.
 
 ## Get started in 3 minutes
 
-You need **Python 3.12+** with [`uv`](https://docs.astral.sh/uv/) and **Node.js 22 LTS** (only to build
-the frontend once).
+**macOS / Linux**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.sh | bash
+cd UniHelperProMax && ./start.sh
+```
+
+**Windows** (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.ps1 | iex
+cd UniHelperProMax; .\start.ps1
+```
+
+The installer clones the repo (or uses the checkout it runs from), checks for **Node.js 22 LTS**,
+offers to install [`uv`](https://docs.astral.sh/uv/) if it's missing (uv fetches Python 3.12 when
+needed), installs the dependencies and builds the app. Run it again any time to update. Options:
+`--docker`, `--dir <path>`, `--start`, `--yes` (Windows: `-Docker`, `-Dir`, `-Start`, `-Yes`).
+
+**Docker** (nothing else to install; the image is ~25 MB to download)
+
+```bash
+git clone https://github.com/Nimaj2002/UniHelperProMax.git && cd UniHelperProMax
+mkdir -p backend/data && docker compose up -d --build
+```
+
+Your files stay in `backend/data` on your own disk, the same folder `./start.sh` uses. On Linux, put
+`UNIHELPER_UID=$(id -u)` and `UNIHELPER_GID=$(id -g)` in a `.env` file if your user id isn't 1000
+(`./install.sh --docker` does this for you). The app listens on `127.0.0.1:8000`; see the comments
+in [`docker-compose.yml`](docker-compose.yml) to change the port or open it to your network.
+
+**Manual install.** You need **Python 3.12+** with [`uv`](https://docs.astral.sh/uv/) and
+**Node.js 22 LTS** (only to build the frontend once).
 
 ```bash
 # 1. Get the code

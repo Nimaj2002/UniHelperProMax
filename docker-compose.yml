@@ -1,0 +1,36 @@
+# UniHelperProMax with Docker:
+#
+#   docker compose up -d --build      then open http://localhost:8000
+#   docker compose logs -f            follow the server log
+#   docker compose down               stop (your data stays in ./backend/data)
+#
+# Optional settings go in a .env file next to this one (or in your shell):
+#   UNIHELPER_PORT=8000               port on this computer
+#   UNIHELPER_BIND=127.0.0.1          use 0.0.0.0 to reach the app from other devices on your network
+#   UNIHELPER_UID / UNIHELPER_GID     owner of the files in ./backend/data (defaults to 1000; on Linux use `id -u` / `id -g`)
+#   UNIHELPER_SECURE_COOKIES=true     when the app is served over HTTPS
+
+services:
+  unihelper:
+    build: .
+    image: unihelperpromax:latest
+    container_name: unihelperpromax
+    restart: unless-stopped
+    # Run as your user so notes, PDFs and recordings in ./backend/data stay yours.
+    user: "${UNIHELPER_UID:-1000}:${UNIHELPER_GID:-1000}"
+    ports:
+      - "${UNIHELPER_BIND:-127.0.0.1}:${UNIHELPER_PORT:-8000}:8000"
+    environment:
+      UNIHELPER_SECURE_COOKIES: "${UNIHELPER_SECURE_COOKIES:-false}"
+    volumes:
+      # Plain folders of .md, .pdf and audio files, plus the SQLite database: the same folder
+      # ./start.sh uses, so you can switch between Docker and a normal install. Create it before
+      # the first start (`mkdir -p backend/data`), or Docker creates it owned by root.
+      - ./backend/data:/data
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
