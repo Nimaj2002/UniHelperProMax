@@ -285,7 +285,41 @@ kbd {
 .feature--wide .feature__text { max-width: 640px; }
 .feature__text .heading-sm { margin-bottom: var(--spacing-16); }
 .feature__text p:not(.tag) { color: #43464d; line-height: 1.6; }
+.feature__text p:not(.tag) + p { margin-top: var(--spacing-12); }
 .feature__text strong { font-weight: var(--font-weight-medium); }
+
+/* Task board illustration (Tour 03) */
+.board {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  background: var(--color-fog-white);
+  border-radius: var(--radius-images);
+  padding: 14px; font-size: 13px;
+}
+.board__col { display: grid; align-content: start; gap: 8px; min-width: 0; }
+.board__head {
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: var(--font-weight-medium); padding: 2px 4px 4px;
+}
+.board__head span { color: var(--color-ash-gray); font-weight: var(--font-weight-regular); }
+.task {
+  background: var(--color-paper-white);
+  border: 1px solid var(--color-hairline);
+  border-radius: 10px; padding: 10px 12px;
+  display: grid; gap: 6px;
+}
+.task__title { font-weight: var(--font-weight-medium); color: var(--color-ink-black); }
+.task__chips, .task__meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.task__meta { color: var(--color-slate-gray); gap: 12px; font-size: 12px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--color-mist-gray); color: var(--color-slate-gray);
+  border-radius: 999px; padding: 1px 8px; font-size: 12px; white-space: nowrap;
+}
+.chip i { width: 7px; height: 7px; border-radius: 50%; }
+.chip--strong { background: var(--color-ink-black); color: var(--color-paper-white); }
+.task--lift { box-shadow: var(--shadow-subtle-3); transform: rotate(-1.5deg); }
+.task--done { opacity: 0.6; }
+.task--done .task__title { text-decoration: line-through; }
 
 /* Small things */
 .grid--small { grid-template-columns: repeat(3, 1fr); gap: var(--spacing-40) var(--spacing-32); }
@@ -468,6 +502,7 @@ td code { white-space: nowrap; }
   .container { padding: 0 var(--spacing-20); }
   .nav__gh { display: none; }
   .grid--3, .grid--small { grid-template-columns: 1fr; }
+  .board { grid-template-columns: 1fr; }
   .accent-card { padding: var(--spacing-28) var(--spacing-24); }
   .section { padding: var(--spacing-80) 0; }
   .badges li + li::before { display: none; }

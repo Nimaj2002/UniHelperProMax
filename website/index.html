@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>UniHelperProMax: your whole semester in one calm place</title>
-  <meta name="description" content="A self-hosted app for university students: timetable, lecture notes, slides, recordings and transcripts, organised by class and stored as plain files you own.">
+  <meta name="description" content="A self-hosted app for university students: timetable, lecture notes, slides, recordings, transcripts and tasks, organised by class and stored as plain files you own.">
   <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
@@ -42,7 +42,7 @@
       <div class="container hero__inner">
         <p class="tag">Self-hosted · Open source · For students</p>
         <h1 class="display">Your whole semester<br>in <em>one calm place.</em></h1>
-        <p class="hero__sub">Timetable, lecture notes, slides, recordings and transcripts, organised by class and stored as plain files you own.</p>
+        <p class="hero__sub">Timetable, lecture notes, slides, recordings, transcripts and tasks, organised by class and stored as plain files you own.</p>
         <div class="btn-row">
           <a class="btn btn--filled" href="#install">Install in 3 minutes</a>
           <a class="btn btn--ghost" href="https://github.com/Nimaj2002/UniHelperProMax" target="_blank" rel="noopener">
@@ -101,7 +101,7 @@
         <div class="section__head">
           <p class="tag">Why you'll love it</p>
           <h2 class="heading-lg">Nothing is where you need it, <em>until now.</em></h2>
-          <p class="lead">Most students keep their schedule in one app, notes in another, slides in a downloads folder and recordings on their phone. UniHelperProMax gives every class session its own space. Open Monday's Data Structures lecture and its notes, slides, recording and transcript are already there, two clicks from the calendar.</p>
+          <p class="lead">Most students keep their schedule in one app, notes in another, slides in a downloads folder and recordings on their phone. UniHelperProMax gives every class session its own space. Open Monday's Data Structures lecture and its notes, slides, recording and transcript are already there, two clicks from the calendar, with every assignment and exam on a task board right next to it.</p>
         </div>
 
         <div class="grid grid--3">
@@ -131,9 +131,24 @@
             <p>The transcript is added to the end of your note and nothing you wrote changes.</p>
           </article>
           <article class="card">
+            <p class="tag">Tasks</p>
+            <h3 class="card__title">A task board next to your calendar</h3>
+            <p>Assignments, readings and exam prep on a board or a list, with checklists and quick notes.</p>
+          </article>
+          <article class="card">
             <p class="tag">Appearance</p>
             <h3 class="card__title">Make it yours</h3>
             <p>18 built-in themes (Catppuccin, Dracula, Tokyo Night, Nord…) or design your own.</p>
+          </article>
+          <article class="card">
+            <p class="tag">Import</p>
+            <h3 class="card__title">Bring your timetable</h3>
+            <p>Import from Google Calendar, Apple Calendar or Outlook (<code>.ics</code>). Importing again updates instead of duplicating.</p>
+          </article>
+          <article class="card">
+            <p class="tag">Your files</p>
+            <h3 class="card__title">Everything stays yours</h3>
+            <p>A normal folder of <code>.md</code>, <code>.pdf</code> and audio files on your own disk.</p>
           </article>
         </div>
       </div>
@@ -144,7 +159,7 @@
       <div class="container">
         <div class="section__head">
           <p class="tag">A quick tour</p>
-          <h2 class="heading-lg">From timetable to transcript.</h2>
+          <h2 class="heading-lg">From timetable to transcript, <em>and every deadline in between.</em></h2>
         </div>
 
         <div class="feature">
@@ -167,16 +182,57 @@
 
         <div class="feature">
           <div class="feature__text">
-            <p class="tag">03 · Notes</p>
+            <p class="tag">03 · Tasks</p>
+            <h3 class="heading-sm">Every deadline on one board</h3>
+            <p>The home page shows your calendar and your tasks side by side. Add “Problem set 3, due Friday 23:59” and drag it from <strong>To do</strong> to <strong>Done</strong>, or switch to a list grouped into Overdue, Today, This week and Later. Each task gets a checklist, a description and quick notes.</p>
+            <p>Turn an exam into a task with <strong>Add to kanban</strong>, and switch on <strong>Show tasks</strong> to see due dates on the calendar. A task never needs a date, a course or a place on the calendar.</p>
+          </div>
+          <figure class="shot">
+            <div class="board" role="img" aria-label="Task board with three columns: To do holds Problem set 3 (Linear Algebra, due Friday 23:59, 1 of 3 checklist items) and Read chapter 4; In progress holds Midterm prep, linked to an exam event and due today; Done holds Lab report 2">
+              <div class="board__col">
+                <p class="board__head">To do <span>2</span></p>
+                <div class="task">
+                  <p class="task__title">Problem set 3</p>
+                  <p class="task__chips"><span class="chip"><i style="background:#7a3db8"></i>Linear Algebra</span><span class="chip">Fri 23:59</span></p>
+                  <p class="task__meta"><span>☑ 1/3</span><span>✎ 2</span></p>
+                </div>
+                <div class="task">
+                  <p class="task__title">Read chapter 4</p>
+                  <p class="task__chips"><span class="chip">Personal</span></p>
+                </div>
+              </div>
+              <div class="board__col">
+                <p class="board__head">In progress <span>1</span></p>
+                <div class="task task--lift">
+                  <p class="task__title">Midterm prep</p>
+                  <p class="task__chips"><span class="chip"><i style="background:#2f7d6d"></i>Data Structures</span><span class="chip chip--strong">Today</span></p>
+                  <p class="task__meta"><span>▣ Event</span><span>☑ 4/6</span></p>
+                </div>
+              </div>
+              <div class="board__col">
+                <p class="board__head">Done <span>✓</span></p>
+                <div class="task task--done">
+                  <p class="task__title">Lab report 2</p>
+                  <p class="task__chips"><span class="chip"><i style="background:#b8613d"></i>Physics II</span></p>
+                </div>
+              </div>
+            </div>
+            <figcaption>Drag cards with the mouse, or pick them up with <kbd>Enter</kbd> and move them with the arrow keys.</figcaption>
+          </figure>
+        </div>
+
+        <div class="feature feature--flip">
+          <div class="feature__text">
+            <p class="tag">04 · Notes</p>
             <h3 class="heading-sm">Notes that look as good as they read</h3>
             <p>A live Markdown editor with headings, tables, syntax-highlighted code and to-do lists. Each note is a plain <code>.md</code> file in that class's folder, so you can also open it in VS Code, Obsidian or any other editor.</p>
           </div>
           <figure class="shot"><img src="assets/screenshots/notes.png" width="2880" height="1800" loading="lazy" alt="Markdown note with headings, a code block and a table"></figure>
         </div>
 
-        <div class="feature feature--flip">
+        <div class="feature">
           <div class="feature__text">
-            <p class="tag">04 · Record &amp; transcribe</p>
+            <p class="tag">05 · Record &amp; transcribe</p>
             <h3 class="heading-sm">Record now, read later</h3>
             <p>Hit <strong>Record</strong> during the lecture or upload an audio file you already have. Afterwards click <strong>Transcribe</strong>, choose a note, and the transcript is added to the end of it. It runs on the server, so you can close the laptop and come back later. Works with any OpenAI-compatible speech API, including one you host yourself.</p>
           </div>
@@ -185,7 +241,7 @@
 
         <div class="feature feature--wide">
           <div class="feature__text">
-            <p class="tag">05 · Themes</p>
+            <p class="tag">06 · Themes</p>
             <h3 class="heading-sm">Light, dark, or something with more personality</h3>
             <p>Pick from 18 built-in themes, or make your own from four colours. The editor flags any colour pair that's hard to read. Your theme follows you to every device.</p>
           </div>
@@ -208,6 +264,9 @@
           <div class="mini"><h3>Multiple accounts</h3><p>One install for you and your friends, with no public sign-up.</p></div>
           <div class="mini"><h3>Calendar export</h3><p>Export to <code>.ics</code>, which also works as a portable backup of your schedule.</p></div>
           <div class="mini"><h3>PDF annotations</h3><p>Highlights, drawings, text boxes and comments, saved next to the PDF. The PDF itself is never modified.</p></div>
+          <div class="mini"><h3>Panels you can close</h3><p>Hide the calendar or the tasks with <kbd>Shift</kbd>+<kbd>C</kbd> / <kbd>Shift</kbd>+<kbd>T</kbd> and the other one gets the room.</p></div>
+          <div class="mini"><h3>Undo everywhere</h3><p>Deleted a task, a checklist item or a quick note? Undo brings it back, right where it was.</p></div>
+          <div class="mini"><h3>Task export</h3><p>Save every task to <code>.csv</code>, checklists and quick notes included, ready for any spreadsheet.</p></div>
         </div>
       </div>
     </section>

@@ -7,8 +7,8 @@
 
 ### Your whole semester in one calm place.
 
-Timetable, lecture notes, slides, recordings and transcripts, organised by class and stored as
-plain files you own.
+Timetable, lecture notes, slides, recordings, transcripts and tasks, organised by class and stored
+as plain files you own.
 
 ![Self-hosted](https://img.shields.io/badge/self--hosted-your_data_stays_yours-7A3DB8)
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
@@ -30,13 +30,15 @@ Most students keep their schedule in one app, notes in another, slides in a down
 recordings on their phone. When the exam comes, nothing is where you need it.
 
 UniHelperProMax gives every class session its own space. Open Monday's Data Structures lecture and
-its notes, slides, recording and transcript are already there. Two clicks from the calendar.
+its notes, slides, recording and transcript are already there. Two clicks from the calendar. And
+every assignment, reading and exam you have to prepare for sits on a task board right next to it.
 
 - 🗓️ **A calendar built for university.** Weekly classes, exams, office hours and seminars, with years and semesters.
 - 📝 **Notes that belong to a class.** A Markdown editor with tables, code blocks and checklists.
 - 📑 **Slides next to your notes.** A built-in PDF reader with highlights, drawings and comments, in split view.
 - 🎙️ **Record the lecture.** Recording keeps going if the tab closes or the Wi-Fi drops.
 - ✨ **Transcribe it into your notes.** The transcript is added to the end of your note and nothing you wrote changes.
+- ✅ **A task board next to your calendar.** Assignments, readings and exam prep on a board or a list, with checklists, quick notes and due dates you can show on the calendar.
 - 🎨 **Make it yours.** 18 built-in themes (Catppuccin, Dracula, Tokyo Night, Nord…) or design your own.
 - 🔒 **Your files stay yours.** Everything is a normal folder of `.md`, `.pdf` and audio files on your own disk.
 
@@ -56,6 +58,15 @@ Press and drag on an empty slot. A small form opens with the semester already fi
 **Class** or **Event**, give it a name and save. Made a mistake? Click **Undo**.
 
 <img src="docs/screenshots/quick-create.png" alt="Dragging on the calendar opens a quick New entry form" width="100%">
+
+### ✅ Every deadline on one board
+
+The home page shows your calendar and your tasks side by side. Add "Problem set 3, due Friday
+23:59, Linear Algebra" and drag it from **To do** to **In progress** to **Done**, or switch to a
+list grouped into Overdue, Today, This week and Later. Each task can have a checklist, a
+description and quick notes. Turn an exam or a seminar into a task with **Add to kanban**, and
+switch on **Show tasks** to see due dates on the calendar. A task never needs a date, a course or
+a place on the calendar.
 
 ### 📝 Notes that look as good as they read
 
@@ -91,9 +102,11 @@ that's hard to read. Your theme follows you to every device.
 
 - **Works with only a keyboard**: every screen, including the calendar, PDF reader and audio player ([shortcuts](#notes-workspace-shortcuts)).
 - **Split view**: slides on one side, notes on the other (`Alt+\`).
+- **Close what you don't need**: hide the calendar or the task panel (`Shift+C` / `Shift+T`) and the other one gets the room.
 - **Trash with restore**: deleted classes come back with all their notes, recordings and documents.
 - **Multiple accounts** on one install for you and your friends, with no public sign-up.
 - **Calendar export** to `.ics`, which also works as a portable backup of your schedule.
+- **Task export** to `.csv`, with checklists and quick notes, ready for any spreadsheet.
 
 ---
 
@@ -228,6 +241,9 @@ audio's) file, or a document's PDF and its annotations file, when you delete tha
 confirm — and its own upload staging files in `files/.uploads/`. Deleting an account never
 deletes files. Full rules: [storage layout contract](specs/001-class-schedule-calendar/contracts/storage-layout.md).
 
+Tasks, board columns, checklists and quick notes are kept in the database, not as files; use
+**Settings → Import and export → Export tasks** for a `.csv` copy.
+
 Back up by copying the whole data folder while the app is stopped.
 
 ## Events and creating entries on the calendar
@@ -245,6 +261,42 @@ Back up by copying the whole data folder while the app is stopped.
   something, clicks elsewhere keep the form open.
 - **Keyboard**: Tab into the time grid, move with the arrow keys, extend with Shift+↑/↓, press
   Enter for the form and Escape to cancel.
+
+## Tasks and the home page
+
+The home page holds three cards side by side: the left card, the **Calendar** panel and the
+**Tasks** panel (about 420 px wide; drag the divider or use the arrow keys on it, between 320 px
+and 60 % of the window). Close either panel with its close button or `Shift+C` / `Shift+T`; it
+leaves a narrow rail, and the Tasks rail shows how many tasks are open and how many are overdue.
+One of the two always stays open. On a narrow window opening one panel closes the other.
+
+- **Board**: a new board starts with **To do**, **In progress** and **Done**. Add, rename, reorder
+  and delete columns (at most 12, names up to 40 characters and unique); mark any column as
+  **Counts as done**. Deleting a column with tasks asks where they go. Drag cards between and
+  within columns, or use the keyboard: focus a card, `Enter`/`Space` to pick it up, arrow keys to
+  move, `Enter` to drop and `Escape` to cancel.
+- **List**: the same tasks grouped as Overdue, Today, This week, Later, No date and Done
+  (collapsed). Search and filter by course (or "Personal"), event-linked only and show/hide Done;
+  the view and filters are remembered in this browser.
+- **Details**: click a card (or `Enter` on its title) to edit title, description, column, due date
+  and time, course and a checklist. Changes save on their own, with "Saving…", "Saved" or
+  "Couldn't save — Retry" in the header. Deleting a task, a checklist item, a quick note or an empty
+  column can be undone for 10 seconds.
+- **Quick notes**: the note button on a card opens small title-and-text notes for that task,
+  without leaving the board.
+- **Events on the board**: the event form and the calendar's quick form have an **Add to kanban**
+  switch (for a repeating event, only the first occurrence is added; add others from their
+  details). A linked task takes its title and due time from the event and follows it when the event
+  moves; **Open note** on the card opens the event's workspace. Deleting the event asks whether to
+  keep the task or delete it with the event; a task deleted with its event comes back when you
+  restore the event from the Trash.
+- **On the calendar**: the **Show tasks** switch in the calendar header puts tasks with a due date
+  on the day, week and month views. Tick one there to move it to Done, untick to put it back. Tasks
+  never cover or shrink your classes and events.
+- **Courses**: a course page lists its open tasks with a quick add. Deleting a course keeps its
+  tasks as personal tasks.
+- **Export**: **Settings → Import and export → Export tasks** saves a `.csv` with every task, its
+  column, dates, course, linked event, checklist and quick notes.
 
 ## Importing and exporting the calendar (.ics)
 
@@ -424,6 +476,9 @@ The owner must choose a new password at the next sign-in.
 - Feature 001: [spec](specs/001-class-schedule-calendar/spec.md) ·
   [plan](specs/001-class-schedule-calendar/plan.md) ·
   [quickstart & validation](specs/001-class-schedule-calendar/quickstart.md)
+- Task manager (Feature 012): [spec](specs/012-task-manager/spec.md) ·
+  [plan](specs/012-task-manager/plan.md) ·
+  [quickstart & validation](specs/012-task-manager/quickstart.md)
 
 ---
 
