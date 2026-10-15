@@ -176,6 +176,7 @@ class SessionOut(ApiModel):
     exception_version: int | None
     status: Literal["upcoming", "past"]
     scheduled: bool = True
+    task_id: str | None = None  # 012: live task linked to this event occurrence (classes: null)
 
 
 class SessionEdit(ClassFields):

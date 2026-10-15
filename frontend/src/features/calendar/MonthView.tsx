@@ -3,6 +3,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import type { Session } from "@/features/classes/api";
 import { formatDay, monthGrid, sameMonth, todayISO } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { TaskMarker } from "@/features/tasks/calendar/TaskMarker";
+import type { CalendarTask, CalendarTasks } from "@/features/tasks/calendar/useCalendarTasks";
 import { rangeLabel, type Draft } from "./draft";
 import { EventBlock } from "./EventBlock";
 import { useGuardedNavigate } from "./entryGuard";
@@ -21,12 +23,16 @@ interface Props {
   draft?: Draft | null;
   /** 009 FR-029: a click on empty day space creates a 09:00–10:00 draft for that date. */
   onCreateDraft?: (date: string) => void;
+  /** 012: tasks shown ("Show tasks" on), listed after the day's entries. */
+  tasks?: CalendarTasks;
 }
+
+const NO_TASKS: CalendarTask[] = [];
 
 /** Clicks on these are their own actions, never "empty day space". */
 const OWN_ACTION = "button,a,[data-session-key],[data-draft],[role='dialog']";
 
-export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft }: Props) {
+export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft, tasks }: Props) {
   const days = monthGrid(date);
   const today = todayISO(tz);
   const navigate = useGuardedNavigate();
@@ -64,8 +70,14 @@ export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft }
           <div key={row} role="row" className="contents">
             {days.slice(row * 7, row * 7 + 7).map((d) => {
               const list = byDay.get(d) ?? [];
-              const shown = list.length > fit ? list.slice(0, fit) : list;
-              const hidden = list.length - shown.length;
+              // the day's tasks follow its entries and share the "+N more" overflow
+              const dayTasks = tasks ? [...(tasks.dateOnly.get(d) ?? NO_TASKS), ...(tasks.timed.get(d) ?? NO_TASKS)] : NO_TASKS;
+              const total = list.length + dayTasks.length;
+              const room = total > fit ? fit : total;
+              const shown = list.slice(0, room);
+              const shownTasks = dayTasks.slice(0, Math.max(0, room - shown.length));
+              const hidden = total - shown.length - shownTasks.length;
+              const what = dayTasks.length ? "entries" : "sessions";
               const inMonth = sameMonth(d, date);
               return (
                 // a pointer shortcut only: keyboard users create entries from the time grid
@@ -115,13 +127,16 @@ export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft }
                         onClick={() => navigate(`/sessions/${encodeURIComponent(s.key)}`)}
                       />
                     ))}
+                    {shownTasks.map((e) => (
+                      <TaskMarker key={e.task.id} entry={e} />
+                    ))}
                     {hidden > 0 && (
                       <Popover>
                         <PopoverTrigger asChild>
                           <button
                             type="button"
                             className="h-5 rounded px-1 text-left text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-                            aria-label={`Show ${hidden} more sessions on ${formatDay(d)}`}
+                            aria-label={`Show ${hidden} more ${what} on ${formatDay(d)}`}
                           >
                             +{hidden} more
                           </button>
@@ -136,6 +151,9 @@ export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft }
                                 kind={s.kind}
                                 onClick={() => navigate(`/sessions/${encodeURIComponent(s.key)}`)}
                               />
+                            ))}
+                            {dayTasks.map((e) => (
+                              <TaskMarker key={e.task.id} entry={e} />
                             ))}
                           </div>
                         </PopoverContent>

@@ -898,6 +898,10 @@ def _update(
             )
         )
     db.flush()
+    if kind == "event":  # 012 R4: linked tasks follow the imported changes
+        from unihelper.services import task_link_service
+
+        task_link_service.sync_lineage(db, user, lineage_id)
     return True, frozen
 
 

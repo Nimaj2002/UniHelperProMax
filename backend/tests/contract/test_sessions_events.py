@@ -6,6 +6,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.conftest import assert_problem
 from tests.contract.event_helpers import API, make_event
 from tests.contract.openapi_check import check
 from tests.contract.test_classes_sessions_read import new_class_body
@@ -79,3 +80,107 @@ def test_create_class_reports_created_rows(owner_client: TestClient) -> None:
     assert made["semesterId"] and made["yearId"]
     again = c.post(f"{API}/classes", json=new_class_body(course={"id": first["courseId"]})).json()
     assert again["created"] == {"lineageId": again["lineageId"]}  # nothing new in the hierarchy
+
+
+# ---- 012 US5: tasks linked to event occurrences ---------------------------------------------
+
+WEEKLY3 = {"freq": "weekly", "byWeekday": ["TH"], "end": {"kind": "count", "count": 3}}
+
+
+def _im(v: int) -> dict[str, str]:
+    return {"If-Match": f'"{v}"'}
+
+
+def test_session_task_id(owner_client: TestClient) -> None:
+    from tests.contract.test_tasks import link_task
+
+    c = owner_client
+    cls, ev = _setup(c)
+    key = f"{ev['lineageId']}:2026-10-07"
+    t = link_task(c, key)
+    r = c.get(f"{API}/sessions/{key}")
+    assert r.status_code == 200, r.text
+    check(r.json(), "SessionTaskAddition", spec="012")
+    assert r.json()["taskId"] == t["id"]
+    other = c.get(f"{API}/sessions/{ev['lineageId']}:2026-09-30").json()
+    assert other["taskId"] is None
+    rows = c.get(f"{API}/sessions", params={"from": "2026-09-28", "to": "2026-10-11"}).json()
+    for s in rows:
+        check(s, "SessionTaskAddition", spec="012")
+        assert s["taskId"] == (t["id"] if s["key"] == key else None)
+    assert c.get(f"{API}/sessions/{cls['lineageId']}:2026-09-28").json()["taskId"] is None
+
+
+def test_add_to_board_on_create_and_undo(owner_client: TestClient) -> None:
+    from tests.contract.event_helpers import new_event_body
+    from tests.contract.test_task_columns import columns, tasks
+
+    c = owner_client
+    doing = columns(c)[1]
+    body = new_event_body(
+        startDate="2026-10-14",  # a Wednesday: the first occurrence is Thu 15 Oct
+        recurrence=WEEKLY3,
+        addToBoard={"columnId": doing["id"]},
+    )
+    check(body, "EventCreateAddition", spec="012")
+    r = c.post(f"{API}/events", json=body)
+    assert r.status_code == 201, r.text
+    made = r.json()
+    (t,) = tasks(c)
+    assert t["columnId"] == doing["id"] and t["title"] == "AI Seminar"
+    assert t["event"]["sessionKey"] == f"{made['lineageId']}:2026-10-15"
+    assert (t["dueDate"], t["dueTime"]) == ("2026-10-15", "14:00")
+
+    r = c.post(f"{API}/creations/undo", json={"created": made["created"], "version": 1})
+    assert r.status_code == 204, r.text
+    assert tasks(c) == []
+
+    bad = new_event_body(addToBoard={"columnId": "nope"})
+    r = c.post(f"{API}/events", json=bad)
+    assert r.status_code == 404, r.text
+    assert c.get(f"{API}/course-tree").json() == []  # nothing was created
+
+
+def test_delete_occurrence_linked_tasks_keep_or_delete(owner_client: TestClient) -> None:
+    from tests.contract.test_tasks import link_task, task_of
+
+    c = owner_client
+    ev = make_event(c, recurrence=WEEKLY3)
+    lin = ev["lineageId"]
+    kept = link_task(c, f"{lin}:2026-10-15")
+    gone = link_task(c, f"{lin}:2026-10-22")
+    later = link_task(c, f"{lin}:2026-10-29")
+
+    imp = c.get(f"{API}/sessions/{lin}:2026-10-22/deletion-impact", params={"scope": "following"})
+    assert imp.status_code == 200, imp.text
+    check(imp.json(), "LinkedTaskImpact", spec="012")
+    assert imp.json()["linkedTaskCount"] == 2
+
+    # default keep: the task stays, unlinked, with its last title and date
+    r = c.delete(f"{API}/sessions/{lin}:2026-10-15", params={"scope": "this"}, headers=_im(1))
+    assert r.status_code == 200, r.text
+    k = task_of(c, kept["id"])
+    assert k is not None and k["event"] is None
+    assert (k["title"], k["dueDate"], k["dueTime"]) == ("AI Seminar", "2026-10-15", "14:00")
+
+    version = c.get(f"{API}/sessions/{lin}:2026-10-22").json()["seriesVersion"]
+    r = c.delete(
+        f"{API}/sessions/{lin}:2026-10-22",
+        params={"scope": "following", "linkedTasks": "delete"},
+        headers=_im(version),
+    )
+    assert r.status_code == 200, r.text
+    assert task_of(c, gone["id"]) is None and task_of(c, later["id"]) is None
+    entry = next(e for e in c.get(f"{API}/trash").json() if e["id"] == r.json()["trashEntryId"])
+    check(entry, "TrashEntryTaskAddition", spec="012")
+    assert entry["taskCount"] == 2
+
+    assert_problem(
+        c.delete(
+            f"{API}/sessions/{lin}:2026-10-15",
+            params={"scope": "this", "linkedTasks": "maybe"},
+            headers=_im(1),
+        ),
+        422,
+        "validation_failed",
+    )

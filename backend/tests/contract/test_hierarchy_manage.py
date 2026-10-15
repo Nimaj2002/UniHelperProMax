@@ -96,6 +96,7 @@ def test_deletion_impact_and_delete(owner_client: TestClient, tmp_data_dir: Path
     assert imp.status_code == 200
     check(imp.json(), "DeletionImpact")
     none = {"events": 0, "notes": 0, "recordings": 0, "documents": 0}  # 009 additions
+    none |= {"linkedTaskCount": 0, "taskCount": 0}  # 012 additions
     assert imp.json() == {
         "semesters": 1,
         "courses": 1,
@@ -178,3 +179,92 @@ def test_year_order(owner_client: TestClient, make_member: Callable[..., TestCli
     mid = c.get(f"{API}/years").json()[2]
     c.delete(f"{API}/years/{mid['id']}", headers=v(mid["version"]))
     assert [y["position"] for y in c.get(f"{API}/years").json()] == [0, 1, 2]
+
+
+# ---- 012: tasks when a year, semester or course is deleted -----------------------------------
+
+
+def _event_in(c: TestClient, semester_id: str, title: str) -> dict[str, Any]:
+    from tests.contract.event_helpers import make_event
+
+    return make_event(c, title=title, semester={"id": semester_id}, startDate="2026-10-01")
+
+
+def test_course_delete_makes_tasks_personal(owner_client: TestClient) -> None:
+    from tests.contract.test_task_columns import add_task, tasks
+
+    c = owner_client
+    t = setup_tree(c)
+    course_id = t["course"]["id"]
+    task = add_task(c, "Homework")
+    r = c.patch(f"{API}/tasks/{task['id']}", json={"courseId": course_id}, headers=v(1))
+    assert r.status_code == 200, r.text
+    imp = c.get(f"{API}/courses/{course_id}/deletion-impact")
+    assert imp.status_code == 200, imp.text
+    check(imp.json(), "CourseTaskImpact", spec="012")
+    assert imp.json()["taskCount"] == 1 and imp.json()["linkedTaskCount"] == 0
+    r = c.delete(
+        f"{API}/courses/{course_id}",
+        params={"linkedTasks": "delete"},
+        headers=v(t["course"]["version"]),
+    )
+    assert r.status_code == 204, r.text
+    (after,) = tasks(c)
+    assert after["id"] == task["id"] and after["courseId"] is None and after["courseName"] is None
+
+
+@pytest.mark.parametrize("kind", ["years", "semesters"])
+def test_delete_with_linked_tasks(owner_client: TestClient, kind: str) -> None:
+    from tests.contract.test_tasks import link_task, task_of
+
+    c = owner_client
+    t = setup_tree(c)
+    sem_id = t["semester"]["id"]
+    kept_ev = _event_in(c, sem_id, "Kept talk")
+    gone_ev = _event_in(c, sem_id, "Gone talk")
+    kept = link_task(c, f"{kept_ev['lineageId']}:2026-10-01")
+    gone = link_task(c, f"{gone_ev['lineageId']}:2026-10-01")
+    entity = t["year"] if kind == "years" else t["semester"]
+    imp = c.get(f"{API}/{kind}/{entity['id']}/deletion-impact")
+    check(imp.json(), "DeletionImpact")
+    check(imp.json(), "LinkedTaskImpact", spec="012")
+    assert imp.json()["linkedTaskCount"] == 2 and imp.json()["events"] == 2
+    if kind == "years":
+        entity = c.get(f"{API}/years").json()[0]
+    else:
+        entity = c.get(f"{API}/semesters", params={"yearId": t["year"]["id"]}).json()[0]
+    # keep one by unlinking it first through a session delete with the default (keep)
+    r = c.delete(
+        f"{API}/sessions/{kept_ev['lineageId']}:2026-10-01",
+        params={"scope": "all"},
+        headers=v(kept_ev["version"]),
+    )
+    assert r.status_code == 200, r.text
+    r = c.delete(
+        f"{API}/{kind}/{entity['id']}",
+        params={"linkedTasks": "delete"},
+        headers=v(entity["version"]),
+    )
+    assert r.status_code == 204, r.text
+    k = task_of(c, kept["id"])
+    assert k is not None and k["event"] is None and k["title"] == "Kept talk"
+    assert task_of(c, gone["id"]) is None
+    entries = {e["label"]: e for e in c.get(f"{API}/trash", params={"kind": "event"}).json()}
+    assert entries["Gone talk"]["taskCount"] == 1 and entries["Kept talk"]["taskCount"] == 0
+
+
+def test_delete_semester_keeps_linked_tasks_by_default(owner_client: TestClient) -> None:
+    from tests.contract.test_tasks import link_task, task_of
+
+    c = owner_client
+    t = setup_tree(c)
+    ev = _event_in(c, t["semester"]["id"], "Talk")
+    task = link_task(c, f"{ev['lineageId']}:2026-10-01")
+    sem = c.get(f"{API}/semesters", params={"yearId": t["year"]["id"]}).json()[0]
+    r = c.delete(f"{API}/semesters/{sem['id']}", headers=v(sem["version"]))
+    assert r.status_code == 204, r.text
+    k = task_of(c, task["id"])
+    assert k is not None and k["event"] is None
+    assert (k["title"], k["dueDate"], k["dueTime"]) == ("Talk", "2026-10-01", "14:00")
+    (entry,) = c.get(f"{API}/trash", params={"kind": "event"}).json()
+    assert entry["taskCount"] == 0

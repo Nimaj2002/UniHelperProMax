@@ -25,7 +25,7 @@ interface Tap {
 
 /** Presses on entries (and on the draft itself) never start a draft (FR-023). */
 export function startsDraft(target: EventTarget | null): boolean {
-  return target instanceof Element && !target.closest("[data-session-key],[data-draft]");
+  return target instanceof Element && !target.closest("[data-session-key],[data-draft],[data-task-marker],[data-no-drag]");
 }
 
 /**

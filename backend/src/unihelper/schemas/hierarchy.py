@@ -91,6 +91,9 @@ class DeletionImpact(ApiModel):
     recordings: int = 0
     documents: int = 0
     kept_folder: str
+    # 012: live tasks linked to its events; live tasks of its courses that become personal
+    linked_task_count: int = 0
+    task_count: int = 0
 
 
 class YearOrder(ApiModel):

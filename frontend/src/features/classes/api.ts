@@ -25,10 +25,11 @@ export function useSession(key: string | undefined) {
   });
 }
 
-/** Invalidate everything derived from classes, (009) events and the hierarchy. */
+/** Invalidate everything derived from classes, (009) events and the hierarchy — and (012) the
+ * task board: linked tasks follow their event, course names show on cards. */
 export function invalidateSchedule(qc: ReturnType<typeof useQueryClient>) {
   return Promise.all(
-    ["sessions", "session", "course-tree", "years", "semesters", "courses", "course", "class", "events"].map((k) =>
+    ["sessions", "session", "course-tree", "years", "semesters", "courses", "course", "class", "events", "tasks", "task-columns"].map((k) =>
       qc.invalidateQueries({ queryKey: [k] }),
     ),
   );
@@ -45,6 +46,8 @@ export function useCreateClass() {
 export type ClassDetail = Schemas["ClassDetail"];
 export type ScopeResult = Schemas["ScopeResult"];
 export type Scope = "this" | "following" | "all";
+/** 012: what happens to tasks linked to the deleted events (default keep). */
+export type LinkedTasks = "keep" | "delete";
 
 export function useClassDetail(lineageId: string | undefined) {
   return useQuery({
@@ -66,8 +69,8 @@ export function useEditSession() {
 export function useDeleteSession() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ key, scope, version }: { key: string; scope: Scope; version: number }) =>
-      apiFetch<ScopeResult>(`/sessions/${encodeURIComponent(key)}`, { method: "DELETE", query: { scope }, version }),
+    mutationFn: ({ key, scope, version, linkedTasks }: { key: string; scope: Scope; version: number; linkedTasks?: LinkedTasks }) =>
+      apiFetch<ScopeResult>(`/sessions/${encodeURIComponent(key)}`, { method: "DELETE", query: { scope, linkedTasks }, version }),
     onSettled: () => invalidateSchedule(qc),
   });
 }

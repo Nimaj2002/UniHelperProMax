@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate, type RouteObject } from "react-router";
+import { createBrowserRouter, type RouteObject } from "react-router";
 import { RequireAuth } from "@/features/auth/RequireAuth";
 import { publicRoutes } from "@/features/auth/routes";
 import { featureRoutes } from "./features";
@@ -15,7 +15,7 @@ export const routes: RouteObject[] = [
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Navigate to="/calendar" replace /> },
+      // "/" is the home page (features/home/routes.tsx, 012)
       ...featureRoutes,
       { path: "*", element: <NotFound /> },
     ],

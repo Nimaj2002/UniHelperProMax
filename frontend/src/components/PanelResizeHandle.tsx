@@ -1,4 +1,4 @@
-import { useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { cn } from "@/lib/utils";
 
 /** Pointer/arrow direction that makes the value larger. */
@@ -27,6 +27,8 @@ interface Props {
   /** Converts a pointer movement in px to value units (e.g. 100 / container height for %). */
   unitsPerPx?: () => number;
   className?: string;
+  style?: CSSProperties;
+  "data-testid"?: string;
 }
 
 const AXIS: Record<Grow, { horizontal: boolean; sign: 1 | -1; more: string; less: string }> = {
@@ -41,7 +43,9 @@ const AXIS: Record<Grow, { horizontal: boolean; sign: 1 | -1; more: string; less
  * and use the arrow keys (Home/End for min/max); double-click or Enter restores the default.
  * The edge lights up with a grip on hover, focus and while dragging.
  */
-export function PanelResizeHandle({ value, min, max, limit, defaultValue, onResize, onDrag, grow, label, controls, step = 16, unitsPerPx, className }: Props) {
+export function PanelResizeHandle({
+  value, min, max, limit, defaultValue, onResize, onDrag, grow, label, controls, step = 16, unitsPerPx, className, style, "data-testid": testId,
+}: Props) {
   const drag = useRef<{ at: number; value: number; scale: number; max: number; last: number | null; frame: number } | null>(null);
   const { horizontal, sign, more, less } = AXIS[grow];
   const maxNow = () => Math.max(min, Math.min(max, limit?.() ?? max));
@@ -110,6 +114,8 @@ export function PanelResizeHandle({ value, min, max, limit, defaultValue, onResi
       aria-valuemax={max}
       // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
       tabIndex={0}
+      data-testid={testId}
+      style={style}
       title="Drag to resize · double-click to reset"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

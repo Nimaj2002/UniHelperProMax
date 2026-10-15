@@ -33,6 +33,7 @@ from unihelper.models import (
     User,
 )
 from unihelper.services.class_service import series_rule
+from unihelper.services.task_link_service import task_ids_for_keys
 
 MAX_RANGE_DAYS = 400
 
@@ -164,9 +165,15 @@ def list_sessions(
         ):
             if view.key not in trashed:
                 out.append(_session_dict(view, s, course))
-    for view, ev in expand_events(events, exceptions, range_from, range_to, user.timezone, now):
-        if view.key not in trashed:
-            out.append(event_session_dict(view, ev))
+    event_out = [
+        event_session_dict(view, ev)
+        for view, ev in expand_events(events, exceptions, range_from, range_to, user.timezone, now)
+        if view.key not in trashed
+    ]
+    task_ids = task_ids_for_keys(db, user, [e["key"] for e in event_out])  # 012, one query
+    for e in event_out:
+        e["task_id"] = task_ids.get(e["key"])
+    out.extend(event_out)
     out.sort(key=lambda d: (d["start"], (d["course_name"] or d["title"]).casefold(), d["key"]))
     return out
 
@@ -203,7 +210,9 @@ def get_session(db: Session, user: User, key: str) -> dict[str, Any]:
     except ApiError as err:
         if err.status != 404:
             raise
-        return find_event_session(db, user, key)[0]
+        session = find_event_session(db, user, key)[0]
+        session["task_id"] = task_ids_for_keys(db, user, [key]).get(key)
+        return session
 
 
 # ---- events (009) -----------------------------------------------------------------------------

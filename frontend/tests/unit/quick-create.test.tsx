@@ -40,6 +40,11 @@ const SEMESTER = { id: "s1", yearId: "y1", name: "Fall 2026", startDate: null, e
 const COURSE = { id: "c1", semesterId: "s1", name: "CS 201", defaultColor: "green", version: 1, reservedNameConflict: false };
 const TREE = [{ year: YEAR, semesters: [{ semester: SEMESTER, courses: [COURSE], eventCount: 0 }] }];
 
+const COLUMNS = [
+  { id: "col-todo", name: "To do", position: 0, countsAsDone: false, taskCount: 0, version: 1 },
+  { id: "col-doing", name: "Doing", position: 1, countsAsDone: false, taskCount: 0, version: 1 },
+];
+
 /** Tuesday 6 October 2026, 10:00–11:00 (a click draft). */
 const DRAFT = { date: "2026-10-06", startMin: 600, endMin: 660 };
 
@@ -74,6 +79,7 @@ function setup(prefs: Record<string, unknown> = {}, ...extra: Handler[]) {
     on("GET", "/api/v1/years", () => json([YEAR])),
     on("GET", "/api/v1/semesters", () => json([SEMESTER])),
     on("GET", "/api/v1/courses", () => json([COURSE])),
+    on("GET", "/api/v1/task-columns", () => json(COLUMNS)),
   );
   const utils = renderRoutes(
     [
@@ -172,6 +178,30 @@ describe("QuickCreateForm (009 US6)", () => {
     expect(options.action.label).toBe("Undo");
     await act(async () => options.action.onClick());
     await waitFor(() => expect(bodyOf(fetch.calls, "POST", "/api/v1/creations/undo")).toEqual({ created: made.created, version: 1 }));
+  });
+
+  it("Add to kanban (012 FR-035): off by default; on sends addToBoard with the chosen column", async () => {
+    const made = { lineageId: "E1", semesterId: "s1", version: 1, created: { lineageId: "E1", yearId: null, semesterId: null, courseId: null } };
+    const { user, fetch } = setup(
+      { quickCreateType: "event", lastSemesterId: "s1" },
+      on("POST", "/api/v1/events", () => json(made, 201)),
+    );
+    await form();
+    await user.type(screen.getByLabelText("Title"), "Exam");
+    const toggle = await screen.findByRole("switch", { name: "Add to kanban" });
+    expect(toggle).not.toBeChecked();
+    await waitFor(() => expect(toggle).toBeEnabled());
+    await user.click(toggle);
+    expect(screen.getByRole("combobox", { name: "Column" })).toHaveTextContent("To do");
+    expect(screen.queryByText("Only the first occurrence is added to the board")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Column" }));
+    await user.click(await screen.findByRole("option", { name: "Doing" }));
+    await user.click(screen.getByRole("combobox", { name: "Repeat" }));
+    await user.click(await screen.findByRole("option", { name: "Weekly on Tuesday" }));
+    expect(screen.getByText("Only the first occurrence is added to the board")).toBeInTheDocument();
+    await user.click(saveButton());
+    await waitFor(() => expect(screen.getByTestId("draft")).toHaveTextContent("none"));
+    expect(bodyOf(fetch.calls, "POST", "/api/v1/events")).toMatchObject({ title: "Exam", addToBoard: { columnId: "col-doing" } });
   });
 
   it("saves a class on an existing course with the course's colour and no title", async () => {

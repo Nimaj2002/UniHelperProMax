@@ -5,10 +5,10 @@
 import type { RouteObject } from "react-router";
 import { shellRoutes as authShellRoutes } from "@/features/auth/routes";
 import { routes as adminRoutes } from "@/features/admin/routes";
-import { routes as calendarRoutes } from "@/features/calendar/routes";
 import { routes as courseRoutes } from "@/features/courses/routes";
 import "@/features/documents/routes";
 import { routes as eventRoutes } from "@/features/events/routes";
+import { routes as homeRoutes } from "@/features/home/routes";
 import "@/features/imports/routes";
 import "@/features/recordings/routes";
 import { routes as sessionRoutes } from "@/features/sessions/routes";
@@ -17,7 +17,7 @@ import "@/features/transcription/routes";
 
 export const featureRoutes: RouteObject[] = [
   ...authShellRoutes,
-  ...calendarRoutes,
+  ...homeRoutes,
   ...courseRoutes,
   ...eventRoutes,
   ...sessionRoutes,

@@ -144,6 +144,10 @@ def undo_creation(
     )
     for f in folders:
         db.delete(f)
+    if lin.kind == "event":  # 012: the task `addToBoard` made (any task linked to it)
+        from unihelper.services import task_link_service
+
+        task_link_service.delete_for_lineage(db, user, lineage_id)
     db.delete(series)
     db.flush()
     if drop_course and course is not None:

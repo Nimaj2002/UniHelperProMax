@@ -1,7 +1,8 @@
-import { CalendarStar } from "@phosphor-icons/react";
+import { CalendarStar, Kanban } from "@phosphor-icons/react";
 import { forwardRef, type ComponentPropsWithoutRef } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Session } from "@/features/classes/api";
+import { useOpenTaskDetails } from "@/features/home/openTask";
 import { formatDay, wallTime } from "@/lib/dates";
 import { eventStyle, type ColorKey } from "@/lib/palette";
 import { cn } from "@/lib/utils";
@@ -38,7 +39,8 @@ export const EventBlock = forwardRef<HTMLButtonElement, Props>(function EventBlo
 ) {
   const event = kind === "event";
   const full = entryName(session);
-  return (
+  const taskId = session.taskId ?? null;
+  const block = (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
@@ -50,9 +52,13 @@ export const EventBlock = forwardRef<HTMLButtonElement, Props>(function EventBlo
           className={cn(
             "flex w-full flex-col overflow-hidden rounded-[6px] border border-l-[3px] px-1.5 py-1 text-left text-xs leading-tight",
             "transition-[filter] hover:brightness-[0.97] focus-visible:z-20 active:scale-[0.99]",
-            className,
+            taskId ? cn("h-full pr-6", compact && "py-0.5") : className,
           )}
-          style={{ ...eventStyle(session.color as ColorKey), ...(event ? { borderLeftColor: "var(--event-marker)", borderLeftStyle: "dashed" } : null), ...style }}
+          style={{
+            ...eventStyle(session.color as ColorKey),
+            ...(event ? { borderLeftColor: "var(--event-marker)", borderLeftStyle: "dashed" } : null),
+            ...(taskId ? null : style),
+          }}
           {...rest}
         >
           <span className="flex min-w-0 items-center gap-1 truncate font-semibold">
@@ -82,4 +88,35 @@ export const EventBlock = forwardRef<HTMLButtonElement, Props>(function EventBlo
       </TooltipContent>
     </Tooltip>
   );
+  if (!taskId) return block;
+  // 012 FR-050: an event on the board carries an "On board" button beside its own button (a
+  // button can't hold another); the wrapper takes the block's position
+  return (
+    <div className={cn("relative", className)} style={style}>
+      {block}
+      <OnBoardButton taskId={taskId} title={session.title ?? ""} />
+    </div>
+  );
 });
+
+function OnBoardButton({ taskId, title }: { taskId: string; title: string }) {
+  const openDetails = useOpenTaskDetails();
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          data-no-drag
+          data-on-board={taskId}
+          aria-label={`On board: open task ${title}`}
+          onClick={() => openDetails(taskId)}
+          className="absolute top-0.5 right-0.5 z-10 grid size-4 place-items-center rounded-sm bg-surface-elevated/80 text-foreground outline-none hover:bg-surface-elevated focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <Kanban size={12} weight="bold" aria-hidden />
+          <span className="sr-only">On board</span>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top">On board · open task</TooltipContent>
+    </Tooltip>
+  );
+}

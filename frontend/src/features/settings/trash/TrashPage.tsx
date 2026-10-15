@@ -36,6 +36,8 @@ export function entryContent(e: TrashEntry): string {
     e.noteCount ? plural(e.noteCount, "note") : "",
     e.recordingCount ? plural(e.recordingCount, "recording") : "",
     e.documentCount ? plural(e.documentCount, "document") : "",
+    // 012 FR-043: tasks deleted with the event come back linked when it is restored
+    e.taskCount ? plural(e.taskCount, "task") : "",
   ].filter(Boolean);
   return parts.length ? parts.join(" · ") : "No notes, recordings or documents";
 }

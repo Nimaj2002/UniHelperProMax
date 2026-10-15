@@ -1,7 +1,8 @@
+import { ExportTasksCard } from "@/features/tasks/ExportTasksCard";
 import { ExportCard } from "./ExportCard";
 import { ImportWizard } from "./ImportWizard";
 
-/** Settings → Import and export (feature 010): calendar files only — notes, recordings,
+/** Settings → Import and export (feature 010): calendar files (and, 012, a CSV of the tasks) — notes, recordings,
  * documents and annotations are never imported or exported. */
 export function ImportExportPage() {
   return (
@@ -23,6 +24,7 @@ export function ImportExportPage() {
         <ImportWizard />
       </section>
       <ExportCard />
+      <ExportTasksCard />
     </div>
   );
 }

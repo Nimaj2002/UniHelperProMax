@@ -58,3 +58,30 @@ inside its file operation while `append_result` runs.
 - **Interoperability is checked by hand**: the import into Google Calendar, Apple Calendar and
   Outlook of an exported file (quickstart scenario 6) needs those apps; results are recorded in
   `specs/010-calendar-ics-import-export/checklists/interop.md`.
+
+### Task manager and home panels: open items (012, found 2026-10-16)
+
+- **Crowded overlaps in a narrow Calendar panel**: with the Tasks panel open at 1366 px, a week
+  column is about 80 px wide. When many entries overlap (seen in the full e2e run, where specs
+  share one database and pile events on Monday 10:00), each lane gets narrower than an event
+  block's padding and border (about 16 px). The blocks then spill into each other, and the
+  covered one can't be clicked at its centre. Lanes come from `calendar/layoutOverlaps.ts`
+  (`TimeGrid.tsx` `ColumnEntries`). **Fix idea**: past a lane count that no longer fits, show
+  "+N" like the month view. `calendar-navigation.spec.ts` US2 and `a11y-themes.spec.ts` "across
+  screens" now start with Tasks closed, as `quick-create.spec.ts` does.
+- **300-task filter timing is borderline**: `tasks-board.spec.ts` "SC: with 300 tasks…" measured
+  101 ms against the 100 ms limit (SC-006) once, in the dark project of the full WSL run, and
+  passed on reruns. **Fix idea**: memoize the filtered column lists in `board/Board.tsx`, or
+  measure with the production build.
+- **E2E specs broken before 012** (left unchanged by this feature):
+  - The notes, documents, events US2, import, layout US1/US4/SC-002, notes-resilience,
+    recording, transcription and workspace-switch specs wait for `.cm-content` in
+    `tests/e2e/notes-helpers.ts`. That is the old CodeMirror editor, which commit 9744665
+    replaced with MDXEditor.
+  - `annotations.spec.ts`, `documents.spec.ts` and `a11y-themes.spec.ts` (007) wait for
+    `getByTestId("reader-status")`. Commit cbd1be9 ("Move from pdf-json to embedPDF") removed
+    that test id.
+  - `a11y-themes.spec.ts` (006) reports a colour-contrast violation in MDXEditor's own
+    select (`._selectTrigger_…`) in a custom theme.
+- **Unit test broken before 012**: `no-hardcoded-colors` flags `app/shell/MadeBy.tsx`
+  (`text-red-500`, commit 17d5183).

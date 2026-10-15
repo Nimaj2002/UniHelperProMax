@@ -523,6 +523,7 @@ export interface paths {
         /**
          * Delete Session
          * @description Classes and (009) events: what the scope removes moves to the Trash (no file touched).
+         *     012: `linkedTasks=delete` puts the occurrences' linked tasks into the same Trash entry.
          */
         delete: operations["delete_session_api_v1_sessions__session_key__delete"];
         options?: never;
@@ -1344,6 +1345,217 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/task-columns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Columns */
+        get: operations["list_columns_api_v1_task_columns_get"];
+        put?: never;
+        /** Create Column */
+        post: operations["create_column_api_v1_task_columns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/task-columns/order": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Reorder Columns */
+        put: operations["reorder_columns_api_v1_task_columns_order_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/task-columns/{column_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Column */
+        delete: operations["delete_column_api_v1_task_columns__column_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Column */
+        patch: operations["patch_column_api_v1_task_columns__column_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tasks */
+        get: operations["list_tasks_api_v1_tasks_get"];
+        put?: never;
+        /** Create Task */
+        post: operations["create_task_api_v1_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Tasks */
+        get: operations["export_tasks_api_v1_tasks_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Task */
+        get: operations["get_task_api_v1_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Task */
+        delete: operations["delete_task_api_v1_tasks__task_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Task */
+        patch: operations["patch_task_api_v1_tasks__task_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Task */
+        post: operations["restore_task_api_v1_tasks__task_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move Task */
+        post: operations["move_task_api_v1_tasks__task_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/checklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace Checklist */
+        put: operations["replace_checklist_api_v1_tasks__task_id__checklist_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/quick-notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Quick Notes */
+        get: operations["list_quick_notes_api_v1_tasks__task_id__quick_notes_get"];
+        put?: never;
+        /** Create Quick Note */
+        post: operations["create_quick_note_api_v1_tasks__task_id__quick_notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/quick-notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Quick Note */
+        delete: operations["delete_quick_note_api_v1_quick_notes__note_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Quick Note */
+        patch: operations["patch_quick_note_api_v1_quick_notes__note_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/quick-notes/{note_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Quick Note */
+        post: operations["restore_quick_note_api_v1_quick_notes__note_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1370,6 +1582,14 @@ export interface components {
         AccountUpdate: {
             /** Disabled */
             disabled: boolean;
+        };
+        /**
+         * AddToBoard
+         * @description 012: also create a task linked to the event's first occurrence in this column.
+         */
+        AddToBoard: {
+            /** Columnid */
+            columnId: string;
         };
         /** Annotation */
         Annotation: {
@@ -1464,6 +1684,29 @@ export interface components {
             hash: string;
             /** Version */
             version: number;
+        };
+        /** ChecklistItemIn */
+        ChecklistItemIn: {
+            /** Id */
+            id?: string | null;
+            /** Text */
+            text: string;
+            /** Done */
+            done: boolean;
+        };
+        /** ChecklistItemOut */
+        ChecklistItemOut: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+            /** Done */
+            done: boolean;
+        };
+        /** ChecklistReplace */
+        ChecklistReplace: {
+            /** Items */
+            items: components["schemas"]["ChecklistItemIn"][];
         };
         /** ChunkResult */
         ChunkResult: {
@@ -1763,6 +2006,16 @@ export interface components {
             documents: number;
             /** Keptfolder */
             keptFolder: string;
+            /**
+             * Linkedtaskcount
+             * @default 0
+             */
+            linkedTaskCount: number;
+            /**
+             * Taskcount
+             * @default 0
+             */
+            taskCount: number;
         };
         /** Document */
         Document: {
@@ -1824,6 +2077,7 @@ export interface components {
              */
             color: "slate" | "red" | "orange" | "amber" | "lime" | "green" | "teal" | "cyan" | "blue" | "indigo" | "violet" | "pink";
             recurrence?: components["schemas"]["Recurrence"];
+            addToBoard?: components["schemas"]["AddToBoard"] | null;
         };
         /** EventCreated */
         EventCreated: {
@@ -2119,6 +2373,20 @@ export interface components {
             /** Url */
             url: string;
         };
+        /** LinkedEventOut */
+        LinkedEventOut: {
+            /** Sessionkey */
+            sessionKey: string;
+            /** Title */
+            title: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Start */
+            start?: string | null;
+        };
         /** LoginRequest */
         LoginRequest: {
             /** Username */
@@ -2362,6 +2630,30 @@ export interface components {
             fields: components["schemas"]["ProviderField"][];
             /** Maxuploadbytes */
             maxUploadBytes: number | null;
+        };
+        /** QuickNoteOut */
+        QuickNoteOut: {
+            /** Id */
+            id: string;
+            /** Taskid */
+            taskId: string;
+            /** Title */
+            title: string;
+            /** Body */
+            body: string;
+            /** Version */
+            version: number;
+            /** Createdat */
+            createdAt: string;
+            /** Updatedat */
+            updatedAt: string;
+        };
+        /** QuickNoteWrite */
+        QuickNoteWrite: {
+            /** Title */
+            title?: string | null;
+            /** Body */
+            body?: string | null;
         };
         /** Recording */
         Recording: {
@@ -2661,6 +2953,11 @@ export interface components {
             recordings: number;
             /** Documents */
             documents: number;
+            /**
+             * Linkedtaskcount
+             * @default 0
+             */
+            linkedTaskCount: number;
         };
         /**
          * SessionEdit
@@ -2745,6 +3042,8 @@ export interface components {
              * @default true
              */
             scheduled: boolean;
+            /** Taskid */
+            taskId?: string | null;
         };
         /** SetupStatus */
         SetupStatus: {
@@ -2794,6 +3093,165 @@ export interface components {
             kind: "note" | "document";
             /** Id */
             id: string;
+        };
+        /** TaskColumnCreate */
+        TaskColumnCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Countsasdone
+             * @default false
+             */
+            countsAsDone: boolean;
+        };
+        /** TaskColumnOrder */
+        TaskColumnOrder: {
+            /** Columnids */
+            columnIds: string[];
+        };
+        /** TaskColumnOut */
+        TaskColumnOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Position */
+            position: number;
+            /** Countsasdone */
+            countsAsDone: boolean;
+            /** Taskcount */
+            taskCount: number;
+            /** Version */
+            version: number;
+        };
+        /** TaskColumnPatch */
+        TaskColumnPatch: {
+            /** Name */
+            name?: string | null;
+            /** Countsasdone */
+            countsAsDone?: boolean | null;
+        };
+        /** TaskCreate */
+        TaskCreate: {
+            /** Title */
+            title?: string | null;
+            /** Columnid */
+            columnId?: string | null;
+            /** Courseid */
+            courseId?: string | null;
+            /** Duedate */
+            dueDate?: string | null;
+            /** Duetime */
+            dueTime?: string | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Eventkey */
+            eventKey?: string | null;
+        };
+        /** TaskDetailOut */
+        TaskDetailOut: {
+            /** Id */
+            id: string;
+            /** Columnid */
+            columnId: string;
+            /** Position */
+            position: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Duedate */
+            dueDate: string | null;
+            /** Duetime */
+            dueTime: string | null;
+            /** Courseid */
+            courseId: string | null;
+            /** Coursename */
+            courseName: string | null;
+            /** Coursecolor */
+            courseColor: string | null;
+            event: components["schemas"]["LinkedEventOut"] | null;
+            /** Completedat */
+            completedAt: string | null;
+            /** Previouscolumnid */
+            previousColumnId: string | null;
+            /** Checklistdone */
+            checklistDone: number;
+            /** Checklisttotal */
+            checklistTotal: number;
+            /** Quicknotecount */
+            quickNoteCount: number;
+            /** Version */
+            version: number;
+            /** Createdat */
+            createdAt: string;
+            /** Updatedat */
+            updatedAt: string;
+            /** Checklist */
+            checklist: components["schemas"]["ChecklistItemOut"][];
+        };
+        /** TaskMove */
+        TaskMove: {
+            /** Columnid */
+            columnId: string;
+            /** Index */
+            index: number;
+        };
+        /** TaskOut */
+        TaskOut: {
+            /** Id */
+            id: string;
+            /** Columnid */
+            columnId: string;
+            /** Position */
+            position: number;
+            /** Title */
+            title: string;
+            /** Description */
+            description: string;
+            /** Duedate */
+            dueDate: string | null;
+            /** Duetime */
+            dueTime: string | null;
+            /** Courseid */
+            courseId: string | null;
+            /** Coursename */
+            courseName: string | null;
+            /** Coursecolor */
+            courseColor: string | null;
+            event: components["schemas"]["LinkedEventOut"] | null;
+            /** Completedat */
+            completedAt: string | null;
+            /** Previouscolumnid */
+            previousColumnId: string | null;
+            /** Checklistdone */
+            checklistDone: number;
+            /** Checklisttotal */
+            checklistTotal: number;
+            /** Quicknotecount */
+            quickNoteCount: number;
+            /** Version */
+            version: number;
+            /** Createdat */
+            createdAt: string;
+            /** Updatedat */
+            updatedAt: string;
+        };
+        /** TaskPatch */
+        TaskPatch: {
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Duedate */
+            dueDate?: string | null;
+            /** Duetime */
+            dueTime?: string | null;
+            /** Courseid */
+            courseId?: string | null;
         };
         /** Theme */
         Theme: {
@@ -3058,6 +3516,11 @@ export interface components {
             missingFiles: number;
             /** Version */
             version: number;
+            /**
+             * Taskcount
+             * @default 0
+             */
+            taskCount: number;
         };
         /**
          * UndoCreation
@@ -3785,7 +4248,9 @@ export interface operations {
     };
     delete_course_api_v1_courses__course_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                linkedTasks?: "keep" | "delete";
+            };
             header?: {
                 "If-Match"?: string | null;
             };
@@ -3886,7 +4351,9 @@ export interface operations {
     };
     delete_year_api_v1_years__year_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                linkedTasks?: "keep" | "delete";
+            };
             header?: {
                 "If-Match"?: string | null;
             };
@@ -3985,7 +4452,9 @@ export interface operations {
     };
     delete_semester_api_v1_semesters__semester_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                linkedTasks?: "keep" | "delete";
+            };
             header?: {
                 "If-Match"?: string | null;
             };
@@ -4371,6 +4840,7 @@ export interface operations {
         parameters: {
             query: {
                 scope: "this" | "following" | "all";
+                linkedTasks?: "keep" | "delete";
             };
             header?: {
                 "If-Match"?: string | null;
@@ -6331,6 +6801,606 @@ export interface operations {
                 };
                 content: {
                     "text/calendar": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_columns_api_v1_task_columns_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskColumnOut"][];
+                };
+            };
+        };
+    };
+    create_column_api_v1_task_columns_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskColumnCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskColumnOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reorder_columns_api_v1_task_columns_order_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskColumnOrder"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskColumnOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_column_api_v1_task_columns__column_id__delete: {
+        parameters: {
+            query?: {
+                moveTo?: string | null;
+            };
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                column_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskColumnOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_column_api_v1_task_columns__column_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                column_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskColumnPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskColumnOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tasks_api_v1_tasks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskOut"][];
+                };
+            };
+        };
+    };
+    create_task_api_v1_tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_tasks_api_v1_tasks_export_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+        };
+    };
+    get_task_api_v1_tasks__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_task_api_v1_tasks__task_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_task_api_v1_tasks__task_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_task_api_v1_tasks__task_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_task_api_v1_tasks__task_id__move_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskMove"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_checklist_api_v1_tasks__task_id__checklist_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChecklistReplace"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskDetailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_quick_notes_api_v1_tasks__task_id__quick_notes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickNoteOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_quick_note_api_v1_tasks__task_id__quick_notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuickNoteWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_quick_note_api_v1_quick_notes__note_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_quick_note_api_v1_quick_notes__note_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuickNoteWrite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_quick_note_api_v1_quick_notes__note_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuickNoteOut"];
                 };
             };
             /** @description Validation Error */

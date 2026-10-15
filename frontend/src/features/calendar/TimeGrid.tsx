@@ -3,6 +3,9 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardE
 import type { Session } from "@/features/classes/api";
 import { formatDay, formatHHmm, minutesOf, nowMinutes, todayISO } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { DueStrip } from "@/features/tasks/calendar/DueStrip";
+import { TaskMarker } from "@/features/tasks/calendar/TaskMarker";
+import type { CalendarTask, CalendarTasks } from "@/features/tasks/calendar/useCalendarTasks";
 import { clickDraft, keyRangeMinutes, moveRange, rangeLabel, SNAP_MIN, type KeyRange, type RangeKey } from "./draft";
 import { EventBlock } from "./EventBlock";
 import { useGuardedNavigate } from "./entryGuard";
@@ -28,6 +31,8 @@ interface Props {
   tz: string;
   /** 009: the calendar's new-entry draft (owned by `CalendarPage`). */
   drafts: DraftControls;
+  /** 012: tasks to show ("Show tasks" on): timed markers on the grid, date-only in the due strip. */
+  tasks?: CalendarTasks;
 }
 
 /** The slot button a draft's start (or any time) belongs to, for focus return (009 FR-043). */
@@ -37,7 +42,7 @@ export function slotSelector(date: string, min: number): string {
 
 /** Shared time grid for day and week views (FR-008, FR-010, FR-012; 009 US5/US7: drafts by
  * press-and-drag, click, tap and keyboard ranges). */
-export function TimeGrid({ days, sessions, tz, drafts }: Props) {
+export function TimeGrid({ days, sessions, tz, drafts, tasks }: Props) {
   const navigate = useGuardedNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -199,10 +204,12 @@ export function TimeGrid({ days, sessions, tz, drafts }: Props) {
           </button>
         ))}
       </div>
+      {tasks && days.some((d) => tasks.dateOnly.has(d)) && <DueStrip days={days} tasks={tasks.dateOnly} columns={cols} />}
       {/* keyboard handling lives on the grid; slots are buttons with a roving tabindex */}
       {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
       <div
         ref={scrollRef}
+        data-calendar-scroll
         className="min-h-0 flex-1 overflow-y-auto"
         onKeyDown={onGridKey}
         onBlur={(e) => {
@@ -246,6 +253,7 @@ export function TimeGrid({ days, sessions, tz, drafts }: Props) {
                 />
               )}
               <ColumnEntries sessions={byDay.get(d) ?? NO_SESSIONS} layout={layoutOf(d)} onOpen={onOpenEntry} />
+              {tasks?.timed.has(d) && <TimedTasks entries={tasks.timed.get(d)!} />}
               {draft && draft.date === d && (
                 <DraftBlock
                   label={rangeLabel(draft)}
@@ -326,6 +334,36 @@ const ColumnEntries = memo(function ColumnEntries({ sessions, layout, onOpen }: 
     );
   });
 });
+
+const MARKER_PX = 20;
+
+/**
+ * 012 FR-047/FR-051: a day's timed tasks in their own layer, outside the overlap layout, so entries
+ * never shrink for them. Compact markers on the right at their due time; tasks due at the same
+ * time stack downwards.
+ */
+function TimedTasks({ entries }: { entries: CalendarTask[] }) {
+  const taken = new Map<number, number>();
+  return (
+    <div className="pointer-events-none absolute inset-0 z-[15]">
+      {entries.map((e) => {
+        const [h, m] = (e.task.dueTime ?? "00:00").split(":").map(Number);
+        const top = Math.min(((h * 60 + m) / 60) * HOUR_PX, 24 * HOUR_PX - MARKER_PX);
+        const row = Math.round(top);
+        const n = taken.get(row) ?? 0;
+        taken.set(row, n + 1);
+        return (
+          <TaskMarker
+            key={e.task.id}
+            entry={e}
+            className="pointer-events-auto absolute right-0.5 max-w-[60%]"
+            style={{ top: top + n * MARKER_PX }}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 /** The new-entry draft: draft tokens, dashed edge (never colour alone), its time range as text.
  * Hidden from assistive technology; the live region announces it instead (FR-043). */

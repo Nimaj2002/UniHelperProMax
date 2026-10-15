@@ -18,8 +18,10 @@ from unihelper.services import (
     lineage,
     session_folder_service,
     session_query,
+    task_link_service,
     trash_service,
 )
+from unihelper.services.task_link_service import LinkedTasks
 
 router = APIRouter(prefix="/sessions", tags=["sessions"])
 
@@ -40,7 +42,12 @@ def list_sessions(
 @router.get("/{session_key}", response_model=SessionOut)
 def get_session(session_key: str, user: CurrentUser, db: DbSession) -> Any:
     # scheduled sessions, or (002) unscheduled ones that still have content
-    return session_folder_service.resolve(db, user, session_key).session
+    session = dict(session_folder_service.resolve(db, user, session_key).session)
+    if session.get("kind") == "event":  # 012: its live linked task
+        session["task_id"] = task_link_service.task_ids_for_keys(db, user, [session["key"]]).get(
+            session["key"]
+        )
+    return session
 
 
 def _validated(model: type[SessionEdit] | type[EventEdit], raw: dict[str, Any]) -> Any:
@@ -81,9 +88,11 @@ def delete_session(
     user: CurrentUser,
     db: DbSession,
     scope: Scope = Query(),
+    linked_tasks: LinkedTasks = Query(default="keep", alias="linkedTasks"),
 ) -> Any:
-    """Classes and (009) events: what the scope removes moves to the Trash (no file touched)."""
-    return trash_service.move_to_trash(db, user, session_key, scope, version)
+    """Classes and (009) events: what the scope removes moves to the Trash (no file touched).
+    012: `linkedTasks=delete` puts the occurrences' linked tasks into the same Trash entry."""
+    return trash_service.move_to_trash(db, user, session_key, scope, version, linked_tasks)
 
 
 @router.get("/{session_key}/deletion-impact", response_model=SessionDeletionImpact)

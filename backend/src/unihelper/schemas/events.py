@@ -20,6 +20,12 @@ from unihelper.schemas.classes import (
 from unihelper.schemas.common import ApiModel
 
 
+class AddToBoard(ApiModel):
+    """012: also create a task linked to the event's first occurrence in this column."""
+
+    column_id: str
+
+
 class EventCreate(ApiModel):
     title: str = Field(min_length=1, max_length=120)
     semester: RefId | RefNewSemester
@@ -30,6 +36,7 @@ class EventCreate(ApiModel):
     links: list[Link] = Field(default_factory=list, max_length=10)
     color: ColorKey = "blue"
     recurrence: Recurrence = Field(default_factory=lambda: Recurrence(freq="none"))
+    add_to_board: AddToBoard | None = None  # 012
 
     @field_validator("title")
     @classmethod

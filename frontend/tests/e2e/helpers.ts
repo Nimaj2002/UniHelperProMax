@@ -5,7 +5,8 @@ export const OWNER = { username: "owner", password: "owner-password-1" };
 /** Create the owner on a fresh install, or sign in if it already exists. */
 export async function signIn(page: Page, who = OWNER) {
   await page.goto("/");
-  await page.waitForURL(/\/(setup|login|calendar)/);
+  // 012: "/" is the home page (no redirect to /calendar any more)
+  await expect(page.getByLabel("Username").or(page.locator("#main"))).toBeVisible({ timeout: 30_000 });
   if (page.url().includes("/setup")) {
     await page.getByLabel("Username").fill(who.username);
     await page.getByLabel("Password", { exact: true }).fill(who.password);
@@ -16,7 +17,19 @@ export async function signIn(page: Page, who = OWNER) {
     await page.getByLabel("Password").fill(who.password);
     await page.getByRole("button", { name: "Sign in" }).click();
   }
-  await expect(page).toHaveURL(/\/calendar/);
+  await expect(page.locator("#calendar-panel")).toBeVisible({ timeout: 30_000 });
+}
+
+/**
+ * "New class" / "New event" in the Calendar panel's header (012): a button, or an item of its
+ * "More" menu when the panel is narrower than 640 px.
+ */
+export async function calendarAction(page: Page, name: "New class" | "New event") {
+  const panel = page.locator("#calendar-panel");
+  const button = panel.getByRole("button", { name, exact: true });
+  if (await button.isVisible()) return button.click();
+  await panel.getByRole("button", { name: "More calendar actions" }).click();
+  await page.getByRole("menuitem", { name }).click();
 }
 
 /** Create a class through the API (fast seeding for E2E). */

@@ -7,6 +7,7 @@ import { ColorPicker } from "@/features/classes/ColorPicker";
 import { emptyHierarchy, HierarchyPicker, semesterRef, useSemesterEnd, type HierarchyValue } from "@/features/classes/HierarchyPicker";
 import { isValidUrl, LinksEditor, MAX_LINKS, type LinkValue } from "@/features/classes/LinksEditor";
 import { defaultRecurrence, recurrencePayload, RecurrenceFields, type RecurrenceValue } from "@/features/classes/RecurrenceFields";
+import { AddToKanbanFields, addToBoardPayload, noAddToBoard, type AddToBoardValue } from "@/features/tasks/AddToKanbanFields";
 import { isApiError, type ApiError } from "@/lib/api";
 import { parseTimeHHmm } from "@/lib/dates";
 import type { ColorKey } from "@/lib/palette";
@@ -21,6 +22,8 @@ export interface EventFormValue {
   links: LinkValue[];
   color: ColorKey;
   recurrence: RecurrenceValue;
+  /** 012: create a task linked to the first occurrence (create mode only). */
+  addToBoard: AddToBoardValue;
 }
 
 /** Values another form (the quick form, 009 US6) may hand over through router state. */
@@ -37,6 +40,7 @@ export function initialEventForm(prefill: EventPrefill = {}): EventFormValue {
     links: [],
     color: "blue", // FR-006: independent of any course colour
     recurrence: { ...defaultRecurrence, freq: "none" },
+    addToBoard: noAddToBoard,
     ...Object.fromEntries(Object.entries(prefill).filter(([, v]) => v !== undefined)),
   };
 }
@@ -102,6 +106,7 @@ export function eventPayload(v: EventFormValue) {
     color: v.color,
     links: v.links.map((l) => ({ label: l.label.trim() || null, url: l.url })),
     recurrence: recurrencePayload(v.recurrence),
+    ...addToBoardPayload(v.addToBoard),
   };
 }
 
@@ -241,6 +246,13 @@ export function EventForm({
           onChange={(recurrence) => set({ recurrence })}
           semesterHasEnd={!semesterEnd.known || !!semesterEnd.endDate}
           errors={{ byWeekday: errors.byWeekday, untilDate: errors.untilDate, count: errors.count, endKind: errors.endKind }}
+        />
+      )}
+      {mode === "create" && (
+        <AddToKanbanFields
+          value={value.addToBoard}
+          onChange={(addToBoard) => set({ addToBoard })}
+          repeating={value.recurrence.freq !== "none"}
         />
       )}
       <div className="flex justify-end gap-2 border-t border-divider pt-4">

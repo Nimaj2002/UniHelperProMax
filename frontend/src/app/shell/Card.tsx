@@ -1,8 +1,8 @@
-import { forwardRef, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, type CSSProperties, type HTMLAttributes, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-interface Props {
-  as?: "aside" | "main" | "div";
+interface Props extends Omit<HTMLAttributes<HTMLElement>, "children" | "className" | "style" | "id"> {
+  as?: "aside" | "main" | "section" | "div";
   id?: string;
   label?: string;
   /** Fixed rows above the body (title bar, tab row). */
@@ -15,6 +15,10 @@ interface Props {
   body?: "scroll" | "fill";
   bodyClassName?: string;
   style?: CSSProperties;
+  /** false: no rounded border and background (the home page's main column holds its own cards). */
+  chrome?: boolean;
+  /** Extra attributes for the element (data-*, inert, hidden). */
+  [data: `data-${string}`]: string | undefined;
 }
 
 /**
@@ -22,18 +26,20 @@ interface Props {
  * the corners and scrolling on its own.
  */
 export const Card = forwardRef<HTMLElement, Props>(function Card(
-  { as: Tag = "div", id, label, header, footer, children, className, body = "scroll", bodyClassName, style },
+  { as: Tag = "div", id, label, header, footer, children, className, body = "scroll", bodyClassName, style, chrome = true, ...rest },
   ref,
 ) {
   return (
     <Tag
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- polymorphic landmark element
       ref={ref as any}
+      {...rest}
       id={id}
       aria-label={label}
       style={style}
       className={cn(
-        "relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-[14px] border border-strong-border bg-surface-elevated",
+        "relative flex min-h-0 min-w-0 flex-col overflow-hidden",
+        chrome && "rounded-[14px] border border-strong-border bg-surface-elevated",
         className,
       )}
     >

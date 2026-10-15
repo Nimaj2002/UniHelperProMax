@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
-import { newHierarchy, seedClass, signIn, tag } from "./helpers";
+import { calendarAction, newHierarchy, seedClass, signIn, tag } from "./helpers";
 import { textPdf } from "./pdf-fixtures";
 
 async function axe(page: Page, label: string) {
@@ -28,6 +28,9 @@ async function focusVisibleOnTab(page: Page, steps = 25) {
 
 test("Accessibility: WCAG 2.1 AA and visible focus across screens", async ({ page }, testInfo) => {
   const t = tag(testInfo.project.name);
+  // 012: the home page shows Tasks beside the calendar; this calendar test uses the calendar's
+  // full width as before (Tasks closed to its rail), where overlapping entries have room
+  await page.addInitScript(() => localStorage.setItem("uh.home.panels", JSON.stringify({ calendar: true, tasks: false })));
   await page.goto("/login");
   await page.waitForURL(/\/(setup|login)/);
   await axe(page, page.url().includes("setup") ? "setup" : "login");
@@ -47,7 +50,7 @@ test("Accessibility: WCAG 2.1 AA and visible focus across screens", async ({ pag
   await page.locator("body").click({ position: { x: 1, y: 1 } });
   await focusVisibleOnTab(page);
 
-  await page.getByRole("main", { name: "Workspace" }).getByRole("button", { name: "New class", exact: true }).click();
+  await calendarAction(page, "New class");
   await expect(page.getByRole("dialog", { name: "New class" })).toBeVisible();
   await axe(page, "class form");
   await page.keyboard.press("Escape");
@@ -470,4 +473,98 @@ test("Accessibility (010): calendar import and export in a user-created theme, k
   await settledAxe(page, "undo confirmation (custom theme)");
   await page.keyboard.press("Escape");
   await expect(page.getByRole("button", { name: "Undo import" })).toBeFocused();
+});
+
+test("Accessibility (012): home panels, rails, task details, quick notes, filters and column deletion; themes", async ({ page, browser }, testInfo) => {
+  test.setTimeout(240_000);
+  const t = tag(testInfo.project.name);
+  await signIn(page);
+  const { p, ctx, csrf } = await memberPage(browser, page, `tasks-${t.toLowerCase()}`);
+  const call = async <T,>(method: string, url: string, data?: unknown): Promise<T> => {
+    const r = await p.request.fetch(url, { method, data, headers: { "X-CSRF-Token": await csrf() } });
+    expect(r.ok(), await r.text()).toBe(true);
+    return (r.status() === 204 ? undefined : await r.json()) as T;
+  };
+  // a course task with a checklist and a quick note, an overdue task, a dated task on the calendar
+  const cls = await seedClass(p, {
+    course: newHierarchy(`A11YTK${t} 101`, `A11y tk ${t}`, `A11y tk year ${t}`), startDate: "2026-10-05", startTime: "10:00",
+    endTime: "11:00", color: "teal", recurrence: { freq: "none" },
+  });
+  const columns = (await call<{ id: string; name: string; position: number }[]>("GET", "/api/v1/task-columns")).sort((a, b) => a.position - b.position);
+  if (!(await call<unknown[]>("GET", "/api/v1/tasks")).length) {
+    const essay = await call<{ id: string; version: number }>("POST", "/api/v1/tasks", { title: "Essay draft", columnId: columns[0].id, courseId: cls.courseId, dueDate: "2026-10-06" });
+    await p.request.put(`/api/v1/tasks/${essay.id}/checklist`, {
+      data: { items: [{ text: "Outline", done: true }, { text: "Sources", done: false }] },
+      headers: { "X-CSRF-Token": await csrf(), "If-Match": `"${essay.version}"` },
+    });
+    await call("POST", `/api/v1/tasks/${essay.id}/quick-notes`, { title: "Idea", body: "Start with the conclusion" });
+    await call("POST", "/api/v1/tasks", { title: "Late lab report", columnId: columns[0].id, dueDate: "2020-01-06" });
+    await call("POST", "/api/v1/tasks", { title: "Office hour prep", columnId: columns[1].id, dueDate: "2026-10-07", dueTime: "09:00" });
+  }
+  await p.addInitScript(() => localStorage.setItem("uh.calendar.showTasks", "true"));
+
+  const tasksPanel = p.locator("#tasks-panel");
+  const essayCard = tasksPanel.locator("[data-task-id]").filter({ hasText: "Essay draft" });
+  async function homeScreens(theme: string) {
+    await p.goto("/calendar/week/2026-10-05");
+    await expect(tasksPanel.locator("[data-task-id]")).toHaveCount(3);
+    await expect(p.locator("[data-task-marker]")).not.toHaveCount(0);
+    // two named panel landmarks; no button without a name
+    await expect(p.getByRole("region", { name: "Calendar" })).toHaveCount(1);
+    await expect(p.getByRole("region", { name: "Tasks" })).toHaveCount(1);
+    const unnamed = await p.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>("#calendar-panel button, #tasks-panel button")]
+        .filter((b) => b.offsetParent !== null && !(b.getAttribute("aria-label") || b.getAttribute("aria-labelledby") || b.textContent?.trim()))
+        .map((b) => b.outerHTML.slice(0, 80)),
+    );
+    expect(unnamed).toEqual([]);
+    await settledAxe(p, `home with both panels (${theme})`);
+
+    await essayCard.getByRole("button", { name: "Essay draft", exact: true }).click();
+    await expect(p.getByTestId("task-details")).toBeVisible();
+    await settledAxe(p, `task details (${theme})`);
+    await p.getByTestId("task-details").getByRole("button", { name: "Back to tasks" }).click();
+
+    await essayCard.getByRole("button", { name: /^Quick notes/ }).click();
+    await expect(p.getByRole("dialog", { name: /Quick notes/ })).toBeVisible();
+    await settledAxe(p, `quick notes (${theme})`);
+    await p.keyboard.press("Escape");
+
+    await tasksPanel.getByRole("button", { name: /^Filter/ }).click();
+    await expect(p.getByRole("dialog", { name: "Task filters" })).toBeVisible();
+    await settledAxe(p, `filter popover (${theme})`);
+    await p.keyboard.press("Escape");
+
+    await tasksPanel.getByRole("button", { name: `Column actions for ${columns[0].name}` }).click();
+    await p.getByRole("menuitem", { name: /^Delete/ }).click();
+    const dialog = p.getByRole("alertdialog", { name: `Delete “${columns[0].name}”?` });
+    await expect(dialog).toBeVisible();
+    await settledAxe(p, `delete column dialog (${theme})`);
+    await p.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+
+    // both rails
+    await p.locator("#close-tasks").click();
+    await expect(p.locator("[data-rail=tasks]")).toBeVisible();
+    await settledAxe(p, `Tasks rail (${theme})`);
+    await p.locator("#show-tasks").click();
+    await p.locator("#close-calendar").click();
+    await expect(p.locator("[data-rail=calendar]")).toBeVisible();
+    await settledAxe(p, `Calendar rail (${theme})`);
+    await p.locator("#show-calendar").click();
+    await expect(p.locator("#calendar-panel")).toBeVisible();
+  }
+
+  await homeScreens(testInfo.project.name.includes("dark") ? "dark" : "light");
+  if (!testInfo.project.name.includes("dark")) {
+    await p.goto("/settings/appearance");
+    await p.getByRole("button", { name: "New theme…" }).click();
+    await p.getByRole("dialog").getByRole("textbox", { name: "Name" }).fill("Tasks a11y");
+    await p.getByRole("button", { name: "Create and edit" }).click();
+    await p.getByRole("button", { name: "Save theme" }).click();
+    await p.getByRole("radio", { name: /Tasks a11y/ }).click();
+    await homeScreens("user theme");
+    await call("PATCH", "/api/v1/preferences", { theme: "system" });
+  }
+  await ctx.close();
 });

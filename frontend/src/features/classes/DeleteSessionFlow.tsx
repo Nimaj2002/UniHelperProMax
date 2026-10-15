@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { lastCalendarPath } from "@/features/calendar/state";
 import { trashKey } from "@/features/settings/trash/api";
+import { LinkedTasksChoice, type LinkedTasksMode } from "@/features/tasks/LinkedTasksChoice";
 import { apiFetch, isApiError, type Schemas } from "@/lib/api";
 import { formatDay } from "@/lib/dates";
 import { invalidateSchedule, isRecurring, scopeVersion, useDeleteSession, useSession, type Scope, type Session } from "./api";
@@ -26,8 +27,13 @@ function list(parts: string[]) {
 }
 
 /** "This will move 1 event with 2 notes, 1 recording and 1 document to the Trash. You can
- * restore it from Settings → Trash." — counts left out when 0 (009 FR-021, R7). */
-export function trashSentence(session: Pick<Session, "kind" | "courseName">, impact: SessionDeletionImpact): string {
+ * restore it from Settings → Trash." — counts left out when 0 (009 FR-021, R7). Linked tasks
+ * (012 FR-043) are named only when they go with the events (`linkedTasks` "delete"). */
+export function trashSentence(
+  session: Pick<Session, "kind" | "courseName">,
+  impact: SessionDeletionImpact,
+  linkedTasks: LinkedTasksMode = "keep",
+): string {
   const n = impact.occurrences;
   const what =
     session.kind === "event"
@@ -37,6 +43,7 @@ export function trashSentence(session: Pick<Session, "kind" | "courseName">, imp
     impact.notes ? plural(impact.notes, "note") : "",
     impact.recordings ? plural(impact.recordings, "recording") : "",
     impact.documents ? plural(impact.documents, "document") : "",
+    linkedTasks === "delete" && impact.linkedTaskCount ? plural(impact.linkedTaskCount, "linked task") : "",
   ].filter(Boolean);
   const it = n === 1 ? "it" : "them";
   return `This will move ${what}${content.length ? ` with ${list(content)}` : ""} to the Trash. You can restore ${it} from Settings → Trash.`;
@@ -67,6 +74,7 @@ export function DeleteSessionFlow() {
   const session = useSession(sessionKey);
   const del = useDeleteSession();
   const [scope, setScope] = useState<Scope | null>(null);
+  const [linkedTasks, setLinkedTasks] = useState<LinkedTasksMode>("keep");
   const [error, setError] = useState<string>();
   const close = () => navigate(lastCalendarPath());
   const s = session.data;
@@ -87,7 +95,12 @@ export function DeleteSessionFlow() {
 
   const confirm = () =>
     del.mutate(
-      { key: s.key, scope: chosen!, version: scopeVersion(s, chosen!) },
+      {
+        key: s.key,
+        scope: chosen!,
+        version: scopeVersion(s, chosen!),
+        linkedTasks: impact.data?.linkedTaskCount ? linkedTasks : undefined,
+      },
       {
         onSuccess: () => {
           void qc.invalidateQueries({ queryKey: trashKey });
@@ -112,13 +125,16 @@ export function DeleteSessionFlow() {
             <div className="grid gap-2">
               <p>{consequence(s, chosen!)}</p>
               {impact.data ? (
-                <p>{trashSentence(s, impact.data)}</p>
+                <p>{trashSentence(s, impact.data, linkedTasks)}</p>
               ) : impact.isError ? null : (
                 <p role="status">Checking what this contains…</p>
               )}
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {impact.data && (
+          <LinkedTasksChoice count={impact.data.linkedTaskCount ?? 0} value={linkedTasks} onChange={setLinkedTasks} />
+        )}
         <FormError message={error ?? (impact.isError ? "Couldn't check what this contains. Close and try again." : undefined)} />
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>

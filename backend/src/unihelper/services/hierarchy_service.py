@@ -27,9 +27,11 @@ from unihelper.models import (
     Recording,
     Semester,
     SessionFolder,
+    Task,
     User,
     Year,
 )
+from unihelper.services.task_link_service import LinkedTasks
 from unihelper.storage.storage_service import StorageService
 
 # ---- lookups (always scoped to the user; foreign ids are "not found") -------------------
@@ -526,6 +528,23 @@ def deletion_impact(db: Session, user: User, kind: str, entity_id: str) -> dict[
             or 0
         )
 
+    from unihelper.services import task_link_service
+
+    event_lineages = list(
+        db.scalars(
+            select(EventSeries.lineage_id)
+            .where(EventSeries.user_id == user.id, EventSeries.semester_id.in_(sem_ids))
+            .distinct()
+        )
+    )
+    tasks = int(
+        db.scalar(
+            select(func.count())
+            .select_from(Task)
+            .where(Task.user_id == user.id, Task.course_id.in_(course_ids), Task.is_live)
+        )
+        or 0
+    )
     return {
         "semesters": sems,
         "courses": courses,
@@ -535,15 +554,21 @@ def deletion_impact(db: Session, user: User, kind: str, entity_id: str) -> dict[
         "recordings": count(Recording),
         "documents": count(Document),
         "kept_folder": StorageService.relative_path(parts),
+        # 012: tasks linked to its events; tasks of its courses that become personal
+        "linked_task_count": task_link_service.linked_count(db, user, lineage_ids=event_lineages),
+        "task_count": tasks,
     }
 
 
-def _trash_contents(db: Session, user: User, course_ids: Any, semester_ids: Any) -> None:
+def _trash_contents(
+    db: Session, user: User, course_ids: Any, semester_ids: Any, linked_tasks: LinkedTasks = "keep"
+) -> None:
     """009 FR-022a: before courses/semesters go, every class and event lineage inside moves to
     the Trash as its own entry ("all" scope; unscheduled folders with content go with their
     lineage). Every folder left under them — also ones already in the Trash — is detached
     (owner NULL, `origin_path` = where its directory is), so no content row is lost with the
-    deleted rows. No file is touched."""
+    deleted rows. No file is touched. 012: event-linked tasks are unlinked (`keep`) or go into
+    their lineage's entry (`delete`); the courses' tasks become personal tasks (FR-058)."""
     from unihelper.services import trash_service
 
     class_lineages = set(
@@ -560,19 +585,31 @@ def _trash_contents(db: Session, user: User, course_ids: Any, semester_ids: Any)
     for lineage_id in sorted(class_lineages):
         trash_service.move_lineage_to_trash(db, user, "class", lineage_id)
     for lineage_id in sorted(event_lineages):
-        trash_service.move_lineage_to_trash(db, user, "event", lineage_id)
+        trash_service.move_lineage_to_trash(
+            db, user, "event", lineage_id, linked_tasks=linked_tasks
+        )
     trash_service.detach_folders(db, user, list(db.scalars(select(SessionFolder).where(under))))
+    # set explicitly (SQLite FK actions are not relied on); every task, live or not
+    for t in db.scalars(
+        select(Task).where(Task.user_id == user.id, Task.course_id.in_(course_ids))
+    ):
+        t.course_id = None
+    db.flush()
 
 
-def delete_year(db: Session, user: User, year: Year) -> None:
+def delete_year(db: Session, user: User, year: Year, linked_tasks: LinkedTasks = "keep") -> None:
     sem_ids = select(Semester.id).where(Semester.year_id == year.id)
-    _trash_contents(db, user, select(Course.id).where(Course.semester_id.in_(sem_ids)), sem_ids)
+    _trash_contents(
+        db, user, select(Course.id).where(Course.semester_id.in_(sem_ids)), sem_ids, linked_tasks
+    )
     db.delete(year)
     db.flush()
     _renumber_years(db, list_years(db, user))
 
 
-def delete_entity(db: Session, user: User, entity: Semester | Course) -> None:
+def delete_entity(
+    db: Session, user: User, entity: Semester | Course, linked_tasks: LinkedTasks = "keep"
+) -> None:
     """Metadata only; folders and files are never deleted (FR-019). 009: its classes and
     events go to the Trash first."""
     if isinstance(entity, Semester):
@@ -581,6 +618,7 @@ def delete_entity(db: Session, user: User, entity: Semester | Course) -> None:
             user,
             select(Course.id).where(Course.semester_id == entity.id),
             select(Semester.id).where(Semester.id == entity.id),
+            linked_tasks,
         )
     else:
         _trash_contents(
@@ -588,6 +626,7 @@ def delete_entity(db: Session, user: User, entity: Semester | Course) -> None:
             user,
             select(Course.id).where(Course.id == entity.id),
             select(Semester.id).where(false()),
+            linked_tasks,
         )
     db.delete(entity)
     db.flush()

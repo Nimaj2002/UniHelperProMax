@@ -1,8 +1,10 @@
 import { motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router";
 import { useMe } from "@/features/auth/api";
 import { useSessions } from "@/features/classes/api";
+import { useShowTasks } from "@/features/tasks/calendar/showTasks";
+import { useCalendarTasks } from "@/features/tasks/calendar/useCalendarTasks";
 import { monthRange, todayISO, weekRange } from "@/lib/dates";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
 import { CalendarToolbar } from "./CalendarToolbar";
@@ -27,7 +29,15 @@ function rangeFor(view: CalendarView, date: string) {
   return monthRange(date);
 }
 
-export function CalendarPage() {
+interface Props {
+  /** Inside the home page's Calendar panel (012): the panel is the landmark; one 40 px header row. */
+  compact?: boolean;
+  /** Controls at the start / end of the compact header (left-card opener, panel close button). */
+  leading?: ReactNode;
+  trailing?: ReactNode;
+}
+
+export function CalendarPage({ compact = false, leading, trailing }: Props = {}) {
   const params = useParams();
   const { data: me } = useMe();
   const isDesktop = useMediaQuery(DESKTOP_QUERY);
@@ -40,6 +50,9 @@ export function CalendarPage() {
 
   const range = rangeFor(view, date);
   const sessions = useSessions(range.from, range.to);
+  // 012 US6: tasks on the calendar, inside the home page's panel ("Show tasks")
+  const [showTasks] = useShowTasks();
+  const tasks = useCalendarTasks(compact && showTasks, range.from, range.to, tz);
   const [help, setHelp] = useState(false);
   const openHelp = useCallback(() => setHelp(true), []);
   useCalendarKeyboard(view, date, tz, openHelp);
@@ -52,8 +65,9 @@ export function CalendarPage() {
   const list = sessions.data ?? [];
   return (
     <EntryGuardProvider blocked={blocked}>
-      <section aria-label="Calendar" className="flex h-full min-h-0 flex-col" aria-busy={sessions.isFetching}>
-        <CalendarToolbar view={view} date={date} tz={tz} />
+      {/* inside the home page the panel is the "Calendar" landmark (an unnamed section is none) */}
+      <section aria-label={compact ? undefined : "Calendar"} className="flex h-full min-h-0 flex-col" aria-busy={sessions.isFetching}>
+        <CalendarToolbar view={view} date={date} tz={tz} compact={compact} leading={leading} trailing={trailing} />
         {sessions.isError && (
           <p role="alert" className="border-b border-divider px-4 py-2 text-sm text-danger">
             Couldn't load sessions. Check your connection; the calendar retries automatically.
@@ -66,13 +80,14 @@ export function CalendarPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
         >
-          {view === "day" && <DayView date={date} sessions={list} tz={tz} drafts={drafts} />}
-          {view === "week" && <WeekView date={date} sessions={list} tz={tz} drafts={drafts} />}
+          {view === "day" && <DayView date={date} sessions={list} tz={tz} drafts={drafts} tasks={tasks} />}
+          {view === "week" && <WeekView date={date} sessions={list} tz={tz} drafts={drafts} tasks={tasks} />}
           {view === "month" && (
             <MonthView
               date={date}
               sessions={list}
               tz={tz}
+              tasks={tasks}
               draft={drafts.state.draft}
               onCreateDraft={(d) => drafts.start(d, MONTH_DRAFT, "month", "open")}
             />
@@ -122,7 +137,7 @@ function useDraftLifecycle(drafts: DraftControls, range: { from: string; to: str
     }
     const { draft, dirty, range } = latest.current;
     if (!draft) return;
-    const shown = pathname.startsWith("/calendar") && draft.date >= range.from && draft.date <= range.to;
+    const shown = (pathname === "/" || pathname.startsWith("/calendar")) && draft.date >= range.from && draft.date <= range.to;
     if (!(dirty && shown)) discard(draft.id);
   }, [pathname, discard]);
 }

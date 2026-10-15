@@ -30,6 +30,7 @@ from unihelper.api.v1 import (
     sessions,
     settings,
     setup,
+    tasks,
     themes,
     timeline,
     transcription,
@@ -39,7 +40,7 @@ from unihelper.api.v1 import (
 from unihelper.config import Settings, load_settings
 from unihelper.db.engine import make_engine, make_sessionmaker
 from unihelper.db.migrate import upgrade_to_head
-from unihelper.services import annotation_service, calendar_import_service
+from unihelper.services import annotation_service, calendar_import_service, task_service
 from unihelper.services.login_throttle import LoginThrottle
 from unihelper.storage.storage_service import StorageService
 from unihelper.transcription.worker import TranscriptionWorker
@@ -72,6 +73,8 @@ def build_api_router() -> APIRouter:
         calendar_io,
     ):
         api.include_router(module.router)
+    for router in tasks.routers:  # 012: /task-columns, /tasks, /quick-notes
+        api.include_router(router)
     return api
 
 
@@ -100,6 +103,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     calendar_import_service.forget_expired(db)
             except SQLAlchemyError:
                 log.exception("could not clean up expired calendar import previews")
+            try:  # tasks and quick notes deleted more than 24 h ago (012 R6)
+                with Session(app.state.engine) as db:
+                    task_service.purge_expired(db)
+            except SQLAlchemyError:
+                log.exception("could not purge deleted tasks")
             worker: TranscriptionWorker = app.state.transcription_worker
             if settings.transcription_autorun:
                 await worker.start()

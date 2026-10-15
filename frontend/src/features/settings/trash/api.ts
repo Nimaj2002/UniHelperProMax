@@ -35,6 +35,7 @@ export function usePurgeEntry() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (e: TrashEntry) => apiFetch<void>(`/trash/${encodeURIComponent(e.id)}`, { method: "DELETE", version: e.version }),
-    onSettled: () => qc.invalidateQueries({ queryKey: trashKey }),
+    onSettled: () =>
+      Promise.all([qc.invalidateQueries({ queryKey: trashKey }), qc.invalidateQueries({ queryKey: ["tasks"] })]),
   });
 }

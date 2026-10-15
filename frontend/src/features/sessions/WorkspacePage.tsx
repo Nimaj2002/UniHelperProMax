@@ -225,7 +225,12 @@ export function WorkspacePage() {
   const mode: EditorMode = prefs.data?.editorMode ?? "live";
   // notes, documents and sessions are collapsible sections of the side panel card, docked or
   // opened over the page on narrow windows
-  const sideSections = useSidePanelSections();
+  const allSideSections = useSidePanelSections();
+  const sessionData = session.data;
+  const sideSections = useMemo(
+    () => allSideSections.filter((s) => !s.when || (sessionData !== undefined && s.when(sessionData))),
+    [allSideSections, sessionData],
+  );
   const leftSections = useMemo<PanelSection[]>(
     () => [{ id: "notes", title: "Notes" }, ...sideSections.map(({ id, title }) => ({ id, title })), { id: "sessions", title: sessionsTitle }],
     [sideSections, sessionsTitle],

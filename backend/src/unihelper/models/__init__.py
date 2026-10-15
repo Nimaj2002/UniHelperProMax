@@ -16,6 +16,8 @@ from unihelper.models.recording import Recording
 from unihelper.models.semester import Semester
 from unihelper.models.session_exception import SessionException
 from unihelper.models.session_folder import SessionFolder
+from unihelper.models.task import Task, TaskChecklistItem, TaskQuickNote
+from unihelper.models.task_column import TaskColumn
 from unihelper.models.theme import Theme
 from unihelper.models.transcription import ProviderConfig, TranscriptionJob, TranscriptionSettings
 from unihelper.models.trash_entry import TrashEntry
@@ -44,6 +46,10 @@ __all__ = [
     "Semester",
     "SessionException",
     "SessionFolder",
+    "Task",
+    "TaskChecklistItem",
+    "TaskColumn",
+    "TaskQuickNote",
     "Theme",
     "TranscriptionJob",
     "TranscriptionSettings",

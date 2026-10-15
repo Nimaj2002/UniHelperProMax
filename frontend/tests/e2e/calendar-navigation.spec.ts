@@ -23,6 +23,9 @@ async function axe(page: Page) {
 
 test("US2: keyboard-only calendar navigation", async ({ page }, testInfo) => {
   const t = tag(testInfo.project.name);
+  // 012: the home page shows Tasks beside the calendar; this calendar test uses the calendar's
+  // full width as before (Tasks closed to its rail), where overlapping entries have room
+  await page.addInitScript(() => localStorage.setItem("uh.home.panels", JSON.stringify({ calendar: true, tasks: false })));
   await signIn(page);
   await seed(page, t);
   await page.goto("/calendar/week/2026-10-05");

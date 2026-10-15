@@ -4,7 +4,7 @@
  * focus mode. Stored preferences describe the wide-window layout; overlay and focus mode never
  * write them.
  */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { readLocal, writeLocal } from "@/lib/storage";
 import { useMediaQuery, WIDE_QUERY } from "@/lib/useMediaQuery";
 import type { LayoutMode } from "./widths";
@@ -46,6 +46,9 @@ interface Layout {
   rightVisible: boolean;
   toggleRight: () => void;
   showRight: () => void;
+  /** The page lays out the main column itself (the home page's panels): no main card chrome. */
+  bareMain: boolean;
+  setBareMain: (bare: boolean) => void;
 }
 
 const LayoutContext = createContext<Layout | null>(null);
@@ -76,6 +79,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const [opened, setOpened] = useState<{ overlay: Overlay; mode: LayoutMode }>({ overlay: "none", mode });
   const [focus, setFocus] = useState(false);
   const [rightCard, setRightCard] = useState<RightCard | null>(null);
+  const [bareMain, setBareMain] = useState(false);
 
   useEffect(() => writeLocal("uh.panel.collapsed", leftClosed), [leftClosed]);
   const raw = opened.mode === mode ? opened.overlay : "none";
@@ -132,9 +136,9 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Layout>(
     () => ({
       mode, leftClosed, overlay, setOverlay, focus, toggleFocus, leftVisible, toggleLeft, showLeft,
-      rightCard, setRightCard, rightVisible, toggleRight, showRight,
+      rightCard, setRightCard, rightVisible, toggleRight, showRight, bareMain, setBareMain,
     }),
-    [mode, leftClosed, overlay, setOverlay, focus, toggleFocus, leftVisible, toggleLeft, showLeft, rightCard, rightVisible, toggleRight, showRight],
+    [mode, leftClosed, overlay, setOverlay, focus, toggleFocus, leftVisible, toggleLeft, showLeft, rightCard, rightVisible, toggleRight, showRight, bareMain],
   );
   return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>;
 }
@@ -154,6 +158,8 @@ const OUTSIDE: Layout = {
   rightVisible: false,
   toggleRight: () => {},
   showRight: () => {},
+  bareMain: false,
+  setBareMain: () => {},
 };
 
 /** The card layout; outside the shell (tests, auth pages) a no-op layout. */
@@ -171,4 +177,16 @@ export function useRightCard(card: RightCard | null) {
     setRightCard(card);
   }, [card, setRightCard]);
   useEffect(() => () => setRightCard(null), [setRightCard]);
+}
+
+/**
+ * Page side: while the calling page is mounted the main column has no card chrome, so the page
+ * can render its own cards in it (the home page's Calendar and Tasks panels, 012 R10).
+ */
+export function useBareMain() {
+  const { setBareMain } = useLayout();
+  useLayoutEffect(() => {
+    setBareMain(true);
+    return () => setBareMain(false);
+  }, [setBareMain]);
 }

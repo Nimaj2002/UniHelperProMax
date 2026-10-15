@@ -2,6 +2,7 @@ import { Link, useParams } from "react-router";
 import { PageFrame } from "@/app/shell/PageFrame";
 import { SessionTimeline } from "@/features/sessions/SessionTimeline";
 import { useTimeline } from "@/features/sessions/api";
+import { CourseTasks } from "@/features/tasks/CourseTasks";
 import { swatchStyle, type ColorKey } from "@/lib/palette";
 import { useCourse } from "./api";
 
@@ -34,6 +35,10 @@ export function CoursePage() {
           <span aria-hidden className="size-4 shrink-0 rounded" style={swatchStyle(c.defaultColor as ColorKey)} />
           <span className="min-w-0 break-words">{c.name}</span>
         </h1>
+        <section className="mt-6" aria-labelledby="course-tasks-title">
+          <h2 id="course-tasks-title" className="mb-2 text-lg font-semibold">Tasks</h2>
+          <CourseTasks courseId={c.id} courseName={c.name} />
+        </section>
         <div className="mt-8">
           {timeline.isPending && <p role="status" className="text-sm text-muted-foreground">Loading sessions…</p>}
           {timeline.isError && <p role="alert" className="text-sm text-danger">Couldn't load the sessions. Reload to retry.</p>}

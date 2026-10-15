@@ -54,9 +54,11 @@ from unihelper.models import (
 )
 from unihelper.services import hierarchy_service as hs
 from unihelper.services import lineage as lineage_mod
+from unihelper.services import task_link_service
 from unihelper.services.class_service import _scope_api_error
 from unihelper.services.lineage import Lineage
 from unihelper.services.series_apply import apply_changeset
+from unihelper.services.task_link_service import LinkedTasks
 from unihelper.storage.storage_service import StoragePathError, StorageService
 
 # ---- paths of session/event folders ----------------------------------------------------------
@@ -207,12 +209,18 @@ def deletion_impact(db: Session, user: User, key: str, scope: str) -> dict[str, 
     """What `DELETE /sessions/{key}?scope=` would move to the Trash (R7)."""
     p = _plan(db, user, key, scope, None)
     counts = content_counts(db, [f.id for f in p.folders])
+    linked = (
+        task_link_service.linked_count(db, user, keys=[v.key for v in p.removed])
+        if p.lin.kind == "event"
+        else 0
+    )
     return {
         "kind": p.lin.kind,
         "occurrences": len(p.removed),
         "notes": counts.notes,
         "recordings": counts.recordings,
         "documents": counts.documents,
+        "linked_task_count": linked,
     }
 
 
@@ -383,10 +391,23 @@ def _trash(
     return entry, affected
 
 
-def move_to_trash(db: Session, user: User, key: str, scope: str, version: int) -> dict[str, Any]:
-    """`DELETE /sessions/{key}` for classes and events: one Trash entry per deletion."""
+def move_to_trash(
+    db: Session,
+    user: User,
+    key: str,
+    scope: str,
+    version: int,
+    linked_tasks: LinkedTasks = "keep",
+) -> dict[str, Any]:
+    """`DELETE /sessions/{key}` for classes and events: one Trash entry per deletion. 012:
+    the removed occurrences' linked tasks are unlinked (`keep`) or go into the same entry."""
     p = _plan(db, user, key, scope, version)
     entry, affected = _trash(db, user, p.lin, p.cs, p.removed, p.folders, "delete")
+    if p.lin.kind == "event":
+        task_link_service.apply_choice(
+            db, user, linked_tasks, entry.id, keys=[v.key for v in p.removed]
+        )
+        task_link_service.sync_lineage(db, user, p.lin.lineage_id)
     return {
         "lineage_id": p.lin.lineage_id,
         "affected_series_ids": affected,
@@ -398,11 +419,28 @@ def move_to_trash(db: Session, user: User, key: str, scope: str, version: int) -
 
 
 def move_lineage_to_trash(
-    db: Session, user: User, kind: str, lineage_id: str, reason: str = "hierarchy_delete"
+    db: Session,
+    user: User,
+    kind: str,
+    lineage_id: str,
+    reason: str = "hierarchy_delete",
+    linked_tasks: LinkedTasks = "keep",
 ) -> TrashEntry | None:
     """A whole lineage ("all" scope) — for year/semester/course deletes. A lineage without
     segments (only unscheduled folders) gets an entry when a folder holds content; its empty
-    folder rows and orphan exceptions are simply dropped (no file touched)."""
+    folder rows and orphan exceptions are simply dropped (no file touched). 012: an event's
+    linked tasks are unlinked (`keep`) or go into its entry."""
+    entry = _move_lineage(db, user, kind, lineage_id, reason)
+    if kind == "event":
+        task_link_service.apply_choice(
+            db, user, linked_tasks, entry.id if entry else None, lineage_ids=[lineage_id]
+        )
+    return entry
+
+
+def _move_lineage(
+    db: Session, user: User, kind: str, lineage_id: str, reason: str
+) -> TrashEntry | None:
     lin = lineage_mod.load(db, user, lineage_id, kind)
     if lin is None:
         return None
@@ -494,6 +532,7 @@ def entry_out(
         "purge_error": entry.purge_error,
         "missing_files": _missing_files(db, storage, user, folders),
         "version": entry.version,
+        "task_count": task_link_service.entry_task_count(db, entry.id),
     }
 
 
@@ -762,8 +801,12 @@ def restore(
         _reinsert(db, user, p, lin, owner)
     moved = _reattach(db, storage, user, entry, p.kind, owner)
     first = p.removed[0].original_date if p.removed else entry.first_date
+    # 012: its tasks come back (linked again) before the entry row goes
+    task_link_service.restore_for_entry(db, user, entry.id)
     db.delete(entry)
     db.flush()
+    if p.kind == "event":
+        task_link_service.sync_lineage(db, user, p.lineage_id)
     return {
         "kind": p.kind,
         "lineage_id": p.lineage_id,
@@ -813,6 +856,7 @@ def purge(db: Session, storage: StorageService, user: User, entry_id: str, versi
         )
         db.delete(f)
     db.flush()
+    task_link_service.purge_for_entry(db, user, entry.id)  # 012: its tasks go for good
     lineage_id = entry.lineage_id
     db.delete(entry)
     db.flush()

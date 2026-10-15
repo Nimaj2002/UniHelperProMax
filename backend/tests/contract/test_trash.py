@@ -145,3 +145,80 @@ def test_purge_failure_keeps_the_entry(
     r = c.delete(f"{API}/trash/{entry['id']}", headers=im(kept["version"]))
     assert r.status_code == 204, r.text
     assert not (tmp_data_dir / "files/owner/2026/Fall 2026/_Events/2026-10-22 AI Seminar").exists()
+
+
+# ---- 012 US5: linked tasks deleted together with their event ---------------------------------
+
+
+def _trash_event_with_tasks(c: TestClient) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    from tests.contract.test_tasks import link_task
+
+    ev = make_event(
+        c, recurrence={"freq": "weekly", "byWeekday": ["TH"], "end": {"kind": "count", "count": 3}}
+    )
+    lin = ev["lineageId"]
+    linked = [link_task(c, f"{lin}:2026-10-15"), link_task(c, f"{lin}:2026-10-22")]
+    r = c.delete(
+        f"{API}/sessions/{lin}:2026-10-15",
+        params={"scope": "all", "linkedTasks": "delete"},
+        headers=im(ev["version"]),
+    )
+    assert r.status_code == 200, r.text
+    entry = next(e for e in c.get(f"{API}/trash").json() if e["id"] == r.json()["trashEntryId"])
+    return entry, linked
+
+
+def test_trash_entry_task_count_and_restore_relinks(owner_client: TestClient) -> None:
+    from tests.contract.test_task_columns import add_task, tasks
+    from tests.contract.test_tasks import task_of
+
+    c = owner_client
+    entry, (a, b) = _trash_event_with_tasks(c)
+    check(entry, "TrashEntry", spec="009")
+    check(entry, "TrashEntryTaskAddition", spec="012")
+    assert entry["taskCount"] == 2
+    assert task_of(c, a["id"]) is None
+    assert_problem(c.get(f"{API}/tasks/{a['id']}"), 404, "not_found")
+    assert_problem(c.post(f"{API}/tasks/{a['id']}/restore"), 404, "not_found")  # not an Undo
+    add_task(c, "Meanwhile")
+    r = c.post(f"{API}/trash/{entry['id']}/restore", headers=im(entry["version"]))
+    assert r.status_code == 200, r.text
+    ra, rb = task_of(c, a["id"]), task_of(c, b["id"])
+    assert ra is not None and rb is not None
+    assert ra["event"]["sessionKey"] == a["event"]["sessionKey"]
+    assert rb["event"]["sessionKey"] == b["event"]["sessionKey"]
+    assert [t["title"] for t in tasks(c)] == ["AI Seminar", "AI Seminar", "Meanwhile"]
+    assert [t["position"] for t in tasks(c)] == [0, 1, 2]
+    key = a["event"]["sessionKey"]
+    assert c.get(f"{API}/sessions/{key}").json()["taskId"] == a["id"]
+
+
+def test_purge_deletes_the_tasks(app: Any, owner_client: TestClient) -> None:
+    from sqlalchemy import func, select
+
+    from unihelper.models import Task, TaskChecklistItem, TaskQuickNote
+
+    c = owner_client
+    ev = make_event(c)
+    from tests.contract.test_tasks import link_task
+
+    t = link_task(c, f"{ev['lineageId']}:2026-10-15")
+    c.put(
+        f"{API}/tasks/{t['id']}/checklist",
+        json={"items": [{"text": "a", "done": False}]},
+        headers=im(1),
+    )
+    c.post(f"{API}/tasks/{t['id']}/quick-notes", json={"body": "remember"})
+    r = c.delete(
+        f"{API}/sessions/{ev['lineageId']}:2026-10-15",
+        params={"scope": "all", "linkedTasks": "delete"},
+        headers=im(ev["version"]),
+    )
+    assert r.status_code == 200, r.text
+    entry = c.get(f"{API}/trash").json()[0]
+    assert entry["taskCount"] == 1
+    r = c.delete(f"{API}/trash/{entry['id']}", headers=im(entry["version"]))
+    assert r.status_code == 204, r.text
+    with app.state.sessionmaker() as db:
+        for model in (Task, TaskChecklistItem, TaskQuickNote):
+            assert db.scalar(select(func.count()).select_from(model)) == 0

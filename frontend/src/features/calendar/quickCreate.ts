@@ -10,6 +10,7 @@ import { isValidUrl, type LinkValue } from "@/features/classes/LinksEditor";
 import { defaultRecurrence, WEEKDAYS, type RecurrenceValue, type WeekdayCode } from "@/features/classes/RecurrenceFields";
 import { initialEventForm, type EventFormValue } from "@/features/events/EventForm";
 import type { YearNode } from "@/features/courses/api";
+import { noAddToBoard, type AddToBoardValue } from "@/features/tasks/AddToKanbanFields";
 import { fromISODate, parseTimeHHmm } from "@/lib/dates";
 import type { ColorKey } from "@/lib/palette";
 import { timeValue, type Draft } from "./draft";
@@ -31,6 +32,8 @@ export interface QuickValue {
   location: string;
   links: LinkValue[];
   repeat: RepeatChoice;
+  /** Event: 012 "Add to kanban". */
+  addToBoard: AddToBoardValue;
 }
 
 export function initialQuickValue(draft: Pick<Draft, "date" | "startMin" | "endMin">, type: QuickType, hierarchy: HierarchyValue = emptyHierarchy): QuickValue {
@@ -45,6 +48,7 @@ export function initialQuickValue(draft: Pick<Draft, "date" | "startMin" | "endM
     location: "",
     links: [],
     repeat: "none",
+    addToBoard: noAddToBoard,
   };
 }
 
@@ -164,5 +168,6 @@ export function toEventForm(v: QuickValue, repeat: RepeatChoice = v.repeat): Eve
     location: v.location,
     links: v.links,
     recurrence: recurrenceOf(v, repeat),
+    addToBoard: v.addToBoard,
   });
 }

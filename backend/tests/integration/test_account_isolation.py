@@ -25,12 +25,19 @@ def _ids(c: TestClient) -> dict[str, Any]:
     key = c.get(f"{API}/sessions", params={"from": "2026-09-28", "to": "2026-09-28"}).json()[0][
         "key"
     ]
+    # 012: a column, a task and a quick note
+    column = c.post(f"{API}/task-columns", json={"name": "Mine"}).json()
+    task = c.post(f"{API}/tasks", json={"title": "Mine", "columnId": column["id"]}).json()
+    note = c.post(f"{API}/tasks/{task['id']}/quick-notes", json={"body": "mine"}).json()
     return {
         "year": year,
         "semester": sem,
         "course": course,
         "lineage": cls["lineageId"],
         "key": key,
+        "column": column,
+        "task": task,
+        "note": note,
     }
 
 
@@ -38,6 +45,7 @@ def foreign_requests(
     ids: dict[str, Any],
 ) -> list[tuple[str, str, dict[str, Any] | None, dict[str, str] | None]]:
     y, s, co = ids["year"], ids["semester"], ids["course"]
+    col, t, n = ids["column"], ids["task"], ids["note"]
     v = {"If-Match": '"1"'}
     return [
         ("GET", f"/semesters?yearId={y['id']}", None, None),
@@ -59,6 +67,23 @@ def foreign_requests(
         ("GET", f"/courses/{co['id']}/deletion-impact", None, None),
         ("PATCH", f"/sessions/{ids['key']}?scope=all", {"location": "Hijack"}, v),
         ("DELETE", f"/sessions/{ids['key']}?scope=all", None, v),
+        # 012 tasks, columns, quick notes
+        ("PATCH", f"/task-columns/{col['id']}", {"name": "Hijack"}, v),
+        ("DELETE", f"/task-columns/{col['id']}", None, v),
+        ("POST", "/tasks", {"title": "x", "columnId": col["id"]}, None),
+        ("POST", "/tasks", {"title": "x", "courseId": co["id"]}, None),
+        ("POST", "/tasks", {"eventKey": ids["key"]}, None),
+        ("GET", f"/tasks/{t['id']}", None, None),
+        ("PATCH", f"/tasks/{t['id']}", {"title": "Hijack"}, v),
+        ("DELETE", f"/tasks/{t['id']}", None, v),
+        ("POST", f"/tasks/{t['id']}/restore", None, None),
+        ("POST", f"/tasks/{t['id']}/move", {"columnId": col["id"], "index": 0}, v),
+        ("PUT", f"/tasks/{t['id']}/checklist", {"items": []}, v),
+        ("GET", f"/tasks/{t['id']}/quick-notes", None, None),
+        ("POST", f"/tasks/{t['id']}/quick-notes", {"body": "x"}, None),
+        ("PATCH", f"/quick-notes/{n['id']}", {"body": "Hijack"}, v),
+        ("DELETE", f"/quick-notes/{n['id']}", None, v),
+        ("POST", f"/quick-notes/{n['id']}/restore", None, None),
     ]
 
 
@@ -98,6 +123,11 @@ def test_isolation_both_ways(
             f"{API}/sessions", params={"from": "2026-09-01", "to": "2026-12-31"}
         ).json()
         assert {s["lineageId"] for s in sessions} == {ids["lineage"]}
+        assert [t["id"] for t in actor.get(f"{API}/tasks").json()] == [ids["task"]["id"]]
+        names = [col["name"] for col in actor.get(f"{API}/task-columns").json()]
+        assert names == ["To do", "In progress", "Done", "Mine"]
+        rows = actor.get(f"{API}/tasks/export").content.decode("utf-8-sig").splitlines()
+        assert len(rows) == 2 and rows[1].startswith("Mine,")
     # foreign ids inside a reorder are refused without revealing them
     if not _served(live, "PUT", "/years/order"):
         return

@@ -81,7 +81,7 @@ const OVERLAY_CARD =
 
 function Shell() {
   const layout = useLayout();
-  const { mode, focus, leftClosed, overlay, setOverlay, rightCard, toggleLeft, showLeft, toggleFocus } = layout;
+  const { mode, focus, leftClosed, overlay, setOverlay, rightCard, toggleLeft, showLeft, toggleFocus, bareMain } = layout;
   const viewport = useViewportWidth();
   const [leftWidth, setLeftWidth] = useState(() => clampLeft(readLocal(LEFT_WIDTH_KEY, LEFT_DEFAULT)));
   const [rightWidth, setRightWidth] = useState(() => clampRight(readLocal(RIGHT_WIDTH_KEY, RIGHT_DEFAULT)));
@@ -176,8 +176,9 @@ function Shell() {
           )}
         </div>
 
-        <Card as="main" id="main" label="Workspace" body="fill" className="@container/main h-full">
-          <div className="flex min-h-0 flex-1 flex-col">
+        {/* the home page lays out its own cards here (bareMain): same tree, so the page keeps its state */}
+        <Card as="main" id="main" label="Workspace" body="fill" chrome={!bareMain} className="@container/main h-full">
+          <div className={cn("flex min-h-0 min-w-0 flex-1", bareMain ? "h-full flex-row gap-2" : "flex-col")}>
             <Outlet />
           </div>
           <ActivityPills />

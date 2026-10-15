@@ -21,8 +21,12 @@ from unihelper.schemas.hierarchy import (
 )
 from unihelper.services import class_service
 from unihelper.services import hierarchy_service as hs
+from unihelper.services.task_link_service import LinkedTasks
 
 router = APIRouter(tags=["hierarchy"])
+
+# 012: what happens to tasks linked to the events deleted with a year, semester or course
+LINKED_TASKS = Query(default="keep", alias="linkedTasks")
 
 
 def _created(response: Response, created: bool) -> None:
@@ -134,10 +138,16 @@ def rename_year(
 
 
 @router.delete("/years/{year_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_year(year_id: str, version: IfMatch, user: CurrentUser, db: DbSession) -> Response:
+def delete_year(
+    year_id: str,
+    version: IfMatch,
+    user: CurrentUser,
+    db: DbSession,
+    linked_tasks: LinkedTasks = LINKED_TASKS,
+) -> Response:
     year = hs.get_year(db, user, year_id)
     check_version(version, year.version)
-    hs.delete_year(db, user, year)
+    hs.delete_year(db, user, year, linked_tasks)
     return _no_content()
 
 
@@ -163,11 +173,15 @@ def update_semester(
 
 @router.delete("/semesters/{semester_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_semester(
-    semester_id: str, version: IfMatch, user: CurrentUser, db: DbSession
+    semester_id: str,
+    version: IfMatch,
+    user: CurrentUser,
+    db: DbSession,
+    linked_tasks: LinkedTasks = LINKED_TASKS,
 ) -> Response:
     sem = hs.get_semester(db, user, semester_id)
     check_version(version, sem.version)
-    hs.delete_entity(db, user, sem)
+    hs.delete_entity(db, user, sem, linked_tasks)
     return _no_content()
 
 
@@ -192,10 +206,16 @@ def update_course(
 
 
 @router.delete("/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_course(course_id: str, version: IfMatch, user: CurrentUser, db: DbSession) -> Response:
+def delete_course(
+    course_id: str,
+    version: IfMatch,
+    user: CurrentUser,
+    db: DbSession,
+    linked_tasks: LinkedTasks = LINKED_TASKS,
+) -> Response:
     course = hs.get_course(db, user, course_id)
     check_version(version, course.version)
-    hs.delete_entity(db, user, course)
+    hs.delete_entity(db, user, course, linked_tasks)
     return _no_content()
 
 

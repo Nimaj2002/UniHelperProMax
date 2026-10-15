@@ -98,7 +98,27 @@ def create_event(
     ]
     db.add(series)
     db.flush()
+    if body.add_to_board is not None:
+        _add_first_occurrence_to_board(db, user, series, body.add_to_board.column_id)
     return series, created
+
+
+def _add_first_occurrence_to_board(
+    db: Session, user: User, series: EventSeries, column_id: str
+) -> None:
+    """012 FR-035/FR-037: a task linked to the first occurrence only (same transaction)."""
+    from unihelper.schemas.tasks import TaskCreate
+    from unihelper.services import lineage as lineage_mod
+    from unihelper.services import task_column_service as tcs
+    from unihelper.services import task_service
+
+    tcs.get_column(db, user, column_id)  # 404 before the task is made
+    lin = lineage_mod.load(db, user, series.lineage_id, "event")
+    views = lin.occurrences(user.timezone) if lin is not None else []
+    if not views:  # pragma: no cover - a valid rule always schedules a first occurrence
+        return
+    first = min(views, key=lambda v: v.key[-10:])
+    task_service.create_task(db, user, TaskCreate(column_id=column_id, event_key=first.key))
 
 
 def segment_out(s: EventSeries) -> dict[str, Any]:
@@ -252,7 +272,15 @@ def change_semester(
     for r in lin.rows:
         r.semester_id = target.id
     db.flush()
+    _sync_tasks(db, user, lin.lineage_id)
     return True
+
+
+def _sync_tasks(db: Session, user: User, lineage_id: str) -> None:
+    """012 R4: linked tasks follow every change of their occurrence."""
+    from unihelper.services import task_link_service
+
+    task_link_service.sync_lineage(db, user, lineage_id)
 
 
 def _scope_error(field: str, code: str, message: str) -> ApiError:
@@ -446,6 +474,7 @@ def apply_scope_edit(
                 for k, v in values.items():
                     setattr(existing, k, v)
             db.flush()
+    _sync_tasks(db, user, lineage_id)
     return {
         "lineage_id": lineage_id,
         "affected_series_ids": list(dict.fromkeys(affected)),

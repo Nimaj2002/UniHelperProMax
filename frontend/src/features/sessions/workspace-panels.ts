@@ -47,6 +47,8 @@ export interface SidePanelSection {
   /** The section's collapsible header in the left panel. */
   title: string;
   component: ComponentType<SidePanelSectionProps>;
+  /** Shown only for these sessions (012: the course's Tasks for class sessions); default all. */
+  when?: (session: { courseId: string | null; kind: string }) => boolean;
 }
 
 let sections: SidePanelSection[] = [];

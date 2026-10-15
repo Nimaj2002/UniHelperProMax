@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { trashKey } from "@/features/settings/trash/api";
+import { LinkedTasksChoice, type LinkedTasksMode } from "@/features/tasks/LinkedTasksChoice";
 import { isApiError } from "@/lib/api";
 import {
   conflictMessage, fetchDeletionImpact, useDeleteHierarchy, useUpdateHierarchy,
@@ -156,8 +157,16 @@ function list(parts: string[]) {
 }
 
 /** What a year/semester/course delete removes from the app and (009 FR-022a) moves to the
- * Trash: every class and event, with its notes, recordings and documents. */
-export function impactSentence(kind: HierarchyKind, impact: DeletionImpact): string {
+ * Trash: every class and event, with its notes, recordings and documents — (012) and its linked
+ * tasks when they go too. Tasks of its courses become personal tasks (FR-058). */
+export function impactSentence(kind: HierarchyKind, impact: DeletionImpact, linkedTasks: LinkedTasksMode = "keep"): string {
+  const personal = impact.taskCount
+    ? `${plural(impact.taskCount, "task")} will become ${impact.taskCount === 1 ? "a personal task" : "personal tasks"}.`
+    : "";
+  return [hierarchySentence(kind, impact, linkedTasks), personal].filter(Boolean).join(" ");
+}
+
+function hierarchySentence(kind: HierarchyKind, impact: DeletionImpact, linkedTasks: LinkedTasksMode): string {
   const parts: string[] = [];
   if (impact.semesters) parts.push(plural(impact.semesters, "semester"));
   if (impact.courses) parts.push(plural(impact.courses, "course"));
@@ -170,6 +179,7 @@ export function impactSentence(kind: HierarchyKind, impact: DeletionImpact): str
     impact.notes ? plural(impact.notes, "note") : "",
     impact.recordings ? plural(impact.recordings, "recording") : "",
     impact.documents ? plural(impact.documents, "document") : "",
+    linkedTasks === "delete" && impact.linkedTaskCount ? plural(impact.linkedTaskCount, "linked task") : "",
   ].filter(Boolean);
   const removes = parts.length ? `This also removes ${list(parts)} from the app.` : "";
   const verb = (impact.classes ?? 0) + (impact.events ?? 0) === 1 ? "moves" : "move";
@@ -183,6 +193,7 @@ function DeleteDialog({ target, onClose }: { target: MenuTarget; onClose: () => 
   const qc = useQueryClient();
   const del = useDeleteHierarchy();
   const [impact, setImpact] = useState<DeletionImpact | null>(null);
+  const [linkedTasks, setLinkedTasks] = useState<LinkedTasksMode>("keep");
   const [error, setError] = useState<string>();
   useEffect(() => {
     let live = true;
@@ -201,7 +212,7 @@ function DeleteDialog({ target, onClose }: { target: MenuTarget; onClose: () => 
           <AlertDialogTitle>Delete {target.name}?</AlertDialogTitle>
           <AlertDialogDescription asChild>
             <div className="grid gap-2">
-              {impact ? <p>{impactSentence(target.kind, impact)}</p> : !error && <p>Checking what this includes…</p>}
+              {impact ? <p>{impactSentence(target.kind, impact, linkedTasks)}</p> : !error && <p>Checking what this includes…</p>}
               {impact && (
                 <p>
                   No file is deleted: notes, recordings and documents stay in the folder{" "}
@@ -211,6 +222,9 @@ function DeleteDialog({ target, onClose }: { target: MenuTarget; onClose: () => 
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {impact && (
+          <LinkedTasksChoice count={impact.linkedTaskCount ?? 0} value={linkedTasks} onChange={setLinkedTasks} />
+        )}
         <FormError message={error} />
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -219,7 +233,12 @@ function DeleteDialog({ target, onClose }: { target: MenuTarget; onClose: () => 
             disabled={!impact || del.isPending}
             onClick={() =>
               del.mutate(
-                { kind: target.kind, id: target.id, version: target.version },
+                {
+                  kind: target.kind,
+                  id: target.id,
+                  version: target.version,
+                  linkedTasks: impact?.linkedTaskCount ? linkedTasks : undefined,
+                },
                 {
                   onSuccess: () => {
                     void qc.invalidateQueries({ queryKey: trashKey });

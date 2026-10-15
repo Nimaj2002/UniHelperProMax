@@ -21,6 +21,7 @@ import { useCreateEvent, type EventCreate } from "@/features/events/api";
 import { eventPayload, eventServerErrors } from "@/features/events/EventForm";
 import { hierarchyFrom, usePreselectedSemester } from "@/features/events/usePreselectedSemester";
 import { usePreferences, useUpdatePreferences } from "@/features/sessions/api";
+import { AddToKanbanFields } from "@/features/tasks/AddToKanbanFields";
 import { apiFetch, isApiError, type Schemas } from "@/lib/api";
 import { parseTimeHHmm } from "@/lib/dates";
 import { DESKTOP_QUERY, useMediaQuery } from "@/lib/useMediaQuery";
@@ -392,6 +393,14 @@ function QuickFields({ draft, drafts, initial: opened, firstField, onCancel, pre
         </Select>
         {errors.repeat && <p id={`${uid}-repeat-error`} className="text-sm text-danger">{errors.repeat}</p>}
       </div>
+
+      {value.type === "event" && (
+        <AddToKanbanFields
+          value={value.addToBoard}
+          onChange={(addToBoard) => set({ addToBoard })}
+          repeating={value.repeat !== "none"}
+        />
+      )}
 
       <div className="flex flex-wrap items-center gap-2 border-t border-divider pt-3">
         <Button type="button" variant="link" className="px-0" onClick={() => openFull()}>More options</Button>

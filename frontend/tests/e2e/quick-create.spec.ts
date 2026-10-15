@@ -16,6 +16,9 @@ async function api(page: Page, method: "PATCH" | "POST", url: string, data: unkn
  * semester, and a fixed starting type for the quick form. Each project uses its own month. */
 async function setup(page: Page, testInfo: { project: { name: string } }, prefix: string, type: "class" | "event" = "event") {
   const t = tag(testInfo.project.name);
+  // 012: the home page shows Tasks beside the calendar; these geometry checks use the calendar's
+  // full width as before (Tasks closed to its rail)
+  await page.addInitScript(() => localStorage.setItem("uh.home.panels", JSON.stringify({ calendar: true, tasks: false })));
   await signIn(page);
   const year = `Year ${prefix}${t}`;
   const semester = `Spring ${prefix}${t}`;

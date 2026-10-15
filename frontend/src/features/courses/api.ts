@@ -51,7 +51,8 @@ function useInvalidateHierarchy() {
   const qc = useQueryClient();
   return () =>
     Promise.all(
-      ["course-tree", "years", "semesters", "courses", "course", "sessions", "session"].map((k) =>
+      // 012: tasks show course names and become personal when their course is deleted
+      ["course-tree", "years", "semesters", "courses", "course", "sessions", "session", "tasks", "task-columns"].map((k) =>
         qc.invalidateQueries({ queryKey: [k] }),
       ),
     );
@@ -78,8 +79,8 @@ export function useUpdateHierarchy() {
 export function useDeleteHierarchy() {
   const invalidate = useInvalidateHierarchy();
   return useMutation({
-    mutationFn: ({ kind, id, version }: { kind: HierarchyKind; id: string; version: number }) =>
-      apiFetch<void>(`/${PATHS[kind]}/${id}`, { method: "DELETE", version }),
+    mutationFn: ({ kind, id, version, linkedTasks }: { kind: HierarchyKind; id: string; version: number; linkedTasks?: "keep" | "delete" }) =>
+      apiFetch<void>(`/${PATHS[kind]}/${id}`, { method: "DELETE", version, query: { linkedTasks } }),
     onSettled: invalidate,
   });
 }

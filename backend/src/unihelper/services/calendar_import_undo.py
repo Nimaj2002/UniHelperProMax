@@ -112,6 +112,10 @@ def undo_run(db: Session, storage: StorageService, user: User, run_id: str) -> d
         for row in lin.rows:
             db.delete(row)
         db.flush()
+        if kind == "event":  # 012: tasks linked to it stay, unlinked
+            from unihelper.services import task_link_service
+
+            task_link_service.unlink(db, user, lineage_ids=[lineage_id])
         removed["classes" if kind == "class" else "events"] += 1
 
     for course_id in created.get("courseIds", []):

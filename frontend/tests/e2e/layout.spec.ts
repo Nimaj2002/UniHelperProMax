@@ -139,7 +139,7 @@ test("US2: the closed audio card's button shows a recording in progress", async 
 
   // pill on another page (in-app navigation: a reload would interrupt the recording), then stop
   await sidePanel(page).getByRole("link", { name: "UniHelperProMax" }).click();
-  await expect(page).toHaveURL(/\/calendar/);
+  await expect(page).toHaveURL(/:\d+\/$/); // 012: home is "/" (the calendar + tasks page)
   const pill = page.getByRole("region", { name: "Recording", exact: true });
   await expect(pill).toBeVisible();
   const [p, m] = [await box(pill), await box(mainCard(page))];
@@ -160,6 +160,9 @@ test("US3: the calendar and a course page live in the main card", async ({ page 
   const { courseId } = await openSession(page, `CAL${t} 101`);
   await page.goto("/calendar");
   const main = mainCard(page);
+  // 012: the calendar is a panel of the home page; with the Tasks panel closed it has room for
+  // its full header (narrower, New class moves to a "More" menu)
+  await page.locator("#close-tasks").click();
   for (const name of ["Today", /^Previous/, /^Next/, "New class"]) await expect(main.getByRole("button", { name, exact: typeof name === "string" })).toBeVisible();
   for (const name of ["Day view", "Week view", "Month view"]) await expect(main.getByRole("radio", { name, exact: true }).or(main.getByRole("button", { name, exact: true }))).toBeVisible();
   await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
@@ -313,7 +316,7 @@ test("SC-002: every action from before the redesign is still reachable by keyboa
   await left.getByRole("button", { name: "Settings" }).click();
   await expect(page).toHaveURL(/\/settings/);
   await left.getByRole("link", { name: "UniHelperProMax" }).click();
-  await expect(page).toHaveURL(/\/calendar/);
+  await expect(page).toHaveURL(/:\d+\/$/); // 012: home is "/"
 
   // New class: "+" beside Courses and the calendar toolbar ("n" on the calendar)
   await left.getByRole("button", { name: "New class" }).click();
