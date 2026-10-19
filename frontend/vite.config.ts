@@ -25,6 +25,15 @@ export default defineConfig({
       "@embedpdf/plugin-tiling/react",
       "@embedpdf/plugin-viewport/react",
       "@embedpdf/plugin-zoom/react",
+      // 013: diagrams and math load with the first note that has one
+      "katex",
+      "mermaid",
+      "dompurify",
+      "lexical",
+      "@lexical/utils",
+      "@lexical/react/LexicalComposerContext",
+      "@lexical/react/useLexicalNodeSelection",
+      "mdast-util-from-markdown",
     ],
   },
   server: {

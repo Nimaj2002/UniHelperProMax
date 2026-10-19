@@ -30,6 +30,7 @@ import {
 import "@mdxeditor/editor/style.css";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { useResolvedTheme } from "@/app/theme";
+import { diagramDecisionsPlugin, diagramMathPlugin, InsertDiagram, InsertFormula } from "./diagram-math";
 
 export type EditorMode = "live" | "raw";
 
@@ -110,21 +111,35 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function M
         onChange={(text, initialMarkdownNormalize) => {
           if (!initialMarkdownNormalize) callbacks.current.onChange(noteId, text);
         }}
-        plugins={[
-          headingsPlugin(),
-          listsPlugin(),
-          quotePlugin(),
-          thematicBreakPlugin(),
-          linkPlugin(),
-          linkDialogPlugin(),
-          imagePlugin(),
-          tablePlugin(),
-          codeBlockPlugin({ defaultCodeBlockLanguage: "" }),
-          codeMirrorPlugin({
-            codeBlockLanguages: { "": "Plain text", js: "JavaScript", ts: "TypeScript", py: "Python", css: "CSS", html: "HTML", json: "JSON", sql: "SQL", bash: "Bash" },
-          }),
-          markdownShortcutPlugin(),
-          diffSourcePlugin({ viewMode: mode === "raw" ? "source" : "rich-text" }),
+        plugins={notePlugins(mode, { noteId })}
+      />
+    </div>
+  );
+});
+
+/**
+ * The editor's plugins. Shared with the round-trip tests so they read and write Markdown exactly
+ * as the editor does.
+ */
+export function notePlugins(mode: EditorMode, { toolbar = true, noteId }: { toolbar?: boolean; noteId?: string } = {}) {
+  return [
+    headingsPlugin(),
+    listsPlugin(),
+    quotePlugin(),
+    thematicBreakPlugin(),
+    linkPlugin(),
+    linkDialogPlugin(),
+    imagePlugin(),
+    tablePlugin(),
+    diagramMathPlugin({ noteId }),
+    codeBlockPlugin({ defaultCodeBlockLanguage: "" }),
+    codeMirrorPlugin({
+      codeBlockLanguages: { "": "Plain text", js: "JavaScript", ts: "TypeScript", py: "Python", css: "CSS", html: "HTML", json: "JSON", sql: "SQL", bash: "Bash" },
+    }),
+    markdownShortcutPlugin(),
+    diffSourcePlugin({ viewMode: mode === "raw" ? "source" : "rich-text" }),
+    ...(toolbar
+      ? [
           toolbarPlugin({
             toolbarContents: () => (
               <DiffSourceToggleWrapper options={["rich-text", "source"]}>
@@ -142,11 +157,13 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function M
                 <InsertTable />
                 <InsertThematicBreak />
                 <InsertCodeBlock />
+                <InsertDiagram />
+                <InsertFormula />
               </DiffSourceToggleWrapper>
             ),
           }),
-        ]}
-      />
-    </div>
-  );
-});
+        ]
+      : []),
+    diagramDecisionsPlugin(),
+  ];
+}

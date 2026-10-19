@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" data-mode="allowed">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- 013: a diagram the user chose to allow, shown live with all of its own settings.
+         Still sandboxed (opaque origin): it can't reach the app or its data. -->
+    <title>Diagram</title>
+    <style>
+      html, body { margin: 0; background: transparent; overflow: hidden; }
+      #stage { display: inline-block; max-width: 100vw; }
+      #stage svg { max-width: 100vw; height: auto; }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <script src="/sandbox/diagram-renderer.js"></script>
+  </body>
+</html>

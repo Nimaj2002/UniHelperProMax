@@ -16,6 +16,8 @@
   /* 007 "dark pages" in the PDF reader: the same in every theme (pages, not chrome) */
   --reader-page-dark-bg: #1e1e1e;
   --reader-page-dark-fg: #e6e6e6;
+  /* 013 "Light, white background" diagram export: the same in every theme (paper, not chrome) */
+  --diagram-export-background: #ffffff;
   --text-primary: #18181b;
   --text-muted: #55555d;
   --border: #85858d;
@@ -84,6 +86,8 @@
   /* 007 "dark pages" in the PDF reader: the same in every theme (pages, not chrome) */
   --reader-page-dark-bg: #1e1e1e;
   --reader-page-dark-fg: #e6e6e6;
+  /* 013 "Light, white background" diagram export: the same in every theme (paper, not chrome) */
+  --diagram-export-background: #ffffff;
   --text-primary: #ececef;
   --text-muted: #a2a2ab;
   --border: #6c6c75;

@@ -148,18 +148,38 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not request.url.path.startswith(API_PREFIX):
             response.headers.setdefault(
                 "Content-Security-Policy",
-                # the PDF reader (EmbedPDF) compiles PDFium's WebAssembly in a blob: worker
-                # and shows rendered pages as blob: images
-                "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; "
-                "worker-src 'self' blob:; img-src 'self' data: blob:; "
-                "style-src 'self' 'unsafe-inline'; "
-                "object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+                SANDBOX_CSP.get(request.url.path, APP_CSP),
             )
         return response
 
     if settings.static_dir and settings.static_dir.is_dir():
         _mount_spa(app, settings)
     return app
+
+
+# the PDF reader (EmbedPDF) compiles PDFium's WebAssembly in a blob: worker and shows
+# rendered pages as blob: images
+APP_CSP = (
+    "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; "
+    "worker-src 'self' blob:; img-src 'self' data: blob:; "
+    "style-src 'self' 'unsafe-inline'; "
+    "object-src 'none'; base-uri 'self'; frame-ancestors 'none'"
+)
+
+# 013: the diagram renderer frames (sandboxed, opaque origin) may only be framed by the app.
+# The safe one has no network at all; the "allowed" one shows a diagram the user chose to
+# allow with all of its own settings, so it may load what the diagram asks for.
+SANDBOX_CSP = {
+    "/diagram-sandbox.html": (
+        "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; "
+        "img-src data:; font-src 'self'; base-uri 'none'; frame-ancestors 'self'"
+    ),
+    "/diagram-sandbox-allowed.html": (
+        "default-src 'none'; script-src 'self' 'unsafe-inline'; "
+        "style-src 'unsafe-inline' https:; img-src data: https:; font-src 'self' https:; "
+        "connect-src https:; base-uri 'none'; frame-ancestors 'self'"
+    ),
+}
 
 
 def _mount_spa(app: FastAPI, settings: Settings) -> None:

@@ -329,3 +329,32 @@ def test_background_worker_runs_jobs_on_its_own(tmp_path: Path) -> None:
             assert time.monotonic() < deadline, job(c, started["id"])
             time.sleep(0.1)
         assert note_content(c, note["id"]).startswith("## Transcript — ")
+
+
+def test_append_keeps_formulas_and_diagrams_byte_for_byte(
+    app: FastAPI, owner_client: TestClient, tmp_data_dir: Path
+) -> None:
+    """013: notes with LaTeX and Mermaid are plain Markdown; an append never rewrites them."""
+    c = owner_client
+    configure(app)
+    key = make_session(c)
+    original = (
+        "Inline $a_1 \\frac{x}{y} * [b]$ and a price $5.\n\n"
+        "$$\n\\int_0^1 x^2 \\, dx = \\tfrac{1}{3}\n\n\\{a_*\\}\n$$\n\n"
+        "```mermaid\nflowchart LR\n  A[x_1 *b*] --> B\n\n  B --> C\n```"
+    )
+    note = create_note(c, key, "Math notes", original)
+    path = note_path(tmp_data_dir, note)
+    before = path.read_bytes()
+    assert before == original.encode()
+    rec = finished_recording(c, key, 2)
+    start_job(c, rec, note)
+    run_jobs(c)
+    after = path.read_bytes()
+    assert after.startswith(before)
+    for piece in (
+        "$a_1 \\frac{x}{y} * [b]$",
+        "$$\n\\int_0^1 x^2 \\, dx = \\tfrac{1}{3}\n\n\\{a_*\\}\n$$",
+        "```mermaid\nflowchart LR\n  A[x_1 *b*] --> B\n\n  B --> C\n```",
+    ):
+        assert piece in after.decode()

@@ -33,3 +33,6 @@ Thumbs.db
 
 # machine-specific pnpm store location (WSL performance)
 frontend/pnpm-workspace.yaml
+
+# 013: generated diagram renderer bundle (pnpm build:sandbox)
+frontend/public/sandbox/

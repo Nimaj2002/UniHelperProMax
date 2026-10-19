@@ -1,0 +1,5 @@
+Determinant:
+
+```math
+\det(A) = \sum_{\sigma \in S_n} \operatorname{sgn}(\sigma) \prod_{i=1}^n a_{i,\sigma(i)}
+```

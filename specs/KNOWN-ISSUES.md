@@ -85,3 +85,31 @@ inside its file operation while `append_result` runs.
     select (`._selectTrigger_…`) in a custom theme.
 - **Unit test broken before 012**: `no-hardcoded-colors` flags `app/shell/MadeBy.tsx`
   (`text-red-500`, commit 17d5183).
+
+## Found while building 013 (diagrams and math in notes)
+
+- **Find in note and a read-only note mode don't exist** (since the editor switched to MDXEditor
+  in commit 9744665). Spec 013 FR-016a (a find match inside a formula or diagram opens its
+  source) and FR-035 (read-only mode draws but never edits) are built and unit-tested against
+  hooks (`diagram-math/reveal.ts` `revealSource`/`conceal`, and `editor.isEditable()` checks with
+  MDXEditor's `readOnly`). They can only be checked end to end once those features exist.
+  **Fix idea**: a small spec for find in note (MDXEditor has no search plugin) and a read-only
+  switch that passes `readOnly` to `MDXEditor`.
+- **The conflict dialog doesn't open** when a note is changed outside the app while it's open.
+  The save is refused (409) and the save state shows "Conflict", but `ConflictDialog` never
+  appears. This happens with the 013 plugins switched off too (checked 2026-10-19), so it comes
+  from the MDXEditor switch. `notes-resilience.spec.ts` would catch it once its `.cm-content`
+  selectors are fixed. `diagrams-math.spec.ts` checks only the part 013 is responsible for: the
+  outside version isn't overwritten, and the refused save kept formulas exact.
+- **Diagram rendering off the main thread is Chromium-only.** The renderer frame is sandboxed
+  with an opaque origin, and Chromium runs it in its own process, so slow Mermaid layouts don't
+  block typing and the 5 s limit can stop them. Other browsers may run the frame on the main
+  thread. Drawing is still queued one diagram at a time and the limit still applies, but a very
+  slow diagram can make typing stutter there.
+- **The note editor chunk grew 7.6 % (gzip, +20 KB)** with the 013 editor code (see
+  `specs/013-note-diagrams-math/quickstart.md` "Measurements"). KaTeX, DOMPurify and Mermaid
+  load only when needed. **Fix idea**: load `DiagramView`/`DecisionDialog`/`DiagramViewer`
+  with `React.lazy`.
+- **Typed `$x$` becomes a formula when the caret moves on**, not at the moment the closing `$` is
+  typed. This is deliberate (so `$x$5` never flickers into a formula). It is listed here because
+  it differs from editors that convert immediately.

@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en" data-mode="safe">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- 013: safe diagram renderer. No network; the backend sends the same policy as a header. -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src data:; font-src 'self'" />
+    <title>Diagram renderer</title>
+    <style>
+      html, body { margin: 0; background: transparent; }
+      #stage { position: absolute; left: 0; top: 0; width: 1600px; }
+    </style>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <script src="/sandbox/diagram-renderer.js"></script>
+  </body>
+</html>

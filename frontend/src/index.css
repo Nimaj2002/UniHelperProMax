@@ -114,3 +114,67 @@
 .mdx-note-content table { border-collapse: collapse; }
 .mdx-note-content th,
 .mdx-note-content td { border: 1px solid var(--divider); padding: 0.25rem 0.5rem; }
+
+/* 013: diagrams and math in notes */
+.mdx-note-content .uh-math-source {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: var(--surface-sunken);
+  border-radius: 0.25rem;
+  padding: 0 0.125rem;
+}
+.mdx-note-content .uh-math-inline { cursor: text; }
+.mdx-note-content .uh-math-inline .katex { font-size: 1.05em; }
+.mdx-note-content .uh-math-error {
+  text-decoration: underline wavy var(--danger);
+  text-underline-offset: 3px;
+}
+.mdx-note-content .uh-block {
+  margin: 0.75rem 0;
+  border-radius: 0.5rem;
+  outline: none;
+}
+.mdx-note-content .uh-block:focus-visible { box-shadow: 0 0 0 2px var(--focus-ring); }
+.mdx-note-content .uh-block .katex-display { margin: 0.25rem 0; overflow-x: auto; overflow-y: hidden; }
+.mdx-note-content .uh-block-source {
+  display: block;
+  width: 100%;
+  min-height: 2.5rem;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.5rem;
+  background: var(--surface-sunken);
+  color: var(--text-primary);
+}
+.mdx-note-content .uh-block-source:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 1px; }
+.mdx-note-content .uh-render-message { font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.25rem; }
+.mdx-note-content .uh-render-message[data-tone="error"] { color: var(--danger); }
+.mdx-note-content .uh-diagram { position: relative; padding: 0.5rem 0; contain: layout; }
+.mdx-note-content .uh-diagram-body { display: flex; justify-content: center; max-width: 100%; overflow-x: auto; }
+.mdx-note-content .uh-diagram-svg { width: 100%; text-align: center; }
+.mdx-note-content .uh-diagram-svg svg { display: inline-block; height: auto; min-width: min(var(--uh-min-width, 0px), 100000px); }
+.mdx-note-content .uh-diagram-placeholder {
+  width: 100%;
+  min-height: inherit;
+  border-radius: 0.5rem;
+  background: var(--surface-sunken);
+}
+.mdx-note-content .uh-diagram-code {
+  width: 100%;
+  white-space: pre-wrap;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  background: var(--surface-sunken);
+}
+.mdx-note-content .uh-diagram-allowed { border: 0; max-width: 100%; background: transparent; }
+.mdx-note-content .uh-diagram-actions { position: absolute; top: 0.25rem; right: 0; opacity: 0; }
+.mdx-note-content .uh-diagram:hover .uh-diagram-actions,
+.mdx-note-content .uh-diagram:focus-within .uh-diagram-actions,
+.mdx-note-content .uh-diagram-actions:has([data-state="open"]) { opacity: 1; }
+.mdx-note-content .uh-block-source + .uh-diagram-body { margin-top: 0.5rem; }
