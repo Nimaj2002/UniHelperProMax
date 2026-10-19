@@ -46,6 +46,8 @@ interface Props {
   end?: ReactNode;
   /** Controls before the tabs (side panel opener on narrow windows). */
   start?: ReactNode;
+  /** Control right after the last tab (open a PDF or note). */
+  add?: ReactNode;
 }
 
 const SIDE_TEXT: Record<Side, { mark: string; sr: string }> = {
@@ -58,7 +60,7 @@ const SIDE_TEXT: Record<Side, { mark: string; sr: string }> = {
  * side; arrow keys move between tabs, Delete closes, the context menu (or Shift+F10) offers
  * "Show in other pane"; the split toggle sits at the end.
  */
-export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClose, onToggleSplit, onMoveToOtherPane, actions, end, start }: Props) {
+export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClose, onToggleSplit, onMoveToOtherPane, actions, end, start, add }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
   const [menuFor, setMenuFor] = useState<TabRef | null>(null);
   const tabs = state.tabs.filter((t) => titleOf(t) !== undefined);
@@ -87,7 +89,7 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
   return (
     <div className="flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-divider px-1">
       {start}
-      {tabs.length === 0 && <div className="min-w-0 flex-1" />}
+      <div className="flex h-full min-w-0 flex-1 items-center gap-0.5">
       {tabs.length > 0 && (
       <div
         ref={listRef}
@@ -95,7 +97,7 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
         aria-label="Open notes and documents"
         tabIndex={-1}
         onKeyDown={onKey}
-        className="flex h-full min-w-0 flex-1 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex h-full min-w-0 items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         {tabs.map((t) => {
           const selected = same(t, state.active);
@@ -173,6 +175,8 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
         })}
       </div>
       )}
+      {add}
+      </div>
       <div className="flex shrink-0 items-center gap-1">
         {actions}
         {splitAvailable && (

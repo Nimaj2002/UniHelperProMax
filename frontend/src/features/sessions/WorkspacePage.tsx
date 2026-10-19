@@ -25,6 +25,7 @@ import {
   useNotes, usePreferences, useRenameNote, useTimeline, useUpdatePreferences, type Note, type NoteMeta,
 } from "./api";
 import { ensureSaver, getSaver, onServerAppend, onServerReplace, readDraft, removeSaver, useSaveStatus, type SaveFn } from "./autosave";
+import { AddTabButton } from "./AddTabButton";
 import { AudioReopenButton } from "./AudioReopenButton";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor, type EditorMode, type MarkdownEditorHandle } from "./editor/MarkdownEditor";
@@ -509,6 +510,17 @@ export function WorkspacePage() {
         onToggleSplit={() => act({ type: "toggleSplit" })}
         onMoveToOtherPane={(tab) => act({ type: "moveToOtherPane", tab })}
         start={<ShowSidePanelButton />}
+        add={
+          <AddTabButton
+            sessionKey={sessionKey}
+            notes={noteList}
+            documents={docList}
+            openIds={new Set(ws.tabs.map((t) => t.id))}
+            onOpen={(kind, id) => (kind === "note" ? openNote(id) : openDocument(id))}
+            onNewNote={() => setDialog({ kind: "new" })}
+            onImportNote={noteImporter.pick}
+          />
+        }
         actions={
           <>
             {session.data && <SessionChip session={session.data} />}
