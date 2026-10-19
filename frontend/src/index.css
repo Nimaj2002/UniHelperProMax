@@ -95,8 +95,34 @@
 /* MDXEditor note content: Tailwind's preflight resets these, so restore plain document styles */
 .mdx-note-content {
   min-height: 100%;
-  padding: 1rem 1.5rem 3rem;
+  /* the bottom padding (over a third of the pane) lets the last line scroll up into the top
+     two-thirds while typing, clear of the "Saved" pill in the pane's corner */
+  padding: 1rem 1.5rem 35vh;
   line-height: 1.65;
+}
+
+/* Code blocks always use CodeMirror's light theme, so keep their language picker (and its open
+   list) in the light colours whatever the app theme is. MDXEditor's class names are hashed. */
+.mdxeditor [class*="_codeMirrorToolbar_"],
+:root:has([class*="_codeMirrorToolbar_"] [data-state="open"]) .mdxeditor-select-content {
+  --baseBase: var(--code-chrome-subtle);
+  --basePageBg: var(--code-chrome-bg);
+  --baseBg: var(--code-chrome-hover);
+  --baseBorderHover: var(--code-chrome-placeholder);
+  --baseTextContrast: var(--code-chrome-fg);
+  color: var(--code-chrome-fg);
+}
+/* ...and the same for the code suggestions (autocomplete) popup inside a code block */
+.mdx-note-content .cm-editor .cm-tooltip {
+  border: 1px solid var(--code-chrome-border);
+  border-radius: 6px;
+  background-color: var(--code-chrome-bg);
+  color: var(--code-chrome-fg);
+  box-shadow: 0 2px 6px var(--code-chrome-shadow);
+}
+.mdx-note-content .cm-editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background-color: var(--code-chrome-hover);
+  color: var(--code-chrome-fg);
 }
 .mdx-note-content h1 { font-size: 1.875rem; font-weight: 700; margin: 1.25rem 0 0.75rem; }
 .mdx-note-content h2 { font-size: 1.5rem; font-weight: 650; margin: 1.25rem 0 0.5rem; }

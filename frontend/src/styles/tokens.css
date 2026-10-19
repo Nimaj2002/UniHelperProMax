@@ -145,3 +145,17 @@
   --event-pink-fg: #f3c4db;
   --event-pink-border: #aa4b7a;
 }
+
+/*
+ * Code-block chrome (language picker, suggestions popup): code blocks always use CodeMirror's
+ * light theme, so these stay the same in every theme.
+ */
+:root {
+  --code-chrome-bg: #fdfdfd;
+  --code-chrome-subtle: #fcfcfd;
+  --code-chrome-hover: #f0f0f3;
+  --code-chrome-border: #d9d9e0;
+  --code-chrome-placeholder: #b9bbc6;
+  --code-chrome-fg: #1c2024;
+  --code-chrome-shadow: rgb(0 0 0 / 0.15);
+}

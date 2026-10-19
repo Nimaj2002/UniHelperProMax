@@ -83,6 +83,27 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function M
     return () => el.removeEventListener("keydown", onKey);
   }, []);
 
+  // While typing, keep the caret in the top two-thirds of the pane (clear of the "Saved" pill)
+  useEffect(() => {
+    const el = host.current;
+    if (!el) return;
+    let frame = 0;
+    const follow = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const caret = caretRect(el);
+        if (!caret) return;
+        const limit = el.getBoundingClientRect().top + (el.clientHeight * 2) / 3;
+        if (caret.bottom > limit) el.scrollTop += caret.bottom - limit;
+      });
+    };
+    el.addEventListener("input", follow);
+    return () => {
+      el.removeEventListener("input", follow);
+      cancelAnimationFrame(frame);
+    };
+  }, []);
+
   useImperativeHandle(ref, () => ({
     replaceContent(id, text) {
       if (id === noteId) editor.current?.setMarkdown(text);
@@ -116,6 +137,20 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function M
     </div>
   );
 });
+
+/** Where the caret is on screen, if the selection is inside `container`. */
+function caretRect(container: HTMLElement): DOMRect | null {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || !container.contains(sel.focusNode)) return null;
+  const range = sel.getRangeAt(0).cloneRange();
+  range.collapse(false);
+  const rect = range.getBoundingClientRect();
+  if (rect.height > 0) return rect;
+  // an empty line has no text to measure, so use its element instead
+  const node = sel.focusNode;
+  const elem = node instanceof Element ? node : node?.parentElement;
+  return elem ? elem.getBoundingClientRect() : null;
+}
 
 /**
  * The editor's plugins. Shared with the round-trip tests so they read and write Markdown exactly
