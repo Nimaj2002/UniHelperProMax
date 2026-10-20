@@ -532,6 +532,20 @@ The owner must choose a new password at the next sign-in.
   [plan](specs/012-task-manager/plan.md) ·
   [quickstart & validation](specs/012-task-manager/quickstart.md)
 
+## License
+
+UniHelperProMax is dual-licensed:
+
+- **[AGPL-3.0](LICENSE)**: free to use, modify, and share. If you distribute a
+  modified version or run it as a service, you must publish your full source
+  code under the AGPL and keep the original copyright notices.
+- **[Commercial license](COMMERCIAL-LICENSE.md)**: for selling or hosting a
+  modified version without releasing its source, or using the code in a
+  closed-source product. Open a "Commercial license inquiry" issue to get one.
+
+Contributors must sign the [Contributor License Agreement](CLA.md). A bot
+asks for it automatically on your first pull request.
+
 ---
 
 <div align="center">
