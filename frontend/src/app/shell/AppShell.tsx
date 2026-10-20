@@ -10,6 +10,7 @@ import { ActivityPills } from "./ActivityPills";
 import { Card } from "./Card";
 import { LayoutProvider, LEFT_CARD_ID, RIGHT_CARD_ID, SHOW_LEFT_ID, SHOW_RIGHT_ID, useLayout, type RightCard } from "./layout";
 import { LeftCard } from "./LeftCard";
+import { CreditStrip } from "./MadeBy";
 import { PanelSectionProvider } from "./panelSection";
 import { Rail } from "./Rail";
 import { useGlobalHosts } from "./registry";
@@ -109,7 +110,7 @@ const OVERLAY_CARD =
 
 function Shell() {
   const layout = useLayout();
-  const { mode, focus, leftClosed, overlay, setOverlay, rightCard, toggleLeft, showLeft, showRight, toggleFocus, bareMain, setRightDockable } = layout;
+  const { mode, focus, leftClosed, overlay, setOverlay, rightCard, toggleLeft, showLeft, showRight, toggleFocus, bareMain, setRightDockable, creditStrip } = layout;
   const viewport = useViewportWidth();
   const [leftWidth, setLeftWidth] = useState(() => clampLeft(readLocal(LEFT_WIDTH_KEY, LEFT_DEFAULT)));
   // the page remembers its right card's width (014: the session panel's layout); else the default
@@ -211,12 +212,16 @@ function Shell() {
         </div>
 
         {/* the home page lays out its own cards here (bareMain): same tree, so the page keeps its state */}
-        <Card as="main" id="main" label="Workspace" body="fill" chrome={!bareMain} className="@container/main h-full">
-          <div className={cn("flex min-h-0 min-w-0 flex-1", bareMain ? "h-full flex-row gap-2" : "flex-col")}>
-            <Outlet />
-          </div>
-          <ActivityPills />
-        </Card>
+        <div className="flex min-h-0 min-w-0 flex-col gap-2">
+          <Card as="main" id="main" label="Workspace" body="fill" chrome={!bareMain} className="@container/main min-h-0 flex-1">
+            <div className={cn("flex min-h-0 min-w-0 flex-1", bareMain ? "h-full flex-row gap-2" : "flex-col")}>
+              <Outlet />
+            </div>
+            <ActivityPills />
+          </Card>
+          {/* Settings' credit bar: fixed height, as wide as the main card (useCreditStrip) */}
+          {creditStrip && !focus && <CreditStrip />}
+        </div>
 
         <div className="relative min-h-0 min-w-0 overflow-hidden">
           {rightRail && rightCard && (

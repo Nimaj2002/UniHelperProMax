@@ -198,4 +198,22 @@ describe("Settings → AI", () => {
     await waitFor(() => expect(save).toBeDisabled());
     expect(box).toHaveValue("Answer briefly.");
   }, 20_000);
+
+  it("shows more than five models as a compact, filterable list that opens a row to edit it", async () => {
+    const user = userEvent.setup();
+    const many = { ...CLAUDE, models: ["a", "b", "c", "d", "e", "f"].map((x) => model(`claude-${x}`)) };
+    api([many], [["POST", "/api/v1/ai/base-url/check", () => json({ baseUrl: "https://api.anthropic.com", removedPath: null, locality: "remote" })]]);
+    renderWithProviders(<AiSettingsPage />);
+    await user.click(await screen.findByRole("button", { name: "Edit My Claude" }));
+    const list = screen.getByRole("list", { name: "Models" });
+    expect(within(list).getAllByRole("listitem")).toHaveLength(6);
+    expect(within(list).queryByLabelText("Display name")).not.toBeInTheDocument();
+    await user.type(screen.getByRole("searchbox", { name: "Filter models" }), "claude-c");
+    expect(within(list).getAllByRole("listitem")).toHaveLength(1);
+    const row = within(list).getByRole("button", { name: /claude-c/ });
+    expect(row).toHaveAttribute("aria-expanded", "false");
+    await user.click(row);
+    expect(row).toHaveAttribute("aria-expanded", "true");
+    expect(within(list).getByLabelText("Display name")).toHaveValue("claude-c");
+  }, 20_000);
 });

@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router";
+import { useCreditStrip } from "@/app/shell/layout";
 import { PageFrame } from "@/app/shell/PageFrame";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ const SECTIONS = [
 
 /** Settings area (005 FR-001): section nav + content. */
 export function SettingsLayout() {
+  useCreditStrip();
   return (
     <PageFrame>
       <div className="mx-auto grid max-w-5xl gap-6 px-4 pt-2 pb-6 sm:px-6 md:grid-cols-[180px_minmax(0,1fr)]">

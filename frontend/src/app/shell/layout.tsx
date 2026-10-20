@@ -71,6 +71,9 @@ interface Layout {
   /** The page lays out the main column itself (the home page's panels): no main card chrome. */
   bareMain: boolean;
   setBareMain: (bare: boolean) => void;
+  /** The page shows the fixed credit bar under the main card (Settings). */
+  creditStrip: boolean;
+  setCreditStrip: (on: boolean) => void;
 }
 
 const LayoutContext = createContext<Layout | null>(null);
@@ -102,6 +105,7 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const [focus, setFocus] = useState(false);
   const [rightCard, setRightCard] = useState<RightCard | null>(null);
   const [bareMain, setBareMain] = useState(false);
+  const [creditStrip, setCreditStrip] = useState(false);
   const [rightDockable, setRightDockable] = useState(true);
 
   useEffect(() => writeLocal("uh.panel.collapsed", leftClosed), [leftClosed]);
@@ -162,8 +166,9 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
     () => ({
       mode, leftClosed, overlay, setOverlay, focus, toggleFocus, leftVisible, toggleLeft, showLeft,
       rightCard, setRightCard, rightVisible, toggleRight, showRight, setRightDockable, bareMain, setBareMain,
+      creditStrip, setCreditStrip,
     }),
-    [mode, leftClosed, overlay, setOverlay, focus, toggleFocus, leftVisible, toggleLeft, showLeft, rightCard, rightVisible, toggleRight, showRight, bareMain],
+    [mode, leftClosed, overlay, setOverlay, focus, toggleFocus, leftVisible, toggleLeft, showLeft, rightCard, rightVisible, toggleRight, showRight, bareMain, creditStrip],
   );
   return <LayoutContext.Provider value={value}>{children}</LayoutContext.Provider>;
 }
@@ -186,6 +191,8 @@ const OUTSIDE: Layout = {
   setRightDockable: () => {},
   bareMain: false,
   setBareMain: () => {},
+  creditStrip: false,
+  setCreditStrip: () => {},
 };
 
 /** The card layout; outside the shell (tests, auth pages) a no-op layout. */
@@ -215,4 +222,16 @@ export function useBareMain() {
     setBareMain(true);
     return () => setBareMain(false);
   }, [setBareMain]);
+}
+
+/**
+ * Page side: while the calling page is mounted, a fixed bar with the app's credit sits under the
+ * main card, as wide as it. It never opens and is never resized.
+ */
+export function useCreditStrip() {
+  const { setCreditStrip } = useLayout();
+  useLayoutEffect(() => {
+    setCreditStrip(true);
+    return () => setCreditStrip(false);
+  }, [setCreditStrip]);
 }
