@@ -24,7 +24,7 @@ async function axeClean(page: Page) {
 }
 
 async function record(page: Page) {
-  const panel = page.getByRole("complementary", { name: "Audio" });
+  const panel = page.getByRole("complementary", { name: "Session panel" });
   await panel.getByRole("button", { name: "Record", exact: true }).click();
   await expect(page.getByRole("region", { name: "Recording", exact: true })).toBeVisible();
   await page.waitForTimeout(6500);

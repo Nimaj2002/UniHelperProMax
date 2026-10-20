@@ -1,7 +1,5 @@
 import { CalendarBlank, Kanban } from "@phosphor-icons/react";
-import { Card } from "@/app/shell/Card";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { SideRail } from "@/app/shell/SideRail";
 import { formatCount } from "@/features/tasks/model/counts";
 import type { Panel } from "./homeWidths";
 
@@ -35,23 +33,22 @@ export function railLabel(panel: Panel, openCount?: number, overdueCount?: numbe
  * overdue "!" (text, never color alone).
  */
 export function PanelRail({ panel, onOpen, openCount, overdueCount }: Props) {
-  const Icon = panel === "calendar" ? CalendarBlank : Kanban;
   const name = PANEL_NAME[panel];
   return (
-    <Card className="h-full" body="fill" data-rail={panel}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            id={SHOW_PANEL_ID[panel]}
-            variant="ghost"
-            className="h-full w-full flex-col items-center justify-start gap-2 rounded-[13px] px-0 py-3"
-            onClick={onOpen}
-            aria-controls={PANEL_ID[panel]}
-            aria-expanded={false}
-            aria-label={railLabel(panel, openCount, overdueCount)}
-            aria-keyshortcuts={PANEL_SHORTCUT[panel]}
-          >
-            <Icon size={18} aria-hidden />
+    <SideRail
+      side={panel === "calendar" ? "left" : "right"}
+      data-rail={panel}
+      reopen={{
+        id: SHOW_PANEL_ID[panel],
+        label: railLabel(panel, openCount, overdueCount),
+        tooltip: `Show ${panel}`,
+        shortcut: PANEL_SHORTCUT[panel],
+        shortcutHint: PANEL_SHORTCUT[panel],
+        icon: panel === "calendar" ? CalendarBlank : Kanban,
+        controls: PANEL_ID[panel],
+        onActivate: onOpen,
+        content: (
+          <>
             <span aria-hidden className="text-sm font-medium [writing-mode:vertical-rl]">{name}</span>
             {panel === "tasks" && openCount !== undefined && (
               <span aria-hidden className="text-xs tabular-nums text-muted-foreground" data-testid="rail-open-count">
@@ -64,12 +61,9 @@ export function PanelRail({ panel, onOpen, openCount, overdueCount }: Props) {
                 <span className="sr-only">{overdueCount} overdue</span>
               </span>
             )}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side={panel === "calendar" ? "right" : "left"}>
-          Show {panel} <kbd className="ml-1 font-mono">{PANEL_SHORTCUT[panel]}</kbd>
-        </TooltipContent>
-      </Tooltip>
-    </Card>
+          </>
+        ),
+      }}
+    />
   );
 }

@@ -97,6 +97,7 @@ def test_deletion_impact_and_delete(owner_client: TestClient, tmp_data_dir: Path
     check(imp.json(), "DeletionImpact")
     none = {"events": 0, "notes": 0, "recordings": 0, "documents": 0}  # 009 additions
     none |= {"linkedTaskCount": 0, "taskCount": 0}  # 012 additions
+    none |= {"chats": 0}  # 014
     assert imp.json() == {
         "semesters": 1,
         "courses": 1,

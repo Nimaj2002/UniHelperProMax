@@ -1,32 +1,52 @@
 /**
  * Card layout state (008 data-model): docked vs overlay mode, the left card's closed state, the
- * right card slot (the session workspace's audio card), the open overlay on narrow windows and
+ * right card slot (the session workspace's session panel), the open overlay on narrow windows and
  * focus mode. Stored preferences describe the wide-window layout; overlay and focus mode never
  * write them.
  */
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
 import { readLocal, writeLocal } from "@/lib/storage";
 import { useMediaQuery, WIDE_QUERY } from "@/lib/useMediaQuery";
+import type { SideRailItem } from "./SideRail";
 import type { LayoutMode } from "./widths";
+
+/** What a closed right card leaves on the window's edge (014 FR-005: the session panel rail). */
+export interface RailSpec {
+  /** The rail's landmark name, e.g. "Session panel rail". */
+  label: string;
+  /** The reopen button's name, e.g. "Show session panel". */
+  reopenLabel: string;
+  /** Each item reopens the card (the shell opens it after `onActivate`). */
+  items: SideRailItem[];
+}
 
 /** A page's right card (shown while the page is mounted). */
 export interface RightCard {
-  /** Fixed header of the card (title, actions, close button). */
-  header: ReactNode;
+  /** The card's landmark name (also the overlay's title), e.g. "Session panel". */
+  label: string;
+  /** The overlay's description for assistive tech. */
+  description?: string;
+  /** Fixed header of the card (title, actions, close button); omitted when the body has its own. */
+  header?: ReactNode;
   body: ReactNode;
   /** Remembered open state on wide windows (the page owns where it is stored). */
   open: boolean;
   setOpen: (open: boolean) => void;
+  /** Remembered width (the page owns where it is stored); without it the shell's default. */
+  width?: number;
+  setWidth?: (width: number) => void;
+  /** Closed, the card leaves this rail instead of disappearing. */
+  rail?: RailSpec;
 }
 
 export type Overlay = "none" | "left" | "right";
 
 /** Controls that take focus when a card closes around the focused element (FR-038). */
 export const SHOW_LEFT_ID = "show-side-panel";
-export const SHOW_RIGHT_ID = "show-audio-panel";
+export const SHOW_RIGHT_ID = "show-session-panel";
 export const FOCUS_BUTTON_ID = "focus-mode-button";
 export const LEFT_CARD_ID = "course-panel";
-export const RIGHT_CARD_ID = "workspace-audio-panel";
+export const RIGHT_CARD_ID = "workspace-session-panel";
 
 interface Layout {
   mode: LayoutMode;
@@ -46,6 +66,8 @@ interface Layout {
   rightVisible: boolean;
   toggleRight: () => void;
   showRight: () => void;
+  /** Shell side: whether the right card fits docked now (else it opens as an overlay, 014 FR-010). */
+  setRightDockable: (fits: boolean) => void;
   /** The page lays out the main column itself (the home page's panels): no main card chrome. */
   bareMain: boolean;
   setBareMain: (bare: boolean) => void;
@@ -60,7 +82,7 @@ function within(id: string) {
 
 /**
  * After a card closes around the focused element, focus its reopen control (or the focus button).
- * Some cards close asynchronously (the audio card's state is an account preference), so this
+ * The control may appear a few frames later (the rail mounts after the card unmounts), so this
  * waits up to ~20 frames for the focus to drop and the control to appear.
  */
 function moveFocusAfterClose(fallbackIds: string[], frames = 20) {
@@ -80,11 +102,15 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const [focus, setFocus] = useState(false);
   const [rightCard, setRightCard] = useState<RightCard | null>(null);
   const [bareMain, setBareMain] = useState(false);
+  const [rightDockable, setRightDockable] = useState(true);
 
   useEffect(() => writeLocal("uh.panel.collapsed", leftClosed), [leftClosed]);
   const raw = opened.mode === mode ? opened.overlay : "none";
-  // the overlay of a card that no longer exists is closed
-  const overlay: Overlay = raw === "right" && !rightCard ? "none" : raw;
+  const docked = mode === "docked";
+  // a right card docks when it fits; otherwise it opens over the main card like on narrow windows
+  const rightDocks = docked && rightDockable;
+  // the overlay of a card that no longer exists (or now fits docked) is closed
+  const overlay: Overlay = raw === "right" && (!rightCard || rightDocks) ? "none" : raw;
   const setOverlay = useCallback(
     (o: Overlay | ((prev: Overlay) => Overlay)) =>
       setOpened((prev) => {
@@ -94,9 +120,8 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
     [mode],
   );
 
-  const docked = mode === "docked";
   const leftVisible = !focus && (docked ? !leftClosed : overlay === "left");
-  const rightVisible = !!rightCard && !focus && (docked ? rightCard.open : overlay === "right");
+  const rightVisible = !!rightCard && !focus && (rightDocks ? rightCard.open : overlay === "right");
 
   const toggleFocus = useCallback(() => {
     if (!focus && (within(LEFT_CARD_ID) || within(RIGHT_CARD_ID))) moveFocusAfterClose([FOCUS_BUTTON_ID]);
@@ -121,22 +146,22 @@ export function LayoutProvider({ children }: { children: ReactNode }) {
   const toggleRight = useCallback(() => {
     if (!rightCard) return;
     if (focus) setFocus(false);
-    if (!docked) return setOverlay((o) => (o === "right" ? "none" : "right"));
-    if (rightCard.open && within(RIGHT_CARD_ID)) moveFocusAfterClose([SHOW_RIGHT_ID]);
+    if (!rightDocks) return setOverlay((o) => (o === "right" ? "none" : "right"));
+    if (rightCard.open && within(RIGHT_CARD_ID)) moveFocusAfterClose([SHOW_RIGHT_ID, FOCUS_BUTTON_ID]);
     rightCard.setOpen(!rightCard.open);
-  }, [docked, focus, rightCard, setOverlay]);
+  }, [rightDocks, focus, rightCard, setOverlay]);
 
   const showRight = useCallback(() => {
     if (!rightCard) return;
     if (focus) setFocus(false);
-    if (!docked) setOverlay("right");
+    if (!rightDocks) setOverlay("right");
     else if (!rightCard.open) rightCard.setOpen(true);
-  }, [docked, focus, rightCard, setOverlay]);
+  }, [rightDocks, focus, rightCard, setOverlay]);
 
   const value = useMemo<Layout>(
     () => ({
       mode, leftClosed, overlay, setOverlay, focus, toggleFocus, leftVisible, toggleLeft, showLeft,
-      rightCard, setRightCard, rightVisible, toggleRight, showRight, bareMain, setBareMain,
+      rightCard, setRightCard, rightVisible, toggleRight, showRight, setRightDockable, bareMain, setBareMain,
     }),
     [mode, leftClosed, overlay, setOverlay, focus, toggleFocus, leftVisible, toggleLeft, showLeft, rightCard, rightVisible, toggleRight, showRight, bareMain],
   );
@@ -158,6 +183,7 @@ const OUTSIDE: Layout = {
   rightVisible: false,
   toggleRight: () => {},
   showRight: () => {},
+  setRightDockable: () => {},
   bareMain: false,
   setBareMain: () => {},
 };

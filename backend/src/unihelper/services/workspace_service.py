@@ -4,13 +4,22 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from unihelper.api.errors import validation_error
-from unihelper.models import Document, Note, SessionFolder, UiPreferences, User, WorkspaceState
+from unihelper.models import (
+    Chat,
+    Document,
+    Note,
+    SessionFolder,
+    UiPreferences,
+    User,
+    WorkspaceState,
+)
 from unihelper.services import session_folder_service as sfs
 from unihelper.services.document_service import scope_of
 
@@ -27,18 +36,26 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
 }
 NULLABLE_PREFERENCES = {"last_semester_id"}  # an explicit null clears these
 MAX_TABS = 50
+NEW_CHAT_ID = re.compile(r"new:[0-9a-f-]{8,64}")
 
 
 def _session_items(db: Session, user: User, r: sfs.ResolvedSession) -> dict[str, set[str]]:
-    """Ids that can be open as tabs in this session: its notes and (007) its course's (009: its
-    event series') documents."""
+    """Ids that can be open as tabs in this session: its notes, (007) its course's (009: its
+    event series') documents and (014) its chats."""
     docs = set(db.scalars(scope_of(user, r).documents(user).with_only_columns(Document.id)))
     if r.folder is None:
-        return {"note": set(), "document": docs}
+        return {"note": set(), "document": docs, "chat": set()}
     notes = db.scalars(
         select(Note.id).where(Note.session_folder_id == r.folder.id, Note.user_id == user.id)
     )
-    return {"note": set(notes), "document": docs}
+    chats = db.scalars(
+        select(Chat.id).where(
+            Chat.session_folder_id == r.folder.id,
+            Chat.user_id == user.id,
+            Chat.deleted_at.is_(None),
+        )
+    )
+    return {"note": set(notes), "document": docs, "chat": set(chats)}
 
 
 Tab = dict[str, str]
@@ -49,7 +66,9 @@ def _valid_tabs(tabs: list[Tab], valid: dict[str, set[str]]) -> list[Tab]:
     out: list[Tab] = []
     for t in tabs:
         key = (t.get("kind", ""), t.get("id", ""))
-        if key[1] in valid.get(key[0], set()) and key not in seen:
+        # 014: a new, still empty chat tab has a client id until its first message is sent
+        new_chat = key[0] == "chat" and NEW_CHAT_ID.fullmatch(key[1]) is not None
+        if (new_chat or key[1] in valid.get(key[0], set())) and key not in seen:
             seen.add(key)
             out.append({"kind": key[0], "id": key[1]})
     return out[:MAX_TABS]

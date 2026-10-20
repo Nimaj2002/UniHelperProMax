@@ -13,13 +13,14 @@ from typing import Any
 import httpx
 from sqlalchemy.orm import Session
 
-from unihelper.api.errors import validation_error
-from unihelper.domain.addresses import address_problem, parse_address
+from unihelper.api.errors import ApiError, validation_error
+from unihelper.domain.addresses import LOCALHOST_HINT, address_problem, is_loopback
 from unihelper.models import ProviderConfig, TranscriptionSettings, User
 from unihelper.models.base import now_iso
 from unihelper.schemas.settings import ConnectionTest, TranscriptionSettingsSave
+from unihelper.secrets import store as secret_store
 from unihelper.transcription.base import ProviderError, ProviderSpec
-from unihelper.transcription.config import JobConfig
+from unihelper.transcription.config import OWNER_KIND, JobConfig, saved_key
 from unihelper.transcription.openai_client import test_reason
 from unihelper.transcription.providers import SPECS, all_specs, build
 
@@ -38,18 +39,6 @@ TEST_MESSAGES = {
     ),
     "unknown": "The test failed for an unknown reason.",
 }
-
-
-LOCALHOST_HINT = (
-    "“localhost” means the computer the UniHelperProMax server runs on. If the transcription "
-    "server runs elsewhere — for example on Windows while UniHelperProMax runs in WSL or "
-    "Docker — use that machine's address, or make it reachable from there."
-)
-
-
-def _loopback(address: str) -> bool:
-    parsed = parse_address(address)
-    return parsed is not None and parsed.host in ("localhost", "127.0.0.1", "::1", "[::1]")
 
 
 def _secret_field(spec: ProviderSpec) -> str | None:
@@ -79,17 +68,19 @@ def view(db: Session, user: User) -> dict[str, Any]:
     for spec in all_specs():
         row = db.get(ProviderConfig, (user.id, spec.id))
         values = _values(row, spec)
-        secret = row.secret if row else None
+        configured = bool(row and (row.secret or row.secret_id))
+        secret = saved_key(db, row)
         status = row.test_status if row else "not_tested"
-        if not _complete(spec, values, bool(secret)):
+        if not _complete(spec, values, configured):
             status = "not_configured"
         providers.append(
             {
                 "provider_id": spec.id,
                 "values": values,
                 "secret": {
-                    "configured": bool(secret),
+                    "configured": configured,
                     "last4": secret[-4:] if secret and len(secret) >= 8 else None,
+                    "readable": not configured or secret is not None,  # 014
                 },
                 "status": status,
                 "last_error": row.test_error if row and status == "failed" else None,
@@ -145,23 +136,45 @@ def save(
     if row is None:
         row = ProviderConfig(user_id=user.id, provider_id=spec.id, values_json="{}")
         db.add(row)
-    secret = row.secret
+    old_secret = saved_key(db, row)
+    has_secret = bool(row.secret or row.secret_id)
+    secret = old_secret
     if _secret_field(spec) and key_given:
         new_key = (body.provider.api_key or "").strip() or None
         if body.provider.api_key is not None and new_key is None:
             raise validation_error("/provider/apiKey", "field_required", "Enter the API key.")
-        secret = new_key
-    _check_address(values, bool(secret), "/provider/values")
-    if values != _values(row, spec) or secret != row.secret:
+        secret, has_secret = new_key, new_key is not None
+    _check_address(values, has_secret, "/provider/values")
+    if values != _values(row, spec) or secret != old_secret:
         row.test_status, row.test_error, row.tested_at = "not_tested", None, None
     row.values_json = json.dumps(values)
-    row.secret = secret
+    if _secret_field(spec) and key_given:
+        _store_key(db, row, secret)
     settings = db.get(TranscriptionSettings, user.id) or TranscriptionSettings(user_id=user.id)
     settings.active_provider_id = body.active_provider_id
     settings.default_language = body.default_language
     db.add(settings)
     db.flush()
     return view(db, user)
+
+
+def _store_key(db: Session, row: ProviderConfig, key: str | None) -> None:
+    """014: keys go into the encrypted secret store; the plaintext column stays empty."""
+    store = secret_store.current()
+    row.secret = None
+    if key is None:
+        store.remove(db, row.user_id, OWNER_KIND, row.provider_id)
+        row.secret_id = None
+        return
+    try:
+        row.secret_id = store.put(db, row.user_id, OWNER_KIND, row.provider_id, key)
+    except secret_store.KeyUnreadable as exc:
+        raise ApiError(
+            409,
+            "key_store_unreadable",
+            "Saved keys can't be read on this computer.",
+            "Start a new key store in Settings, then enter the key again.",
+        ) from exc
 
 
 async def test(
@@ -172,7 +185,7 @@ async def test(
     row = db.get(ProviderConfig, (user.id, spec.id))
     key = body.api_key.strip() if body.api_key else None
     if key is None and body.use_saved_key and row is not None:
-        key = row.secret
+        key = saved_key(db, row)
     _check_address(values, bool(key), "/values")
     try:
         async with httpx.AsyncClient(transport=transport) as http:
@@ -184,10 +197,10 @@ async def test(
     except ProviderError as err:
         reason = test_reason(err)
         result = {"ok": False, "category": reason, "message": TEST_MESSAGES[reason]}
-        if reason == "unreachable" and _loopback(values.get("address", "")):
+        if reason == "unreachable" and is_loopback(values.get("address", "")):
             result["message"] += " " + LOCALHOST_HINT
     # remember the result when exactly the saved settings were tested
-    if row is not None and values == _values(row, spec) and key == row.secret:
+    if row is not None and values == _values(row, spec) and key == saved_key(db, row):
         row.test_status = "connected" if result["ok"] else "failed"
         row.test_error = result["message"]
         row.tested_at = now_iso()

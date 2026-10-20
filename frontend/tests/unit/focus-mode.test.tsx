@@ -1,21 +1,25 @@
 import { act, fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { Waveform } from "@phosphor-icons/react";
 import { useMemo, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppShell } from "@/app/shell/AppShell";
 import { useLayout, useRightCard } from "@/app/shell/layout";
 import { FocusModeButton } from "@/app/shell/MainBarControls";
+import { registerActivity } from "@/app/shell/registry";
 import { json, mockFetch, on, renderRoutes } from "./test-utils";
 
 const setOpenSpy = vi.fn();
 
-/** A page with an audio card whose open state it owns, like the session workspace. */
+/** A page with a session panel whose open state it owns, like the session workspace. */
 function Page() {
   const [open, setOpen] = useState(true);
   const card = useMemo(
     () => ({
-      header: <h2>Audio</h2>,
+      label: "Session panel",
+      header: <h2>Recordings</h2>,
       body: <p>recordings</p>,
+      rail: { label: "Session panel rail", reopenLabel: "Show session panel", items: [{ id: "recordings", icon: Waveform, name: "Recordings", onActivate: () => {} }] },
       open,
       setOpen: (o: boolean) => {
         setOpenSpy(o);
@@ -38,6 +42,8 @@ function Page() {
 }
 
 function wide(matches: boolean) {
+  // the session panel docks only where it fits next to a 480 px main card (014 FR-008)
+  vi.stubGlobal("innerWidth", matches ? 1366 : 1000);
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query.includes("1100") ? matches : false,
     media: query,
@@ -52,7 +58,8 @@ function render() {
 }
 
 const side = () => screen.queryByRole("complementary", { name: "Side panel" });
-const audio = () => screen.queryByRole("complementary", { name: "Audio" });
+const audio = () => screen.queryByRole("complementary", { name: "Session panel" });
+const audioRail = () => screen.queryByRole("navigation", { name: "Session panel rail" });
 const rail = () => screen.queryByRole("button", { name: "Show side panel" });
 
 beforeEach(() => {
@@ -127,6 +134,30 @@ describe("focus mode (008 US4)", () => {
     expect(side()).not.toBeNull();
   });
 
+  it("hides the session panel and its rail but keeps the activity pills (014 FR-011)", async () => {
+    const unregister = registerActivity({ id: "test-pill", component: () => <div role="region" aria-label="Recording">Recording 00:05</div> });
+    try {
+      render();
+      await screen.findByRole("button", { name: "Enter focus mode" });
+      const pill = () => screen.queryByRole("region", { name: "Recording" });
+      expect(pill()).not.toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "toggle audio" }));
+      expect(audio()).toBeNull();
+      expect(audioRail()).not.toBeNull();
+
+      fireEvent.keyDown(document.body, { key: "\\" });
+      expect(audio()).toBeNull();
+      expect(audioRail()).toBeNull();
+      expect(pill()).not.toBeNull();
+      expect(screen.getByRole("region", { name: "Activity" })).toContainElement(pill());
+
+      fireEvent.keyDown(document.body, { key: "\\" });
+      expect(audioRail()).not.toBeNull();
+    } finally {
+      unregister();
+    }
+  });
+
   it("starts with both side cards closed on narrow windows", async () => {
     wide(false);
     render();
@@ -134,5 +165,7 @@ describe("focus mode (008 US4)", () => {
     await act(async () => {});
     expect(side()).toBeNull();
     expect(audio()).toBeNull();
+    // the session panel's rail stays on the right edge (014 FR-010)
+    expect(audioRail()).not.toBeNull();
   });
 });

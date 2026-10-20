@@ -11,6 +11,7 @@ from unihelper.schemas.transcription import LANGUAGE
 class SecretState(ApiModel):
     configured: bool
     last4: str | None
+    readable: bool = True  # 014: false when the secret store can't decrypt it
 
 
 class ProviderSettings(ApiModel):

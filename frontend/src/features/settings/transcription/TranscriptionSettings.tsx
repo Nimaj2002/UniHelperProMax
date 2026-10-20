@@ -13,8 +13,9 @@ import {
   saveTranscriptionSettings, testConnection, transcriptionSettingsKey, useProviders, useTranscriptionSettings,
   type ConnectionTestResult, type ProviderSettings, type ProviderSpec, type TranscriptionSettings,
 } from "../api";
+import { KeyField, initialKeyDraft, keyPayload as draftPayload, type KeyDraft } from "../KeyField";
+import { KeyProtectionNotice } from "../KeyProtectionNotice";
 
-type KeyState = { mode: "saved" | "replace" | "remove"; value: string };
 const STATUS_TEXT: Record<ProviderSettings["status"], string> = {
   not_configured: "Not configured",
   not_tested: "Not tested",
@@ -41,8 +42,8 @@ function TranscriptionForm({ specs, saved }: { specs: ProviderSpec[]; saved: Tra
   const [values, setValues] = useState<Record<string, Record<string, string>>>(() =>
     Object.fromEntries(specs.map((s) => [s.id, { ...(savedOf(s.id)?.values ?? {}) }])),
   );
-  const [keys, setKeys] = useState<Record<string, KeyState>>(() =>
-    Object.fromEntries(specs.map((s) => [s.id, { mode: savedOf(s.id)?.secret.configured ? "saved" : "replace", value: "" }])),
+  const [keys, setKeys] = useState<Record<string, KeyDraft>>(() =>
+    Object.fromEntries(specs.map((s) => [s.id, initialKeyDraft(savedOf(s.id)?.secret)])),
   );
   const [language, setLanguage] = useState(saved.defaultLanguage);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -63,7 +64,7 @@ function TranscriptionForm({ specs, saved }: { specs: ProviderSpec[]; saved: Tra
     edited();
     setValues((all) => ({ ...all, [spec.id]: { ...all[spec.id], [k]: v } }));
   };
-  const setKey = (next: KeyState) => {
+  const setKey = (next: KeyDraft) => {
     edited();
     setKeys((all) => ({ ...all, [spec.id]: next }));
   };
@@ -81,12 +82,7 @@ function TranscriptionForm({ specs, saved }: { specs: ProviderSpec[]; saved: Tra
   };
 
   const apiKeyField = spec.fields.find((f) => f.kind === "secret");
-  const keyPayload = (): { apiKey?: string | null } => {
-    if (!apiKeyField) return {};
-    if (key.mode === "remove") return { apiKey: null };
-    if (key.mode === "replace" && key.value.trim()) return { apiKey: key.value.trim() };
-    return {};
-  };
+  const keyPayload = (): { apiKey?: string | null } => (apiKeyField ? draftPayload(key) : {});
 
   const runTest = async () => {
     setTesting(true);
@@ -123,7 +119,7 @@ function TranscriptionForm({ specs, saved }: { specs: ProviderSpec[]; saved: Tra
       qc.setQueryData(transcriptionSettingsKey, next);
       void qc.invalidateQueries({ queryKey: ["transcription", "status"] });
       const after = next.providers.find((p) => p.providerId === spec.id);
-      setKeys((all) => ({ ...all, [spec.id]: { mode: after?.secret.configured ? "saved" : "replace", value: "" } }));
+      setKeys((all) => ({ ...all, [spec.id]: initialKeyDraft(after?.secret) }));
       toast.success("Transcription settings saved.");
     } catch (err) {
       setErrors(fieldErrors(err));
@@ -140,6 +136,8 @@ function TranscriptionForm({ specs, saved }: { specs: ProviderSpec[]; saved: Tra
         <h2 className="text-lg font-semibold">Transcription</h2>
         <p className="text-sm text-muted-foreground">Recordings are transcribed by the provider you choose here. Your settings are only used for your account.</p>
       </header>
+
+      <KeyProtectionNotice />
 
       <fieldset className="grid gap-2">
         <legend className="mb-1 text-sm font-medium">Provider</legend>
@@ -169,40 +167,17 @@ function TranscriptionForm({ specs, saved }: { specs: ProviderSpec[]; saved: Tra
       <div className="grid gap-4">
         {spec.fields.map((f) =>
           f.kind === "secret" ? (
-            <div key={f.key} className="grid gap-2">
-              <Label htmlFor={`field-${f.key}`}>{f.label}</Label>
-              {key.mode === "saved" && current?.secret.configured ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <code className="rounded-md border border-divider bg-surface-sunken px-2 py-1.5 font-mono text-sm" aria-label={`Saved API key ending in ${current.secret.last4 ?? "…"}`}>
-                    ••••••••{current.secret.last4 ?? ""}
-                  </code>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setKey({ mode: "replace", value: "" })}>Replace</Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => setKey({ mode: "remove", value: "" })}>Remove</Button>
-                </div>
-              ) : key.mode === "remove" ? (
-                <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <span>The saved key will be removed when you save.</span>
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setKey({ mode: "saved", value: "" })}>Undo</Button>
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Input
-                    id={`field-${f.key}`}
-                    type="password"
-                    autoComplete="off"
-                    className="max-w-sm"
-                    value={key.value}
-                    onChange={(e) => setKey({ mode: "replace", value: e.target.value })}
-                    aria-invalid={errors.apiKey ? true : undefined}
-                    aria-describedby={errors.apiKey ? `error-${f.key}` : undefined}
-                  />
-                  {current?.secret.configured && (
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setKey({ mode: "saved", value: "" })}>Keep saved key</Button>
-                  )}
-                </div>
-              )}
-              {errors.apiKey && <p id={`error-${f.key}`} className="text-sm text-danger">{errors.apiKey}</p>}
-            </div>
+            <KeyField
+              key={f.key}
+              id={`field-${f.key}`}
+              label={f.label}
+              saved={current && { ...current.secret, masked: `••••••••${current.secret.last4 ?? ""}` }}
+              maskedLabel={`Saved API key ending in ${current?.secret.last4 ?? "…"}`}
+              draft={key}
+              onChange={setKey}
+              error={errors.apiKey}
+              errorId={`error-${f.key}`}
+            />
           ) : (
             <div key={f.key} className="grid gap-2">
               <Label htmlFor={`field-${f.key}`}>

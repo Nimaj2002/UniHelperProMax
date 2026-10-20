@@ -1,3 +1,4 @@
+import { SidebarSimple } from "@phosphor-icons/react";
 import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { Outlet } from "react-router";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
@@ -12,13 +13,12 @@ import { LeftCard } from "./LeftCard";
 import { PanelSectionProvider } from "./panelSection";
 import { Rail } from "./Rail";
 import { useGlobalHosts } from "./registry";
+import { SideRail } from "./SideRail";
 import {
   clampLeft, clampRight, GAP, LEFT_DEFAULT, LEFT_MAX, LEFT_MIN, layoutWidths, RIGHT_DEFAULT, RIGHT_MAX, RIGHT_MIN,
 } from "./widths";
 
 const LEFT_WIDTH_KEY = "uh.panel.width";
-/** The audio card's width (same key as before 008: a per-browser layout convenience). */
-const RIGHT_WIDTH_KEY = "uh.workspace.rightWidth";
 
 function GlobalHosts() {
   const hosts = useGlobalHosts();
@@ -51,9 +51,37 @@ function focusWhenMounted(id: string, frames = 12) {
 
 function RightCardView({ card, className }: { card: RightCard; className?: string }) {
   return (
-    <Card as="aside" id={RIGHT_CARD_ID} label="Audio" header={card.header} className={cn("h-full", className)}>
+    <Card as="aside" id={RIGHT_CARD_ID} label={card.label} header={card.header} body={card.header ? "scroll" : "fill"} className={cn("h-full", className)}>
       {card.body}
     </Card>
+  );
+}
+
+/** The closed right card's rail (014 FR-005): reopen, then one item per section. */
+function RightRail({ card, onOpen }: { card: RightCard; onOpen: () => void }) {
+  const rail = card.rail!;
+  return (
+    <SideRail
+      side="right"
+      label={rail.label}
+      reopen={{
+        id: SHOW_RIGHT_ID,
+        label: rail.reopenLabel,
+        shortcut: "Alt+BracketRight",
+        shortcutHint: "Alt+]",
+        icon: SidebarSimple,
+        mirrored: true,
+        controls: RIGHT_CARD_ID,
+        onActivate: onOpen,
+      }}
+      items={rail.items.map((item) => ({
+        ...item,
+        onActivate: () => {
+          item.onActivate();
+          onOpen();
+        },
+      }))}
+    />
   );
 }
 
@@ -81,12 +109,14 @@ const OVERLAY_CARD =
 
 function Shell() {
   const layout = useLayout();
-  const { mode, focus, leftClosed, overlay, setOverlay, rightCard, toggleLeft, showLeft, toggleFocus, bareMain } = layout;
+  const { mode, focus, leftClosed, overlay, setOverlay, rightCard, toggleLeft, showLeft, showRight, toggleFocus, bareMain, setRightDockable } = layout;
   const viewport = useViewportWidth();
   const [leftWidth, setLeftWidth] = useState(() => clampLeft(readLocal(LEFT_WIDTH_KEY, LEFT_DEFAULT)));
-  const [rightWidth, setRightWidth] = useState(() => clampRight(readLocal(RIGHT_WIDTH_KEY, RIGHT_DEFAULT)));
+  // the page remembers its right card's width (014: the session panel's layout); else the default
+  const [ownRightWidth, setOwnRightWidth] = useState(RIGHT_DEFAULT);
+  const rightWidth = rightCard?.width ?? ownRightWidth;
+  const setRightWidth = rightCard?.setWidth ?? setOwnRightWidth;
   useEffect(() => writeLocal(LEFT_WIDTH_KEY, leftWidth), [leftWidth]);
-  useEffect(() => writeLocal(RIGHT_WIDTH_KEY, rightWidth), [rightWidth]);
   const grid = useRef<HTMLDivElement>(null);
 
   const widths = layoutWidths({
@@ -98,7 +128,10 @@ function Shell() {
     rightPresent: !!rightCard,
     rightClosed: !rightCard?.open,
     rightWidth,
+    rightHasRail: !!rightCard?.rail,
   });
+  // a right card that doesn't fit docked opens over the main card (014 FR-010)
+  useEffect(() => setRightDockable(widths.rightFits), [widths.rightFits, setRightDockable]);
 
   // the window never scrolls; each card scrolls its own content (FR-004)
   useEffect(() => {
@@ -131,6 +164,7 @@ function Shell() {
   };
   const leftShown = widths.leftEff > 0;
   const rightShown = widths.rightEff > 0 && !!rightCard;
+  const rightRail = rightShown && widths.rightRail && !!rightCard?.rail;
   const leftOpen = leftShown && !leftClosed;
 
   return (
@@ -185,10 +219,15 @@ function Shell() {
         </Card>
 
         <div className="relative min-h-0 min-w-0 overflow-hidden">
-          {rightShown && rightCard && (
+          {rightRail && rightCard && (
+            <div className="ml-auto h-full" style={{ width: "var(--right-eff)" }}>
+              <RightRail card={rightCard} onOpen={showRight} />
+            </div>
+          )}
+          {rightShown && !rightRail && rightCard && (
             <>
               <PanelResizeHandle
-                value={clampRight(rightWidth)}
+                value={clampRight(rightWidth, viewport)}
                 min={RIGHT_MIN}
                 max={RIGHT_MAX}
                 limit={() => widths.rightLimit}
@@ -202,7 +241,7 @@ function Shell() {
                   grid.current?.style.setProperty("--right-eff", `${w}px`);
                 }}
                 grow="left"
-                label="Resize audio panel"
+                label={`Resize ${rightCard.label.toLowerCase()}`}
                 controls={RIGHT_CARD_ID}
                 className="left-1"
               />
@@ -225,16 +264,17 @@ function Shell() {
               <LeftCard onNavigate={() => setOverlay("none")} />
             </SheetContent>
           </Sheet>
-          {rightCard && (
-            <Sheet open={overlay === "right"} onOpenChange={(o) => !o && setOverlay("none")}>
-              <SheetContent side="right" showCloseButton={false} onOpenAutoFocus={focusSheet} onCloseAutoFocus={returnFocus(SHOW_RIGHT_ID)} className={cn(OVERLAY_CARD, "right-2")} style={{ width: `min(${clampRight(rightWidth)}px, calc(100vw - 1rem))` }}>
-                <SheetTitle className="sr-only">Audio</SheetTitle>
-                <SheetDescription className="sr-only">Record, play and transcribe this session's audio</SheetDescription>
-                <RightCardView card={rightCard} />
-              </SheetContent>
-            </Sheet>
-          )}
         </>
+      )}
+      {/* narrow windows, or no room to dock it: the right card opens over the main card */}
+      {rightCard && (
+        <Sheet open={overlay === "right"} onOpenChange={(o) => !o && setOverlay("none")}>
+          <SheetContent side="right" showCloseButton={false} onOpenAutoFocus={focusSheet} onCloseAutoFocus={returnFocus(SHOW_RIGHT_ID)} className={cn(OVERLAY_CARD, "right-2")} style={{ width: `min(${clampRight(rightWidth)}px, calc(100vw - 1rem))` }}>
+            <SheetTitle className="sr-only">{rightCard.label}</SheetTitle>
+            <SheetDescription className="sr-only">{rightCard.description ?? rightCard.label}</SheetDescription>
+            <RightCardView card={rightCard} />
+          </SheetContent>
+        </Sheet>
       )}
     </PanelSectionProvider>
   );
@@ -242,7 +282,7 @@ function Shell() {
 
 /**
  * The app as floating cards on the theme's background (008): side panel | page | the page's right
- * card (the session's audio), with the page's activity floating over the main card.
+ * card (the session panel, or its rail), with the page's activity floating over the main card.
  */
 export function AppShell() {
   return (

@@ -65,7 +65,7 @@ def test_defaults_and_voice_studio(owner_client: TestClient) -> None:
     assert by_id(saved, "voice-studio") | {"testedAt": None} == {
         "providerId": "voice-studio",
         "values": {"address": "http://fake"},
-        "secret": {"configured": False, "last4": None},
+        "secret": {"configured": False, "last4": None, "readable": True},  # 014: + readable
         "status": "not_tested",
         "lastError": None,
         "testedAt": None,
@@ -185,7 +185,8 @@ def test_keys_are_never_returned(
     assert KEY not in r.text
     saved = by_id(r.json(), "openai-compatible")
     assert (
-        saved["secret"] == {"configured": True, "last4": "abcd"} and saved["status"] == "not_tested"
+        saved["secret"] == {"configured": True, "last4": "abcd", "readable": True}
+        and saved["status"] == "not_tested"
     )
     got = c.get(URL)
     assert KEY not in got.text
@@ -227,7 +228,7 @@ def test_keys_are_never_returned(
     r = c.put(URL, json=oa(apiKey=None))
     removed = by_id(r.json(), "openai-compatible")
     assert (
-        removed["secret"] == {"configured": False, "last4": None}
+        removed["secret"] == {"configured": False, "last4": None, "readable": True}
         and removed["status"] == "not_configured"
     )
     assert c.get(f"{API}/transcription/status").json()["configured"] is False

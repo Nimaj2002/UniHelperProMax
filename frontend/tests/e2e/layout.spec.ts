@@ -4,16 +4,10 @@
  */
 import { expect, test } from "@playwright/test";
 import { tag } from "./helpers";
-import { audioCard, box, mainCard, openSession, radius, sidePanel, VIEWPORT, windowScrolls } from "./layout-helpers";
+import { box, mainCard, openSession, radius, sessionPanel, sessionRail, sidePanel, VIEWPORT, windowScrolls } from "./layout-helpers";
 import { editor, newNote } from "./notes-helpers";
 
 test.use({ viewport: VIEWPORT });
-
-// the audio card's open state is an account preference shared by every spec: leave it open
-test.afterEach(async ({ page }) => {
-  const csrf = (await page.context().cookies()).find((c) => c.name === "uh_csrf")?.value;
-  if (csrf) await page.request.patch("/api/v1/preferences", { data: { workspaceRightCollapsed: false }, headers: { "X-CSRF-Token": csrf } }).catch(() => undefined);
-});
 
 test("US1: the session workspace is three floating cards with one 40 px tab row", async ({ page }, testInfo) => {
   const t = tag(testInfo.project.name);
@@ -21,7 +15,7 @@ test("US1: the session workspace is three floating cards with one 40 px tab row"
 
   const left = sidePanel(page);
   const main = mainCard(page);
-  const audio = audioCard(page);
+  const audio = sessionPanel(page);
   for (const card of [left, main, audio]) {
     await expect(card).toBeVisible();
     expect(await radius(card)).toBeGreaterThanOrEqual(13);
@@ -81,10 +75,10 @@ test("US1: the session workspace is three floating cards with one 40 px tab row"
   expect(await state.evaluate((el) => getComputedStyle(el).position)).toBe("absolute");
   expect((await box(editor(page))).y).toBe(firstLine.y);
 
-  // audio card: header with title, Record and close; recordings below
-  await expect(audio.getByRole("heading", { name: "Audio" })).toBeVisible();
+  // session panel: the Recordings header with its title, Record and close; recordings below
+  await expect(audio.getByRole("button", { name: "Collapse Recordings" })).toBeVisible();
   await expect(audio.getByRole("button", { name: "Record", exact: true })).toBeVisible();
-  await expect(audio.getByRole("button", { name: "Hide audio panel" })).toBeVisible();
+  await expect(audio.getByRole("button", { name: "Close session panel" })).toBeVisible();
 });
 
 test("US2: side cards close to a rail / tab-row button and come back after a reload", async ({ page }, testInfo) => {
@@ -102,22 +96,22 @@ test("US2: side cards close to a rail / tab-row button and come back after a rel
   await expect(rail.getByRole("button", { name: "Settings" })).toBeVisible();
 
   const mainBefore = (await box(mainCard(page))).width;
-  await audioCard(page).getByRole("button", { name: "Hide audio panel" }).click();
-  await expect(audioCard(page)).toHaveCount(0);
-  const reopen = mainCard(page).getByRole("button", { name: "Show audio panel" });
+  await sessionPanel(page).getByRole("button", { name: "Close session panel" }).click();
+  await expect(sessionPanel(page)).toHaveCount(0);
+  const reopen = sessionRail(page).getByRole("button", { name: "Show session panel" });
   await expect(reopen).toBeFocused();
   await expect.poll(async () => (await box(mainCard(page))).width).toBeGreaterThan(mainBefore);
 
   await page.goto(url);
   await expect(sidePanel(page).getByRole("button", { name: "Show side panel" })).toBeVisible();
-  await expect(mainCard(page).getByRole("button", { name: "Show audio panel" })).toBeVisible();
+  await expect(sessionRail(page).getByRole("button", { name: "Show session panel" })).toBeVisible();
 
   // keyboard: [ and Alt+] bring them back
-  await mainCard(page).getByRole("button", { name: "Show audio panel" }).focus();
+  await sessionRail(page).getByRole("button", { name: "Show session panel" }).focus();
   await page.keyboard.press("[");
   await expect(sidePanel(page).getByRole("searchbox", { name: "Search courses" })).toBeVisible();
   await page.keyboard.press("Alt+BracketRight");
-  await expect(audioCard(page)).toBeVisible();
+  await expect(sessionPanel(page)).toBeVisible();
 
   // reduced motion: no transition
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -130,10 +124,10 @@ test("US2: side cards close to a rail / tab-row button and come back after a rel
 test("US2: the closed audio card's button shows a recording in progress", async ({ page }, testInfo) => {
   const t = tag(testInfo.project.name);
   await openSession(page, `IND${t} 101`);
-  await audioCard(page).getByRole("button", { name: "Record", exact: true }).click();
+  await sessionPanel(page).getByRole("button", { name: "Record", exact: true }).click();
   await expect(page.getByRole("region", { name: "Recording", exact: true })).toBeVisible();
-  await audioCard(page).getByRole("button", { name: "Hide audio panel" }).click();
-  const reopen = mainCard(page).getByRole("button", { name: "Show audio panel, recording in progress" });
+  await sessionPanel(page).getByRole("button", { name: "Close session panel" }).click();
+  const reopen = sessionRail(page).getByRole("button", { name: "Recordings, recording in progress" });
   await expect(reopen).toBeVisible();
   await expect(reopen.locator("[data-indicator=recording]")).toBeVisible();
 
@@ -166,14 +160,14 @@ test("US3: the calendar and a course page live in the main card", async ({ page 
   for (const name of ["Today", /^Previous/, /^Next/, "New class"]) await expect(main.getByRole("button", { name, exact: typeof name === "string" })).toBeVisible();
   for (const name of ["Day view", "Week view", "Month view"]) await expect(main.getByRole("radio", { name, exact: true }).or(main.getByRole("button", { name, exact: true }))).toBeVisible();
   await expect(main.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(audioCard(page)).toHaveCount(0);
+  await expect(sessionPanel(page)).toHaveCount(0);
   await main.getByRole("button", { name: "New class", exact: true }).click();
   await expect(page.getByRole("dialog", { name: /New class/ })).toBeVisible();
   await page.keyboard.press("Escape");
 
   await page.goto(`/courses/${courseId}`);
   await expect(main.getByRole("heading", { name: `CAL${t} 101` })).toBeVisible();
-  await expect(audioCard(page)).toHaveCount(0);
+  await expect(sessionPanel(page)).toHaveCount(0);
   expect(await windowScrolls(page)).toBe(false);
 });
 
@@ -184,22 +178,22 @@ test("US4: focus mode hides both side cards and restores them exactly", async ({
 
   for (const [closeLeft, closeRight] of [[false, false], [true, false], [false, true], [true, true]] as const) {
     if (closeLeft) await sidePanel(page).getByRole("button", { name: "Hide side panel" }).click();
-    if (closeRight) await audioCard(page).getByRole("button", { name: "Hide audio panel" }).click();
+    if (closeRight) await sessionPanel(page).getByRole("button", { name: "Close session panel" }).click();
     const leftWidth = Math.round((await box(sidePanel(page))).width);
 
     await mainCard(page).getByRole("tablist").getByRole("tab").first().focus();
     await page.keyboard.press("\\");
     await expect(sidePanel(page)).toHaveCount(0);
-    await expect(audioCard(page)).toHaveCount(0);
+    await expect(sessionPanel(page)).toHaveCount(0);
     await expect(focusButton()).toHaveAttribute("aria-pressed", "true");
     await focusButton().click();
     await expect(focusButton()).toHaveAttribute("aria-pressed", "false");
     await expect.poll(async () => Math.round((await box(sidePanel(page))).width)).toBe(leftWidth);
-    await expect(audioCard(page)).toHaveCount(closeRight ? 0 : 1);
+    await expect(sessionPanel(page)).toHaveCount(closeRight ? 0 : 1);
 
     // back to both open
     if (closeLeft) await sidePanel(page).getByRole("button", { name: "Show side panel" }).click();
-    if (closeRight) await mainCard(page).getByRole("button", { name: "Show audio panel" }).click();
+    if (closeRight) await sessionRail(page).getByRole("button", { name: "Show session panel" }).click();
   }
 
   // typing "\" in a note inserts it
@@ -245,7 +239,9 @@ test("US7: narrow windows open the side cards over the main card", async ({ page
   await page.setViewportSize({ width: 1000, height: 700 });
   await page.goto(url);
   await expect(sidePanel(page)).toHaveCount(0);
-  await expect(audioCard(page)).toHaveCount(0);
+  await expect(sessionPanel(page)).toHaveCount(0);
+  // 014: the session panel starts closed to its rail on the right edge
+  await expect(sessionRail(page)).toBeVisible();
   // an open overlay is modal (the page behind it is hidden from assistive tech): measure by id
   const main = page.locator("#main");
   const before = await box(main);
@@ -262,19 +258,19 @@ test("US7: narrow windows open the side cards over the main card", async ({ page
   await expect(show).toBeFocused();
 
   await page.keyboard.press("Alt+BracketRight");
-  await expect(audioCard(page)).toBeVisible();
+  await expect(sessionPanel(page)).toBeVisible();
   expect(await box(main)).toEqual(before);
   await page.keyboard.press("Escape");
-  await expect(audioCard(page)).toHaveCount(0);
+  await expect(sessionPanel(page)).toHaveCount(0);
 
   // back to a wide window: the remembered docked layout returns
   await page.setViewportSize(VIEWPORT);
   await expect(sidePanel(page)).toBeVisible();
-  await expect(audioCard(page)).toBeVisible();
+  await expect(sessionPanel(page)).toBeVisible();
 
   // 1100 px with both cards at their widest: the main card keeps 480 px
   await page.setViewportSize({ width: 1100, height: 768 });
-  for (const name of ["Resize course panel", "Resize audio panel"]) {
+  for (const name of ["Resize course panel", "Resize session panel"]) {
     await page.getByRole("separator", { name }).focus();
     await page.keyboard.press("End");
   }
@@ -342,12 +338,12 @@ test("SC-002: every action from before the redesign is still reachable by keyboa
   await expect(page.getByRole("dialog").getByRole("link", { name: `INV${t} 101` })).toBeVisible();
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 1600, height: 900 });
-  await audioCard(page).getByRole("button", { name: "Hide audio panel" }).click();
+  await sessionPanel(page).getByRole("button", { name: "Close session panel" }).click();
   await newNote(page, "Second"); // split view shows two tabs side by side
   await page.keyboard.press("Alt+Backslash");
   await expect(main.getByRole("button", { name: "Split" })).toHaveAttribute("aria-pressed", "true");
   await main.getByRole("button", { name: "Split" }).click();
   await expect(main.getByRole("button", { name: "Split" })).toHaveAttribute("aria-pressed", "false");
   await page.keyboard.press("Alt+BracketRight");
-  await expect(audioCard(page)).toBeVisible();
+  await expect(sessionPanel(page)).toBeVisible();
 });

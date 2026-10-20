@@ -26,7 +26,7 @@ function list(parts: string[]) {
   return parts.length <= 1 ? parts.join("") : `${parts.slice(0, -1).join(", ")} and ${parts[parts.length - 1]}`;
 }
 
-/** "This will move 1 event with 2 notes, 1 recording and 1 document to the Trash. You can
+/** "This will move 1 event with 2 notes, 1 recording, 1 document and 2 chats to the Trash. You can
  * restore it from Settings → Trash." — counts left out when 0 (009 FR-021, R7). Linked tasks
  * (012 FR-043) are named only when they go with the events (`linkedTasks` "delete"). */
 export function trashSentence(
@@ -43,10 +43,20 @@ export function trashSentence(
     impact.notes ? plural(impact.notes, "note") : "",
     impact.recordings ? plural(impact.recordings, "recording") : "",
     impact.documents ? plural(impact.documents, "document") : "",
+    // 014 FR-051: the session's chats go with it
+    impact.chats ? plural(impact.chats, "chat") : "",
     linkedTasks === "delete" && impact.linkedTaskCount ? plural(impact.linkedTaskCount, "linked task") : "",
   ].filter(Boolean);
   const it = n === 1 ? "it" : "them";
   return `This will move ${what}${content.length ? ` with ${list(content)}` : ""} to the Trash. You can restore ${it} from Settings → Trash.`;
+}
+
+/** "Chats: Exam topics, Week 3 and 2 more." — the session's newest chat titles (014 R15). */
+export function chatTitlesSentence(impact: Pick<SessionDeletionImpact, "chats" | "chatTitles">): string {
+  const titles = impact.chatTitles ?? [];
+  if (!impact.chats || !titles.length) return "";
+  const more = impact.chats - titles.length;
+  return `Chats: ${more > 0 ? `${titles.join(", ")} and ${more} more` : list(titles)}.`;
 }
 
 function title(s: Session, scope: Scope): string {
@@ -125,7 +135,10 @@ export function DeleteSessionFlow() {
             <div className="grid gap-2">
               <p>{consequence(s, chosen!)}</p>
               {impact.data ? (
-                <p>{trashSentence(s, impact.data, linkedTasks)}</p>
+                <>
+                  <p>{trashSentence(s, impact.data, linkedTasks)}</p>
+                  {chatTitlesSentence(impact.data) && <p className="break-words">{chatTitlesSentence(impact.data)}</p>}
+                </>
               ) : impact.isError ? null : (
                 <p role="status">Checking what this contains…</p>
               )}

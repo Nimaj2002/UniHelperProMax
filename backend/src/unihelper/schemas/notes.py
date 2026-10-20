@@ -74,7 +74,7 @@ class Timeline(ApiModel):
 
 
 class TabRef(ApiModel):
-    kind: Literal["note", "document"]
+    kind: Literal["note", "document", "chat"]  # 014: chat tabs
     id: str = Field(min_length=1, max_length=64)
 
 

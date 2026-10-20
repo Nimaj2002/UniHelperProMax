@@ -2,7 +2,8 @@
 
 Only this module touches `transcription_settings`/`provider_configs` on the 004 side. The API key
 is never returned from here except through `read_secret`, which the worker calls right before a
-provider request.
+provider request. 014: keys live encrypted in the shared secret store; the plaintext column is
+read only until the startup migration has moved it (research R8).
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from typing import Any
 from sqlalchemy.orm import Session, sessionmaker
 
 from unihelper.models import ProviderConfig, TranscriptionSettings, User
+from unihelper.secrets import store as secret_store
 from unihelper.transcription.base import ProviderSpec
 from unihelper.transcription.providers import SPECS
 
@@ -64,7 +66,7 @@ def active_provider(db: Session, user: User) -> ActiveProvider | None:
     return ActiveProvider(
         spec=spec,
         values=_values(row),
-        has_secret=bool(row and row.secret),
+        has_secret=bool(row and (row.secret or row.secret_id)),
         default_language=settings.default_language,
     )
 
@@ -79,10 +81,27 @@ def status(db: Session, user: User) -> dict[str, Any]:
     }
 
 
+OWNER_KIND = "transcription_provider"
+
+
+def saved_key(db: Session, row: ProviderConfig | None) -> str | None:
+    """The saved key of a provider, decrypted at the moment of use; None when there is none or
+    it can't be read (a lost key store — the user is asked to enter it again)."""
+    if row is None:
+        return None
+    if row.secret is not None:  # not migrated yet (or the migration failed)
+        return row.secret
+    if row.secret_id is None:
+        return None
+    try:
+        return secret_store.current().reveal(db, row.user_id, OWNER_KIND, row.provider_id)
+    except secret_store.KeyUnreadable:
+        return None
+
+
 def read_secret(maker: sessionmaker[Session], user_id: str, provider_id: str) -> str | None:
     with maker() as db:
-        row = db.get(ProviderConfig, (user_id, provider_id))
-        return row.secret if row else None
+        return saved_key(db, db.get(ProviderConfig, (user_id, provider_id)))
 
 
 @dataclass

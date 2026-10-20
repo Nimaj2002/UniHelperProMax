@@ -93,6 +93,7 @@ if ($Mode -eq 'docker') {
     Ok (docker --version)
 
     New-Item -ItemType Directory -Force -Path (Join-Path $Root 'backend\data') | Out-Null
+    New-Item -ItemType Directory -Force -Path (Join-Path $Root 'keys') | Out-Null  # 014: encryption key for saved API keys
 
     Step 'Building and starting the container (the first build takes a few minutes)'
     Invoke-Checked docker @('compose', 'up', '-d', '--build')

@@ -92,22 +92,36 @@ interface SectionProps {
   /** Small buttons beside the heading (e.g. "New class" beside Courses). */
   actions?: ReactNode;
   className?: string;
+  headerClassName?: string;
+  /**
+   * Name the toggle by its action ("Collapse Recordings" / "Expand Recordings", 014 session
+   * panel). The section is then not a named region (its content names its own regions).
+   */
+  actionNames?: boolean;
 }
 
 /** One collapsible section of the left panel: a header that collapses and expands the body. */
-export function CollapsibleSection({ id, title, collapsed, onToggle, children, bodyRef, bodyClassName, sectionRef, style, handle, actions, className }: SectionProps) {
+export function CollapsibleSection({
+  id, title, collapsed, onToggle, children, bodyRef, bodyClassName, sectionRef, style, handle, actions, className, headerClassName, actionNames,
+}: SectionProps) {
   const headingId = `panel-section-${id}-title`;
   const bodyId = `panel-section-${id}-body`;
   return (
-    <section ref={sectionRef} aria-labelledby={headingId} className={cn("relative flex min-h-0 flex-col", className)} style={style}>
+    <section
+      ref={sectionRef}
+      aria-labelledby={actionNames ? undefined : headingId}
+      className={cn("relative flex min-h-0 flex-col", className)}
+      style={style}
+    >
       {handle}
-      <div className="flex items-center gap-1 pr-1">
+      <div className={cn("flex items-center gap-1 pr-1", headerClassName)}>
         <h2 id={headingId} className="min-w-0 flex-1">
           <button
             type="button"
             onClick={onToggle}
             aria-expanded={!collapsed}
             aria-controls={bodyId}
+            aria-label={actionNames ? `${collapsed ? "Expand" : "Collapse"} ${title}` : undefined}
             className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-[11px] font-semibold tracking-wide text-muted-foreground uppercase hover:bg-accent hover:text-foreground"
           >
             <CaretDown size={12} weight="bold" aria-hidden className={cn("transition-transform motion-reduce:transition-none", collapsed && "-rotate-90")} />

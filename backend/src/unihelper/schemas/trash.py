@@ -19,6 +19,8 @@ class SessionDeletionImpact(ApiModel):
     recordings: int
     documents: int
     linked_task_count: int = 0  # 012: live tasks linked to the removed event occurrences
+    chats: int = 0  # 014: chats of the removed occurrences, and up to 5 of their titles
+    chat_titles: list[str] = []
 
 
 class TrashEntryOut(ApiModel):
@@ -41,6 +43,7 @@ class TrashEntryOut(ApiModel):
     missing_files: int
     version: int
     task_count: int = 0  # 012: tasks deleted together with the event (restored / purged with it)
+    chat_count: int = 0  # 014
 
 
 class Recreated(ApiModel):

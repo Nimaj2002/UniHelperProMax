@@ -76,15 +76,19 @@ export interface ActivitySignal {
   id: string;
   /** Hook: true while the activity runs (e.g. a recording in progress). */
   useActive: () => boolean;
-  /** Appended to the "Show audio panel" name, e.g. "recording in progress". */
+  /** Appended to the session panel rail item's name, e.g. "recording in progress". */
   description: string;
-  kind: "recording" | "transcription";
+  /**
+   * "recording" / "transcription" mark the rail's Recordings item; "answer" (being generated) and
+   * "unseen" (a new answer) mark its Chat item (014 FR-006).
+   */
+  kind: "recording" | "transcription" | "answer" | "unseen";
   priority?: number;
 }
 const activitySignals = createRegistry<ActivitySignal>();
 /**
- * Long-running work signalled on the closed audio card's reopen button (008 FR-022), so closing
- * the card never hides a recording.
+ * Long-running work signalled on the closed session panel's rail (008 FR-022, 014 FR-006), so
+ * closing the panel never hides a recording.
  */
 export const registerActivitySignal = activitySignals.register;
 export function useActivitySignals(): ActivitySignal[] {

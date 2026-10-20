@@ -15,6 +15,11 @@ dependencies = [
     "tzdata>=2024.2",
     "httpx>=0.28",
     "icalendar>=6.1,<8",
+    # 014: secret store (AES-256-GCM, OS key store, per-user key file) and PDF text fallback
+    "cryptography>=50.0.2,<51",
+    "keyring>=25.7.0,<26",
+    "platformdirs==4.12.3",
+    "pypdf==6.19.0",
 ]
 
 [project.scripts]

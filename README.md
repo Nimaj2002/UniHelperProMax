@@ -135,7 +135,7 @@ needed), installs the dependencies and builds the app. Run it again any time to 
 
 ```bash
 git clone https://github.com/Nimaj2002/UniHelperProMax.git && cd UniHelperProMax
-mkdir -p backend/data && docker compose up -d --build
+mkdir -p backend/data keys && docker compose up -d --build
 ```
 
 Your files stay in `backend/data` on your own disk, the same folder `./start.sh` uses. On Linux, put
@@ -186,6 +186,8 @@ cd frontend && corepack pnpm dev        # http://localhost:5173 (proxies /api to
 | `UNIHELPER_DATA_DIR` | `./data` | SQLite database and the `files/` folder tree |
 | `UNIHELPER_STATIC_DIR` | — | Built frontend to serve (production) |
 | `UNIHELPER_SECURE_COOKIES` | `false` | Set `true` when served over HTTPS |
+| `UNIHELPER_KEY_STORE` | `auto` | Where the key that encrypts saved API keys lives: `auto` (the OS key store when one works, else a file), `keyring` or `file` |
+| `UNIHELPER_KEY_FILE` | per-user config folder | The key file when there is no OS key store; must be outside `UNIHELPER_DATA_DIR` |
 
 The database schema is migrated automatically on startup.
 
@@ -209,8 +211,8 @@ server process is already using …").
 data/
 ├── unihelper.sqlite3            metadata only
 └── files/<username>/<Year>/<Semester>/
-    ├── <Course>/<YYYY-MM-DD>/{notes,audios,documents}/
-    └── _Events/<YYYY-MM-DD Title>/{notes,audios,documents}/
+    ├── <Course>/<YYYY-MM-DD>/{notes,audios,documents,chats}/
+    └── _Events/<YYYY-MM-DD Title>/{notes,audios,documents,chats}/
 ```
 
 Events (seminars, exams, office hours…) belong to a semester, not a course, so their folders live
@@ -245,6 +247,20 @@ Tasks, board columns, checklists and quick notes are kept in the database, not a
 **Settings → Import and export → Export tasks** for a `.csv` copy.
 
 Back up by copying the whole data folder while the app is stopped.
+
+### Key protection
+
+API keys (for transcription and AI chat) are never stored in plain text: they are encrypted
+(AES-256-GCM) with a key that is **not** in the data folder, so a copy of the data folder or a
+backup alone reveals no key. That encryption key is kept in your operating system's key store
+(Windows Credential Manager, macOS Keychain, or the Secret Service/KWallet on Linux; macOS may ask
+once to allow access). Where there is none — WSL, a headless Linux server, Docker — it is a file
+only your user can read, in your user config folder (Docker: `./keys`); **Settings** then says so,
+because anyone who can sign in as you can read that file.
+
+If the key store is lost or you restore the data folder on another computer, saved keys can't be
+read: Settings says so, and **Start a new key store** lets you enter them again. Nothing else is
+affected. To move keys along, back up the key file (or `./keys` with Docker) separately.
 
 ## Events and creating entries on the calendar
 
@@ -427,6 +443,42 @@ this computer or your local network; public addresses need `https://`.
 For trying transcription without a real provider, run the predictable fake transcriber
 (`cd backend && uv run uvicorn tests.fake_transcriber:app --port 8020`) and use
 `http://localhost:8020` as the Voice Studio address.
+
+## AI chat
+
+Every class session and event has an AI chat in the right panel, below the recordings: ask about
+the lecture, attach notes (of this session or any other), PDFs, pictures and audio, choose the
+model, and keep a separate history of chats per session. **Expand** moves a chat into a tab (it
+can sit beside a note or PDF); **Dock** brings it back. Answers stream in and keep going when you
+close the panel, switch tabs or reload; **Stop** (or Escape) ends one at once.
+Shortcuts: **Alt+K** focuses the message box (opening the panel, or the chat's tab), **Alt+Shift+K**
+starts a new chat, and **Alt+]** shows or hides the session panel.
+
+No AI service, key or address ships with the app. Add your own in **Settings → AI**, in one of
+three request styles — enter the base URL as the provider documents it, the app adds the path:
+
+| Style | Example base URL |
+|---|---|
+| OpenAI-compatible (OpenAI, Ollama, LM Studio, llama.cpp, vLLM…) | `https://api.openai.com/v1`, `http://localhost:11434/v1` |
+| Anthropic | `https://api.anthropic.com` |
+| Google Gemini | `https://generativelanguage.googleapis.com` |
+
+Addresses on this computer or your local network are **Local** and may use plain `http://`;
+everything else is **Remote**, must use `https://`, and asks once before messages and
+attachments are sent there. **Test connection** and **Refresh** (the model list) never change
+what is saved; local servers without a model list take the model ID you type. Keys are kept
+encrypted (see [Key protection](#key-protection)) and only their last 4 characters are shown.
+The assistant has no tools: it never changes your notes, files, tasks or settings.
+
+Each chat is a readable pair of files in the session's `chats/` folder: `<date time title>.json`
+(what the app reads) and `<date time title>.md` (a transcript for reading anywhere), with sent
+pictures, PDFs and audio and note snapshots in `<date time title>.files/`. Deleting a chat can be
+undone for a while; deleting a session or event (or its course or semester) names its chats in
+the confirmation and moves them to the Trash with it.
+
+For trying chat without a provider, run the scripted fake
+(`cd backend && uv run uvicorn tests.fake_llm:app --port 8021`) and add
+`http://localhost:8021/v1` with the model `echo` (or `slow`).
 
 ## Themes
 

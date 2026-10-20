@@ -36,3 +36,6 @@ frontend/pnpm-workspace.yaml
 
 # 013: generated diagram renderer bundle (pnpm build:sandbox)
 frontend/public/sandbox/
+
+# 014: the key that encrypts saved API keys (Docker key file) — never commit
+keys/

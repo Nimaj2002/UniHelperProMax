@@ -44,7 +44,7 @@ async function openSession(page: Page, testInfo: { project: { name: string } }, 
   const { courseId, lineageId } = { courseId: cls.courseId as string, lineageId: cls.lineageId as string };
   const url = workspaceUrl(courseId, lineageId, date);
   await page.goto(url);
-  const panel = page.getByRole("complementary", { name: "Audio" });
+  const panel = page.getByRole("complementary", { name: "Session panel" });
   await expect(panel.getByRole("button", { name: "Upload audio" })).toBeVisible();
   return { panel, url, sessionKey: `${lineageId}:${date}` };
 }

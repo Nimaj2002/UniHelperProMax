@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -18,8 +19,11 @@ from unihelper.api.deps import csrf_protect
 from unihelper.api.errors import install_error_handlers, problem_response
 from unihelper.api.v1 import (
     admin,
+    ai,
     auth,
     calendar_io,
+    chat_runs,
+    chats,
     classes,
     documents,
     events,
@@ -27,6 +31,7 @@ from unihelper.api.v1 import (
     hierarchy,
     notes,
     recordings,
+    secrets,
     sessions,
     settings,
     setup,
@@ -37,10 +42,18 @@ from unihelper.api.v1 import (
     trash,
     workspace,
 )
+from unihelper.chat.runs import RunRegistry
 from unihelper.config import Settings, load_settings
 from unihelper.db.engine import make_engine, make_sessionmaker
 from unihelper.db.migrate import upgrade_to_head
-from unihelper.services import annotation_service, calendar_import_service, task_service
+from unihelper.secrets import store as secret_store
+from unihelper.secrets.migrate import migrate_plaintext
+from unihelper.services import (
+    annotation_service,
+    calendar_import_service,
+    chat_service,
+    task_service,
+)
 from unihelper.services.login_throttle import LoginThrottle
 from unihelper.storage.storage_service import StorageService
 from unihelper.transcription.worker import TranscriptionWorker
@@ -71,6 +84,10 @@ def build_api_router() -> APIRouter:
         themes,
         trash,
         calendar_io,
+        secrets,  # 014
+        ai,
+        chats,
+        chat_runs,
     ):
         api.include_router(module.router)
     for router in tasks.routers:  # 012: /task-columns, /tasks, /quick-notes
@@ -78,8 +95,35 @@ def build_api_router() -> APIRouter:
     return api
 
 
+async def _sweep_chats(app: FastAPI) -> None:
+    """014: deleted chats past their Undo window, every 10 minutes (and at startup)."""
+    from unihelper.chat import sweep
+
+    while True:
+        try:
+            await asyncio.to_thread(sweep.run, app.state.sessionmaker, app.state.storage)
+        except Exception:
+            log.exception("could not clean up deleted chats")
+        await asyncio.sleep(600)
+
+
+def _open_secret_store(app: FastAPI) -> None:
+    """014: find the master key, then move any plaintext transcription keys into the encrypted
+    store. A lost key leaves the store unreadable (Settings says so); the app still starts."""
+    store: secret_store.SecretStore = app.state.secrets
+    try:
+        with Session(app.state.engine) as db:
+            store.open(db)
+            db.commit()
+    except Exception as exc:
+        log.error("could not open the secret store (%s)", type(exc).__name__)
+    secret_store.install(store)
+    migrate_plaintext(app.state.sessionmaker, store)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or load_settings()
+    settings.check()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -89,6 +133,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             # always upgrade: a no-op when the schema is already at head
             upgrade_to_head(app.state.engine)
             settings.files_root.mkdir(parents=True, exist_ok=True)
+            _open_secret_store(app)
             try:  # results of annotation ops older than 30 days (007 research R7)
                 with Session(app.state.engine) as db:
                     annotation_service.prune_applied_ops(db)
@@ -108,10 +153,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     task_service.purge_expired(db)
             except SQLAlchemyError:
                 log.exception("could not purge deleted tasks")
+            runs: RunRegistry = app.state.chat_runs  # 014: answers interrupted by a restart
+            runs.attach(asyncio.get_running_loop())
+            try:
+                runs.recover()
+            except SQLAlchemyError:
+                log.exception("could not recover interrupted chat answers")
+            sweeper = asyncio.create_task(_sweep_chats(app))
             worker: TranscriptionWorker = app.state.transcription_worker
             if settings.transcription_autorun:
                 await worker.start()
             yield
+            sweeper.cancel()
+            await runs.shutdown()
             await worker.stop()
             app.state.engine.dispose()
         finally:
@@ -131,6 +185,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.sessionmaker = make_sessionmaker(engine)
     app.state.storage = StorageService(settings.files_root)
     app.state.login_throttle = LoginThrottle()
+    app.state.ai_transport = None  # 014: tests route AI provider HTTP to the fake LLM
+    app.state.secrets = secret_store.SecretStore(settings)
+    app.state.chat_runs = RunRegistry(
+        app.state.sessionmaker,
+        app.state.storage,
+        lambda: app.state.ai_transport,
+        chat_service.label_of,
+        max_per_user=settings.chat_max_runs_per_user,
+        max_total=settings.chat_max_runs_total,
+    )
     app.state.transcription_worker = TranscriptionWorker(
         app.state.sessionmaker,
         app.state.storage,

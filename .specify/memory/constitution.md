@@ -1,26 +1,30 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.1.0 → 1.2.0
-Bump rationale: MINOR — Principle II materially expanded: semesters may now contain events,
-stored at the semester level in a reserved folder
-(`<year>/<semester>/<reserved-events-folder>/<date-and-title>/` with `notes/`, `audios/`,
-`documents/`), plus a rule that course names can never take the reserved folder name. No
+Version change: 1.2.0 → 1.3.0
+Bump rationale: MINOR — Principle II materially expanded with per-session chat storage
+(`chats/` folder, JSON + regenerated Markdown transcript, original-format attachments) and
+Principle IV materially expanded to cover all provider secrets (transcription and AI chat
+endpoints) with encryption at rest and the key held outside the database and data folder. No
 principle removed or redefined incompatibly.
 
 Modified principles:
-  - II. Data Ownership & Open Formats (title unchanged; two rules added)
+  - II. Data Ownership & Open Formats (title unchanged; chat storage rules added)
+  - IV. Pluggable Transcription & Secret Handling → IV. Pluggable Providers & Secret Handling
+    (scope extended to AI chat providers; encryption at rest added)
 Added sections: none
 Removed sections: none
+Technical Constraints updated: Storage, Transcription → Providers, Security bullets.
 
 Templates reviewed (not modified by this command; they read the constitution at runtime):
-  - .specify/templates/plan-template.md      ✅ Constitution Check picks up the amended Principle II
+  - .specify/templates/plan-template.md      ✅ Constitution Check picks up amended II and IV
   - .specify/templates/spec-template.md      ✅ no change required
   - .specify/templates/tasks-template.md     ✅ no change required
 
 Dependent specs to review for compliance (Governance):
-  - Any spec/plan that creates or renames courses must enforce the reserved-name rule.
-  - The upcoming events feature's plan must fix the exact reserved folder name.
+  - specs/014-session-ai-chat: plan.md Constitution Check (II ⚠️ → ✅ after this amendment).
+  - specs/005-settings-providers-themes: transcription keys move to encrypted storage (done by
+    feature 014's migration; behavior unchanged).
 
 Deferred TODOs: none
 -->
@@ -70,8 +74,16 @@ promise of the product and outranks every other concern.
   in plain files.
 - A user MUST be able to browse, open, copy, and back up their notes, audio, documents and
   annotations with ordinary OS tools, without running the app.
+- AI chat conversations of a session or event MUST be stored in that session's (or event's)
+  folder under `chats/`: `.../<class-date>/chats/` and
+  `<year>/<semester>/<reserved-events-folder>/<date-and-title>/chats/`. Each chat MUST be an
+  open-format JSON file (the app's source of truth) plus a Markdown transcript the app
+  regenerates from it, so the conversation is readable without the app. Attachments uploaded to
+  a chat MUST be kept in their original formats under `chats/<stem>.files/`. Chat files MUST
+  NOT contain API keys or other secrets.
 - The database (SQLite) stores metadata and indexes; it MUST NOT be the sole location of note
-  bodies, audio content, documents or annotations.
+  bodies, audio content, documents, annotations or chat conversations (it MAY hold a chat
+  index).
 
 **Rationale**: Students own their academic work. Open formats and a browsable layout guarantee
 the data outlives the app and stays portable.
@@ -89,19 +101,28 @@ the data outlives the app and stays portable.
 **Rationale**: A single, versioned boundary keeps the system testable, lets either side evolve
 independently, and keeps all data-integrity guarantees enforced in one place.
 
-### IV. Pluggable Transcription & Secret Handling
+### IV. Pluggable Providers & Secret Handling
 
 - All transcription providers MUST implement one shared backend interface. Adding, removing, or
   switching a provider MUST NOT require changes to UI code; the UI discovers available
   providers through the API.
+- These rules apply to every external provider the app calls: transcription providers and AI
+  chat endpoints alike. AI chat request styles MUST likewise share one backend interface that
+  the UI discovers through the API.
 - Provider API keys MUST be stored server-side only. The API MUST NEVER return a full key to
   the frontend; at most a masked form (e.g., last 4 characters) and a "configured" flag.
-- API keys MUST NOT be written to logs, error messages, or note/audio files.
+- Provider API keys MUST be encrypted at rest with authenticated encryption before they reach
+  the database. The encryption key MUST NOT be stored in the database or the data folder (it is
+  held by the operating system's key store when available, otherwise in a user-only file
+  outside the data folder), so a copy of the database or a backup alone reveals no key. Keys are
+  decrypted only in the backend at the moment of use.
+- API keys MUST NOT be written to logs, error messages, or note, audio or chat files.
 - Provider failures MUST surface as clear, recoverable errors and MUST NOT alter the target
   note (see Principle I).
 
-**Rationale**: Transcription vendors change frequently; isolating them behind one interface
-keeps the product stable, and server-side secrets prevent credential leakage.
+**Rationale**: Transcription and AI vendors change frequently; isolating them behind one
+interface keeps the product stable, and encrypted server-side secrets prevent credential
+leakage even from copied backups.
 
 ### V. UI Quality & Accessibility
 
@@ -148,13 +169,15 @@ spec discipline keeps the product focused.
 ## Technical Constraints
 
 - **Storage**: SQLite for metadata; file system (hierarchy defined in Principle II) for note,
-  audio and document content (including annotation files).
+  audio, document and chat content (including annotation files and chat attachments).
 - **API**: RESTful JSON, versioned under a path prefix (e.g., `/api/v1`).
 - **UI**: shadcn/ui primitives, theme tokens for all colors, light + dark + user-created themes.
-- **Transcription**: provider-agnostic interface on the backend; keys stored server-side only.
+- **Providers**: provider-agnostic interfaces on the backend for transcription and AI chat;
+  keys stored server-side only, encrypted at rest.
 - **Durability**: autosave for notes; progressive (chunked) persistence for recordings;
   append-only transcription writes.
-- **Security**: secrets never returned in full by the API and never logged.
+- **Security**: secrets never returned in full by the API, never logged, and encrypted at rest
+  with the encryption key kept outside the database and data folder.
 
 ## Development Workflow & Quality Gates
 
@@ -182,4 +205,4 @@ spec discipline keeps the product focused.
 - **Compliance review**: every plan's Constitution Check and every code review MUST verify
   compliance with Principles I–VII. Unjustified violations block merge.
 
-**Version**: 1.2.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-10
+**Version**: 1.3.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-19

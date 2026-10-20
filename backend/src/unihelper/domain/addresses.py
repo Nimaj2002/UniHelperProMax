@@ -69,6 +69,23 @@ def is_local_host(host: str, resolve: Resolver = _system_resolve, timeout: float
     return bool(addresses) and all(_ip_is_local(a) for a in addresses)
 
 
+def localhost_hint(server: str) -> str:
+    """Shown when a `localhost` address can't be reached (005; 014 reuses it for AI servers)."""
+    return (
+        f"“localhost” means the computer the UniHelperProMax server runs on. If the {server} "
+        "runs elsewhere — for example on Windows while UniHelperProMax runs in WSL or "
+        "Docker — use that machine's address, or make it reachable from there."
+    )
+
+
+LOCALHOST_HINT = localhost_hint("transcription server")
+
+
+def is_loopback(address: str) -> bool:
+    parsed = parse_address(address)
+    return parsed is not None and parsed.host in ("localhost", "127.0.0.1", "::1", "[::1]")
+
+
 def address_problem(url: str, has_key: bool, resolve: Resolver = _system_resolve) -> str | None:
     """None when acceptable, else `invalid_address` or `https_required`."""
     parsed = parse_address(url)

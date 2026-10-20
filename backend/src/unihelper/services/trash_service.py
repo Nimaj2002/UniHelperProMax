@@ -38,6 +38,7 @@ from unihelper.domain.trash_payload import (
 )
 from unihelper.models import (
     CalendarImportSource,
+    Chat,
     ClassSeries,
     Course,
     Document,
@@ -94,6 +95,7 @@ class Counts:
     notes: int = 0
     recordings: int = 0
     documents: int = 0
+    chats: int = 0  # 014
 
 
 def _count(db: Session, model: Any, folder_ids: Sequence[str]) -> int:
@@ -114,6 +116,34 @@ def content_counts(db: Session, folder_ids: Sequence[str]) -> Counts:
         notes=_count(db, Note, folder_ids),
         recordings=_count(db, Recording, folder_ids),
         documents=_count(db, Document, folder_ids),
+        chats=chat_count(db, folder_ids),
+    )
+
+
+def chat_count(db: Session, folder_ids: Sequence[str]) -> int:
+    """014: chats are content of their session folder (deleted ones waiting for Undo aren't)."""
+    if not folder_ids:
+        return 0
+    return int(
+        db.scalar(
+            select(func.count())
+            .select_from(Chat)
+            .where(Chat.session_folder_id.in_(list(folder_ids)), Chat.deleted_at.is_(None))
+        )
+        or 0
+    )
+
+
+def chat_titles(db: Session, folder_ids: Sequence[str], limit: int = 5) -> list[str]:
+    if not folder_ids:
+        return []
+    return list(
+        db.scalars(
+            select(Chat.title)
+            .where(Chat.session_folder_id.in_(list(folder_ids)), Chat.deleted_at.is_(None))
+            .order_by(Chat.updated_at.desc())
+            .limit(limit)
+        )
     )
 
 
@@ -221,6 +251,8 @@ def deletion_impact(db: Session, user: User, key: str, scope: str) -> dict[str, 
         "recordings": counts.recordings,
         "documents": counts.documents,
         "linked_task_count": linked,
+        "chats": counts.chats,  # 014 FR-051: the confirmation names the chats
+        "chat_titles": chat_titles(db, [f.id for f in p.folders]),
     }
 
 
@@ -528,6 +560,7 @@ def entry_out(
         "note_count": counts.notes,
         "recording_count": counts.recordings,
         "document_count": counts.documents,
+        "chat_count": counts.chats,  # 014
         "deleted_at": entry.deleted_at,
         "purge_error": entry.purge_error,
         "missing_files": _missing_files(db, storage, user, folders),

@@ -4,6 +4,7 @@ import { defineConfig, devices } from "@playwright/test";
 const backendPort = Number(process.env.E2E_BACKEND_PORT ?? 8000);
 const frontendPort = Number(process.env.E2E_FRONTEND_PORT ?? 5173);
 const transcriberPort = Number(process.env.E2E_TRANSCRIBER_PORT ?? 8020);
+const llmPort = Number(process.env.E2E_LLM_PORT ?? 8021);
 
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -45,8 +46,16 @@ export default defineConfig({
       timeout: 120_000,
     },
     {
-      // fresh data dir per run so setup flows start from an empty installation
-      command: `rm -rf ../data-e2e && cd ../backend && UNIHELPER_DATA_DIR=../data-e2e uv run uvicorn unihelper.main:app --port ${backendPort}`,
+      // 014: scripted fake of the three AI request styles (OpenAI-compatible, Anthropic, Gemini)
+      command: `cd ../backend && uv run uvicorn tests.fake_llm:app --port ${llmPort}`,
+      url: `http://localhost:${llmPort}/v1/models`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+    {
+      // fresh data dir per run so setup flows start from an empty installation; the secret
+      // store's key file lives outside it (014)
+      command: `rm -rf ../data-e2e ../data-e2e-keys && cd ../backend && UNIHELPER_DATA_DIR=../data-e2e UNIHELPER_KEY_STORE=file UNIHELPER_KEY_FILE=../data-e2e-keys/master.key uv run uvicorn unihelper.main:app --port ${backendPort}`,
       url: `http://localhost:${backendPort}/api/v1/health`,
       reuseExistingServer: false,
       timeout: 120_000,

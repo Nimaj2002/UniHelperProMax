@@ -17,6 +17,8 @@ const PROVIDERS = [
   ] },
 ];
 
+const SECRETS_OK = { store: "os_key_store", protectionNote: null, readable: true, unreadableSecrets: 0, migration: "done", migrationMessage: null };
+
 const provider = (id: string, over: Record<string, unknown> = {}) => ({
   providerId: id, values: {}, secret: { configured: false, last4: null }, status: "not_configured", lastError: null, testedAt: null, ...over,
 });
@@ -32,6 +34,7 @@ function api(settings: Record<string, unknown> = {}, extra: Parameters<typeof on
     on("GET", "/api/v1/transcription/providers", () => json(PROVIDERS)),
     on("GET", "/api/v1/settings/transcription", () => json(body)),
     ...extra.map((a) => on(...a)),
+    on("GET", "/api/v1/secrets/status", () => json(SECRETS_OK)), // 014 key protection notice
   );
 }
 

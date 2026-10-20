@@ -91,8 +91,8 @@ export function fetchWorkspace(sessionKey: string) {
   return apiFetch<WorkspaceState>(`/workspace/${enc(sessionKey)}`);
 }
 
-export function putWorkspace(sessionKey: string, state: WorkspaceState) {
-  return apiFetch<WorkspaceState>(`/workspace/${enc(sessionKey)}`, { method: "PUT", body: state });
+export function putWorkspace(sessionKey: string, state: WorkspaceState, keepalive = false) {
+  return apiFetch<WorkspaceState>(`/workspace/${enc(sessionKey)}`, { method: "PUT", body: state, keepalive });
 }
 
 export const preferencesKey = ["preferences"] as const;

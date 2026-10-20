@@ -152,7 +152,7 @@ test("US2: event workspace, files under _Events, Events page and side card; _Eve
   await newNote(page, "Talk notes");
   await editor(page).pressSequentially("# Seminar\n");
   await waitSaved(page, "Talk notes");
-  const audio = page.getByRole("complementary", { name: "Audio" });
+  const audio = page.getByRole("complementary", { name: "Session panel" });
   await audio.getByRole("button", { name: "Record", exact: true }).click();
   await page.waitForTimeout(3000);
   await page.getByRole("region", { name: "Recording", exact: true }).getByRole("button", { name: "Stop" }).click();

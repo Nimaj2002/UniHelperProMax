@@ -1,4 +1,7 @@
-/** Right-panel content of the session workspace (feature 003 registers the audio panel). */
+/**
+ * Session panel content of the session workspace: its Recordings section (feature 003 registers
+ * the audio panel) and its Chat section (feature 014 registers the chat).
+ */
 import { useSyncExternalStore, type ComponentType } from "react";
 
 export interface WorkspacePanelProps {
@@ -9,7 +12,7 @@ export interface WorkspacePanel {
   id: string;
   title: string;
   component: ComponentType<WorkspacePanelProps>;
-  /** Buttons in the audio card's header, beside its title (008 FR-020: Record, Upload). */
+  /** Buttons in the Recordings section's header, beside its title (008 FR-020: Record, Upload). */
   headerActions?: ComponentType<WorkspacePanelProps>;
 }
 
@@ -29,6 +32,43 @@ export function useWorkspacePanels(): WorkspacePanel[] {
     },
     () => panels,
     () => panels,
+  );
+}
+
+// ---- the session panel's Chat section (014) -------------------------------------------------------
+
+export interface ChatSectionProps {
+  sessionKey: string;
+}
+
+export interface ChatSection {
+  /** The section's body: the chat history or conversation and the message box. */
+  component: ComponentType<ChatSectionProps>;
+  /** Buttons in the Chat section's header, beside its title (Search chats, New chat, …). */
+  headerActions?: ComponentType<ChatSectionProps>;
+}
+
+let chatSection: ChatSection | null = null;
+const chatListeners = new Set<() => void>();
+
+/** Fill the session panel's Chat section (until then it shows an empty placeholder). */
+export function registerChatSection(section: ChatSection) {
+  chatSection = section;
+  chatListeners.forEach((l) => l());
+  return () => {
+    if (chatSection === section) chatSection = null;
+    chatListeners.forEach((l) => l());
+  };
+}
+
+export function useChatSection(): ChatSection | null {
+  return useSyncExternalStore(
+    (l) => {
+      chatListeners.add(l);
+      return () => chatListeners.delete(l);
+    },
+    () => chatSection,
+    () => chatSection,
   );
 }
 

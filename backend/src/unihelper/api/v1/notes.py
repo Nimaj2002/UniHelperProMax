@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Query, Response, status
 
 from unihelper.api.deps import CurrentUser, DbSession, IfMatch, Storage
+from unihelper.schemas.chat import NoteSearchHit
 from unihelper.schemas.notes import (
     ContentSave,
     Note,
@@ -14,7 +15,7 @@ from unihelper.schemas.notes import (
     NoteRename,
     SaveResult,
 )
-from unihelper.services import note_service
+from unihelper.services import note_search_service, note_service
 
 router = APIRouter(tags=["notes"])
 
@@ -31,6 +32,19 @@ def create_note(
     session_key: str, body: NoteCreate, user: CurrentUser, db: DbSession, storage: Storage
 ) -> Any:
     return note_service.create_note(db, storage, user, session_key, body.name, body.content)
+
+
+@router.get("/notes/search", response_model=list[NoteSearchHit])
+def search_notes(
+    user: CurrentUser,
+    db: DbSession,
+    q: Annotated[str | None, Query(max_length=200)] = None,
+    course_id: Annotated[str | None, Query(alias="courseId")] = None,
+    session_key: Annotated[str | None, Query(alias="sessionKey")] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> Any:
+    """014: notes across sessions and courses for the chat's attach picker."""
+    return note_search_service.search(db, user, q, course_id, session_key, limit)
 
 
 @router.get("/notes/{note_id}", response_model=Note)

@@ -2,7 +2,7 @@ import { forwardRef, type CSSProperties, type HTMLAttributes, type ReactNode } f
 import { cn } from "@/lib/utils";
 
 interface Props extends Omit<HTMLAttributes<HTMLElement>, "children" | "className" | "style" | "id"> {
-  as?: "aside" | "main" | "section" | "div";
+  as?: "aside" | "main" | "section" | "nav" | "div";
   id?: string;
   label?: string;
   /** Fixed rows above the body (title bar, tab row). */

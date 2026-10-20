@@ -1,5 +1,6 @@
 """Import every model so Base.metadata is complete (Alembic autogenerate, create_all)."""
 
+from unihelper.models.ai_endpoint import AiEndpoint, AiModel, AiSettings
 from unihelper.models.auth_session import AuthSession
 from unihelper.models.base import Base
 from unihelper.models.calendar_import import (
@@ -7,12 +8,14 @@ from unihelper.models.calendar_import import (
     CalendarImportSource,
     CalendarImportUpload,
 )
+from unihelper.models.chat import Chat, ChatDraft, ChatRun, ChatUpload
 from unihelper.models.class_series import ClassLink, ClassSeries
 from unihelper.models.course import Course
 from unihelper.models.document import AnnotationOp, Document, DocumentPosition
 from unihelper.models.event_series import EventLink, EventSeries
 from unihelper.models.note import Note
 from unihelper.models.recording import Recording
+from unihelper.models.secret import Secret, SecretStoreMeta
 from unihelper.models.semester import Semester
 from unihelper.models.session_exception import SessionException
 from unihelper.models.session_folder import SessionFolder
@@ -27,12 +30,19 @@ from unihelper.models.workspace_state import WorkspaceState
 from unihelper.models.year import Year
 
 __all__ = [
+    "AiEndpoint",
+    "AiModel",
+    "AiSettings",
     "AnnotationOp",
     "AuthSession",
     "Base",
     "CalendarImportRun",
     "CalendarImportSource",
     "CalendarImportUpload",
+    "Chat",
+    "ChatDraft",
+    "ChatRun",
+    "ChatUpload",
     "ClassLink",
     "ClassSeries",
     "Course",
@@ -43,6 +53,8 @@ __all__ = [
     "Note",
     "ProviderConfig",
     "Recording",
+    "Secret",
+    "SecretStoreMeta",
     "Semester",
     "SessionException",
     "SessionFolder",

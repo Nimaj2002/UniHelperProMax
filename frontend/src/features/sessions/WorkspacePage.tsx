@@ -1,15 +1,15 @@
-import { SidebarSimple } from "@phosphor-icons/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { RIGHT_CARD_ID, useLayout, useRightCard, type RightCard } from "@/app/shell/layout";
+import { useLayout, useRightCard, type RightCard } from "@/app/shell/layout";
 import { FocusModeButton, ShowSidePanelButton } from "@/app/shell/MainBarControls";
 import { usePanelSections, type PanelSection } from "@/app/shell/panelSection";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { isNewChatId, newChatId, useChats } from "@/features/chat/api";
+import { focusBox, HISTORY, setChatTabsHost, setPanelChat, useChatPlacement } from "@/features/chat/chatPlacement";
+import { ChatTab } from "@/features/chat/ChatTab";
 import { useSession } from "@/features/classes/api";
 import { useDocuments } from "@/features/documents/api";
 import { useEventDetail, useEventTimeline } from "@/features/events/api";
@@ -22,15 +22,15 @@ import { formatDay, wallTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import {
   fetchNote, fetchWorkspace, notesKey, putWorkspace, saveNoteContent, useCreateNote, useDeleteNote,
-  useNotes, usePreferences, useRenameNote, useTimeline, useUpdatePreferences, type Note, type NoteMeta,
+  useNotes, usePreferences, useRenameNote, useTimeline, type Note, type NoteMeta,
 } from "./api";
 import { ensureSaver, getSaver, onServerAppend, onServerReplace, readDraft, removeSaver, useSaveStatus, type SaveFn } from "./autosave";
 import { AddTabButton } from "./AddTabButton";
-import { AudioReopenButton } from "./AudioReopenButton";
 import { ConflictDialog } from "./ConflictDialog";
 import { MarkdownEditor, type EditorMode, type MarkdownEditorHandle } from "./editor/MarkdownEditor";
 import { NoteList } from "./NoteList";
 import { DeleteNoteDialog, NoteNameDialog } from "./NoteDialogs";
+import { SessionPanel, useSessionPanelLayout, useSessionRail } from "./SessionPanel";
 import { SessionTimeline, type TimelineItem } from "./SessionTimeline";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import { SessionChip } from "./SessionChip";
@@ -38,7 +38,7 @@ import { paneId, StatusLabel, tabDomId, WorkspaceTabs } from "./WorkspaceTabs";
 import {
   EMPTY, fromServer, panes, reduceTabs, same, toServer, type Side, type TabAction, type TabRef, type WorkspaceTabs as TabsState,
 } from "./tabState";
-import { useSidePanelSections, useWorkspacePanels } from "./workspace-panels";
+import { useSidePanelSections } from "./workspace-panels";
 
 const saveFn: SaveFn = (id, content, version, baseHash, keepalive) =>
   saveNoteContent(id, content, version, baseHash, keepalive).then((r) => ({ version: r.version, hash: r.hash }));
@@ -60,48 +60,6 @@ async function loadNote(id: string): Promise<Note> {
   }
   return note;
 }
-
-/** The audio card's header (008 FR-020): title, the panel's actions (Record, Upload) and close. */
-function AudioCardHeader({ sessionKey }: { sessionKey: string }) {
-  const panels = useWorkspacePanels();
-  const { toggleRight } = useLayout();
-  return (
-    <div className="flex h-10 shrink-0 items-center gap-1 border-b border-divider pr-1 pl-3">
-      <h2 className="mr-auto text-sm font-semibold">Audio</h2>
-      {panels.map(({ id, headerActions: Actions }) => Actions && <Actions key={id} sessionKey={sessionKey} />)}
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-8" onClick={toggleRight} aria-controls={RIGHT_CARD_ID} aria-label="Hide audio panel" aria-keyshortcuts="Alt+BracketRight">
-            <SidebarSimple size={18} className="-scale-x-100" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>
-          Hide audio panel <kbd className="ml-1 font-mono">Alt+]</kbd>
-        </TooltipContent>
-      </Tooltip>
-    </div>
-  );
-}
-
-function RightPanel({ sessionKey }: { sessionKey: string }) {
-  const panels = useWorkspacePanels();
-  if (!panels.length)
-    return (
-      <section aria-label="Audio" className="grid gap-2 p-4">
-        <p className="text-sm leading-relaxed text-muted-foreground">Recordings arrive in the next update.</p>
-      </section>
-    );
-  return (
-    <>
-      {panels.map(({ id, title, component: P }) => (
-        <section key={id} aria-label={title} className="min-h-0 min-w-0">
-          <P sessionKey={sessionKey} />
-        </section>
-      ))}
-    </>
-  );
-}
-
 
 const SPLIT_MIN_WIDTH = 1100;
 
@@ -205,7 +163,6 @@ export function WorkspacePage() {
   const notes = useNotes(sessionKey);
   const documents = useDocuments(sessionKey);
   const prefs = usePreferences();
-  const updatePrefs = useUpdatePreferences();
   const createNote = useCreateNote(sessionKey);
   const renameNote = useRenameNote(sessionKey);
   const deleteNote = useDeleteNote(sessionKey);
@@ -247,6 +204,7 @@ export function WorkspacePage() {
   const activeId = ws.active?.kind === "note" ? ws.active.id : null;
   const openIds = ws.tabs.filter((t) => t.kind === "note").map((t) => t.id);
   const act = useCallback((a: TabAction) => setTabState((t) => ({ ...t, ws: reduceTabs(t.ws, a) })), []);
+  const chats = useChats(sessionKey);
 
   // ---- workspace state per session (FR-013, 007 FR-013/FR-014a) -------------------------
   useEffect(() => {
@@ -265,11 +223,17 @@ export function WorkspacePage() {
   // debounced save of the tab state; a pending save is sent at once when the session changes
   // or the workspace unmounts, so switching quickly never loses tabs (US3 #3)
   const pendingTabs = useRef<{ key: string; ws: TabsState } | null>(null);
-  const sendPendingTabs = useCallback(() => {
+  const sendPendingTabs = useCallback((keepalive = false) => {
     const p = pendingTabs.current;
     pendingTabs.current = null;
-    if (p) void putWorkspace(p.key, toServer(p.ws)).catch(() => {});
+    if (p) void putWorkspace(p.key, toServer(p.ws), keepalive).catch(() => {});
   }, []);
+  // a reload or a closed window right after a tab change keeps the tabs too
+  useEffect(() => {
+    const flush = () => sendPendingTabs(true);
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, [sendPendingTabs]);
   useEffect(() => {
     if (tabState.sessionKey !== sessionKey) return;
     pendingTabs.current = { key: sessionKey, ws: tabState.ws };
@@ -296,6 +260,8 @@ export function WorkspacePage() {
         act({ type: "close", tab });
         return;
       }
+      // 014 FR-045: the chat goes back to the history list; an answer in progress goes on
+      if (tab.kind === "chat") return act({ type: "close", tab });
       // unsent annotation changes: try now, else ask (007 FR-029)
       void confirmCloseDocument(tab.id).then((go) => go && act({ type: "close", tab }));
     },
@@ -311,20 +277,64 @@ export function WorkspacePage() {
     } else sidePanel.setCollapsed(leftIds, !leftCollapsed);
   }, [sidePanel, leftIds, leftCollapsed]);
 
-  // the audio card lives in the shell's right column (008 R2); its open state stays the account
-  // preference it was before
-  const mutatePrefs = updatePrefs.mutate;
-  const audioOpen = !(prefs.data?.workspaceRightCollapsed ?? false);
-  const setAudioOpen = useCallback((open: boolean) => mutatePrefs({ workspaceRightCollapsed: !open }), [mutatePrefs]);
-  const audioCard = useMemo<RightCard>(
-    () => ({ header: <AudioCardHeader sessionKey={sessionKey} />, body: <RightPanel sessionKey={sessionKey} />, open: audioOpen, setOpen: setAudioOpen }),
-    [sessionKey, audioOpen, setAudioOpen],
+  // the session panel lives in the shell's right column (008 R2, 014 US2); its layout is kept per
+  // browser, seeded once from the account preference the audio card used before
+  const { layout: panelLayout, setOpen: setPanelOpen, setWidth: setPanelWidth, setShare, setCollapsed: setSectionCollapsed } = useSessionPanelLayout(
+    prefs.isSuccess ? !!prefs.data.workspaceRightCollapsed : undefined,
   );
-  useRightCard(session.isError ? null : audioCard);
+  const expandSection = useCallback((section: "recordings" | "chat") => setSectionCollapsed(section, false), [setSectionCollapsed]);
+  const { rail, watchers: railWatchers } = useSessionRail(expandSection);
+  const sessionPanel = useMemo<RightCard>(
+    () => ({
+      label: "Session panel",
+      description: "This session's recordings and chat",
+      body: <SessionPanel sessionKey={sessionKey} layout={panelLayout} setShare={setShare} setCollapsed={setSectionCollapsed} />,
+      open: panelLayout.open,
+      setOpen: setPanelOpen,
+      width: panelLayout.width,
+      setWidth: setPanelWidth,
+      rail,
+    }),
+    [sessionKey, panelLayout, setShare, setSectionCollapsed, setPanelOpen, setPanelWidth, rail],
+  );
+  useRightCard(session.isError ? null : sessionPanel);
 
   const noteImporter = useNoteImporter({ sessionKey, notes: noteList, onOpen: openNote });
 
+  // 014 Alt+K / Alt+Shift+K (contracts/ui-contract.md "Shortcuts added")
+  const placeChat = useChatPlacement(sessionKey);
+  const showChatInPanel = useCallback(() => {
+    expandSection("chat");
+    layout.showRight();
+    requestAnimationFrame(() => focusBox({ place: "panel" }));
+  }, [expandSection, layout]);
+  const focusChat = useCallback(() => {
+    const active = ws.active;
+    if (active?.kind === "chat") return focusBox({ place: "tab", id: active.id });
+    const chatTabs = ws.tabs.filter((t) => t.kind === "chat");
+    // the panel's chat was expanded into a tab (and the panel closed): go to that tab
+    if (!panelLayout.open && layout.overlay !== "right" && chatTabs.length) {
+      const id = chatTabs[chatTabs.length - 1].id;
+      act({ type: "open", tab: { kind: "chat", id } });
+      requestAnimationFrame(() => focusBox({ place: "tab", id }));
+      return;
+    }
+    showChatInPanel();
+  }, [ws, panelLayout.open, layout.overlay, act, showChatInPanel]);
+  const newChat = useCallback(() => {
+    const active = ws.active;
+    if (active?.kind === "chat") {
+      if (isNewChatId(active.id)) focusBox({ place: "tab", id: active.id });
+      else placeChat({ type: "sent", from: active.id, to: newChatId() });
+      return;
+    }
+    setPanelChat(sessionKey, HISTORY);
+    showChatInPanel();
+  }, [ws.active, placeChat, sessionKey, showChatInPanel]);
+
   useWorkspaceKeyboard({
+    focusChat,
+    newChat,
     newNote: () => setDialog({ kind: "new" }),
     importNote: noteImporter.pick,
     closeTab: () => ws.active && closeTab(ws.active),
@@ -338,10 +348,45 @@ export function WorkspacePage() {
   // ---- tab names ----------------------------------------------------------------------------
   const noteById = useMemo(() => new Map(noteList.map((n) => [n.id, n])), [noteList]);
   const docById = useMemo(() => new Map(docList.map((d) => [d.id, d])), [docList]);
+  const chatById = useMemo(() => new Map((chats.data ?? []).map((c) => [c.id, c.title])), [chats.data]);
   const titleOf = useCallback(
-    (t: TabRef) => (t.kind === "note" ? noteById.get(t.id)?.name : docById.get(t.id)?.name),
-    [noteById, docById],
+    (t: TabRef) =>
+      t.kind === "note"
+        ? noteById.get(t.id)?.name
+        : t.kind === "chat"
+          ? isNewChatId(t.id) ? "New chat" : (chatById.get(t.id) ?? "Chat")
+          : docById.get(t.id)?.name,
+    [noteById, docById, chatById],
   );
+
+  // ---- chat tabs (014 US5): the chat feature moves chats between the panel and tabs ------------
+  const chatTabIds = useMemo(() => ws.tabs.filter((t) => t.kind === "chat").map((t) => t.id), [ws.tabs]);
+  // "attach the open note" (US6): the active note tab, else the last one active while a chat tab is
+  const [lastNote, setLastNote] = useState<string | null>(null);
+  if (activeId && activeId !== lastNote) setLastNote(activeId);
+  const openNoteId = activeId ?? (lastNote && openIds.includes(lastNote) ? lastNote : null);
+  useEffect(() => {
+    if (tabState.sessionKey !== sessionKey) return;
+    const chat = (id: string): TabRef => ({ kind: "chat", id });
+    setChatTabsHost({
+      sessionKey,
+      tabs: chatTabIds,
+      open: (id) => act({ type: "open", tab: chat(id) }),
+      focus: (id) => act({ type: "open", tab: chat(id) }),
+      close: (id) => act({ type: "close", tab: chat(id) }),
+      replace: (from, to) => act({ type: "replace", from: chat(from), to: chat(to) }),
+      openNoteId,
+    });
+  }, [sessionKey, tabState.sessionKey, chatTabIds, act, openNoteId]);
+  useEffect(() => () => setChatTabsHost(null), []);
+  // a deleted chat's tab closes (`retain`), once the session's chat list has been refreshed
+  const chatsUpdated = chats.isSuccess ? chats.dataUpdatedAt : 0;
+  useEffect(() => {
+    if (!chatsUpdated || chats.isPlaceholderData) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs the tabs with the server's chat list
+    act({ type: "retain", valid: (t) => t.kind !== "chat" || isNewChatId(t.id) || chatById.has(t.id) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the list (or the session's tabs) load
+  }, [chatsUpdated, tabState.sessionKey]);
 
   // ---- note editors per pane ----------------------------------------------------------------
   // A pane showing a document keeps its last note's editor mounted but hidden, so undo history and
@@ -493,6 +538,7 @@ export function WorkspacePage() {
           />
         )}
         {known?.kind === "document" && <DocSlot host={hostFor(known.id)} parking={parking} />}
+        {known?.kind === "chat" && <ChatTab key={known.id} sessionKey={sessionKey} tabId={known.id} />}
         {!known && (side === "left" || !view.split ? emptyPane : <p className="grid h-full place-items-center p-8 text-sm text-muted-foreground">Select a tab to show it here.</p>)}
       </section>
     );
@@ -528,7 +574,6 @@ export function WorkspacePage() {
         }
         end={
           <>
-            {!layout.rightVisible && !layout.focus && <AudioReopenButton onOpen={layout.showRight} />}
             <FocusModeButton />
           </>
         }
@@ -576,6 +621,7 @@ export function WorkspacePage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {railWatchers}
       {/* the page's title for assistive tech; the session chip shows it visually (008 FR-015) */}
       {session.data && (
         <h1 className="sr-only">

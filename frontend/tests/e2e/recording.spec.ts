@@ -4,7 +4,7 @@ import { signIn, tag } from "./helpers";
 import { seedCourse, workspaceUrl } from "./notes-helpers";
 
 async function audioPanel(page: Page) {
-  const panel = page.getByRole("complementary", { name: "Audio" });
+  const panel = page.getByRole("complementary", { name: "Session panel" });
   await expect(panel.getByRole("button", { name: "Record", exact: true })).toBeVisible();
   return panel;
 }
@@ -42,8 +42,8 @@ test("US1/US3/US4: record with the fake mic, stop from the global bar, play and 
   expect(playerScan.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(", ")}`)).toEqual([]);
   await expect(player.getByRole("slider", { name: "Seek" })).toBeVisible();
 
-  // the player always fits the audio panel, which is resizable from its edge
-  const aside = page.getByRole("complementary", { name: "Audio" });
+  // the player always fits the session panel, which is resizable from its edge (014: 300–640 px)
+  const aside = page.getByRole("complementary", { name: "Session panel" });
   const fits = async () => {
     const a = (await aside.boundingBox())!;
     for (const el of [player, player.getByRole("button", { name: "Mute" }), player.getByRole("slider", { name: "Volume" })]) {
@@ -54,28 +54,28 @@ test("US1/US3/US4: record with the fake mic, stop from the global bar, play and 
     expect(await aside.evaluate((e) => e.scrollWidth <= e.clientWidth)).toBe(true);
   };
   await fits();
-  const splitter = page.getByRole("separator", { name: "Resize audio panel" });
+  const splitter = page.getByRole("separator", { name: "Resize session panel" });
   await splitter.hover();
   if (testInfo.project.name.endsWith("light")) await page.screenshot({ path: testInfo.outputPath("splitter-hover.png") });
   await splitter.focus();
   await page.keyboard.press("Home");
-  await expect(splitter).toHaveAttribute("aria-valuenow", "260");
+  await expect(splitter).toHaveAttribute("aria-valuenow", "300");
   await fits();
   if (testInfo.project.name.endsWith("light")) await page.screenshot({ path: testInfo.outputPath("narrow.png") });
   await page.keyboard.press("ArrowLeft");
-  await expect(splitter).toHaveAttribute("aria-valuenow", "276");
+  await expect(splitter).toHaveAttribute("aria-valuenow", "316");
   const box = (await splitter.boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x + box.width / 2 - 100, box.y + box.height / 2, { steps: 5 });
   await page.mouse.up();
-  await expect(splitter).toHaveAttribute("aria-valuenow", "376");
-  expect(Math.round((await aside.boundingBox())!.width)).toBe(376);
+  await expect(splitter).toHaveAttribute("aria-valuenow", "416");
+  expect(Math.round((await aside.boundingBox())!.width)).toBe(416);
   await fits();
   await page.reload();
-  await expect(page.getByRole("separator", { name: "Resize audio panel" })).toHaveAttribute("aria-valuenow", "376"); // remembered
-  await page.getByRole("separator", { name: "Resize audio panel" }).dblclick();
-  await expect(page.getByRole("separator", { name: "Resize audio panel" })).toHaveAttribute("aria-valuenow", "300");
+  await expect(page.getByRole("separator", { name: "Resize session panel" })).toHaveAttribute("aria-valuenow", "416"); // remembered
+  await page.getByRole("separator", { name: "Resize session panel" }).dblclick();
+  await expect(page.getByRole("separator", { name: "Resize session panel" })).toHaveAttribute("aria-valuenow", "360");
   await item.click();
   await expect(player).toBeVisible();
   const duration = await page.locator("audio").evaluate((a: HTMLAudioElement) =>

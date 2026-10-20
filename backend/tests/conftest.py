@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
@@ -27,6 +28,46 @@ def tmp_data_dir(tmp_path: Path) -> Path:
     return tmp_path / "data"
 
 
+# 014 T130: every API key a test uses; the run fails if one shows up in a log record or in a chat
+# file written anywhere under the test temp folders (SC-005)
+TEST_KEYS: set[str] = set()
+LEAKS: list[str] = []
+
+
+def register_test_key(key: str) -> str:
+    TEST_KEYS.add(key)
+    return key
+
+
+class _KeyLeakHandler(logging.Handler):
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            text = record.getMessage()
+        except Exception:  # pragma: no cover - a broken record is not a leak
+            return
+        for key in TEST_KEYS:
+            if key in text:
+                LEAKS.append(f"log record {record.name}: {text[:80]}")
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    handler = _KeyLeakHandler(level=logging.DEBUG)
+    logging.getLogger().addHandler(handler)
+
+
+def _chat_file_leaks(session: pytest.Session) -> list[str]:
+    factory = getattr(session.config, "_tmp_path_factory", None)
+    if factory is None or not TEST_KEYS:
+        return []
+    base = factory.getbasetemp()
+    hits = []
+    for path in base.rglob("chats/**/*"):
+        if path.is_file():
+            data = path.read_bytes()
+            hits += [f"{path}: key found" for key in TEST_KEYS if key.encode() in data]
+    return hits
+
+
 # (METHOD, route template) of every successful (2xx) request the suite makes — checked by the
 # coverage guard in pytest_sessionfinish
 EXERCISED: set[tuple[str, str]] = set()
@@ -46,14 +87,30 @@ def _record_routes(app):  # type: ignore[no-untyped-def]
 
 
 @pytest.fixture
-def app(tmp_data_dir: Path):  # type: ignore[no-untyped-def]
+def key_file(tmp_path: Path) -> Path:
+    """014: the secret store's master key lives in a file outside the data folder."""
+    return tmp_path / "keys" / "master.key"
+
+
+@pytest.fixture
+def app(tmp_data_dir: Path, key_file: Path):  # type: ignore[no-untyped-def]
     # transcription jobs run only when a test asks (tests/contract/transcription_helpers.run_jobs);
-    # provider HTTP goes to the in-process fake transcriber
+    # provider HTTP goes to the in-process fake transcriber, AI chat HTTP to the fake LLM (014)
     import httpx
 
-    from tests import fake_transcriber
+    from tests import fake_llm, fake_transcriber
+    from tests.streaming_asgi import StreamingASGITransport
 
-    application = create_app(Settings(data_dir=tmp_data_dir, transcription_autorun=False))
+    application = create_app(
+        Settings(
+            data_dir=tmp_data_dir,
+            transcription_autorun=False,
+            key_store="file",
+            key_file=key_file,
+        )
+    )
+    application.state.ai_transport = StreamingASGITransport(fake_llm.app)
+    fake_llm.reset()
     worker = application.state.transcription_worker
     worker.transport = httpx.ASGITransport(app=fake_transcriber.app)
     worker.retry_delays = (0, 0, 0)
@@ -70,6 +127,10 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
     from tests.contract.openapi_check import contract_operations
 
+    leaks = LEAKS + _chat_file_leaks(session)
+    if leaks:
+        print("\nAPI keys leaked:\n  " + "\n  ".join(leaks[:20]))
+        session.exitstatus = 1
     if session.config.option.keyword or session.config.args not in ([], ["tests"]):
         return
     if exitstatus != 0 or not EXERCISED:

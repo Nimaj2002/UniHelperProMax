@@ -114,7 +114,7 @@ if [ "$MODE" = docker ]; then
   ok "$(docker --version)"
 
   # The container writes backend/data (same folder as ./start.sh) as your user.
-  mkdir -p backend/data
+  mkdir -p backend/data keys  # 014: keys holds the key that encrypts saved API keys
   if [ ! -f .env ]; then
     printf 'UNIHELPER_UID=%s\nUNIHELPER_GID=%s\n' "$(id -u)" "$(id -g)" > .env
     info "Wrote .env (runs the container as your user)"

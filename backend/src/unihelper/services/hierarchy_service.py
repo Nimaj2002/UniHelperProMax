@@ -19,6 +19,7 @@ from unihelper.domain.naming import (
     unique_sibling,
 )
 from unihelper.models import (
+    Chat,
     ClassSeries,
     Course,
     Document,
@@ -553,6 +554,14 @@ def deletion_impact(db: Session, user: User, kind: str, entity_id: str) -> dict[
         "notes": count(Note),
         "recordings": count(Recording),
         "documents": count(Document),
+        "chats": int(  # 014
+            db.scalar(
+                select(func.count())
+                .select_from(Chat)
+                .where(Chat.session_folder_id.in_(folder_ids), Chat.deleted_at.is_(None))
+            )
+            or 0
+        ),
         "kept_folder": StorageService.relative_path(parts),
         # 012: tasks linked to its events; tasks of its courses that become personal
         "linked_task_count": task_link_service.linked_count(db, user, lineage_ids=event_lineages),

@@ -101,3 +101,19 @@ def test_typed_tabs_and_split_view(owner_client: TestClient) -> None:
     assert c.put(f"{API}/workspace/{key}", json=bad).status_code == 422
     ratio = dict(body, split={"enabled": True, "focused": "left", "ratio": 0.95})
     assert c.put(f"{API}/workspace/{key}", json=ratio).status_code == 422
+
+
+def test_new_chat_tabs_are_kept(owner_client: TestClient) -> None:
+    """014 T013: an empty chat tab (client id `new:<uuid>`) survives a save; an unknown chat id
+    is dropped like any stale tab. Tabs of real chats are covered in test_chats_history."""
+    c = owner_client
+    key = make_session(c)
+    create_note(c, key, "A")  # the session gets its folder
+    new_tab = {"kind": "chat", "id": "new:0b9c2d6e-1f00-4a55-9b1e-2a7d1c3e4f50"}
+    r = c.put(
+        f"{API}/workspace/{key}",
+        json={"tabs": [new_tab, {"kind": "chat", "id": "ghost"}], "active": new_tab},
+    )
+    assert r.status_code == 200, r.text
+    assert r.json()["tabs"] == [new_tab]
+    assert r.json()["active"] == new_tab

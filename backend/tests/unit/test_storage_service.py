@@ -44,7 +44,13 @@ def test_only_note_files_can_be_deleted() -> None:
     deleting = {n for n in names for w in ("delete", "remove", "unlink", "rmtree") if w in n}
     # 009: `delete_tree` — one session/event folder, only for a permanent delete from the Trash
     # 009: `remove_empty_dir` — only folders without any file inside (creation Undo)
-    assert deleting == {"delete_content_file", "delete_tree", "remove_empty_dir"}
+    # 014: `delete_chat_files` — one chat's files in a `chats/` folder, after its Undo window
+    assert deleting == {
+        "delete_chat_files",
+        "delete_content_file",
+        "delete_tree",
+        "remove_empty_dir",
+    }
 
 
 def test_delete_content_file_scope(tmp_path: Path) -> None:

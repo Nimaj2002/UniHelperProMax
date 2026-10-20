@@ -5,6 +5,7 @@
 import type { RouteObject } from "react-router";
 import { shellRoutes as authShellRoutes } from "@/features/auth/routes";
 import { routes as adminRoutes } from "@/features/admin/routes";
+import "@/features/chat/routes";
 import { routes as courseRoutes } from "@/features/courses/routes";
 import "@/features/documents/routes";
 import { routes as eventRoutes } from "@/features/events/routes";

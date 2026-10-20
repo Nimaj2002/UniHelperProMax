@@ -9,7 +9,9 @@ export const VIEWPORT = { width: 1366, height: 768 };
 
 export const sidePanel = (page: Page) => page.getByRole("complementary", { name: "Side panel" });
 export const mainCard = (page: Page) => page.getByRole("main", { name: "Workspace" });
-export const audioCard = (page: Page) => page.getByRole("complementary", { name: "Audio" });
+/** 014: the session workspace's right card (Recordings and Chat) and the rail it closes to. */
+export const sessionPanel = (page: Page) => page.getByRole("complementary", { name: "Session panel" });
+export const sessionRail = (page: Page) => page.getByRole("navigation", { name: "Session panel rail" });
 export const tabRow = (page: Page) => mainCard(page).locator("div.h-10").first();
 
 export async function box(l: Locator) {
@@ -42,11 +44,11 @@ export async function openSession(page: Page, course: string, opts: { note?: str
   const url = workspaceUrl(courseId, lineageId, LAYOUT_DATE);
   await page.goto(url);
   await expect(mainCard(page)).toBeVisible();
-  // the audio card's open state is an account preference shared by every test: start open
-  const reopen = mainCard(page).getByRole("button", { name: /^Show audio panel/ });
-  await expect(audioCard(page).or(reopen).first()).toBeVisible();
+  // start with the session panel open (its layout is per browser, 014 FR-009)
+  const reopen = sessionRail(page).getByRole("button", { name: "Show session panel" });
+  await expect(sessionPanel(page).or(reopen).first()).toBeVisible();
   if (await reopen.isVisible()) await reopen.click();
-  await expect(audioCard(page)).toBeVisible();
+  await expect(sessionPanel(page)).toBeVisible();
   if (opts.note) await newNote(page, opts.note);
   return { courseId, lineageId, url };
 }

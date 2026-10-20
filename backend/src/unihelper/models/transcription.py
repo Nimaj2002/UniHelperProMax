@@ -59,7 +59,13 @@ class ProviderConfig(Base):
     )
     provider_id: Mapped[str] = mapped_column(String, primary_key=True)
     values_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
-    secret: Mapped[str | None] = mapped_column(Text, nullable=True)
+    secret: Mapped[str | None] = mapped_column(
+        Text, nullable=True
+    )  # plaintext until 014 migrates it
+    # 014: the encrypted key in the shared secret store
+    secret_id: Mapped[str | None] = mapped_column(
+        String, ForeignKey("secrets.id", ondelete="SET NULL"), nullable=True
+    )
     # 005: last connection test of the saved values
     test_status: Mapped[str] = mapped_column(String(16), nullable=False, default="not_tested")
     test_error: Mapped[str | None] = mapped_column(Text, nullable=True)

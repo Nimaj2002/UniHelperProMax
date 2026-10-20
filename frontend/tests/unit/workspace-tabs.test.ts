@@ -90,3 +90,36 @@ describe("server state", () => {
     expect(fromServer(wire)).toEqual(s);
   });
 });
+
+describe("chat tabs (014 US5)", () => {
+  const chat = (id: string): TabRef => ({ kind: "chat", id });
+
+  it("round-trips the chat kind through toServer/fromServer", () => {
+    const s = run(EMPTY, { type: "open", tab: note("a") }, { type: "open", tab: chat("new:0f8e5b0c-1111-4222-8333-444455556666") }, { type: "open", tab: chat("c1") });
+    const wire = toServer(s);
+    expect(wire.tabs).toEqual([note("a"), chat("new:0f8e5b0c-1111-4222-8333-444455556666"), chat("c1")]);
+    expect(wire.openNoteIds).toEqual(["a"]);
+    expect(wire.activeNoteId).toBeNull();
+    expect(fromServer(wire)).toEqual(s);
+  });
+
+  it("replace keeps a chat tab's place (its first send), or shows the chat's existing tab", () => {
+    let s = run(EMPTY, { type: "open", tab: note("a") }, { type: "open", tab: chat("new:x") }, { type: "open", tab: note("b") }, { type: "open", tab: chat("new:x") });
+    s = reduceTabs(s, { type: "replace", from: chat("new:x"), to: chat("c1") });
+    expect(s.tabs).toEqual([note("a"), chat("c1"), note("b")]);
+    expect(s.active).toEqual(chat("c1"));
+    s = run(s, { type: "open", tab: chat("new:y") }, { type: "replace", from: chat("new:y"), to: chat("c1") });
+    expect(s.tabs).toEqual([note("a"), chat("c1"), note("b")]);
+    expect(s.active).toEqual(chat("c1"));
+  });
+
+  it("a chat tab is split like a note", () => {
+    const s = run(EMPTY, { type: "open", tab: note("a") }, { type: "open", tab: chat("c1") }, { type: "moveToOtherPane", tab: chat("c1") });
+    const side = paneOf(s, chat("c1"));
+    expect(side).not.toBeNull();
+    expect(paneOf(s, note("a"))).not.toBe(side);
+    const r = reduceTabs(s, { type: "replace", from: chat("c1"), to: chat("c2") });
+    expect(paneOf(r, chat("c2"))).toBe(side);
+    expect(panes(r).split).toBe(true);
+  });
+});

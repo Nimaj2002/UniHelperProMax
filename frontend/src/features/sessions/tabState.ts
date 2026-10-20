@@ -4,7 +4,7 @@
  * functions, so every rule is unit-tested; the page only renders the state.
  */
 
-export type TabKind = "note" | "document";
+export type TabKind = "note" | "document" | "chat";
 export interface TabRef {
   kind: TabKind;
   id: string;
@@ -60,6 +60,8 @@ export type TabAction =
   | { type: "focusPane"; side: Side }
   | { type: "moveToOtherPane"; tab: TabRef }
   | { type: "setRatio"; ratio: number }
+  /** 014: a chat tab's id changes (its first send, or another chat shown in it); keeps its place. */
+  | { type: "replace"; from: TabRef; to: TabRef }
   | { type: "retain"; valid: (t: TabRef) => boolean };
 
 function show(state: WorkspaceTabs, tab: TabRef): WorkspaceTabs {
@@ -131,6 +133,14 @@ export function reduceTabs(state: WorkspaceTabs, action: TabAction): WorkspaceTa
     }
     case "setRatio":
       return state.split ? { ...state, split: { ...state.split, ratio: Math.min(0.8, Math.max(0.2, action.ratio)) } } : state;
+    case "replace": {
+      if (!has(state.tabs, action.from)) return reduceTabs(state, { type: "open", tab: action.to });
+      // the other chat is open already: close this tab and show that one
+      if (has(state.tabs, action.to)) return reduceTabs(reduceTabs(state, { type: "close", tab: action.from }), { type: "open", tab: action.to });
+      const swap = (t: TabRef | null) => (same(t, action.from) ? action.to : t);
+      const split = state.split ? { ...state.split, left: swap(state.split.left), right: swap(state.split.right) } : null;
+      return { tabs: state.tabs.map((t) => swap(t)!), active: swap(state.active), split };
+    }
     case "retain": {
       const tabs = state.tabs.filter(action.valid);
       if (tabs.length === state.tabs.length) return state;

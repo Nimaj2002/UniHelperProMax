@@ -15,6 +15,8 @@ const AppearanceSettings = lazy(() => import("./themes/AppearanceSettings").then
 const ThemeEditor = lazy(() => import("./themes/ThemeEditor").then((m) => ({ default: m.ThemeEditor })));
 // 010: Settings → Import and export
 const ImportExportPage = lazy(() => import("./calendar-io/ImportExportPage").then((m) => ({ default: m.ImportExportPage })));
+// 014 US1: Settings → AI
+const AiSettingsPage = lazy(() => import("./ai/AiSettings").then((m) => ({ default: m.AiSettingsPage })));
 // 009 US4: Settings → Trash
 const TrashPage = lazy(() => import("./trash/TrashPage").then((m) => ({ default: m.TrashPage })));
 
@@ -45,6 +47,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Navigate to="/settings/transcription" replace /> },
       { path: "transcription", element: <TranscriptionSettingsPage /> },
+      { path: "ai", element: loading(<AiSettingsPage />) },
       { path: "appearance", element: loading(<AppearanceSettings />) },
       { path: "appearance/themes/new", element: loading(<ThemeEditor />) },
       { path: "appearance/themes/:themeId", element: loading(<ThemeEditor />) },

@@ -99,7 +99,7 @@ test("Accessibility (006): import UI in a user-created theme", async ({ page }, 
   await expect(theme).toBeChecked();
 
   await page.goto(`/courses/${cls.courseId}/sessions/${encodeURIComponent(`${cls.lineageId}:2026-10-05`)}`);
-  const panel = page.getByRole("complementary", { name: "Audio" });
+  const panel = page.getByRole("complementary", { name: "Session panel" });
   const wav = Buffer.concat([
     Buffer.from("52494646", "hex"), Buffer.from([36 + 3200, 12, 0, 0]), Buffer.from("WAVEfmt ", "ascii"),
     Buffer.from([16, 0, 0, 0, 1, 0, 1, 0, 0x80, 0x3e, 0, 0, 0, 0x7d, 0, 0, 2, 0, 16, 0]),
@@ -304,7 +304,7 @@ test("Accessibility (008): card layout landmarks, names and unclipped focus, ope
       await page.keyboard.press("Tab");
       const clipped = await page.evaluate(() => {
         const el = document.activeElement as HTMLElement | null;
-        const card = el?.closest<HTMLElement>("#course-panel, #main, #workspace-audio-panel");
+        const card = el?.closest<HTMLElement>("#course-panel, #main, #workspace-session-panel");
         if (!el || !card || el === card) return null;
         const r = el.getBoundingClientRect();
         const c = card.getBoundingClientRect();
@@ -321,7 +321,7 @@ test("Accessibility (008): card layout landmarks, names and unclipped focus, ope
     await page.goto(url);
     await expect(page.getByRole("main", { name: "Workspace" })).toBeVisible();
     await expect(page.getByRole("complementary", { name: "Side panel" })).toBeVisible();
-    if (label === "session workspace") await expect(page.getByRole("complementary", { name: "Audio" })).toBeVisible();
+    if (label === "session workspace") await expect(page.getByRole("complementary", { name: "Session panel" })).toBeVisible();
     await axe(page, `${label} (cards)`);
     const unnamed = await page.evaluate(() =>
       [...document.querySelectorAll("button")].filter((b) => !b.closest("[aria-hidden=true]") && !(b.getAttribute("aria-label") || b.textContent?.trim() || b.getAttribute("aria-labelledby") || b.title)).map((b) => b.outerHTML.slice(0, 100)),

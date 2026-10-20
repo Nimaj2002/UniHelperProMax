@@ -179,6 +179,7 @@ function hierarchySentence(kind: HierarchyKind, impact: DeletionImpact, linkedTa
     impact.notes ? plural(impact.notes, "note") : "",
     impact.recordings ? plural(impact.recordings, "recording") : "",
     impact.documents ? plural(impact.documents, "document") : "",
+    impact.chats ? plural(impact.chats, "chat") : "",
     linkedTasks === "delete" && impact.linkedTaskCount ? plural(impact.linkedTaskCount, "linked task") : "",
   ].filter(Boolean);
   const removes = parts.length ? `This also removes ${list(parts)} from the app.` : "";

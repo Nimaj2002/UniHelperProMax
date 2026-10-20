@@ -218,6 +218,22 @@ class StorageService:
         except FileNotFoundError:
             pass
 
+    def delete_chat_files(self, chats_parts: Sequence[str], stem: str) -> None:
+        """014: remove one chat — `<stem>.json`, `<stem>.md` and its `<stem>.files/` folder —
+        from a session's `chats/` folder. Nothing outside that folder, no links."""
+        folder = self.path_for(chats_parts)
+        if folder.name != "chats" or folder.is_symlink():
+            raise StoragePathError("Only files in a chats folder can be deleted")
+        for name in (f"{stem}.json", f"{stem}.md"):
+            self._check_part(name)
+            target = folder / name
+            if target.is_symlink() or target.is_file():
+                target.unlink(missing_ok=True)
+        extra = folder / f"{stem}.files"
+        self._check_part(extra.name)
+        if extra.is_dir() and not extra.is_symlink() and not _is_junction(extra):
+            shutil.rmtree(extra)
+
     def delete_tree(self, rel_parts: Sequence[str]) -> list[str]:
         """Permanently remove one session or event folder and everything in it (009 Trash →
         Delete → "Yes"). Strict: the path must be exactly at session/event-folder depth inside

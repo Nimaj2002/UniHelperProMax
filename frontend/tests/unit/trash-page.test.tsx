@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { trashSentence } from "@/features/classes/DeleteSessionFlow";
+import { chatTitlesSentence, trashSentence } from "@/features/classes/DeleteSessionFlow";
 import { impactSentence } from "@/features/courses/HierarchyMenu";
 import { savedMessage } from "@/features/events/EditEventFlow";
 import type { TrashEntry } from "@/features/settings/trash/api";
@@ -28,6 +28,7 @@ const entry = (over: Partial<TrashEntry> = {}): TrashEntry => ({
   missingFiles: 0,
   version: 1,
   taskCount: 0,
+  chatCount: 0,
   ...over,
 });
 
@@ -105,7 +106,7 @@ describe("Trash page", () => {
 
 describe("deletion and edit messages (009 US3)", () => {
   it("delete confirmation names the content and the Trash", () => {
-    const impact = { kind: "event" as const, occurrences: 1, notes: 2, recordings: 1, documents: 1, linkedTaskCount: 0 };
+    const impact = { kind: "event" as const, occurrences: 1, notes: 2, recordings: 1, documents: 1, linkedTaskCount: 0, chats: 0, chatTitles: [] as string[] };
     expect(trashSentence({ kind: "event", courseName: null }, impact)).toBe(
       "This will move 1 event with 2 notes, 1 recording and 1 document to the Trash. You can restore it from Settings → Trash.",
     );
@@ -116,30 +117,44 @@ describe("deletion and edit messages (009 US3)", () => {
 
   it("hierarchy delete names events, content and the Trash", () => {
     expect(
-      impactSentence("semester", { semesters: 0, courses: 2, classes: 3, events: 1, notes: 4, recordings: 0, documents: 1, keptFolder: "2026/Fall", linkedTaskCount: 0, taskCount: 0 }),
+      impactSentence("semester", { semesters: 0, courses: 2, classes: 3, events: 1, notes: 4, recordings: 0, documents: 1, chats: 0, keptFolder: "2026/Fall", linkedTaskCount: 0, taskCount: 0 }),
     ).toBe("This also removes 2 courses from the app. Its 3 classes and 1 event, with 4 notes and 1 document, move to the Trash — each class and event can be restored from Settings → Trash.");
-    expect(impactSentence("semester", { semesters: 0, courses: 0, classes: 0, events: 1, notes: 0, recordings: 0, documents: 0, keptFolder: "x", linkedTaskCount: 0, taskCount: 0 })).toBe(
+    expect(impactSentence("semester", { semesters: 0, courses: 0, classes: 0, events: 1, notes: 0, recordings: 0, documents: 0, chats: 0, keptFolder: "x", linkedTaskCount: 0, taskCount: 0 })).toBe(
       "Its 1 event moves to the Trash — each class and event can be restored from Settings → Trash.",
     );
-    expect(impactSentence("course", { semesters: 0, courses: 0, classes: 0, events: 0, notes: 0, recordings: 0, documents: 0, keptFolder: "x", linkedTaskCount: 0, taskCount: 0 })).toBe(
+    expect(impactSentence("course", { semesters: 0, courses: 0, classes: 0, events: 0, notes: 0, recordings: 0, documents: 0, chats: 0, keptFolder: "x", linkedTaskCount: 0, taskCount: 0 })).toBe(
       "This course is empty.",
     );
   });
 
   it("012: linked tasks are named when they go with the event; course tasks become personal", () => {
-    const impact = { kind: "event" as const, occurrences: 1, notes: 1, recordings: 0, documents: 0, linkedTaskCount: 2 };
+    const impact = { kind: "event" as const, occurrences: 1, notes: 1, recordings: 0, documents: 0, linkedTaskCount: 2, chats: 0, chatTitles: [] as string[] };
     expect(trashSentence({ kind: "event", courseName: null }, impact)).toBe(
       "This will move 1 event with 1 note to the Trash. You can restore it from Settings → Trash.",
     );
     expect(trashSentence({ kind: "event", courseName: null }, impact, "delete")).toBe(
       "This will move 1 event with 1 note and 2 linked tasks to the Trash. You can restore it from Settings → Trash.",
     );
-    const course = { semesters: 0, courses: 0, classes: 2, events: 0, notes: 0, recordings: 0, documents: 0, keptFolder: "x", linkedTaskCount: 0, taskCount: 3 };
+    const course = { semesters: 0, courses: 0, classes: 2, events: 0, notes: 0, recordings: 0, documents: 0, chats: 0, keptFolder: "x", linkedTaskCount: 0, taskCount: 3 };
     expect(impactSentence("course", course)).toBe(
       "Its 2 classes move to the Trash — each class and event can be restored from Settings → Trash. 3 tasks will become personal tasks.",
     );
     expect(impactSentence("course", { ...course, classes: 0, taskCount: 1 })).toBe("This course is empty. 1 task will become a personal task.");
     expect(entryContent(entry({ noteCount: 0, recordingCount: 0, taskCount: 1 }))).toBe("1 task");
+  });
+
+  it("014: deletions and Trash entries name the chats", () => {
+    const impact = { kind: "class" as const, occurrences: 1, notes: 1, recordings: 0, documents: 0, linkedTaskCount: 0, chats: 2, chatTitles: ["Exam topics", "Week 3"] };
+    expect(trashSentence({ kind: "class", courseName: "CS 201" }, impact)).toBe(
+      "This will move 1 session of CS 201 with 1 note and 2 chats to the Trash. You can restore it from Settings → Trash.",
+    );
+    expect(chatTitlesSentence(impact)).toBe("Chats: Exam topics and Week 3.");
+    expect(chatTitlesSentence({ chats: 7, chatTitles: ["A", "B", "C", "D", "E"] })).toBe("Chats: A, B, C, D, E and 2 more.");
+    expect(chatTitlesSentence({ chats: 0, chatTitles: [] })).toBe("");
+    expect(
+      impactSentence("course", { semesters: 0, courses: 0, classes: 2, events: 0, notes: 0, recordings: 1, documents: 0, chats: 3, keptFolder: "x", linkedTaskCount: 0, taskCount: 0 }),
+    ).toBe("Its 2 classes, with 1 recording and 3 chats, move to the Trash — each class and event can be restored from Settings → Trash.");
+    expect(entryContent(entry({ noteCount: 1, recordingCount: 0, chatCount: 1 }))).toBe("1 note · 1 chat");
   });
 
   it("series edit reports what was left unchanged", () => {

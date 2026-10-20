@@ -22,11 +22,18 @@ services:
       - "${UNIHELPER_BIND:-127.0.0.1}:${UNIHELPER_PORT:-8000}:8000"
     environment:
       UNIHELPER_SECURE_COOKIES: "${UNIHELPER_SECURE_COOKIES:-false}"
+      # The container has no OS key store, so the key that encrypts your API keys is a file in
+      # its own folder, kept apart from /data: a copy of the data folder alone reveals no key.
+      UNIHELPER_KEY_STORE: file
+      UNIHELPER_KEY_FILE: /keys/master.key
     volumes:
       # Plain folders of .md, .pdf and audio files, plus the SQLite database: the same folder
       # ./start.sh uses, so you can switch between Docker and a normal install. Create it before
       # the first start (`mkdir -p backend/data`), or Docker creates it owned by root.
       - ./backend/data:/data
+      # The encryption key for saved API keys (feature 014). Create it too (`mkdir -p keys`) and
+      # back it up separately from backend/data.
+      - ./keys:/keys
     read_only: true
     tmpfs:
       - /tmp

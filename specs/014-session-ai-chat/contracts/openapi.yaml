@@ -1,0 +1,872 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 014 additions (AI chat, AI endpoints, secret store)
+  version: 1.11.0
+  description: |
+    Additive to the 001–012 contracts (same conventions: camelCase JSON, RFC 9457 problems, CSRF
+    header on writes, `If-Match: <version>` on updates and deletes of versioned rows → 428 when
+    missing, 412 `version_conflict` when stale). Every operation is scoped to the signed-in user;
+    another user's ids answer 404.
+
+    Keys are write-only: no response ever contains a full key (FR-019, Principle IV); secret state
+    is `SecretState {configured, masked, readable}`.
+
+    Amended existing operations (only the additions are listed):
+    - `GET|PUT /workspace/{sessionKey}`: `TabRef.kind` enum gains `chat`.
+    - `GET /sessions/{sessionKey}/deletion-impact`: + `chats` (int), + `chatTitles` (≤ 5 strings).
+    - `GET /{years|semesters|courses}/{id}/deletion-impact`: + `chats` (int).
+    - `GET /trash`, trash entries: + `chatCount`.
+    - `GET /settings/transcription`: secret state gains `readable` (false when the key store cannot
+      decrypt it). Request semantics are unchanged.
+servers:
+  - url: /api/v1
+
+paths:
+  # ───────────────────────────── secret store ─────────────────────────────
+  /secrets/status:
+    get:
+      tags: [ai]
+      summary: Where keys are protected, whether they can be read, and migration state (FR-065, FR-067, FR-068)
+      responses:
+        "200":
+          description: Status
+          content: { application/json: { schema: { $ref: "#/components/schemas/SecretStoreStatus" } } }
+
+  /secrets/reset:
+    post:
+      tags: [ai]
+      summary: Start a new key store after the old one was lost; drops unreadable keys only (FR-068)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [confirm], properties: { confirm: { const: true } } } } }
+      responses:
+        "200":
+          description: New status
+          content: { application/json: { schema: { $ref: "#/components/schemas/SecretStoreStatus" } } }
+        "403": { $ref: "#/components/responses/Problem" }   # forbidden (owner only: the store is installation-wide)
+        "409": { $ref: "#/components/responses/Problem" }   # store_readable (nothing to reset)
+
+  # ───────────────────────────── AI settings ─────────────────────────────
+  /ai/styles:
+    get:
+      tags: [ai]
+      summary: The three request styles with default capabilities, paths and limits (UI discovers styles here)
+      responses:
+        "200":
+          description: Styles
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/AiStyle" } } } }
+
+  /ai/base-url/check:
+    post:
+      tags: [ai]
+      summary: Normalise a base URL for a style; report removed path and Local/Remote (FR-015, FR-016)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/BaseUrlCheck" } } }
+      responses:
+        "200":
+          description: Normalised
+          content: { application/json: { schema: { $ref: "#/components/schemas/BaseUrlResult" } } }
+        "422": { $ref: "#/components/responses/Problem" }   # invalid_url · https_required
+
+  /ai/endpoints:
+    get:
+      tags: [ai]
+      summary: The user's endpoints with their models
+      responses:
+        "200":
+          description: Endpoints
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/AiEndpoint" } } } }
+    post:
+      tags: [ai]
+      summary: Add an endpoint
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AiEndpointCreate" } } }
+      responses:
+        "201":
+          description: Created
+          content: { application/json: { schema: { $ref: "#/components/schemas/AiEndpoint" } } }
+        "409": { $ref: "#/components/responses/Problem" }   # name_taken · key_store_unreadable
+        "422": { $ref: "#/components/responses/Problem" }   # validation · invalid_url · https_required
+
+  /ai/endpoints/test:
+    post:
+      tags: [ai]
+      summary: Test connection for a draft configuration; never changes saved data (FR-017)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AiEndpointTest" } } }
+      responses:
+        "200":
+          description: Result (also for failures of the remote service)
+          content: { application/json: { schema: { $ref: "#/components/schemas/AiTestResult" } } }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /ai/endpoints/models/discover:
+    post:
+      tags: [ai]
+      summary: Refresh — fetch the model list for a draft configuration; returns candidates, saves nothing
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AiEndpointTest" } } }
+      responses:
+        "200":
+          description: Candidates merged with the saved models' user edits
+          content: { application/json: { schema: { $ref: "#/components/schemas/AiDiscoverResult" } } }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /ai/endpoints/{endpointId}:
+    parameters: [{ $ref: "#/components/parameters/EndpointId" }]
+    get:
+      tags: [ai]
+      summary: One endpoint
+      responses:
+        "200":
+          description: Endpoint
+          content: { application/json: { schema: { $ref: "#/components/schemas/AiEndpoint" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+    patch:
+      tags: [ai]
+      summary: Edit, enable/disable, replace or remove the key (absent = keep, string = replace, null = remove), replace models
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AiEndpointUpdate" } } }
+      responses:
+        "200":
+          description: Updated
+          content: { application/json: { schema: { $ref: "#/components/schemas/AiEndpoint" } } }
+        "409": { $ref: "#/components/responses/Problem" }   # name_taken
+        "412": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [ai]
+      summary: Delete (after UI confirmation); chats keep model labels (FR-020); stops its active runs
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "204": { description: Deleted }
+        "412": { $ref: "#/components/responses/Problem" }
+
+  /ai/endpoints/{endpointId}/privacy-ack:
+    post:
+      tags: [ai]
+      summary: Acknowledge the Remote privacy notice once for this endpoint (FR-040)
+      parameters: [{ $ref: "#/components/parameters/EndpointId" }]
+      responses:
+        "200":
+          description: Acknowledged
+          content: { application/json: { schema: { $ref: "#/components/schemas/AiEndpoint" } } }
+
+  /ai/settings:
+    get:
+      tags: [ai]
+      summary: Custom instructions and the last model used
+      responses:
+        "200":
+          description: Settings
+          content: { application/json: { schema: { $ref: "#/components/schemas/AiSettings" } } }
+    put:
+      tags: [ai]
+      summary: Save custom instructions (FR-060)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/AiSettingsUpdate" } } }
+      responses:
+        "200":
+          description: Saved
+          content: { application/json: { schema: { $ref: "#/components/schemas/AiSettings" } } }
+        "412": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  # ───────────────────────────── chats ─────────────────────────────
+  /sessions/{sessionKey}/chats:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [chat]
+      summary: This session's chats, newest activity first; q filters by title, or by message text with in=text (FR-025, FR-062)
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 200 } }
+        - { name: in, in: query, required: false, schema: { type: string, enum: [title, text], default: title } }
+      responses:
+        "200":
+          description: Chats
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ChatSummary" } } } }
+        "404": { $ref: "#/components/responses/Problem" }
+    post:
+      tags: [chat]
+      summary: Start a chat with its first message (an empty chat is never created, FR-028); starts a run
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SendMessage" } } }
+      responses:
+        "201":
+          description: Chat created and run started
+          content: { application/json: { schema: { $ref: "#/components/schemas/SendResult" } } }
+        "409": { $ref: "#/components/responses/Problem" }   # privacy_ack_required · context_exceeded · model_unavailable · attachment_not_accepted · key_unreadable
+        "413": { $ref: "#/components/responses/Problem" }   # too_large (with limit in detail)
+        "422": { $ref: "#/components/responses/Problem" }   # empty_message · too_many_attachments · validation
+        "429": { $ref: "#/components/responses/Problem" }   # too_many_runs
+
+  /sessions/{sessionKey}/chat-uploads:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    post:
+      tags: [chat]
+      summary: Stage a picture, PDF or audio file from the device (raw body like document imports; the type is read from its first bytes)
+      parameters:
+        - { name: fileName, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 255 } }
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema: { type: string, format: binary }
+      responses:
+        "201":
+          description: Staged
+          content: { application/json: { schema: { $ref: "#/components/schemas/ChatUpload" } } }
+        "413": { $ref: "#/components/responses/Problem" }   # file_too_large (25 MB)
+        "415": { $ref: "#/components/responses/Problem" }   # unsupported_type
+
+  /sessions/{sessionKey}/chat-drafts:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [chat]
+      summary: All drafts of this session (the new-chat box has chatId null) (FR-032)
+      responses:
+        "200":
+          description: Drafts
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ChatDraft" } } } }
+    put:
+      tags: [chat]
+      summary: Save one draft (last write wins; empty text and no attachments deletes it)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ChatDraft" } } }
+      responses:
+        "200":
+          description: Saved
+          content: { application/json: { schema: { $ref: "#/components/schemas/ChatDraft" } } }
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /chats/preflight:
+    post:
+      tags: [chat]
+      summary: Check attachments and context against the chosen model before sending (FR-038, FR-053–056)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PreflightRequest" } } }
+      responses:
+        "200":
+          description: Per-item acceptance, size estimate and limits
+          content: { application/json: { schema: { $ref: "#/components/schemas/PreflightResult" } } }
+
+  /chats/{chatId}:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }]
+    get:
+      tags: [chat]
+      summary: The full chat (turns, versions, answers, context) read from its file
+      responses:
+        "200":
+          description: Chat
+          content: { application/json: { schema: { $ref: "#/components/schemas/Chat" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+    patch:
+      tags: [chat]
+      summary: Rename, change model, or set the context list (removing items)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ChatUpdate" } } }
+      responses:
+        "200":
+          description: Updated
+          content: { application/json: { schema: { $ref: "#/components/schemas/Chat" } } }
+        "412": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [chat]
+      summary: Soft-delete for Undo (stops a running answer first and saves it) (FR-026)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "204": { description: Deleted (restorable for 10 minutes) }
+        "412": { $ref: "#/components/responses/Problem" }
+
+  /chats/{chatId}/restore:
+    post:
+      tags: [chat]
+      summary: Undo a delete
+      parameters: [{ $ref: "#/components/parameters/ChatId" }]
+      responses:
+        "200":
+          description: Restored
+          content: { application/json: { schema: { $ref: "#/components/schemas/ChatSummary" } } }
+        "410": { $ref: "#/components/responses/Problem" }   # undo_expired
+
+  /chats/{chatId}/messages:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }]
+    post:
+      tags: [chat]
+      summary: Send a message in an existing chat; starts a run
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SendMessage" } } }
+      responses:
+        "202":
+          description: Run started
+          content: { application/json: { schema: { $ref: "#/components/schemas/SendResult" } } }
+        "409": { $ref: "#/components/responses/Problem" }   # run_active · privacy_ack_required · context_exceeded · model_unavailable · attachment_not_accepted · key_unreadable
+        "413": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+
+  /chats/{chatId}/turns/{turnId}/regenerate:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }, { $ref: "#/components/parameters/TurnId" }]
+    post:
+      tags: [chat]
+      summary: New answer version for the selected user version (also Retry after a failure) (FR-034)
+      requestBody:
+        required: false
+        content: { application/json: { schema: { type: object, properties: { model: { $ref: "#/components/schemas/ModelRef" } } } } }
+      responses:
+        "202":
+          description: Run started
+          content: { application/json: { schema: { $ref: "#/components/schemas/SendResult" } } }
+        "409": { $ref: "#/components/responses/Problem" }
+
+  /chats/{chatId}/turns/{turnId}/edit:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }, { $ref: "#/components/parameters/TurnId" }]
+    post:
+      tags: [chat]
+      summary: Edit and resend the last user message as a new version (FR-059); only the last turn
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SendMessage" } } }
+      responses:
+        "202":
+          description: Run started
+          content: { application/json: { schema: { $ref: "#/components/schemas/SendResult" } } }
+        "409": { $ref: "#/components/responses/Problem" }   # not_last_turn · run_active
+        "422": { $ref: "#/components/responses/Problem" }
+
+  /chats/{chatId}/turns/{turnId}/selection:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }, { $ref: "#/components/parameters/TurnId" }]
+    put:
+      tags: [chat]
+      summary: Choose which user version and answer version are shown (and used as context)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [version, answer]
+              properties: { version: { type: integer, minimum: 0 }, answer: { type: integer, minimum: 0 } }
+      responses:
+        "200":
+          description: Chat
+          content: { application/json: { schema: { $ref: "#/components/schemas/Chat" } } }
+        "409": { $ref: "#/components/responses/Problem" }   # run_active
+
+  /chats/{chatId}/answers/{answerId}/append-to-note:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }, { name: answerId, in: path, required: true, schema: { type: string } }]
+    post:
+      tags: [chat]
+      summary: Append an answer to a note (or a new note) under a heading naming the chat and date; never overwrites (FR-058)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - { type: object, required: [noteId], properties: { noteId: { type: string } } }
+                - { type: object, required: [newNoteTitle], properties: { newNoteTitle: { type: string, minLength: 1, maxLength: 120 } } }
+      responses:
+        "200":
+          description: Same shape as the transcript append result (text, previousHash, hash, version, noteId)
+          content: { application/json: { schema: { $ref: "#/components/schemas/AppendResult" } } }
+        "409": { $ref: "#/components/responses/Problem" }   # answer_incomplete
+
+  /chats/{chatId}/seen:
+    post:
+      tags: [chat]
+      summary: Clear the unseen-answer flag (FR-006)
+      parameters: [{ $ref: "#/components/parameters/ChatId" }]
+      responses:
+        "204": { description: Cleared }
+
+  /chat-files/{uploadId}:
+    get:
+      tags: [chat]
+      summary: An uploaded attachment (thumbnails, history chips)
+      parameters: [{ name: uploadId, in: path, required: true, schema: { type: string } }]
+      responses:
+        "200":
+          description: File bytes with its stored MIME type, Content-Disposition attachment for non-images
+          content: { "*/*": { schema: { type: string, format: binary } } }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  # ───────────────────────────── runs (streaming) ─────────────────────────────
+  /chat-runs/active:
+    get:
+      tags: [chat]
+      summary: The user's active runs (rail indicators, reattaching after reload)
+      responses:
+        "200":
+          description: Runs
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ChatRun" } } } }
+
+  /chat-runs/{runId}/events:
+    get:
+      tags: [chat]
+      summary: Server-sent events for one run; replays from Last-Event-ID (see contracts/chat-stream.md)
+      parameters:
+        - { $ref: "#/components/parameters/RunId" }
+        - { name: Last-Event-ID, in: header, required: false, schema: { type: integer, minimum: 0 } }
+      responses:
+        "200":
+          description: text/event-stream
+          content: { text/event-stream: { schema: { type: string } } }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /chat-runs/{runId}/stop:
+    post:
+      tags: [chat]
+      summary: Stop at once and cancel at the provider; partial answer kept as Stopped (FR-036)
+      parameters: [{ $ref: "#/components/parameters/RunId" }]
+      responses:
+        "200":
+          description: Final run state
+          content: { application/json: { schema: { $ref: "#/components/schemas/ChatRun" } } }
+
+  # ───────────────────────────── notes picker ─────────────────────────────
+  /notes/search:
+    get:
+      tags: [notes]
+      summary: Notes across sessions and courses for the attach picker (FR-046)
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 200 } }
+        - { name: courseId, in: query, required: false, schema: { type: string } }
+        - { name: sessionKey, in: query, required: false, schema: { type: string } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 50 } }
+      responses:
+        "200":
+          description: Notes
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/NoteSearchHit" } } } }
+
+components:
+  parameters:
+    SessionKey: { name: sessionKey, in: path, required: true, schema: { type: string } }
+    EndpointId: { name: endpointId, in: path, required: true, schema: { type: string } }
+    ChatId: { name: chatId, in: path, required: true, schema: { type: string } }
+    TurnId: { name: turnId, in: path, required: true, schema: { type: string } }
+    RunId: { name: runId, in: path, required: true, schema: { type: string } }
+    IfMatch: { name: If-Match, in: header, required: true, schema: { type: integer, minimum: 1 } }
+
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+        retryAfterSeconds: { type: integer }
+        unaccepted: { type: array, items: { $ref: "#/components/schemas/ContextItemRef" } }
+        errors:
+          type: array
+          items:
+            type: object
+            required: [field, code, message]
+            properties:
+              field: { type: string }
+              code: { type: string }
+              message: { type: string }
+
+    Style: { type: string, enum: [openai, anthropic, gemini] }
+    Locality: { type: string, enum: [local, remote] }
+
+    SecretState:
+      type: object
+      required: [configured, masked, readable]
+      properties:
+        configured: { type: boolean }
+        masked: { type: [string, "null"], description: '"••••" + last 4 for keys ≥ 8 chars, "••••" otherwise, null when absent' }
+        readable: { type: boolean }
+
+    SecretStoreStatus:
+      type: object
+      required: [store, readable, unreadableSecrets, migration]
+      properties:
+        store: { type: string, enum: [os_key_store, key_file] }
+        protectionNote: { type: [string, "null"], description: Plain-language weaker-protection sentence when store = key_file }
+        readable: { type: boolean }
+        unreadableSecrets: { type: integer, minimum: 0 }
+        migration: { type: string, enum: [done, failed, not_needed, pending] }
+        migrationMessage: { type: [string, "null"] }
+
+    Limits:
+      type: object
+      required: [maxAttachments, perFileBytes, perMessageBytes]
+      properties:
+        maxAttachments: { type: integer }
+        perFileBytes: { type: object, additionalProperties: { type: integer }, description: "keys: image, pdf, audio" }
+        perMessageBytes: { type: integer }
+        maxImages: { type: [integer, "null"] }
+        maxPdfPages: { type: [integer, "null"] }
+        imageTypes: { type: array, items: { type: string } }
+        audioTypes: { type: array, items: { type: string } }
+
+    AiStyle:
+      type: object
+      required: [id, label, exampleBaseUrls, chatPath, modelsPath, keyHeader, defaultCapabilities, limits]
+      properties:
+        id: { $ref: "#/components/schemas/Style" }
+        label: { type: string }
+        exampleBaseUrls: { type: array, items: { type: string } }
+        chatPath: { type: string }
+        modelsPath: { type: string }
+        keyHeader: { type: string }
+        defaultCapabilities: { $ref: "#/components/schemas/Capabilities" }
+        limits: { $ref: "#/components/schemas/Limits" }
+
+    Capabilities:
+      type: object
+      required: [images, pdf, audio]
+      properties: { images: { type: boolean }, pdf: { type: boolean }, audio: { type: boolean } }
+
+    BaseUrlCheck:
+      type: object
+      required: [style, baseUrl]
+      properties: { style: { $ref: "#/components/schemas/Style" }, baseUrl: { type: string, maxLength: 2048 } }
+
+    BaseUrlResult:
+      type: object
+      required: [baseUrl, locality]
+      properties:
+        baseUrl: { type: string }
+        removedPath: { type: [string, "null"] }
+        locality: { $ref: "#/components/schemas/Locality" }
+
+    AiModel:
+      type: object
+      required: [id, modelId, displayName, capabilities, hidden, source]
+      properties:
+        id: { type: string }
+        modelId: { type: string, minLength: 1, maxLength: 200 }
+        displayName: { type: string, minLength: 1, maxLength: 80 }
+        capabilities: { $ref: "#/components/schemas/Capabilities" }
+        hidden: { type: boolean }
+        source: { type: string, enum: [fetched, manual] }
+        contextLimit: { type: [integer, "null"] }
+        outputLimit: { type: [integer, "null"] }
+
+    AiModelInput:
+      type: object
+      required: [modelId, displayName, capabilities, hidden]
+      properties:
+        id: { type: [string, "null"], description: Existing model id to keep; null = new }
+        modelId: { type: string, minLength: 1, maxLength: 200 }
+        displayName: { type: string, minLength: 1, maxLength: 80 }
+        capabilities: { $ref: "#/components/schemas/Capabilities" }
+        hidden: { type: boolean }
+        source: { type: string, enum: [fetched, manual], default: manual }
+        contextLimit: { type: [integer, "null"] }
+        outputLimit: { type: [integer, "null"] }
+
+    AiEndpoint:
+      type: object
+      required: [id, name, style, baseUrl, locality, enabled, key, models, privacyAcknowledged, version]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        style: { $ref: "#/components/schemas/Style" }
+        baseUrl: { type: string }
+        locality: { $ref: "#/components/schemas/Locality" }
+        enabled: { type: boolean }
+        key: { $ref: "#/components/schemas/SecretState" }
+        models: { type: array, items: { $ref: "#/components/schemas/AiModel" } }
+        privacyAcknowledged: { type: boolean }
+        version: { type: integer }
+
+    AiEndpointCreate:
+      type: object
+      required: [name, style, baseUrl]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        style: { $ref: "#/components/schemas/Style" }
+        baseUrl: { type: string, minLength: 1, maxLength: 2048 }
+        apiKey: { type: [string, "null"], maxLength: 4096 }
+        enabled: { type: boolean, default: true }
+        models: { type: array, items: { $ref: "#/components/schemas/AiModelInput" } }
+
+    AiEndpointUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 60 }
+        style: { $ref: "#/components/schemas/Style" }
+        baseUrl: { type: string, minLength: 1, maxLength: 2048 }
+        apiKey: { type: [string, "null"], maxLength: 4096, description: "absent = keep, string = replace, null = remove" }
+        enabled: { type: boolean }
+        models: { type: array, items: { $ref: "#/components/schemas/AiModelInput" } }
+
+    AiEndpointTest:
+      type: object
+      required: [style, baseUrl]
+      properties:
+        style: { $ref: "#/components/schemas/Style" }
+        baseUrl: { type: string }
+        apiKey: { type: [string, "null"] }
+        useSavedKeyOf: { type: [string, "null"], description: Endpoint id whose saved key is used when apiKey is absent }
+        modelId: { type: [string, "null"], description: Typed model for endpoints without a model list }
+
+    AiTestResult:
+      type: object
+      required: [outcome, message]
+      properties:
+        outcome: { type: string, enum: [working, key_rejected, model_not_found, unreachable, timeout, not_this_style, https_required, provider] }
+        message: { type: string }
+        hint: { type: [string, "null"] }
+        looksLike: { oneOf: [{ $ref: "#/components/schemas/Style" }, { type: "null" }] }
+        modelCount: { type: [integer, "null"] }
+
+    AiDiscoverResult:
+      type: object
+      required: [outcome, models]
+      properties:
+        outcome: { type: string, enum: [working, key_rejected, unreachable, timeout, not_this_style, no_model_list, provider] }
+        message: { type: [string, "null"] }
+        models: { type: array, items: { $ref: "#/components/schemas/AiModelInput" } }
+
+    AiSettings:
+      type: object
+      required: [customInstructions, version]
+      properties:
+        customInstructions: { type: string, maxLength: 8000 }
+        lastModel: { oneOf: [{ $ref: "#/components/schemas/ModelRef" }, { type: "null" }] }
+        version: { type: integer }
+
+    AiSettingsUpdate:
+      type: object
+      required: [customInstructions]
+      properties: { customInstructions: { type: string, maxLength: 8000 } }
+
+    ModelRef:
+      type: object
+      required: [endpointId, modelId]
+      properties:
+        endpointId: { type: string }
+        modelId: { type: string, description: ai_models.id }
+
+    ContextItemRef:
+      type: object
+      required: [kind, ref]
+      properties:
+        kind: { type: string, enum: [note, document, recording, upload] }
+        ref: { type: string }
+        pdfMode: { type: [string, "null"], enum: [document, text, null] }
+
+    ContextItem:
+      allOf:
+        - { $ref: "#/components/schemas/ContextItemRef" }
+        - type: object
+          required: [title, available]
+          properties:
+            title: { type: string }
+            mime: { type: [string, "null"] }
+            size: { type: [integer, "null"] }
+            available: { type: boolean }
+            addedAt: { type: [string, "null"], format: date-time }
+
+    SendMessage:
+      type: object
+      required: [text, model]
+      properties:
+        text: { type: string, maxLength: 100000 }
+        model: { $ref: "#/components/schemas/ModelRef" }
+        attachments: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/ContextItemRef" } }
+
+    SendResult:
+      type: object
+      required: [chat, runId, turnId, answerId]
+      properties:
+        chat: { $ref: "#/components/schemas/ChatSummary" }
+        runId: { type: string }
+        turnId: { type: string }
+        answerId: { type: string }
+
+    ChatSummary:
+      type: object
+      required: [id, title, createdAt, updatedAt, generating, unseenAnswer, messageCount, modelLabel, version]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        generating: { type: boolean }
+        unseenAnswer: { type: boolean }
+        messageCount: { type: integer }
+        modelLabel: { type: string }
+        match: { type: [string, "null"], description: Snippet when searched with in=text }
+        version: { type: integer }
+
+    Usage:
+      type: object
+      properties: { input: { type: integer }, output: { type: integer }, total: { type: integer } }
+
+    AnswerError:
+      type: object
+      required: [category, message]
+      properties:
+        category: { type: string, enum: [network, timeout, key_rejected, key_unreadable, rate_limited, model_not_found, too_large, context_exceeded, provider, not_this_style] }
+        message: { type: string }
+        retryAfterSeconds: { type: [integer, "null"] }
+
+    Answer:
+      type: object
+      required: [id, text, status, endpointLabel, modelLabel, startedAt]
+      properties:
+        id: { type: string }
+        text: { type: string }
+        status: { type: string, enum: [queued, streaming, completed, stopped, interrupted, failed] }
+        endpointLabel: { type: string }
+        modelLabel: { type: string }
+        locality: { $ref: "#/components/schemas/Locality" }
+        startedAt: { type: string, format: date-time }
+        endedAt: { type: [string, "null"], format: date-time }
+        usage: { oneOf: [{ $ref: "#/components/schemas/Usage" }, { type: "null" }] }
+        error: { oneOf: [{ $ref: "#/components/schemas/AnswerError" }, { type: "null" }] }
+        runId: { type: [string, "null"] }
+
+    UserVersion:
+      type: object
+      required: [id, text, createdAt, attachments, answers, selectedAnswer]
+      properties:
+        id: { type: string }
+        text: { type: string }
+        createdAt: { type: string, format: date-time }
+        attachments: { type: array, items: { $ref: "#/components/schemas/ContextItem" } }
+        noteSnapshots: { type: array, items: { type: object, required: [noteId, title, snapshot], properties: { noteId: { type: string }, title: { type: string }, snapshot: { type: string } } } }
+        answers: { type: array, items: { $ref: "#/components/schemas/Answer" } }
+        selectedAnswer: { type: integer }
+
+    Turn:
+      type: object
+      required: [id, versions, selected]
+      properties:
+        id: { type: string }
+        versions: { type: array, minItems: 1, items: { $ref: "#/components/schemas/UserVersion" } }
+        selected: { type: integer }
+
+    Chat:
+      allOf:
+        - { $ref: "#/components/schemas/ChatSummary" }
+        - type: object
+          required: [sessionKey, context, turns]
+          properties:
+            sessionKey: { type: string }
+            model: { oneOf: [{ $ref: "#/components/schemas/ModelRef" }, { type: "null" }] }
+            context: { type: array, items: { $ref: "#/components/schemas/ContextItem" } }
+            turns: { type: array, items: { $ref: "#/components/schemas/Turn" } }
+
+    ChatUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        model: { $ref: "#/components/schemas/ModelRef" }
+        context: { type: array, items: { $ref: "#/components/schemas/ContextItemRef" } }
+
+    ChatDraft:
+      type: object
+      required: [chatId, text, attachments]
+      properties:
+        chatId: { type: [string, "null"] }
+        text: { type: string, maxLength: 100000 }
+        attachments: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/ContextItemRef" } }
+        updatedAt: { type: string, format: date-time }
+
+    ChatUpload:
+      type: object
+      required: [id, kind, mime, size, name]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [image, pdf, audio] }
+        mime: { type: string }
+        size: { type: integer }
+        name: { type: string }
+
+    PreflightRequest:
+      type: object
+      required: [sessionKey, model]
+      properties:
+        sessionKey: { type: string }
+        chatId: { type: [string, "null"] }
+        model: { $ref: "#/components/schemas/ModelRef" }
+        text: { type: string }
+        attachments: { type: array, items: { $ref: "#/components/schemas/ContextItemRef" } }
+
+    PreflightItem:
+      allOf:
+        - { $ref: "#/components/schemas/ContextItem" }
+        - type: object
+          required: [accepted, estimatedTokens]
+          properties:
+            accepted: { type: boolean }
+            reason: { type: [string, "null"], description: "e.g. model does not accept audio — use Transcribe" }
+            reasonCode: { type: [string, "null"], enum: [no_audio, no_pdf, no_images, format, too_large, missing, no_text, encrypted, null] }
+            textFallbackAvailable: { type: boolean }
+            pdfHasText: { type: [boolean, "null"] }
+            estimatedTokens: { type: integer }
+
+    PreflightResult:
+      type: object
+      required: [items, estimatedTokens, limits, overLimit, locality]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/PreflightItem" } }
+        estimatedTokens: { type: integer }
+        contextLimit: { type: [integer, "null"] }
+        overLimit: { type: boolean }
+        limits: { $ref: "#/components/schemas/Limits" }
+        locality: { $ref: "#/components/schemas/Locality" }
+        privacyAckRequired: { type: boolean }
+
+    ChatRun:
+      type: object
+      required: [id, chatId, sessionKey, answerId, status]
+      properties:
+        id: { type: string }
+        chatId: { type: string }
+        sessionKey: { type: string }
+        answerId: { type: string }
+        status: { type: string, enum: [queued, streaming, completed, stopped, interrupted, failed] }
+
+    AppendResult:
+      type: object
+      required: [noteId, text, hash, version]
+      properties:
+        noteId: { type: string }
+        text: { type: string }
+        previousHash: { type: [string, "null"] }
+        hash: { type: string }
+        version: { type: integer }
+
+    NoteSearchHit:
+      type: object
+      required: [id, title, sessionKey, sessionLabel]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        sessionKey: { type: string }
+        sessionLabel: { type: string, description: "e.g. Algorithms · Tue 14 Oct" }
+        courseId: { type: [string, "null"] }
+        courseName: { type: [string, "null"] }
+        updatedAt: { type: string, format: date-time }
