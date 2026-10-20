@@ -31,9 +31,9 @@ and stored as plain files you own.
 **[Your data](#your-data)** ·
 **[License](#license)**
 
-<img src="docs/screenshots/workspace-split.png" alt="Lecture notes next to the lecture slides in split view, with the recording in the audio panel" width="100%">
+<img src="docs/screenshots/workspace-split.png" alt="Lecture notes next to the lecture slides in split view, with the recording and an AI chat in the side panel" width="100%">
 
-<sub>Lecture 9: notes on the left, the professor's slides on the right, the recording on the side.</sub>
+<sub>Lecture 9: notes on the left, the professor's slides in the middle, the recording and an AI chat on the side.</sub>
 
 </div>
 
@@ -110,7 +110,7 @@ Every course gets its own colour, a red line marks the current time, and exams o
 with their own marker. Switch between day, week and month, or import your existing timetable from
 Google Calendar, Apple Calendar or Outlook (`.ics`).
 
-<img src="docs/screenshots/calendar-week.png" alt="Week view with colour-coded classes and events" width="100%">
+<img src="docs/screenshots/calendar-week.png" alt="Week view with colour-coded classes and events next to the task board" width="100%">
 
 ### ⚡ Draw a study session straight onto the calendar
 
@@ -128,13 +128,16 @@ description and quick notes. Turn an exam or a seminar into a task with **Add to
 switch on **Show tasks** to see due dates on the calendar. A task never needs a date, a course or
 a place on the calendar.
 
+<img src="docs/screenshots/kanban.png" alt="Task board with To do, In progress and Done columns, course labels, due dates and checklist progress" width="100%">
+
 ### 📝 Notes that look as good as they read
 
-A live Markdown editor with headings, tables, syntax-highlighted code and to-do lists. Each note is
+A live Markdown editor with headings, tables, syntax-highlighted code, to-do lists, LaTeX math and
+Mermaid diagrams. Each note is
 a plain `.md` file in that class's folder, so you can also open it in VS Code, Obsidian or any
 other editor.
 
-<img src="docs/screenshots/notes.png" alt="Markdown note with headings, a code block and a table" width="100%">
+<img src="docs/screenshots/notes.png" alt="Markdown note with LaTeX math, a Mermaid diagram, a table and a code block" width="100%">
 
 ### 🎙️ Record now, read later
 
@@ -151,6 +154,8 @@ Every class session has its own chat. Attach today's notes, the slides, a photo 
 or the recording, and ask "explain slide 14 again" or "make me 10 exam questions from this". Use
 your own key for OpenAI, Anthropic or Gemini, or run a model on your own computer with Ollama or
 LM Studio. Each chat is saved next to your notes as a readable `.md` file.
+
+<img src="docs/screenshots/ai-chat.png" alt="AI chat opened as a tab beside the lecture slides, with the note and PDF attached and a formatted answer with code" width="100%">
 
 ### 🎨 Light, dark, or something with more personality
 
