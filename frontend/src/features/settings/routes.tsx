@@ -17,6 +17,8 @@ const ThemeEditor = lazy(() => import("./themes/ThemeEditor").then((m) => ({ def
 const ImportExportPage = lazy(() => import("./calendar-io/ImportExportPage").then((m) => ({ default: m.ImportExportPage })));
 // 014 US1: Settings → AI
 const AiSettingsPage = lazy(() => import("./ai/AiSettings").then((m) => ({ default: m.AiSettingsPage })));
+// Settings → Keyboard shortcuts
+const ShortcutsSettings = lazy(() => import("./shortcuts/ShortcutsSettings").then((m) => ({ default: m.ShortcutsSettings })));
 // 009 US4: Settings → Trash
 const TrashPage = lazy(() => import("./trash/TrashPage").then((m) => ({ default: m.TrashPage })));
 
@@ -51,6 +53,7 @@ export const routes: RouteObject[] = [
       { path: "appearance", element: loading(<AppearanceSettings />) },
       { path: "appearance/themes/new", element: loading(<ThemeEditor />) },
       { path: "appearance/themes/:themeId", element: loading(<ThemeEditor />) },
+      { path: "shortcuts", element: loading(<ShortcutsSettings />) },
       { path: "import-export", element: loading(<ImportExportPage />) },
       { path: "trash", element: loading(<TrashPage />) },
       { path: "account", element: <AccountSettings /> },

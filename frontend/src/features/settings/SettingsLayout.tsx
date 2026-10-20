@@ -7,6 +7,7 @@ const SECTIONS = [
   { to: "/settings/transcription", label: "Transcription" },
   { to: "/settings/ai", label: "AI" },
   { to: "/settings/appearance", label: "Appearance" },
+  { to: "/settings/shortcuts", label: "Keyboard shortcuts" },
   { to: "/settings/import-export", label: "Import and export" },
   { to: "/settings/trash", label: "Trash" },
   { to: "/settings/account", label: "Account" },
