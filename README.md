@@ -7,14 +7,29 @@
 
 ### Your whole semester in one calm place.
 
-Timetable, lecture notes, slides, recordings, transcripts and tasks, organised by class and stored
-as plain files you own.
+Timetable, lecture notes, slides, recordings, transcripts, AI chat and tasks, organised by class
+and stored as plain files you own.
 
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-7A3DB8)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/Nimaj2002/UniHelperProMax?style=flat&logo=github&color=C49BFF)](https://github.com/Nimaj2002/UniHelperProMax/stargazers)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-your_data_stays_yours-7A3DB8)
-![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
-![React](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=black)
-![Themes](https://img.shields.io/badge/themes-18_built--in_%2B_your_own-C49BFF)
+![AI](https://img.shields.io/badge/AI-bring_your_own_model-C49BFF)
 ![Accessible](https://img.shields.io/badge/WCAG-AA-2E7D32)
+<br>
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/react-19-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
+
+**[Features](#why-youll-love-it)** ·
+**[Tour](#a-quick-tour)** ·
+**[Install](#get-started-in-3-minutes)** ·
+**[AI chat](#ai-chat)** ·
+**[Your data](#your-data)** ·
+**[License](#license)**
 
 <img src="docs/screenshots/workspace-split.png" alt="Lecture notes next to the lecture slides in split view, with the recording in the audio panel" width="100%">
 
@@ -23,6 +38,49 @@ as plain files you own.
 </div>
 
 ---
+
+## Contents
+
+<table>
+<tr>
+<td valign="top" width="33%">
+
+**Start here**
+- [Why you'll love it](#why-youll-love-it)
+- [A quick tour](#a-quick-tour)
+- [Get started in 3 minutes](#get-started-in-3-minutes)
+- [Development mode](#development-mode)
+- [Configuration](#configuration)
+
+</td>
+<td valign="top" width="33%">
+
+**Using the app**
+- [Events and the calendar](#events-and-creating-entries-on-the-calendar)
+- [Tasks and the home page](#tasks-and-the-home-page)
+- [Calendar import and export](#importing-and-exporting-the-calendar-ics)
+- [Importing audio and notes](#importing-audio-and-notes)
+- [Documents and the PDF reader](#documents-and-the-pdf-reader)
+- [Transcription](#transcription)
+- [AI chat](#ai-chat)
+- [Themes](#themes)
+
+</td>
+<td valign="top" width="33%">
+
+**Reference**
+- [Your data](#your-data)
+- [Key protection](#key-protection)
+- [Keyboard shortcuts](#notes-workspace-shortcuts)
+- [Tests and checks](#tests-and-checks)
+- [Operator tasks](#operator-tasks)
+- [Project docs](#project-docs)
+- [Topics](#topics)
+- [License](#license)
+
+</td>
+</tr>
+</table>
 
 ## Why you'll love it
 
@@ -34,13 +92,15 @@ its notes, slides, recording and transcript are already there. Two clicks from t
 every assignment, reading and exam you have to prepare for sits on a task board right next to it.
 
 - 🗓️ **A calendar built for university.** Weekly classes, exams, office hours and seminars, with years and semesters.
-- 📝 **Notes that belong to a class.** A Markdown editor with tables, code blocks and checklists.
+- 📝 **Notes that belong to a class.** A Markdown editor with tables, code blocks, checklists, Mermaid diagrams and LaTeX math.
 - 📑 **Slides next to your notes.** A built-in PDF reader with highlights, drawings and comments, in split view.
 - 🎙️ **Record the lecture.** Recording keeps going if the tab closes or the Wi-Fi drops.
 - ✨ **Transcribe it into your notes.** The transcript is added to the end of your note and nothing you wrote changes.
+- 🤖 **Ask AI about the lecture.** Chat with OpenAI, Anthropic, Gemini or a local model (Ollama, LM Studio) and attach your notes, slides, pictures and recordings.
 - ✅ **A task board next to your calendar.** Assignments, readings and exam prep on a board or a list, with checklists, quick notes and due dates you can show on the calendar.
 - 🎨 **Make it yours.** 18 built-in themes (Catppuccin, Dracula, Tokyo Night, Nord…) or design your own.
 - 🔒 **Your files stay yours.** Everything is a normal folder of `.md`, `.pdf` and audio files on your own disk.
+- 🆓 **Free and open source.** Self-host it for yourself or your friends. No account with us, no tracking.
 
 ## A quick tour
 
@@ -84,6 +144,13 @@ server, so you can close the laptop and come back later. Works with any OpenAI-c
 API, including one you host yourself.
 
 <img src="docs/screenshots/transcribe.png" alt="Transcribe dialog: choose the note and the spoken language" width="100%">
+
+### 🤖 Ask the AI, with the lecture in hand
+
+Every class session has its own chat. Attach today's notes, the slides, a photo of the whiteboard
+or the recording, and ask "explain slide 14 again" or "make me 10 exam questions from this". Use
+your own key for OpenAI, Anthropic or Gemini, or run a model on your own computer with Ollama or
+LM Studio. Each chat is saved next to your notes as a readable `.md` file.
 
 ### 🎨 Light, dark, or something with more personality
 
@@ -496,6 +563,10 @@ again, e.g. to share them. Your choice is saved to your account and used on ever
 
 ## Tests and checks
 
+<details>
+<summary>Run the linters, type checks, unit, contract and end-to-end tests</summary>
+<br>
+
 ```bash
 cd backend
 uv run ruff check . && uv run mypy
@@ -510,6 +581,8 @@ corepack pnpm e2e             # keyboard-only flows in light and dark, axe WCAG 
 
 A full backend run also fails if any operation in the API contract is never exercised
 successfully by a test.
+
+</details>
 
 ## Operator tasks
 
@@ -532,7 +605,33 @@ The owner must choose a new password at the next sign-in.
   [plan](specs/012-task-manager/plan.md) ·
   [quickstart & validation](specs/012-task-manager/quickstart.md)
 
+## Contributing
+
+Bug reports, ideas and pull requests are welcome. Check the
+[known issues](specs/KNOWN-ISSUES.md) first, and open an issue before starting on a big change so
+we can agree on the approach. New features follow the spec-first workflow in [`specs/`](specs/).
+
+## Star history
+
+<a href="https://star-history.com/#Nimaj2002/UniHelperProMax&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Nimaj2002/UniHelperProMax&type=Date&theme=dark">
+    <img alt="Star history chart" src="https://api.star-history.com/svg?repos=Nimaj2002/UniHelperProMax&type=Date" width="600">
+  </picture>
+</a>
+
+## Topics
+
+`student` · `university` · `study-tool` · `note-taking` · `markdown` · `calendar` · `timetable` ·
+`kanban` · `task-manager` · `pdf-reader` · `pdf-annotation` · `audio-recording` ·
+`transcription` · `speech-to-text` · `ai-chat` · `llm` · `openai` · `anthropic` · `gemini` ·
+`ollama` · `self-hosted` · `local-first` · `privacy` · `fastapi` · `python` · `react` ·
+`typescript` · `tailwindcss` · `sqlite` · `docker` · `accessibility` · `open-source`
+
 ## License
+
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-7A3DB8)](LICENSE)
+[![Commercial license available](https://img.shields.io/badge/commercial_license-available-C49BFF)](COMMERCIAL-LICENSE.md)
 
 UniHelperProMax is dual-licensed:
 
