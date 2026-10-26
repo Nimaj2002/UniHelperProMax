@@ -17,8 +17,8 @@ function TimeZoneHost() {
 }
 
 export function registerAccountMenu() {
-  registerAccountMenuItem({ id: "password", label: "Change password", priority: 1, onSelect: (nav) => nav("/account/password") });
+  registerAccountMenuItem({ id: "password", label: "Change password", webOnly: true, priority: 1, onSelect: (nav) => nav("/account/password") });
   registerAccountMenuItem({ id: "timezone", label: "Time zone…", priority: 2, onSelect: () => openTimeZone?.() });
-  registerAccountMenuItem({ id: "admin", label: "Manage accounts", ownerOnly: true, priority: 3, onSelect: (nav) => nav("/admin/accounts") });
+  registerAccountMenuItem({ id: "admin", label: "Manage accounts", ownerOnly: true, webOnly: true, priority: 3, onSelect: (nav) => nav("/admin/accounts") });
   registerGlobalHost({ id: "timezone-dialog", component: TimeZoneHost });
 }

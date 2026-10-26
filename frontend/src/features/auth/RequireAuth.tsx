@@ -11,7 +11,8 @@ function FullPageStatus({ label }: { label: string }) {
   );
 }
 
-/** Guards: no owner yet → /setup; signed out → /login; must change password → /account/password. */
+/** Guards: no owner yet → /setup; signed out → /login; must change password → /account/password.
+ * The desktop app (015) has one implicit owner and no sign-in: nothing to guard. */
 export function RequireAuth({ children }: { children: ReactNode }) {
   const status = useSetupStatus();
   const me = useMe();
@@ -19,6 +20,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   if (status.isPending || me.isPending) return <SplashScreen />;
   if (status.isError || me.isError) return <FullPageStatus label="Can't reach the server. Reload to retry." />;
+  if (status.data.mode === "desktop") return <>{children}</>;
   if (status.data.needsOwner) return <Navigate to="/setup" replace />;
   if (!me.data) return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
   if (me.data.mustChangePassword && location.pathname !== "/account/password")

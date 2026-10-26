@@ -1,32 +1,22 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.2.0 → 1.3.0
-Bump rationale: MINOR — Principle II materially expanded with per-session chat storage
-(`chats/` folder, JSON + regenerated Markdown transcript, original-format attachments) and
-Principle IV materially expanded to cover all provider secrets (transcription and AI chat
-endpoints) with encryption at rest and the key held outside the database and data folder. No
-principle removed or redefined incompatibly.
+Version change: 1.3.0 → 1.4.0
+Bump rationale: MINOR — new Principle VIII (Desktop App Data Safety) added. No existing
+principle, section or governance rule changed.
 
-Modified principles:
-  - II. Data Ownership & Open Formats (title unchanged; chat storage rules added)
-  - IV. Pluggable Transcription & Secret Handling → IV. Pluggable Providers & Secret Handling
-    (scope extended to AI chat providers; encryption at rest added)
-Added sections: none
+Modified principles: none
+Added sections: VIII. Desktop App Data Safety
 Removed sections: none
-Technical Constraints updated: Storage, Transcription → Providers, Security bullets.
 
 Templates reviewed (not modified by this command; they read the constitution at runtime):
-  - .specify/templates/plan-template.md      ✅ Constitution Check picks up amended II and IV
+  - .specify/templates/plan-template.md      ✅ Constitution Check picks up the new principle
   - .specify/templates/spec-template.md      ✅ no change required
   - .specify/templates/tasks-template.md     ✅ no change required
 
-Dependent specs to review for compliance (Governance):
-  - specs/014-session-ai-chat: plan.md Constitution Check (II ⚠️ → ✅ after this amendment).
-  - specs/005-settings-providers-themes: transcription keys move to encrypted storage (done by
-    feature 014's migration; behavior unchanged).
-
-Deferred TODOs: none
+Follow-up TODOs:
+  - Development Workflow & Quality Gates and Governance still say "Principles I–VII"; they were
+    left unchanged as instructed, so they do not yet name Principle VIII.
 -->
 
 # UniHelperProMax Constitution
@@ -166,6 +156,23 @@ verified.
 **Rationale**: A small, single-user-friendly stack is easier to run, back up, and reason about;
 spec discipline keeps the product focused.
 
+### VIII. Desktop App Data Safety
+
+These rules apply to the desktop app.
+
+- The user's notes, recordings and documents MUST be stored as plain files (Principle II) in a
+  data folder outside the app's install location. The app MUST show the folder's path to the
+  user, and the user MUST be able to change it.
+- Uninstalling or updating the app MUST NOT delete or move any data in the data folder.
+- The local server MUST accept connections only from the same machine; it MUST NOT be
+  reachable from other machines on the network.
+- A database schema upgrade MUST make a backup of the database before changing it.
+
+**Rationale**: On a desktop the user's files must survive the app itself: installers and updates
+come and go, but the work stays where the user can see it. A server open only to the local
+machine keeps that data private, and a backup before every migration means a failed upgrade
+can be undone.
+
 ## Technical Constraints
 
 - **Storage**: SQLite for metadata; file system (hierarchy defined in Principle II) for note,
@@ -205,4 +212,4 @@ spec discipline keeps the product focused.
 - **Compliance review**: every plan's Constitution Check and every code review MUST verify
   compliance with Principles I–VII. Unjustified violations block merge.
 
-**Version**: 1.3.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-19
+**Version**: 1.4.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-26

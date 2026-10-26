@@ -4,11 +4,12 @@ from typing import Any
 
 from fastapi import APIRouter, Response, status
 
-from unihelper.api.deps import DbSession, OwnerUser, Storage
+from unihelper.api.deps import DbSession, NotInDesktop, OwnerUser, Storage
 from unihelper.schemas.auth import Account, AccountUpdate, KeptFolder, NewAccount, PasswordReset
 from unihelper.services import account_service as svc
 
-router = APIRouter(prefix="/admin/users", tags=["admin"])
+# 015: no account management in the single-user desktop app (FR-033)
+router = APIRouter(prefix="/admin/users", tags=["admin"], dependencies=[NotInDesktop])
 
 
 @router.get("", response_model=list[Account])

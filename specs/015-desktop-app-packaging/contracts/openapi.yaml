@@ -1,0 +1,111 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 015 additions (desktop app)
+  version: 1.12.0
+  description: |
+    Additive to the 001–014 contracts (same conventions: camelCase JSON, RFC 9457 problems).
+    Prose contract: contracts/backend-desktop-mode.md.
+
+    Every `/desktop/*` operation answers `404 not_desktop` unless the server runs in desktop mode
+    (`UNIHELPER_DESKTOP=1`). In desktop mode every request must pass admission first: Host
+    `127.0.0.1:<port>` (else `421 misdirected_request`), header `X-UniHelper-Client: <clientSecret>`
+    (else `403 not_from_app`; only `GET /desktop/identity` is exempt) and, when present, Origin
+    `http://127.0.0.1:<port>` (else `403 bad_origin`). In web mode a Host allow-list applies only
+    when `UNIHELPER_ALLOWED_HOSTS` is set.
+
+    Amended existing operations (only the additions are listed):
+    - `GET /health`: + `version` (string), + `mode` (`web` | `desktop`).
+    - `GET /setup/status`: + `mode` (`web` | `desktop`); in desktop mode `needsOwner` is always false.
+    - Desktop mode only: `POST /setup/owner`, `POST /auth/login`, `POST /auth/logout`,
+      `POST /auth/password` and every `/admin/users` operation → `404 not_in_desktop`; every other
+      operation runs as the desktop owner with no cookie and no CSRF header.
+
+    The data-folder operations (`/desktop/data-folder/*`, user story 4) are added here when they
+    are implemented, so this contract always matches the live API.
+servers:
+  - url: /api/v1
+
+paths:
+  /desktop/identity:
+    get:
+      tags: [desktop]
+      summary: Prove this server was started by this app launch (HMAC of the nonce with the launch token)
+      security: []
+      parameters:
+        - name: nonce
+          in: query
+          required: true
+          description: 32–128 lowercase hexadecimal characters (an even number)
+          schema: { type: string, pattern: "^(?:[0-9a-f]{2}){16,64}$" }
+      responses:
+        "200":
+          description: Identity
+          content: { application/json: { schema: { $ref: "#/components/schemas/DesktopIdentity" } } }
+        "400": { $ref: "#/components/responses/Problem" }   # bad_nonce
+        "404": { $ref: "#/components/responses/Problem" }   # not_desktop
+
+  /desktop/shutdown:
+    post:
+      tags: [desktop]
+      summary: Stop gracefully (finalize recordings, stop workers, checkpoint, close, release the lock)
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          description: "`Bearer <launchToken>`"
+          schema: { type: string }
+      responses:
+        "202":
+          description: Stopping
+          content:
+            application/json:
+              schema: { type: object, required: [status], properties: { status: { const: stopping } } }
+        "401": { $ref: "#/components/responses/Problem" }   # bad_token
+        "404": { $ref: "#/components/responses/Problem" }   # not_desktop
+
+  /desktop/busy:
+    get:
+      tags: [desktop]
+      summary: Work running inside the server that quitting would stop (FR-013a)
+      responses:
+        "200":
+          description: Busy state
+          content: { application/json: { schema: { $ref: "#/components/schemas/DesktopBusy" } } }
+        "404": { $ref: "#/components/responses/Problem" }   # not_desktop
+
+components:
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+
+    DesktopIdentity:
+      type: object
+      required: [proof, version, pid, port]
+      properties:
+        proof: { type: string, pattern: "^[0-9a-f]{64}$", description: "hex HMAC-SHA256(key = launchToken bytes, message = nonce bytes)" }
+        version: { type: string }
+        pid: { type: integer }
+        port: { type: integer, minimum: 1024, maximum: 65535 }
+
+    DesktopBusy:
+      type: object
+      required: [recording, transcribing, chatRunning]
+      additionalProperties: false
+      properties:
+        recording: { type: boolean, description: "a recording is in progress (chunks within the last 30 s)" }
+        transcribing: { type: boolean, description: "a transcription job is queued or running" }
+        chatRunning: { type: boolean, description: "an AI chat answer is being generated" }

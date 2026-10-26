@@ -50,7 +50,20 @@ class Auth:
     session: AuthSession
 
 
+def _desktop_auth(request: Request, db: Session) -> Auth:
+    """015 single-user mode: admission already checked the client secret (research R9)."""
+    from unihelper.desktop.owner import desktop_session
+
+    owner_id: str | None = getattr(request.app.state, "desktop_owner_id", None)
+    user = db.get(User, owner_id) if owner_id else None
+    if user is None:
+        raise ApiError(503, "not_ready", "The app is still starting. Try again in a moment.")
+    return Auth(user=user, session=desktop_session(user.id))
+
+
 def _authenticate(request: Request, db: Session) -> Auth:
+    if get_settings(request).desktop:
+        return _desktop_auth(request, db)
     resolved = auth_service.resolve_session(db, request.cookies.get(SESSION_COOKIE))
     if resolved is None:
         raise ApiError(401, "unauthorized", "Please sign in.")
@@ -87,10 +100,21 @@ def csrf_protect(request: Request) -> None:
     """Double-submit check: X-CSRF-Token header must equal the uh_csrf cookie."""
     if request.method not in MUTATING or request.url.path.endswith(CSRF_EXEMPT_SUFFIXES):
         return
+    if get_settings(request).desktop:  # 015: the main process's client-secret header replaces it
+        return
     cookie = request.cookies.get(CSRF_COOKIE)
     header = request.headers.get(CSRF_HEADER)
     if not cookie or not header or not secrets.compare_digest(cookie, header):
         raise ApiError(403, "csrf_failed", "Security check failed. Reload the page and retry.")
+
+
+def not_in_desktop(request: Request) -> None:
+    """015: account management does not exist in the single-user desktop app (FR-033)."""
+    if get_settings(request).desktop:
+        raise ApiError(404, "not_in_desktop", "Accounts are not used in the desktop app.")
+
+
+NotInDesktop = Depends(not_in_desktop)
 
 
 def if_match_version(if_match: Annotated[str | None, Header(alias="If-Match")] = None) -> int:

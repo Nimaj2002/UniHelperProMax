@@ -39,3 +39,6 @@ frontend/public/sandbox/
 
 # 014: the key that encrypts saved API keys (Docker key file) — never commit
 keys/
+
+# 015: electron-builder resources (entitlements, NSIS include) are source, not output
+!desktop/build/

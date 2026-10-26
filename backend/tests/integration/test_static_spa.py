@@ -25,5 +25,5 @@ def test_spa_fallback_and_api(tmp_path: Path) -> None:
         assert c.get("/assets/app.js").text == "console.log(1)"
         health = c.get("/api/v1/health")
         assert health.headers["content-type"].startswith("application/json")
-        assert health.json() == {"status": "ok"}
+        assert health.json()["status"] == "ok"  # 015 adds version and mode (additive)
         assert c.get("/api/v1/nope").status_code == 404

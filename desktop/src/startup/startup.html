@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' file:; style-src 'self' file:; img-src 'self' file: data:"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>UniHelperProMax</title>
+    <link rel="stylesheet" href="startup.css" />
+  </head>
+  <body>
+    <main id="root" aria-live="polite">
+      <section id="starting" class="panel" hidden>
+        <h1>UniHelperProMax</h1>
+        <p class="muted">Starting UniHelperProMax…</p>
+        <div class="progress" role="progressbar" aria-label="Starting"><span></span></div>
+      </section>
+
+      <section id="error" class="panel" hidden>
+        <h1 id="error-title">UniHelperProMax couldn't start</h1>
+        <p id="error-message"></p>
+        <p class="muted">Log file: <span id="error-log" class="path"></span></p>
+        <div class="actions">
+          <button type="button" data-action="retry" class="primary">Retry</button>
+          <button type="button" data-action="openLogs">Open log folder</button>
+          <button type="button" data-action="copyError">Copy error</button>
+          <button type="button" data-action="quit">Quit</button>
+        </div>
+      </section>
+    </main>
+    <script src="startup.js"></script>
+  </body>
+</html>

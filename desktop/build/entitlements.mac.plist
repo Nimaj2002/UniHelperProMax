@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!-- Lecture recording (FR-040); the matching NSMicrophoneUsageDescription is in Info.plist. -->
+  <key>com.apple.security.device.audio-input</key>
+  <true/>
+  <!-- V8 JIT under the hardened runtime. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <!-- Needed only while builds are ad-hoc signed (identity "-"): every Mach-O file then has a
+       different ad-hoc identity. Remove it when a Developer ID signs everything (research R15). -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+</dict>
+</plist>
