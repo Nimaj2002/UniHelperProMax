@@ -15,6 +15,7 @@ import hmac
 import json
 import os
 import secrets
+import shutil
 import socket
 import sqlite3
 import subprocess
@@ -28,6 +29,8 @@ import httpx
 
 START_TIMEOUT = 60.0
 STOP_TIMEOUT = 5.0
+TEMP_CLEANUP_TIMEOUT = 10.0
+TEMP_CLEANUP_RETRY_DELAY = 0.2
 
 
 def free_port() -> int:
@@ -110,6 +113,10 @@ def wait_exit(app: Launched, timeout: float = STOP_TIMEOUT) -> int:
         app.proc.kill()
         app.proc.wait()
         raise RuntimeError(f"backend did not exit within {timeout:.0f} s") from None
+    finally:
+        stdin = app.proc.stdin
+        if stdin is not None and not stdin.closed:
+            stdin.close()
 
 
 def shutdown(app: Launched) -> int:
@@ -140,6 +147,20 @@ def migrations_at_head(app: Launched) -> bool:
     return bool(current == head)
 
 
+def cleanup_temp_dir(path: Path) -> None:
+    deadline = time.monotonic() + TEMP_CLEANUP_TIMEOUT
+    while True:
+        try:
+            shutil.rmtree(path)
+            return
+        except FileNotFoundError:
+            return
+        except PermissionError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(TEMP_CLEANUP_RETRY_DELAY)
+
+
 def _command(target: Path) -> list[str]:
     if target.is_dir():
         exe = target / ("unihelper-backend.exe" if sys.platform == "win32" else "unihelper-backend")
@@ -156,34 +177,39 @@ def main(argv: list[str] | None = None) -> int:
         print(__doc__)
         return 2
     cmd = _command(Path(args[0]))
-    with tempfile.TemporaryDirectory(prefix="uh-smoke-") as tmp:
-        root = Path(tmp)
+    root = Path(tempfile.mkdtemp(prefix="uh-smoke-"))
+    app: Launched | None = None
+    again: Launched | None = None
+    try:
         app = launch(cmd, root)
-        try:
-            identity = wait_identity(app)
-            with app.client() as c:
-                health = c.get("/api/v1/health").json()
-            if health.get("mode") != "desktop":
-                raise RuntimeError(f"unexpected health {health}")
-            if not migrations_at_head(app):
-                raise RuntimeError("migrations did not reach head")
-            code = shutdown(app)
-            if code != 0:
-                raise RuntimeError(f"shutdown exit status {code}")
-            version = identity["version"]
-            print(f"smoke: identity ok (version {version}), migrations at head, shutdown ok")
-            again = launch(cmd, root)
-            wait_identity(again)
-            code = close_stdin(again)
-            if code != 0:
-                raise RuntimeError(f"stdin-close exit status {code}")
-            print("smoke: closing stdin stopped the backend")
-        except Exception as exc:
-            if app.proc.poll() is None:
-                app.proc.kill()
-            print(f"smoke FAILED: {exc}", file=sys.stderr)
-            return 1
-    return 0
+        identity = wait_identity(app)
+        with app.client() as c:
+            health = c.get("/api/v1/health").json()
+        if health.get("mode") != "desktop":
+            raise RuntimeError(f"unexpected health {health}")
+        if not migrations_at_head(app):
+            raise RuntimeError("migrations did not reach head")
+        code = shutdown(app)
+        if code != 0:
+            raise RuntimeError(f"shutdown exit status {code}")
+        version = identity["version"]
+        print(f"smoke: identity ok (version {version}), migrations at head, shutdown ok")
+        again = launch(cmd, root)
+        wait_identity(again)
+        code = close_stdin(again)
+        if code != 0:
+            raise RuntimeError(f"stdin-close exit status {code}")
+        print("smoke: closing stdin stopped the backend")
+        return 0
+    except Exception as exc:
+        print(f"smoke FAILED: {exc}", file=sys.stderr)
+        return 1
+    finally:
+        for launched in (again, app):
+            if launched is not None and launched.proc.poll() is None:
+                launched.proc.kill()
+                launched.proc.wait()
+        cleanup_temp_dir(root)
 
 
 if __name__ == "__main__":
