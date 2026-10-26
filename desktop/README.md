@@ -63,8 +63,8 @@ microphone permission, which macOS CI runners can't grant.
 
 1. Set the same version in `desktop/package.json` and `backend/pyproject.toml`.
 2. Commit, then tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
-3. `.github/workflows/desktop-release.yml` builds Windows, macOS (Apple Silicon and Intel) and
-   Linux, runs the e2e tests, and creates a **draft** GitHub Release with the installers.
+3. `.github/workflows/desktop-release.yml` builds Windows, macOS (Apple Silicon) and Linux,
+   runs the e2e tests, and creates a **draft** GitHub Release with the installers.
    Check the draft, then publish it.
 
 "Run workflow" on the Actions tab does a dry run: it builds and tests but makes no release.
