@@ -56,7 +56,8 @@ jobs:
         run: |
           tag="${GITHUB_REF_NAME#v}"
           desktop=$(node -p "require('./desktop/package.json').version")
-          backend=$(sed -n 's/^version = "\(.*\)"/\1/p' backend/pyproject.toml | head -1)
+          # tr: the file may be checked out with CRLF line endings
+          backend=$(tr -d '\r' < backend/pyproject.toml | sed -n 's/^version = "\(.*\)"/\1/p' | head -1)
           echo "tag=$tag desktop=$desktop backend=$backend"
           if [ "$tag" != "$desktop" ] || [ "$tag" != "$backend" ]; then
             echo "::error::Tag v$tag must equal desktop/package.json ($desktop) and backend/pyproject.toml ($backend)"
