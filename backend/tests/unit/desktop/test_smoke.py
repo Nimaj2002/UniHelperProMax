@@ -88,7 +88,9 @@ def test_cleanup_temp_dir_retries_permission_error(monkeypatch: pytest.MonkeyPat
     assert calls == {"rmtree": 2, "sleep": 1}
 
 
-def test_cleanup_temp_dir_raises_when_lock_persists(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_cleanup_temp_dir_warns_when_lock_persists(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
     times = iter([0.0, 9.5, 10.1])
 
     def always_locked(_: Path) -> None:
@@ -97,5 +99,5 @@ def test_cleanup_temp_dir_raises_when_lock_persists(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(smoke.shutil, "rmtree", always_locked)
     monkeypatch.setattr(smoke.time, "monotonic", lambda: next(times))
     monkeypatch.setattr(smoke.time, "sleep", lambda _: None)
-    with pytest.raises(PermissionError, match="locked"):
-        smoke.cleanup_temp_dir(Path("/tmp/locked"))
+    smoke.cleanup_temp_dir(Path("/tmp/locked"))
+    assert "warning: could not remove temp dir" in capsys.readouterr().err

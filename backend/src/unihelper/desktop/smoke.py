@@ -155,9 +155,13 @@ def cleanup_temp_dir(path: Path) -> None:
             return
         except FileNotFoundError:
             return
-        except PermissionError:
+        except PermissionError as exc:
             if time.monotonic() >= deadline:
-                raise
+                print(
+                    f"smoke: warning: could not remove temp dir {path} ({exc})",
+                    file=sys.stderr,
+                )
+                return
             time.sleep(TEMP_CLEANUP_RETRY_DELAY)
 
 
