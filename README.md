@@ -71,6 +71,7 @@ and stored as plain files you own.
 **Reference**
 - [Your data](#your-data)
 - [Key protection](#key-protection)
+- [Backup and restore](#backing-up-and-restoring-your-data)
 - [Keyboard shortcuts](#notes-workspace-shortcuts)
 - [Tests and checks](#tests-and-checks)
 - [Operator tasks](#operator-tasks)
@@ -318,7 +319,8 @@ deletes files. Full rules: [storage layout contract](specs/001-class-schedule-ca
 Tasks, board columns, checklists and quick notes are kept in the database, not as files; use
 **Settings → Import and export → Export tasks** for a `.csv` copy.
 
-Back up by copying the whole data folder while the app is stopped.
+To back up, use **Settings → Backup & restore** (below), or copy the whole data folder while the
+app is stopped.
 
 ### Key protection
 
@@ -333,6 +335,33 @@ because anyone who can sign in as you can read that file.
 If the key store is lost or you restore the data folder on another computer, saved keys can't be
 read: Settings says so, and **Start a new key store** lets you enter them again. Nothing else is
 affected. To move keys along, back up the key file (or `./keys` with Docker) separately.
+
+## Backing up and restoring your data
+
+**Settings → Backup & restore** puts everything you have in the app into one zip file, and puts it
+back from one.
+
+- **Create backup** downloads `UniHelperProMax-backup-<date>-<time>.zip` (the desktop app asks
+  where to save it). It holds your classes, events, tasks, settings, themes and every file in your
+  folder — notes, recordings, documents, annotations, chats and their attachments, and files you
+  added there yourself — in the usual folder layout under `files/`, so you can open it with any
+  archive tool. The rest is in `data/` (one JSON object per line) and `manifest.json` (versions,
+  counts and a checksum of every file). You can keep working while it's made; a recording in
+  progress isn't included. **API keys are never in a backup**: enter them again after a restore.
+- **Restore from backup**: choose a backup and the app checks it first (not damaged or changed,
+  safe file names, not from a newer version) and shows what it holds next to what you have now.
+  Restoring **replaces all your data** — files you have now that aren't in the backup are
+  removed. Before anything changes, a **safety backup** of your current data is made (only the
+  newest one is kept: its path in the desktop app, a download link on the web); restore it to undo.
+  A restore can't start while you're recording, audio is still uploading, notes are unsaved, or a
+  transcription or AI answer is running. It is all or nothing: if it fails or the app stops
+  midway, your data is exactly as before (or, if it had finished, as in the backup). Other open
+  tabs and windows reload by themselves.
+- Backups from older versions are upgraded when restored; a backup from a newer version asks you
+  to update the app first. On a shared web server a backup covers only your own account, and
+  restoring never touches anyone else's data.
+- **Self-hosting behind a proxy?** A backup can be large (recordings): allow uploads of up to
+  20 GB on the restore endpoint, e.g. nginx `client_max_body_size 20g;`.
 
 ## Events and creating entries on the calendar
 
@@ -576,6 +605,7 @@ again, e.g. to share them. Your choice is saved to your account and used on ever
 cd backend
 uv run ruff check . && uv run mypy
 uv run pytest                 # unit + contract (every endpoint) + integration
+UNIHELPER_SLOW_TESTS=1 uv run pytest tests/integration/test_backup_performance.py  # 1 GB backup + restore
 cd ../frontend
 corepack pnpm lint && corepack pnpm typecheck
 corepack pnpm test            # Vitest + Testing Library + axe

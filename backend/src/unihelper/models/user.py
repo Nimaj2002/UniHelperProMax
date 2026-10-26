@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import Boolean, CheckConstraint, Index, String, text
+from sqlalchemy import Boolean, CheckConstraint, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from unihelper.models.base import Base, IdMixin, TimestampMixin
@@ -27,6 +27,10 @@ class User(IdMixin, TimestampMixin, Base):
     must_change_password: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, default="UTC")
     disabled_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    # 016: bumped by every restore; sent as X-Data-Epoch so open tabs reload
+    data_epoch: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
 
     @property
     def is_owner(self) -> bool:

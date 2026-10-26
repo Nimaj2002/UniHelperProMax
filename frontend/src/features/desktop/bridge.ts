@@ -45,6 +45,8 @@ interface DesktopApi {
   changeDataFolder(req: DataFolderRequest): Promise<DataFolderResult>;
   openDataFolder(): Promise<void>;
   openLogsFolder(): Promise<void>;
+  /** 016: show a safety backup in the file manager (only paths under backups/safety). */
+  revealPath(path: string): Promise<void>;
   microphone: {
     status(): Promise<MicStatus>;
     request(): Promise<"granted" | "denied" | "unknown">;
@@ -81,6 +83,7 @@ export const desktop = {
     api()?.changeDataFolder(req) ?? Promise.resolve(null),
   openDataFolder: (): Promise<void> => api()?.openDataFolder() ?? Promise.resolve(),
   openLogsFolder: (): Promise<void> => api()?.openLogsFolder() ?? Promise.resolve(),
+  revealPath: (path: string): Promise<void> => api()?.revealPath(path) ?? Promise.resolve(),
   microphone: {
     status: (): Promise<MicStatus | null> => api()?.microphone.status() ?? Promise.resolve(null),
     request: (): Promise<"granted" | "denied" | "unknown" | null> => api()?.microphone.request() ?? Promise.resolve(null),

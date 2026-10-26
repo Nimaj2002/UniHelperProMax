@@ -73,6 +73,7 @@ markers = [
     "unit: pure unit tests",
     "contract: API contract tests (one module per router)",
     "integration: real SQLite + temp storage root",
+    "slow: long-running checks, opt-in with UNIHELPER_SLOW_TESTS=1",
 ]
 filterwarnings = ["ignore::DeprecationWarning:dateutil.*"]
 

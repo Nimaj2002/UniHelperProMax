@@ -66,6 +66,18 @@ class Settings:
     def backups_dir(self) -> Path:
         return self.data_dir / "backups"
 
+    # 016: full backups of one account (research R6, R7)
+    @property
+    def exports_dir(self) -> Path:
+        return self.backups_dir / "exports"
+
+    @property
+    def safety_dir(self) -> Path:
+        return self.backups_dir / "safety"
+
+    def journal_path(self, user_id: str) -> Path:
+        return self.backups_dir / f"restore-{user_id}.journal.json"
+
     @property
     def db_url(self) -> str:
         return f"sqlite:///{self.db_path}"

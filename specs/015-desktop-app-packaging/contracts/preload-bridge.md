@@ -19,6 +19,7 @@ The preload script exposes one frozen object, `window.uhDesktop`, through
 | `chooseDataFolder()` | → `{path} \| null` | Native folder picker |
 | `changeDataFolder(req)` | `{path, mode: "move"\|"use"}` → progress events, then `{ok}` or `{ok:false, reason}` | Main runs the backend data-folder endpoints and the restart (contracts/backend-desktop-mode.md §5) |
 | `openDataFolder()`, `openLogsFolder()` | → void | `shell.openPath` |
+| `revealPath(path)` | → void | 016: `shell.showItemInFolder`, only for an existing file under `<backend data>/backups/safety/`; anything else is ignored |
 | `microphone.status()` | → `"granted"\|"denied"\|"restricted"\|"not-determined"\|"unknown"` | macOS/Windows via `systemPreferences.getMediaAccessStatus`; Linux `unknown` |
 | `microphone.request()` | → `"granted"\|"denied"\|"unknown"` | macOS `askForMediaAccess`; elsewhere returns status |
 | `microphone.markExplained()` | → void | `desktop.json` `micExplained = true` (FR-042) |

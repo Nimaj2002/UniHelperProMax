@@ -32,6 +32,7 @@ if (location.protocol === "file:") {
       changeDataFolder: (req: unknown) => ipcRenderer.invoke("uh:dataFolder.change", req),
       openDataFolder: () => ipcRenderer.invoke("uh:open.dataFolder"),
       openLogsFolder: () => ipcRenderer.invoke("uh:open.logs"),
+      revealPath: (target: string) => ipcRenderer.invoke("uh:reveal.path", target),
       microphone: Object.freeze({
         status: () => ipcRenderer.invoke("uh:microphone.status"),
         request: () => ipcRenderer.invoke("uh:microphone.request"),

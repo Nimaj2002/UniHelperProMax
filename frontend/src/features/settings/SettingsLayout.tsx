@@ -9,6 +9,7 @@ const SECTIONS = [
   { to: "/settings/appearance", label: "Appearance" },
   { to: "/settings/shortcuts", label: "Keyboard shortcuts" },
   { to: "/settings/import-export", label: "Import and export" },
+  { to: "/settings/backup", label: "Backup & restore" },
   { to: "/settings/trash", label: "Trash" },
   { to: "/settings/account", label: "Account" },
 ];

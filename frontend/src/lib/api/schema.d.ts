@@ -1881,6 +1881,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/backup/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Export */
+        post: operations["start_export_api_v1_backup_exports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backup/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Job */
+        get: operations["get_job_api_v1_backup_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        /** Cancel Job */
+        delete: operations["cancel_job_api_v1_backup_jobs__job_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backup/exports/{job_id}/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Export */
+        get: operations["download_export_api_v1_backup_exports__job_id__file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backup/restores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Restore */
+        post: operations["upload_restore_api_v1_backup_restores_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backup/restores/{job_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Restore */
+        post: operations["confirm_restore_api_v1_backup_restores__job_id__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backup/safety": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Safety */
+        get: operations["get_safety_api_v1_backup_safety_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/backup/safety/file": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Safety */
+        get: operations["download_safety_api_v1_backup_safety_file_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/task-columns": {
         parameters: {
             query?: never;
@@ -2441,6 +2561,108 @@ export interface components {
             noteId?: string | null;
             /** Newnotetitle */
             newNoteTitle?: string | null;
+        };
+        /** BackupCounts */
+        BackupCounts: {
+            /** Semesters */
+            semesters: number;
+            /** Courses */
+            courses: number;
+            /** Sessions */
+            sessions: number;
+            /** Events */
+            events: number;
+            /** Notes */
+            notes: number;
+            /** Recordings */
+            recordings: number;
+            /** Documents */
+            documents: number;
+            /** Chats */
+            chats: number;
+            /** Tasks */
+            tasks: number;
+            /** Themes */
+            themes: number;
+            /** Files */
+            files: number;
+            /** Bytes */
+            bytes: number;
+        };
+        /** BackupCurrentData */
+        BackupCurrentData: {
+            counts: components["schemas"]["BackupCounts"];
+        };
+        /** BackupExcludedItem */
+        BackupExcludedItem: {
+            /**
+             * Reason
+             * @constant
+             */
+            reason: "recording_in_progress";
+            /** Name */
+            name: string;
+        };
+        /** BackupJob */
+        BackupJob: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "export" | "restore";
+            /**
+             * Phase
+             * @enum {string}
+             */
+            phase: "preparing" | "writing" | "ready" | "validating" | "awaiting_confirmation" | "safety_backup" | "staging" | "swapping" | "cleanup" | "done" | "rolled_back" | "failed" | "cancelled" | "expired";
+            /** Bytesdone */
+            bytesDone: number;
+            /** Bytestotal */
+            bytesTotal: number | null;
+            /** Expiresat */
+            expiresAt: string | null;
+            /** Filename */
+            fileName?: string | null;
+            /** Size */
+            size?: number | null;
+            summary?: components["schemas"]["RestoreSummary"] | null;
+            error?: components["schemas"]["BackupJobError"] | null;
+        };
+        /** BackupJobError */
+        BackupJobError: {
+            /** Code */
+            code: string;
+            /** Title */
+            title: string;
+            /** Detail */
+            detail?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** BackupKeyLeftOut */
+        BackupKeyLeftOut: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "transcription_provider" | "ai_endpoint";
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** BackupSafetyRef */
+        BackupSafetyRef: {
+            /** Createdat */
+            createdAt: string;
+            /** Size */
+            size: number;
+        };
+        /** BackupSafetyReplaces */
+        BackupSafetyReplaces: {
+            replaces: components["schemas"]["BackupSafetyRef"] | null;
         };
         /** BaseUrlCheck */
         BaseUrlCheck: {
@@ -3887,6 +4109,14 @@ export interface components {
              */
             years: number;
         };
+        /** RestoreConfirm */
+        RestoreConfirm: {
+            /**
+             * Confirm
+             * @constant
+             */
+            confirm: true;
+        };
         /** RestoreResult */
         RestoreResult: {
             /**
@@ -3904,6 +4134,38 @@ export interface components {
              * @default 0
              */
             movedFolders: number;
+        };
+        /** RestoreSummary */
+        RestoreSummary: {
+            /** Createdat */
+            createdAt: string;
+            /** Appversion */
+            appVersion: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "web" | "desktop";
+            /** Willupgrade */
+            willUpgrade: boolean;
+            counts: components["schemas"]["BackupCounts"];
+            /** Keysleftout */
+            keysLeftOut: components["schemas"]["BackupKeyLeftOut"][];
+            /** Excluded */
+            excluded: components["schemas"]["BackupExcludedItem"][];
+            current: components["schemas"]["BackupCurrentData"];
+            /** Filesnotinbackup */
+            filesNotInBackup: number;
+            safetyBackup: components["schemas"]["BackupSafetyReplaces"];
+        };
+        /** SafetyBackup */
+        SafetyBackup: {
+            /** Createdat */
+            createdAt: string;
+            /** Size */
+            size: number;
+            /** Path */
+            path: string | null;
         };
         /** SaveResult */
         SaveResult: {
@@ -9200,6 +9462,219 @@ export interface operations {
                     "application/json": {
                         [key: string]: boolean;
                     };
+                };
+            };
+        };
+    };
+    start_export_api_v1_backup_exports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupJob"];
+                };
+            };
+        };
+    };
+    get_job_api_v1_backup_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_api_v1_backup_jobs__job_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_export_api_v1_backup_exports__job_id__file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_restore_api_v1_backup_restores_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupJob"];
+                };
+            };
+        };
+    };
+    confirm_restore_api_v1_backup_restores__job_id__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreConfirm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BackupJob"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_safety_api_v1_backup_safety_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SafetyBackup"];
+                };
+            };
+            /** @description No safety backup yet */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    download_safety_api_v1_backup_safety_file_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": unknown;
                 };
             };
         };

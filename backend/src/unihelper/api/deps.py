@@ -24,6 +24,10 @@ MUTATING = {"POST", "PUT", "PATCH", "DELETE"}
 CSRF_EXEMPT_SUFFIXES = ("/setup/owner", "/auth/login")
 # endpoints a user who must change their password may still call (FR-003d)
 PASSWORD_CHANGE_ALLOWED_SUFFIXES = ("/auth/me", "/auth/password", "/auth/logout")
+# 016: the only requests an account may make while its data is being restored: its restore's
+# progress, and who is signed in (so a tab reloaded meanwhile can start and show the overlay)
+BACKUP_JOBS_PATH = "/api/v1/backup/jobs/"
+ME_PATH = "/api/v1/auth/me"
 
 # scope="function": commit (or roll back) BEFORE the response is sent, so a client that
 # gets 2xx can rely on the change being durable (FR-026, Constitution I). The default
@@ -76,7 +80,23 @@ def _authenticate(request: Request, db: Session) -> Auth:
 
 
 def current_auth(request: Request, db: DbSession) -> Auth:
-    return _authenticate(request, db)
+    auth = _authenticate(request, db)
+    user = auth.user
+    request.state.data_epoch = f"{user.id}.{user.data_epoch}"  # 016: sent as X-Data-Epoch
+    locks = getattr(request.app.state, "account_locks", None)
+    job_id = locks.locked_job(user.id) if locks is not None else None
+    if job_id is not None and not (
+        request.method == "GET"
+        and (request.url.path.startswith(BACKUP_JOBS_PATH) or request.url.path == ME_PATH)
+    ):
+        raise ApiError(
+            423,
+            "restore_in_progress",
+            "Your data is being restored.",
+            "Wait until the restore has finished.",
+            extra={"jobId": job_id},
+        )
+    return auth
 
 
 def current_user(auth: Annotated[Auth, Depends(current_auth)]) -> User:

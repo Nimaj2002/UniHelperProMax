@@ -55,13 +55,18 @@ def _migration_engine(url: str) -> Engine:
 
 
 def upgrade_to_head(engine: Engine) -> None:
-    url = engine.url.render_as_string(hide_password=False)
+    upgrade_to(engine.url.render_as_string(hide_password=False), "head")
+
+
+def upgrade_to(url: str, revision: str) -> None:
+    """Upgrade the database at `url` to `revision` (016: a restore's scratch database is first
+    built at the backup's revision, then upgraded to head)."""
     cfg = alembic_config(url)
     mig = _migration_engine(url)
     try:
         with mig.begin() as conn:
             cfg.attributes["connection"] = conn
-            command.upgrade(cfg, "head")
+            command.upgrade(cfg, revision)
             dangling = conn.exec_driver_sql("PRAGMA foreign_key_check").fetchall()
             if dangling:
                 tables = sorted({row[0] for row in dangling})

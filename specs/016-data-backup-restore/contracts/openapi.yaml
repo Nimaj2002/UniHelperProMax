@@ -1,0 +1,249 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 016 additions (backup and restore)
+  version: 1.13.0
+  description: |
+    Additive to the 001–015 contracts (same conventions: camelCase JSON, RFC 9457 problems).
+    Prose contract: contracts/backup-api.md.
+
+    Every operation acts on the signed-in account only; a job of another account answers 404.
+
+    Amended existing operations (only the additions are listed):
+    - Every authenticated operation: response header `X-Data-Epoch: <userId>.<epoch>`; the
+      epoch goes up by one with every restore of the account (clients reload when it changes).
+    - Every authenticated operation except `GET /backup/jobs/{jobId}` and `GET /auth/me`:
+      `423 restore_in_progress` (with `jobId`) while the account's data is being restored.
+servers:
+  - url: /api/v1
+
+paths:
+  /backup/exports:
+    post:
+      tags: [backup]
+      summary: Start a backup of the account (a background job; poll GET /backup/jobs/{jobId})
+      responses:
+        "202":
+          description: Started
+          content: { application/json: { schema: { $ref: "#/components/schemas/BackupJob" } } }
+        "409": { $ref: "#/components/responses/Problem" }   # backup_busy
+        "503": { $ref: "#/components/responses/Problem" }   # backup_capacity
+        "507": { $ref: "#/components/responses/Problem" }   # insufficient_storage
+
+  /backup/jobs/{jobId}:
+    parameters:
+      - { name: jobId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [backup]
+      summary: A backup or restore job's phase and progress (allowed during a restore)
+      responses:
+        "200":
+          description: Job
+          content: { application/json: { schema: { $ref: "#/components/schemas/BackupJob" } } }
+        "404": { $ref: "#/components/responses/Problem" }   # not_found
+    delete:
+      tags: [backup]
+      summary: Cancel a running backup, delete a finished one, or drop an unconfirmed restore
+      responses:
+        "204": { description: Cancelled or deleted }
+        "404": { $ref: "#/components/responses/Problem" }   # not_found
+        "409": { $ref: "#/components/responses/Problem" }   # restore_running
+
+  /backup/exports/{jobId}/file:
+    parameters:
+      - { name: jobId, in: path, required: true, schema: { type: string } }
+    get:
+      tags: [backup]
+      summary: Download a finished backup (Content-Disposition attachment); kept for an hour
+      responses:
+        "200":
+          description: The backup zip
+          content: { application/zip: { schema: { type: string, contentMediaType: application/zip } } }
+        "404": { $ref: "#/components/responses/Problem" }   # not_found (not ready, expired)
+
+  /backup/restores:
+    post:
+      tags: [backup]
+      summary: Upload a backup to restore (raw body, at most 20 GB); validated in the background
+      requestBody:
+        required: true
+        content:
+          application/octet-stream: { schema: { type: string, contentMediaType: application/zip } }
+      responses:
+        "202":
+          description: Uploaded; the job validates it (validating → awaiting_confirmation | failed)
+          content: { application/json: { schema: { $ref: "#/components/schemas/BackupJob" } } }
+        "400": { $ref: "#/components/responses/Problem" }   # upload_cancelled
+        "409": { $ref: "#/components/responses/Problem" }   # backup_busy
+        "411": { $ref: "#/components/responses/Problem" }   # length_required
+        "413": { $ref: "#/components/responses/Problem" }   # file_too_large
+        "422": { $ref: "#/components/responses/Problem" }   # incomplete_upload
+        "507": { $ref: "#/components/responses/Problem" }   # insufficient_storage
+
+  /backup/restores/{jobId}/confirm:
+    parameters:
+      - { name: jobId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [backup]
+      summary: Replace all of the account's data with the validated backup (safety backup first)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirm]
+              properties: { confirm: { const: true } }
+      responses:
+        "202":
+          description: Restoring (safety_backup → staging → swapping → cleanup → done | rolled_back)
+          content: { application/json: { schema: { $ref: "#/components/schemas/BackupJob" } } }
+        "404": { $ref: "#/components/responses/Problem" }   # not_found
+        "409": { $ref: "#/components/responses/Problem" }   # not_awaiting_confirmation, restore_blocked
+        "503": { $ref: "#/components/responses/Problem" }   # restore_capacity
+        "507": { $ref: "#/components/responses/Problem" }   # insufficient_storage
+
+  /backup/safety:
+    get:
+      tags: [backup]
+      summary: The safety backup made before the last restore, if any (path in the desktop app only)
+      responses:
+        "200":
+          description: Safety backup
+          content: { application/json: { schema: { $ref: "#/components/schemas/SafetyBackup" } } }
+        "204": { description: No safety backup yet }
+
+  /backup/safety/file:
+    get:
+      tags: [backup]
+      summary: Download the safety backup
+      responses:
+        "200":
+          description: The safety backup zip
+          content: { application/zip: { schema: { type: string, contentMediaType: application/zip } } }
+        "404": { $ref: "#/components/responses/Problem" }   # not_found
+
+components:
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code:
+          type: string
+          examples: [backup_busy, backup_capacity, restore_capacity, insufficient_storage,
+                     not_awaiting_confirmation, restore_blocked, restore_running,
+                     restore_in_progress]
+        detail: { type: string }
+
+    Counts:
+      type: object
+      required: [semesters, courses, sessions, events, notes, recordings, documents, chats, tasks,
+                 themes, files, bytes]
+      properties:
+        semesters: { type: integer, minimum: 0 }
+        courses: { type: integer, minimum: 0 }
+        sessions: { type: integer, minimum: 0 }
+        events: { type: integer, minimum: 0 }
+        notes: { type: integer, minimum: 0 }
+        recordings: { type: integer, minimum: 0 }
+        documents: { type: integer, minimum: 0 }
+        chats: { type: integer, minimum: 0 }
+        tasks: { type: integer, minimum: 0 }
+        themes: { type: integer, minimum: 0 }
+        files: { type: integer, minimum: 0 }
+        bytes: { type: integer, minimum: 0 }
+
+    RestoreSummary:
+      type: object
+      required: [createdAt, appVersion, source, willUpgrade, counts, keysLeftOut, excluded,
+                 current, filesNotInBackup, safetyBackup]
+      properties:
+        createdAt: { type: string }
+        appVersion: { type: string }
+        source: { enum: [web, desktop] }
+        willUpgrade: { type: boolean }
+        counts: { $ref: "#/components/schemas/Counts" }
+        keysLeftOut:
+          type: array
+          items:
+            type: object
+            required: [kind, id, name]
+            properties:
+              kind: { enum: [transcription_provider, ai_endpoint] }
+              id: { type: string }
+              name: { type: string }
+        excluded:
+          type: array
+          items:
+            type: object
+            required: [reason, name]
+            properties:
+              reason: { const: recording_in_progress }
+              name: { type: string }
+        current:
+          type: object
+          required: [counts]
+          properties: { counts: { $ref: "#/components/schemas/Counts" } }
+        filesNotInBackup: { type: integer, minimum: 0 }
+        safetyBackup:
+          type: object
+          required: [replaces]
+          properties:
+            replaces:
+              oneOf:
+                - type: "null"
+                - type: object
+                  required: [createdAt, size]
+                  properties:
+                    createdAt: { type: string }
+                    size: { type: integer }
+
+    BackupJob:
+      type: object
+      required: [id, kind, phase, bytesDone, bytesTotal, expiresAt]
+      properties:
+        id: { type: string }
+        kind: { enum: [export, restore] }
+        phase:
+          enum: [preparing, writing, ready, validating, awaiting_confirmation, safety_backup,
+                 staging, swapping, cleanup, done, rolled_back, failed, cancelled, expired]
+        bytesDone: { type: integer, minimum: 0 }
+        bytesTotal: { type: [integer, "null"] }
+        expiresAt: { type: [string, "null"] }
+        fileName: { type: [string, "null"] }
+        size: { type: [integer, "null"] }
+        summary:
+          oneOf:
+            - type: "null"
+            - $ref: "#/components/schemas/RestoreSummary"
+        error:
+          oneOf:
+            - type: "null"
+            - type: object
+              required: [code, title]
+              properties:
+                code:
+                  type: string
+                  examples: [not_a_backup, backup_damaged, backup_unsafe, backup_names_invalid,
+                             backup_too_new, backup_ids_in_use, insufficient_storage,
+                             files_in_use, restore_failed, backup_failed]
+                title: { type: string }
+                detail: { type: [string, "null"] }
+
+    SafetyBackup:
+      type: object
+      required: [createdAt, size, path]
+      properties:
+        createdAt: { type: string }
+        size: { type: integer }
+        path: { type: [string, "null"], description: Full path (desktop app only) }

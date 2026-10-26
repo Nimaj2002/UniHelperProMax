@@ -17,6 +17,7 @@ describe("desktop bridge (015)", () => {
     await desktop.microphone.markExplained();
     await desktop.openDataFolder();
     await desktop.openLogsFolder();
+    await desktop.revealPath("/tmp/safety.zip");
     desktop.setGuardState({ recording: false, pendingUploads: 0, unsavedNotes: 0, other: 0 });
     desktop.respondToClose("quit");
     const off = [desktop.onCloseRequested(() => {}), desktop.onNavigate(() => {}), desktop.onDataFolderProgress(() => {})];

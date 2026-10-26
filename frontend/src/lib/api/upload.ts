@@ -4,6 +4,7 @@
  * nothing (006 research I5).
  */
 import { API_BASE, ApiError, readCookie } from "./client";
+import { noteDataEpoch, noteRestoreInProgress } from "./dataEpoch";
 
 export function uploadFile<T>(
   path: string,
@@ -21,12 +22,14 @@ export function uploadFile<T>(
     xhr.setRequestHeader("X-CSRF-Token", decodeURIComponent(readCookie("uh_csrf") ?? ""));
     xhr.upload.onprogress = (e) => onProgress(e.loaded, e.lengthComputable ? e.total : file.size);
     xhr.onload = () => {
+      noteDataEpoch(xhr.getResponseHeader("X-Data-Epoch"));
       let data: Record<string, unknown> = {};
       try {
         data = JSON.parse(xhr.responseText || "{}") as Record<string, unknown>;
       } catch {
         /* not JSON */
       }
+      if (xhr.status === 423 && data.code === "restore_in_progress") noteRestoreInProgress(data.jobId);
       if (xhr.status >= 200 && xhr.status < 300) resolve(data as T);
       else reject(new ApiError(xhr.status, String(data.code ?? "http_error"), String(data.title ?? xhr.statusText), undefined, [], data));
     };

@@ -21,6 +21,7 @@ from unihelper.api.v1 import (
     admin,
     ai,
     auth,
+    backup,
     calendar_io,
     chat_runs,
     chats,
@@ -42,6 +43,8 @@ from unihelper.api.v1 import (
     trash,
     workspace,
 )
+from unihelper.backup import recovery as backup_recovery
+from unihelper.backup.jobs import AccountLocks, BackupJobs
 from unihelper.chat.runs import RunRegistry
 from unihelper.config import Settings, load_settings
 from unihelper.db.engine import make_engine, make_sessionmaker
@@ -92,6 +95,7 @@ def build_api_router() -> APIRouter:
         chats,
         chat_runs,
         desktop_routes,  # 015: always registered; 404 not_desktop in web mode
+        backup,  # 016
     ):
         api.include_router(module.router)
     for router in tasks.routers:  # 012: /task-columns, /tasks, /quick-notes
@@ -136,6 +140,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             # always upgrade: a no-op when the schema is already at head
             upgrade_to_head(app.state.engine)
+            # 016: finish or undo a restore interrupted by a crash, before any request
+            backup_recovery.recover_restores(settings)
+            backup_recovery.sweep_exports(settings)
             if not settings.desktop:  # the desktop app chose and created its data folder
                 settings.files_root.mkdir(parents=True, exist_ok=True)
             elif not settings.files_root.is_dir():
@@ -229,11 +236,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         max_per_user=settings.chat_max_runs_per_user,
         max_total=settings.chat_max_runs_total,
     )
+    # 016: backup and restore jobs, and the accounts whose data is being restored
+    app.state.account_locks = AccountLocks()
+    app.state.backup_jobs = BackupJobs(
+        settings,
+        app.state.sessionmaker,
+        app.state.storage,
+        app.state.chat_runs,
+        app.state.account_locks,
+    )
     app.state.transcription_worker = TranscriptionWorker(
         app.state.sessionmaker,
         app.state.storage,
         concurrency=settings.transcription_concurrency,
     )
+    app.state.transcription_worker.paused_users = app.state.account_locks.locked_users
+    app.state.chat_runs.paused = lambda uid: app.state.account_locks.locked_job(uid) is not None
 
     install_error_handlers(app)
     app.include_router(build_api_router())
@@ -241,6 +259,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.middleware("http")
     async def security_headers(request: Request, call_next):  # type: ignore[no-untyped-def]
         response: Response = await call_next(request)
+        epoch = getattr(request.state, "data_epoch", None)
+        if epoch is not None:  # 016: open tabs reload when a restore replaced the data
+            response.headers.setdefault("X-Data-Epoch", epoch)
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "same-origin")
         if not request.url.path.startswith(API_PREFIX):

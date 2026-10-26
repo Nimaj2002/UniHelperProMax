@@ -311,15 +311,13 @@ def recover(maker: Maker) -> list[str]:
         return appending
 
 
-def queued_ids(maker: Maker) -> list[str]:
+def queued_ids(maker: Maker, skip_users: frozenset[str] = frozenset()) -> list[str]:
+    """Queued jobs, oldest first; `skip_users` are accounts being restored (016)."""
+    query = select(TranscriptionJob.id).where(TranscriptionJob.status == "queued")
+    if skip_users:
+        query = query.where(TranscriptionJob.user_id.not_in(skip_users))
     with maker() as db:
-        return list(
-            db.scalars(
-                select(TranscriptionJob.id)
-                .where(TranscriptionJob.status == "queued")
-                .order_by(TranscriptionJob.created_at, TranscriptionJob.id)
-            )
-        )
+        return list(db.scalars(query.order_by(TranscriptionJob.created_at, TranscriptionJob.id)))
 
 
 def claim(maker: Maker, job_id: str) -> bool:

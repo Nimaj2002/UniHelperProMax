@@ -6,6 +6,7 @@ import { registerAccountMenuItem, registerGlobalHost, registerPanelAction, type 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { AccountSettings } from "./account/AccountSettings";
+import { RestoreHost } from "./backup/RestoreOverlay";
 import { SettingsLayout } from "./SettingsLayout";
 import { ThemeSync } from "./ThemeSync";
 import { TranscriptionSettingsPage } from "./transcription/TranscriptionSettings";
@@ -19,6 +20,8 @@ const ImportExportPage = lazy(() => import("./calendar-io/ImportExportPage").the
 const AiSettingsPage = lazy(() => import("./ai/AiSettings").then((m) => ({ default: m.AiSettingsPage })));
 // Settings → Keyboard shortcuts
 const ShortcutsSettings = lazy(() => import("./shortcuts/ShortcutsSettings").then((m) => ({ default: m.ShortcutsSettings })));
+// 016: Settings → Backup & restore
+const BackupPage = lazy(() => import("./backup/BackupPage").then((m) => ({ default: m.BackupPage })));
 // 009 US4: Settings → Trash
 const TrashPage = lazy(() => import("./trash/TrashPage").then((m) => ({ default: m.TrashPage })));
 
@@ -41,6 +44,7 @@ function SettingsButton({ variant = "full" }: PanelActionProps) {
 registerPanelAction({ id: "settings", slot: "footer", component: SettingsButton, priority: 10 });
 registerAccountMenuItem({ id: "settings", label: "Settings", priority: 0, onSelect: (nav) => nav("/settings") });
 registerGlobalHost({ id: "theme-sync", component: ThemeSync });
+registerGlobalHost({ id: "restore-host", component: RestoreHost }); // 016: restore overlay, reload
 
 export const routes: RouteObject[] = [
   {
@@ -55,6 +59,7 @@ export const routes: RouteObject[] = [
       { path: "appearance/themes/:themeId", element: loading(<ThemeEditor />) },
       { path: "shortcuts", element: loading(<ShortcutsSettings />) },
       { path: "import-export", element: loading(<ImportExportPage />) },
+      { path: "backup", element: loading(<BackupPage />) },
       { path: "trash", element: loading(<TrashPage />) },
       { path: "account", element: <AccountSettings /> },
     ],

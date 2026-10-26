@@ -1,4 +1,5 @@
 /** Thin fetch wrapper for /api/v1: CSRF header, If-Match, RFC 9457 problems → ApiError. */
+import { noteDataEpoch, noteRestoreInProgress } from "./dataEpoch";
 import type { components } from "./schema";
 
 export type Schemas = components["schemas"];
@@ -99,11 +100,15 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
     throw new ApiError(0, "network_error", "Can't reach the server. Check your connection and retry.");
   }
 
+  noteDataEpoch(response.headers.get("X-Data-Epoch"));
   if (response.status === 204) return undefined as T;
   const isJson = (response.headers.get("content-type") ?? "").includes("json");
   const data: unknown = isJson ? await response.json() : undefined;
   if (!response.ok) {
     const p = (data ?? {}) as Partial<{ code: string; title: string; detail: string; errors: FieldError[] }>;
+    if (response.status === 423 && p.code === "restore_in_progress") {
+      noteRestoreInProgress((data as { jobId?: unknown }).jobId);
+    }
     throw new ApiError(
       response.status,
       p.code ?? "http_error",

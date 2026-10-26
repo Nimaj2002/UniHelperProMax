@@ -219,6 +219,15 @@ function run(): void {
       const folder = store.get().dataFolder;
       return isMain(e.sender.id) && folder ? shell.openPath(folder) : undefined;
     });
+    // 016: "Show in folder" for the safety backup; nothing outside backups/safety is revealed
+    ipcMain.handle("uh:reveal.path", (e, target: unknown) => {
+      if (!isMain(e.sender.id) || typeof target !== "string") return undefined;
+      const safety = path.resolve(paths.backendData, "backups", "safety");
+      const resolved = path.resolve(target);
+      if (!resolved.startsWith(safety + path.sep) || !fs.existsSync(resolved)) return undefined;
+      shell.showItemInFolder(resolved);
+      return undefined;
+    });
     registerMicrophoneIpc(isMain, () => store.update({ micExplained: true }));
   }
 

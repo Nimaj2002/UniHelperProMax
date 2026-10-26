@@ -1,4 +1,5 @@
-"""The ONLY module that touches the file system (Constitution III; research R7).
+"""The module that touches the file system (Constitution III; research R7). The one other is
+`backup_fs.py` (016), for walking, extracting and swapping a whole account folder.
 
 It never deletes folders, and deleting metadata keeps user files (FR-019). Two exceptions:
 `delete_content_file` — one confirmed note (`.md` in `notes/`), recording/imported audio (in

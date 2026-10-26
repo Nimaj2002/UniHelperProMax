@@ -47,6 +47,8 @@ class TranscriptionWorker:
         self._loop_task: asyncio.Task[None] | None = None
         self._tasks: dict[str, asyncio.Task[None]] = {}
         self._user_cancelled: set[str] = set()
+        # 016: accounts whose data is being restored get no new jobs started
+        self.paused_users: Callable[[], frozenset[str]] = frozenset
 
     # ---- lifecycle (FastAPI lifespan) ---------------------------------------------------
 
@@ -97,7 +99,7 @@ class TranscriptionWorker:
     def _fill(self) -> None:
         """Start queued jobs up to the concurrency limit (oldest first)."""
         # a cheap synchronous read: one indexed query on the local SQLite file
-        for job_id in svc.queued_ids(self.maker):
+        for job_id in svc.queued_ids(self.maker, self.paused_users()):
             if len(self._tasks) >= self.concurrency:
                 return
             if job_id in self._tasks:

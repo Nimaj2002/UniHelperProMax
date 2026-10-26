@@ -115,6 +115,8 @@ class RunRegistry:
         self.max_total = max_total
         self._runs: dict[str, RunState] = {}
         self._loop: asyncio.AbstractEventLoop | None = None
+        # 016: accounts whose data is being restored start no new answers
+        self.paused: Callable[[str], bool] = lambda _user_id: False
 
     # ───────────────────────────── lifecycle ─────────────────────────────
 
@@ -157,6 +159,11 @@ class RunRegistry:
         return next((s for s in self.active() if s.chat_id == chat_id), None)
 
     def check_capacity(self, user_id: str) -> None:
+        if self.paused(user_id):  # 016: this account's data is being restored
+            raise ApiError(
+                423, "restore_in_progress", "Your data is being restored.",
+                "Wait until the restore has finished.",
+            )
         if len(self.active(user_id)) >= self.max_per_user or len(self.active()) >= self.max_total:
             raise ApiError(
                 429,
