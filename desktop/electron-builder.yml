@@ -1,0 +1,98 @@
+# UniHelperProMax desktop packaging (specs/015-desktop-app-packaging, research R15,
+# contracts/packaging.md).
+#
+# Build order (quickstart.md "Build"):
+#   1. frontend:  pnpm --dir ../frontend install --frozen-lockfile && pnpm --dir ../frontend build
+#   2. backend:   cd ../backend && uv sync --frozen --group packaging
+#                 && uv run pyinstaller --noconfirm packaging/unihelper-backend.spec
+#                 && uv run python -m unihelper.desktop.smoke dist/unihelper-backend
+#   3. desktop:   npm ci && npm run probe      # unpacked app in release/<platform>-unpacked
+#                 npm run dist                 # installers (only after the probe gate passes)
+#
+# Never add a snap target, never pass --no-sandbox, never build the backend with --onefile.
+
+appId: io.github.nimaj2002.unihelperpromax   # stable forever: updates and the single-instance lock depend on it
+productName: UniHelperProMax
+executableName: unihelperpromax
+copyright: Copyright © 2026 Nima Jelodari
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**
+  - package.json
+
+extraResources:
+  - from: ../backend/dist/unihelper-backend
+    to: backend
+  - from: ../frontend/dist
+    to: frontend
+
+afterPack: scripts/afterPack.cjs
+
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  onlyLoadAppFromAsar: true
+
+# icons/png/app-icon-1024.png is the source for every system: electron-builder makes the .ico
+# (Windows exe and installer), the .icns (macOS) and the Linux sizes from it.
+mac:
+  icon: ../icons/png/app-icon-1024.png
+  category: public.app-category.education
+  minimumSystemVersion: "13.0"
+  hardenedRuntime: true
+  identity: "-"            # ad-hoc until proper signing; needs cs.disable-library-validation
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    NSMicrophoneUsageDescription: UniHelperProMax records lectures with your microphone.
+  target:
+    - target: dmg
+  artifactName: UniHelperProMax-${version}-${arch}.${ext}
+
+dmg:
+  artifactName: UniHelperProMax-${version}-${arch}.${ext}
+
+win:
+  icon: ../icons/png/app-icon-1024.png
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  oneClick: false
+  perMachine: false                         # current user only, no administrator prompt (FR-001)
+  allowToChangeInstallationDirectory: true
+  deleteAppDataOnUninstall: false           # never delete user or app data (FR-030)
+  include: build/installer.nsh
+  artifactName: UniHelperProMax-Setup-${version}-${arch}.${ext}
+
+linux:
+  icon: ../icons/png/app-icon-1024.png
+  # links the running window (app_id / WM_CLASS) to the installed .desktop entry, so docks and
+  # taskbars show the app's icon instead of a generic one, especially on Wayland
+  syncDesktopName: true
+  category: Education
+  maintainer: Nima Jelodari
+  synopsis: Your whole semester in one calm place
+  target:
+    - target: AppImage
+      arch: [x64]
+    - target: deb
+      arch: [x64]
+
+appImage:
+  artifactName: UniHelperProMax-${version}-x86_64.${ext}
+
+deb:
+  artifactName: unihelperpromax_${version}_amd64.${ext}
+
+publish:
+  provider: github
+  owner: Nimaj2002
+  repo: UniHelperProMax
+  releaseType: draft

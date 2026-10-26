@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { useLogout, useMe } from "@/features/auth/api";
+import { useIsDesktop, useLogout, useMe } from "@/features/auth/api";
 import { signOutAllowed, useAccountMenuItems } from "./registry";
 
 /**
@@ -22,6 +22,8 @@ export function AccountMenu({ variant = "full" }: { variant?: "full" | "icon" })
   const { data: me } = useMe();
   const logout = useLogout();
   const navigate = useNavigate();
+  const desktop = useIsDesktop();
+  const items = accountItems.filter((item) => (!item.ownerOnly || me?.role === "owner") && !(desktop && item.webOnly));
 
   const trigger =
     variant === "icon" ? (
@@ -49,26 +51,30 @@ export function AccountMenu({ variant = "full" }: { variant?: "full" | "icon" })
         <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
       )}
       <DropdownMenuContent side={variant === "icon" ? "right" : "top"} align={variant === "icon" ? "end" : "start"} className="min-w-52">
-        <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
-          Signed in as <span className="font-medium text-foreground">{me?.username}</span>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {accountItems
-          .filter((item) => !item.ownerOnly || me?.role === "owner")
-          .map((item) => (
-            <DropdownMenuItem key={item.id} onSelect={() => item.onSelect(navigate)}>
-              {item.label}
-            </DropdownMenuItem>
-          ))}
-        {accountItems.length > 0 && <DropdownMenuSeparator />}
-        <DropdownMenuItem
-          onSelect={() => {
-            const signOut = () => logout.mutate(undefined, { onSettled: () => navigate("/login", { replace: true }) });
-            if (signOutAllowed(signOut)) signOut();
-          }}
-        >
-          <SignOut size={16} /> Sign out
-        </DropdownMenuItem>
+        {!desktop && (
+          <>
+            <DropdownMenuLabel className="truncate font-normal text-muted-foreground">
+              Signed in as <span className="font-medium text-foreground">{me?.username}</span>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        {items.map((item) => (
+          <DropdownMenuItem key={item.id} onSelect={() => item.onSelect(navigate)}>
+            {item.label}
+          </DropdownMenuItem>
+        ))}
+        {!desktop && items.length > 0 && <DropdownMenuSeparator />}
+        {!desktop && (
+          <DropdownMenuItem
+            onSelect={() => {
+              const signOut = () => logout.mutate(undefined, { onSettled: () => navigate("/login", { replace: true }) });
+              if (signOutAllowed(signOut)) signOut();
+            }}
+          >
+            <SignOut size={16} /> Sign out
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

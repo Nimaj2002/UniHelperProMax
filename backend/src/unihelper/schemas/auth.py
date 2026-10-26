@@ -28,6 +28,7 @@ class Me(ApiModel):
 
 class SetupStatus(ApiModel):
     needs_owner: bool
+    mode: Literal["web", "desktop"] = "web"  # 015
 
 
 class PasswordChange(ApiModel):

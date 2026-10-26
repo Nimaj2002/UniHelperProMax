@@ -1,0 +1,7 @@
+dist/
+release/
+node_modules/
+test-results/
+playwright-report/
+tests/e2e/fixtures/*.wav
+release-e2e/

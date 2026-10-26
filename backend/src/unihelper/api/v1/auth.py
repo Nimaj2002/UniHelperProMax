@@ -6,6 +6,7 @@ from unihelper.api.deps import (
     SESSION_COOKIE,
     CurrentAuth,
     DbSession,
+    NotInDesktop,
     clear_auth_cookies,
     get_settings,
     set_auth_cookies,
@@ -23,7 +24,7 @@ def _throttle(request: Request) -> LoginThrottle:
     return throttle
 
 
-@router.post("/login", response_model=Me)
+@router.post("/login", response_model=Me, dependencies=[NotInDesktop])
 def login(body: LoginRequest, request: Request, response: Response, db: DbSession) -> Me:
     throttle = _throttle(request)
     ip = request.client.host if request.client else "unknown"
@@ -45,7 +46,7 @@ def login(body: LoginRequest, request: Request, response: Response, db: DbSessio
     return Me.model_validate(issued.user)
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, dependencies=[NotInDesktop])
 def logout(request: Request, db: DbSession) -> Response:
     auth_service.logout(db, request.cookies.get(SESSION_COOKIE))
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -58,7 +59,9 @@ def me(auth: CurrentAuth) -> Me:
     return Me.model_validate(auth.user)
 
 
-@router.post("/password", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/password", status_code=status.HTTP_204_NO_CONTENT, dependencies=[NotInDesktop]
+)
 def change_password(body: PasswordChange, auth: CurrentAuth, db: DbSession) -> Response:
     auth_service.change_password(
         db, auth.user, body.current_password, body.new_password, keep_session_id=auth.session.id

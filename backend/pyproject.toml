@@ -37,6 +37,8 @@ dev = [
     "pyyaml>=6.0",
     "jsonschema>=4.23",
 ]
+# 015: builds the standalone desktop backend (never a runtime dependency)
+packaging = ["pyinstaller==6.22.3"]
 
 [build-system]
 requires = ["hatchling"]

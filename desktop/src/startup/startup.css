@@ -1,0 +1,67 @@
+/* Theme tokens copied from frontend/src/styles/tokens.css (built-in light and dark). */
+:root {
+  color-scheme: light;
+  --surface: #f8f8f9;
+  --surface-elevated: #fdfdfd;
+  --text-primary: #18181b;
+  --text-muted: #55555d;
+  --border: #85858d;
+  --divider: #e1e1e5;
+  --accent: #2650c9;
+  --accent-foreground: #fafafb;
+  --focus-ring: #2650c9;
+  --danger: #b4231b;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface: #131316;
+    --surface-elevated: #1b1b1f;
+    --text-primary: #ececef;
+    --text-muted: #a2a2ab;
+    --border: #6c6c75;
+    --divider: #2a2a30;
+    --accent: #8ba7ff;
+    --accent-foreground: #0f1320;
+    --focus-ring: #8ba7ff;
+    --danger: #ff8d82;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--surface);
+  color: var(--text-primary);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Ubuntu, sans-serif;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.panel {
+  width: min(560px, 100%);
+  background: var(--surface-elevated);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  padding: 28px;
+}
+h1 { font-size: 20px; margin: 0 0 8px; }
+p { margin: 0 0 12px; }
+.muted { color: var(--text-muted); }
+.path { font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; word-break: break-all; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+button {
+  font: inherit;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+button.primary { background: var(--accent); color: var(--accent-foreground); border-color: var(--accent); }
+button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
+.progress { height: 4px; background: var(--divider); border-radius: 2px; overflow: hidden; margin-top: 16px; }
+.progress span { display: block; height: 100%; width: 40%; background: var(--accent); animation: slide 1.2s ease-in-out infinite; }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@media (prefers-reduced-motion: reduce) { .progress span { animation: none; width: 100%; opacity: 0.5; } }
+#error h1 { color: var(--danger); }

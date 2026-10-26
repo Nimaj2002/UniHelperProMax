@@ -125,6 +125,23 @@ def _expire_stale(
             _finalize(db, storage, user, r, "interrupted")
 
 
+def interrupt_all(db: Session, storage: StorageService) -> int:
+    """015: at server shutdown, finalize every recording still in progress as interrupted.
+    Interrupted recordings still accept the client's late chunks (Feature 003), so audio the
+    window kept on the device is appended on the next start."""
+    n = 0
+    for r in db.scalars(select(Recording).where(Recording.status == "recording")).all():
+        user = db.get(User, r.user_id)
+        if user is None:
+            continue
+        try:
+            _finalize(db, storage, user, r, "interrupted")
+            n += 1
+        except Exception:
+            log.exception("could not finalize recording %s at shutdown", r.id)
+    return n
+
+
 # ---- reads --------------------------------------------------------------------------------
 
 

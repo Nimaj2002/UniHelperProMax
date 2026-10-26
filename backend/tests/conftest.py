@@ -206,3 +206,52 @@ def assert_problem(response, status: int, code: str) -> dict:  # type: ignore[no
     assert body["code"] == code, body
     assert body["status"] == status
     return body  # type: ignore[no-any-return]
+
+
+# ---- 015: desktop mode ------------------------------------------------------------------------
+
+DESKTOP_PORT = 47813
+DESKTOP_HOST = f"127.0.0.1:{DESKTOP_PORT}"
+LAUNCH_TOKEN = "a" * 64
+CLIENT_SECRET = "b" * 64
+
+
+@pytest.fixture
+def desktop_handshake():  # type: ignore[no-untyped-def]
+    from unihelper.desktop import handshake
+
+    hs = handshake.Handshake(launch_token=LAUNCH_TOKEN, client_secret=CLIENT_SECRET)
+    handshake.set_for_tests(hs)
+    yield hs
+    handshake.set_for_tests(None)
+
+
+@pytest.fixture
+def desktop_app(tmp_path: Path, key_file: Path, desktop_handshake):  # type: ignore[no-untyped-def]
+    """The app in desktop mode: separate backend data and files folders, a known handshake."""
+    files = tmp_path / "Documents" / "UniHelperProMax"
+    files.mkdir(parents=True)
+    application = create_app(
+        Settings(
+            data_dir=tmp_path / "backend",
+            files_dir=files,
+            transcription_autorun=False,
+            key_store="file",
+            key_file=key_file,
+            desktop=True,
+            desktop_user="Test Student",
+            port=DESKTOP_PORT,
+        )
+    )
+    return _record_routes(application)
+
+
+@pytest.fixture
+def desktop_client(desktop_app) -> Iterator[TestClient]:  # type: ignore[no-untyped-def]
+    """Requests as the app window sends them: own Host and the client-secret header."""
+    with TestClient(
+        desktop_app,
+        base_url=f"http://{DESKTOP_HOST}",
+        headers={"X-UniHelper-Client": CLIENT_SECRET},
+    ) as c:
+        yield c

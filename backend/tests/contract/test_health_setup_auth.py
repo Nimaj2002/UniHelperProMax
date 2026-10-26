@@ -13,11 +13,12 @@ API = "/api/v1"
 def test_health(client: TestClient) -> None:
     r = client.get(f"{API}/health")
     assert r.status_code == 200
-    assert r.json() == {"status": "ok"}
+    body = r.json()  # 015 adds version and mode (additive)
+    assert body["status"] == "ok" and body["mode"] == "web" and body["version"]
 
 
 def test_setup_status_and_owner_creation(client: TestClient) -> None:
-    assert client.get(f"{API}/setup/status").json() == {"needsOwner": True}
+    assert client.get(f"{API}/setup/status").json() == {"needsOwner": True, "mode": "web"}
     r = client.post(f"{API}/setup/owner", json=OWNER)
     assert r.status_code == 201, r.text
     check(r.json(), "Me")
@@ -25,7 +26,7 @@ def test_setup_status_and_owner_creation(client: TestClient) -> None:
     assert r.json()["mustChangePassword"] is False
     assert "uh_session" in r.cookies and "uh_csrf" in r.cookies
     assert "httponly" in r.headers.get_list("set-cookie")[0].lower()
-    assert client.get(f"{API}/setup/status").json() == {"needsOwner": False}
+    assert client.get(f"{API}/setup/status").json() == {"needsOwner": False, "mode": "web"}
     assert_problem(client.post(f"{API}/setup/owner", json=OWNER), 409, "owner_exists")
 
 

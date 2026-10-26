@@ -46,12 +46,15 @@ from unihelper.chat.runs import RunRegistry
 from unihelper.config import Settings, load_settings
 from unihelper.db.engine import make_engine, make_sessionmaker
 from unihelper.db.migrate import upgrade_to_head
+from unihelper.desktop import admission, owner
+from unihelper.desktop import routes as desktop_routes
 from unihelper.secrets import store as secret_store
 from unihelper.secrets.migrate import migrate_plaintext
 from unihelper.services import (
     annotation_service,
     calendar_import_service,
     chat_service,
+    recording_service,
     task_service,
 )
 from unihelper.services.login_throttle import LoginThrottle
@@ -88,6 +91,7 @@ def build_api_router() -> APIRouter:
         ai,
         chats,
         chat_runs,
+        desktop_routes,  # 015: always registered; 404 not_desktop in web mode
     ):
         api.include_router(module.router)
     for router in tasks.routers:  # 012: /task-columns, /tasks, /quick-notes
@@ -132,7 +136,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             # always upgrade: a no-op when the schema is already at head
             upgrade_to_head(app.state.engine)
-            settings.files_root.mkdir(parents=True, exist_ok=True)
+            if not settings.desktop:  # the desktop app chose and created its data folder
+                settings.files_root.mkdir(parents=True, exist_ok=True)
+            elif not settings.files_root.is_dir():
+                raise FileNotFoundError(settings.files_root)
+            if settings.desktop:  # 015 single-user mode (research R9)
+                with Session(app.state.engine) as db:
+                    app.state.desktop_owner_id = owner.ensure_desktop_owner(
+                        db, app.state.storage, settings, settings.desktop_timezone
+                    )
+                    db.commit()
             _open_secret_store(app)
             try:  # results of annotation ops older than 30 days (007 research R7)
                 with Session(app.state.engine) as db:
@@ -167,9 +180,28 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             sweeper.cancel()
             await runs.shutdown()
             await worker.stop()
+            _finish_recordings(app)  # 015: before the engine closes (FR-009)
+            _checkpoint(app)
             app.state.engine.dispose()
         finally:
             server_lock.close()
+
+    @asynccontextmanager
+    async def lifespan_keeping_startup_error(app: FastAPI) -> AsyncIterator[None]:
+        """015: remember why startup failed so the desktop entry can report it (exit codes)."""
+        inner = lifespan(app)
+        try:
+            await inner.__aenter__()
+        except BaseException as exc:
+            app.state.startup_error = exc
+            raise
+        try:
+            yield
+        except BaseException as exc:
+            if not await inner.__aexit__(type(exc), exc, exc.__traceback__):
+                raise
+        else:
+            await inner.__aexit__(None, None, None)
 
     app = FastAPI(
         title="UniHelperProMax API",
@@ -177,8 +209,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url=f"{API_PREFIX}/openapi.json",
         docs_url=f"{API_PREFIX}/docs",
         redoc_url=None,
-        lifespan=lifespan,
+        lifespan=lifespan_keeping_startup_error,
     )
+    app.state.startup_error = None
+    app.state.desktop_owner_id = None
     engine = make_engine(settings)
     app.state.settings = settings
     app.state.engine = engine
@@ -218,7 +252,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     if settings.static_dir and settings.static_dir.is_dir():
         _mount_spa(app, settings)
+    admission.install(app, settings)  # 015: outermost, so it runs before everything else
     return app
+
+
+def _finish_recordings(app: FastAPI) -> None:
+    try:
+        with Session(app.state.engine) as db:
+            recording_service.interrupt_all(db, app.state.storage)
+            db.commit()
+    except Exception:
+        log.exception("could not finalize recordings at shutdown")
+
+
+def _checkpoint(app: FastAPI) -> None:
+    """Fold the WAL into the database file so a clean stop leaves one self-contained file."""
+    try:
+        with app.state.engine.connect() as conn:
+            conn.exec_driver_sql("PRAGMA wal_checkpoint(TRUNCATE)")
+    except Exception:
+        log.exception("could not checkpoint the database at shutdown")
 
 
 # the PDF reader (EmbedPDF) compiles PDFium's WebAssembly in a blob: worker and shows

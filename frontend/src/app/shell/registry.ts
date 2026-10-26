@@ -99,6 +99,8 @@ export interface AccountMenuItem {
   id: string;
   label: string;
   ownerOnly?: boolean;
+  /** 015: hidden in the single-user desktop app (no passwords or accounts there) */
+  webOnly?: boolean;
   priority?: number;
   onSelect: (navigate: (to: string) => void) => void;
 }

@@ -14,6 +14,11 @@ export function useSetupStatus() {
   });
 }
 
+/** 015: the single-user desktop app, which has no sign-in, accounts or passwords. */
+export function useIsDesktop(): boolean {
+  return useSetupStatus().data?.mode === "desktop";
+}
+
 /** Current user, or null when signed out. */
 export function useMe() {
   return useQuery({
