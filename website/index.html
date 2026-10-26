@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>UniHelperProMax: your whole semester in one calm place</title>
-  <meta name="description" content="A self-hosted app for university students: timetable, lecture notes, slides, recordings, transcripts and tasks, organised by class and stored as plain files you own.">
+  <meta name="description" content="A desktop and self-hosted app for university students: timetable, lecture notes, slides, recordings, transcripts and tasks, organised by class and stored as plain files you own.">
   <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
@@ -40,11 +40,11 @@
     <!-- Hero -->
     <section class="hero" id="top">
       <div class="container hero__inner">
-        <p class="tag">Self-hosted · Open source · For students</p>
+        <p class="tag">Desktop app · Self-hosted · Open source · For students</p>
         <h1 class="display">Your whole semester<br>in <em>one calm place.</em></h1>
-        <p class="hero__sub">Timetable, lecture notes, slides, recordings, transcripts and tasks, organised by class and stored as plain files you own.</p>
+        <p class="hero__sub">Timetable, lecture notes, slides, recordings, transcripts, AI chat and tasks, organised by class and stored as plain files you own.</p>
         <div class="btn-row">
-          <a class="btn btn--filled" href="#install">Install in 3 minutes</a>
+          <a class="btn btn--filled" href="#install">Download the app</a>
           <a class="btn btn--ghost" href="https://github.com/Nimaj2002/UniHelperProMax" target="_blank" rel="noopener">
             <svg class="icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
             View on GitHub
@@ -90,7 +90,7 @@
           <figcaption>Lecture 9: notes on the left, the professor's slides on the right, the recording on the side.</figcaption>
         </figure>
         <ul class="badges" aria-label="Highlights">
-          <li>Self-hosted</li><li>Python 3.12+</li><li>React 19</li><li>18 built-in themes</li><li>WCAG AA</li><li>Plain .md, .pdf &amp; audio files</li>
+          <li>Windows · macOS · Linux</li><li>Self-hosted</li><li>Python 3.12+</li><li>React 19</li><li>18 built-in themes</li><li>WCAG AA</li><li>Plain .md, .pdf &amp; audio files</li>
         </ul>
       </div>
     </section>
@@ -113,7 +113,7 @@
           <article class="card">
             <p class="tag">Notes</p>
             <h3 class="card__title">Notes that belong to a class</h3>
-            <p>A Markdown editor with tables, code blocks and checklists.</p>
+            <p>A Markdown editor with tables, code blocks, checklists, Mermaid diagrams and LaTeX math.</p>
           </article>
           <article class="card">
             <p class="tag">Documents</p>
@@ -129,6 +129,11 @@
             <p class="tag">Transcription</p>
             <h3 class="card__title">Transcribe it into your notes</h3>
             <p>The transcript is added to the end of your note and nothing you wrote changes.</p>
+          </article>
+          <article class="card">
+            <p class="tag">AI chat</p>
+            <h3 class="card__title">Ask AI about the lecture</h3>
+            <p>Chat with OpenAI, Anthropic, Gemini or a local model (Ollama, LM Studio) and attach your notes, slides, pictures and recordings.</p>
           </article>
           <article class="card">
             <p class="tag">Tasks</p>
@@ -149,6 +154,16 @@
             <p class="tag">Your files</p>
             <h3 class="card__title">Everything stays yours</h3>
             <p>A normal folder of <code>.md</code>, <code>.pdf</code> and audio files on your own disk.</p>
+          </article>
+          <article class="card">
+            <p class="tag">Desktop app</p>
+            <h3 class="card__title">Install it like any other program</h3>
+            <p>Windows, macOS and Linux installers. No Python, no Node, no login, and it works offline.</p>
+          </article>
+          <article class="card">
+            <p class="tag">Backup</p>
+            <h3 class="card__title">Your whole semester in one zip</h3>
+            <p>Back up everything in one click and restore it on any computer. A safety copy is made first.</p>
           </article>
         </div>
       </div>
@@ -225,7 +240,7 @@
           <div class="feature__text">
             <p class="tag">04 · Notes</p>
             <h3 class="heading-sm">Notes that look as good as they read</h3>
-            <p>A live Markdown editor with headings, tables, syntax-highlighted code and to-do lists. Each note is a plain <code>.md</code> file in that class's folder, so you can also open it in VS Code, Obsidian or any other editor.</p>
+            <p>A live Markdown editor with headings, tables, syntax-highlighted code, to-do lists, LaTeX math and Mermaid diagrams. Each note is a plain <code>.md</code> file in that class's folder, so you can also open it in VS Code, Obsidian or any other editor.</p>
           </div>
           <figure class="shot"><img src="assets/screenshots/notes.png" width="2880" height="1800" loading="lazy" alt="Markdown note with headings, a code block and a table"></figure>
         </div>
@@ -239,9 +254,18 @@
           <figure class="shot"><img src="assets/screenshots/transcribe.png" width="2880" height="1800" loading="lazy" alt="Transcribe dialog: choose the note and the spoken language"></figure>
         </div>
 
+        <div class="feature feature--flip">
+          <div class="feature__text">
+            <p class="tag">06 · AI chat</p>
+            <h3 class="heading-sm">Ask the AI, with the lecture in hand</h3>
+            <p>Every class session has its own chat. Attach today's notes, the slides, a photo of the whiteboard or the recording, and ask “explain slide 14 again” or “make me 10 exam questions from this”. Use your own key for OpenAI, Anthropic or Gemini, or run a model on your own computer with Ollama or LM Studio. Each chat is saved next to your notes as a readable <code>.md</code> file.</p>
+          </div>
+          <figure class="shot"><img src="assets/screenshots/ai-chat.png" width="2880" height="1800" loading="lazy" alt="AI chat opened as a tab beside the lecture slides, with the note and PDF attached and a formatted answer with code"></figure>
+        </div>
+
         <div class="feature feature--wide">
           <div class="feature__text">
-            <p class="tag">06 · Themes</p>
+            <p class="tag">07 · Themes</p>
             <h3 class="heading-sm">Light, dark, or something with more personality</h3>
             <p>Pick from 18 built-in themes, or make your own from four colours. The editor flags any colour pair that's hard to read. Your theme follows you to every device.</p>
           </div>
@@ -266,6 +290,9 @@
           <div class="mini"><h3>PDF annotations</h3><p>Highlights, drawings, text boxes and comments, saved next to the PDF. The PDF itself is never modified.</p></div>
           <div class="mini"><h3>Panels you can close</h3><p>Hide the calendar or the tasks with <kbd>Shift</kbd>+<kbd>C</kbd> / <kbd>Shift</kbd>+<kbd>T</kbd> and the other one gets the room.</p></div>
           <div class="mini"><h3>Undo everywhere</h3><p>Deleted a task, a checklist item or a quick note? Undo brings it back, right where it was.</p></div>
+          <div class="mini"><h3>Backup &amp; restore</h3><p>One zip with every class, note, recording, document and chat. Restoring is all or nothing, and a safety backup comes first.</p></div>
+          <div class="mini"><h3>Works offline</h3><p>The desktop app needs no network, except for the transcription and AI providers you choose.</p></div>
+          <div class="mini"><h3>Upgrades keep your data</h3><p>Install a new version over the old one. The database is backed up before every upgrade.</p></div>
           <div class="mini"><h3>Task export</h3><p>Save every task to <code>.csv</code>, checklists and quick notes included, ready for any spreadsheet.</p></div>
         </div>
       </div>
@@ -276,26 +303,55 @@
       <div class="container install">
         <div class="install__intro">
           <p class="tag">Installation</p>
-          <h2 class="heading">Get started<br>in <em>one command.</em></h2>
-          <p class="lead">The installer checks what you have, sets up the backend with <a class="link" href="https://docs.astral.sh/uv/" target="_blank" rel="noopener">uv</a>, builds the app and tells you exactly what's missing. Run it again any time to update. Your notes are never touched.</p>
+          <h2 class="heading">Download it,<br>or <em>host it yourself.</em></h2>
+          <p class="lead">The <strong>desktop app</strong> is the quickest way in: download the installer for your system, open it, and pick a folder for your notes. No Python, no Node, no account, and it works offline.</p>
           <ul class="checklist">
-            <li>Node.js 22 LTS (only to build the app once)</li>
-            <li>uv: offered automatically if missing</li>
-            <li>Python 3.12+: uv fetches it if needed</li>
+            <li>Windows 10 or newer (x64)</li>
+            <li>macOS 13 or newer (Apple Silicon)</li>
+            <li>Linux x64: AppImage or Debian/Ubuntu <code>.deb</code></li>
           </ul>
-          <p class="install__alt">Or skip all of that with <strong>Docker</strong>: one small container (about 25 MB to download).</p>
+          <p class="install__alt">Want it on a server for you and your friends, with accounts? <strong>Self-host</strong> it with one install script or with <strong>Docker</strong> (about 25 MB to download).</p>
           <a class="link-arrow" href="https://github.com/Nimaj2002/UniHelperProMax#get-started-in-3-minutes" target="_blank" rel="noopener">Full guide on GitHub →</a>
         </div>
 
         <div class="install__panel">
           <div class="tabs" role="tablist" aria-label="Choose how to install">
-            <button class="tab" role="tab" id="tab-unix" aria-controls="panel-unix" aria-selected="true">macOS / Linux</button>
+            <button class="tab" role="tab" id="tab-desktop" aria-controls="panel-desktop" aria-selected="true">Desktop app</button>
+            <button class="tab" role="tab" id="tab-unix" aria-controls="panel-unix" aria-selected="false" tabindex="-1">macOS / Linux</button>
             <button class="tab" role="tab" id="tab-windows" aria-controls="panel-windows" aria-selected="false" tabindex="-1">Windows</button>
             <button class="tab" role="tab" id="tab-docker" aria-controls="panel-docker" aria-selected="false" tabindex="-1">Docker</button>
             <button class="tab" role="tab" id="tab-manual" aria-controls="panel-manual" aria-selected="false" tabindex="-1">Manual</button>
           </div>
 
-          <div class="tabpanel" role="tabpanel" id="panel-unix" aria-labelledby="tab-unix" tabindex="0">
+          <div class="tabpanel" role="tabpanel" id="panel-desktop" aria-labelledby="tab-desktop" tabindex="0">
+            <ol class="steps">
+              <li class="step">
+                <div class="step__head"><span class="step__num">1</span><h3>Download the installer <span class="release" data-release-version></span></h3></div>
+                <ul class="downloads">
+                  <li><a class="download" data-os="windows" data-asset="^UniHelperProMax-Setup-.*-x64\.exe$" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><strong>Windows</strong><span>Installer · <code>.exe</code></span></a></li>
+                  <li><a class="download" data-os="mac" data-asset="^UniHelperProMax-.*-arm64\.dmg$" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><strong>macOS</strong><span>Apple Silicon · <code>.dmg</code></span></a></li>
+                  <li><a class="download" data-os="linux" data-asset="^UniHelperProMax-.*\.AppImage$" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><strong>Linux</strong><span>Any distro · <code>.AppImage</code></span></a></li>
+                  <li><a class="download" data-os="linux" data-asset="^unihelperpromax_.*_amd64\.deb$" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><strong>Debian / Ubuntu</strong><span>Package · <code>.deb</code></span></a></li>
+                </ul>
+                <p class="step__note">Always the latest release. <a class="link" href="https://github.com/Nimaj2002/UniHelperProMax/releases" target="_blank" rel="noopener">All releases →</a></p>
+              </li>
+              <li class="step">
+                <div class="step__head"><span class="step__num">2</span><h3>Open it the first time</h3></div>
+                <p>The app isn't code-signed yet, so your system warns you once:</p>
+                <ul class="plain-list plain-list--tight">
+                  <li><strong>Windows:</strong> “Windows protected your PC” → <strong>More info</strong> → <strong>Run anyway</strong>. With Smart App Control on, Windows may block it entirely.</li>
+                  <li><strong>macOS:</strong> drag the app to Applications and open it. If macOS won't open it, go to System Settings → Privacy &amp; Security and click <strong>Open Anyway</strong>.</li>
+                  <li><strong>Linux:</strong> make the AppImage executable (<code>chmod +x UniHelperProMax-*.AppImage</code>; it needs <code>libfuse2</code>), or install the <code>.deb</code> with <code>sudo apt install ./unihelperpromax_*_amd64.deb</code>.</li>
+                </ul>
+              </li>
+            </ol>
+            <div class="step step--done">
+              <div class="step__head"><span class="step__num">✓</span><h3>Choose where your notes live</h3></div>
+              <p>The first start suggests <code>Documents/UniHelperProMax</code>; change it later in Settings → Desktop. No login. To update, install the new version over the old one: your data stays.</p>
+            </div>
+          </div>
+
+          <div class="tabpanel" role="tabpanel" id="panel-unix" aria-labelledby="tab-unix" tabindex="0" hidden>
             <ol class="steps">
               <li class="step">
                 <div class="step__head"><span class="step__num">1</span><h3>Run the installer in a terminal</h3></div>
@@ -387,7 +443,7 @@ cd ../backend &amp;&amp; UNIHELPER_DATA_DIR=./data UNIHELPER_STATIC_DIR=../front
             </ol>
           </div>
 
-          <div class="step step--done">
+          <div class="step step--done" data-selfhost-done hidden>
             <div class="step__head"><span class="step__num">✓</span><h3>Open <a class="link" href="http://localhost:8000">http://localhost:8000</a></h3></div>
             <p>Create your account and add your first class. The first visit asks you to create the <strong>owner</strong> account. The owner can add accounts for other people (Account menu → Manage accounts).</p>
           </div>
@@ -433,12 +489,12 @@ cd frontend &amp;&amp; corepack pnpm dev   # http://localhost:5173</code></pre>
         <div class="accent-card">
           <p class="accent-card__label">Your files stay yours</p>
           <h2 class="accent-card__title">Everything is a normal folder of <code>.md</code>, <code>.pdf</code> and audio files on your own disk.</h2>
-          <p>Notes open in any editor, and the app picks up the change without overwriting it. Transcripts are only ever added at the end. Back up by copying the data folder while the app is stopped.</p>
+          <p>Notes open in any editor, and the app picks up the change without overwriting it. Transcripts are only ever added at the end. <strong>Settings → Backup &amp; restore</strong> puts all of it in one zip (API keys are never included) and puts it back on any computer.</p>
 <pre class="tree"><code>data/
 ├── unihelper.sqlite3            metadata only
 └── files/&lt;username&gt;/&lt;Year&gt;/&lt;Semester&gt;/
-    ├── &lt;Course&gt;/&lt;YYYY-MM-DD&gt;/{notes,audios,documents}/
-    └── _Events/&lt;YYYY-MM-DD Title&gt;/{notes,audios,documents}/</code></pre>
+    ├── &lt;Course&gt;/&lt;YYYY-MM-DD&gt;/{notes,audios,documents,chats}/
+    └── _Events/&lt;YYYY-MM-DD Title&gt;/{notes,audios,documents,chats}/</code></pre>
         </div>
         <div class="data__side">
           <h3 class="heading-sm">Under the hood</h3>

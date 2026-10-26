@@ -409,6 +409,26 @@ kbd {
 .code--wrap pre, .install__panel .code pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .install__panel > .step--done { margin-top: var(--spacing-16); }
 .step__note { margin-top: var(--spacing-12); font-size: 14px !important; color: var(--color-slate-gray) !important; }
+.step p + .plain-list { margin-top: var(--spacing-12); }
+.tabpanel > .step--done { margin-top: var(--spacing-16); }
+
+/* Desktop downloads: links resolved to the latest release by script.js */
+.release { font-size: 14px; font-weight: var(--font-weight-regular, 400); color: var(--color-slate-gray); }
+.downloads { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-12); }
+.download {
+  display: grid; gap: 2px; height: 100%;
+  padding: var(--spacing-16) var(--spacing-20);
+  background: var(--color-paper-white); color: var(--color-ink-black);
+  border: 1px solid var(--color-hairline); border-radius: var(--radius-inputs);
+  text-decoration: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.download:hover { border-color: var(--color-ink-black); }
+.download:focus-visible { outline: 2px solid var(--color-ink-black); outline-offset: 2px; }
+.download strong { font-size: 16px; font-weight: var(--font-weight-medium); }
+.download span { font-size: 14px; color: var(--color-slate-gray); }
+.download.is-yours { border-color: var(--color-ink-black); box-shadow: var(--shadow-subtle); }
+.download.is-yours strong::after { content: ' · your system'; font-weight: var(--font-weight-regular, 400); color: var(--color-slate-gray); font-size: 14px; }
 
 .install__more {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--spacing-24);
@@ -507,6 +527,7 @@ td code { white-space: nowrap; }
   .section { padding: var(--spacing-80) 0; }
   .badges li + li::before { display: none; }
   .tabs { display: grid; grid-template-columns: 1fr 1fr; width: 100%; border-radius: var(--radius-cards); }
+  .downloads { grid-template-columns: 1fr; }
 }
 
 /* Let wide code blocks scroll instead of stretching grid columns. */

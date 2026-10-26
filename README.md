@@ -10,8 +10,10 @@
 Timetable, lecture notes, slides, recordings, transcripts, AI chat and tasks, organised by class
 and stored as plain files you own.
 
+[![Latest release](https://img.shields.io/github/v/release/Nimaj2002/UniHelperProMax?color=7A3DB8&label=download)](https://github.com/Nimaj2002/UniHelperProMax/releases/latest)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-7A3DB8)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/Nimaj2002/UniHelperProMax?style=flat&logo=github&color=C49BFF)](https://github.com/Nimaj2002/UniHelperProMax/stargazers)
+![Desktop app](https://img.shields.io/badge/desktop-Windows_·_macOS_·_Linux-C49BFF)
 ![Self-hosted](https://img.shields.io/badge/self--hosted-your_data_stays_yours-7A3DB8)
 ![AI](https://img.shields.io/badge/AI-bring_your_own_model-C49BFF)
 ![Accessible](https://img.shields.io/badge/WCAG-AA-2E7D32)
@@ -26,7 +28,8 @@ and stored as plain files you own.
 
 **[Features](#why-youll-love-it)** ·
 **[Tour](#a-quick-tour)** ·
-**[Install](#get-started-in-3-minutes)** ·
+**[Download](#desktop-app)** ·
+**[Self-host](#self-host-it)** ·
 **[AI chat](#ai-chat)** ·
 **[Your data](#your-data)** ·
 **[License](#license)**
@@ -49,6 +52,8 @@ and stored as plain files you own.
 - [Why you'll love it](#why-youll-love-it)
 - [A quick tour](#a-quick-tour)
 - [Get started in 3 minutes](#get-started-in-3-minutes)
+- [Desktop app](#desktop-app)
+- [Self-host it](#self-host-it)
 - [Development mode](#development-mode)
 - [Configuration](#configuration)
 
@@ -101,6 +106,8 @@ every assignment, reading and exam you have to prepare for sits on a task board 
 - ✅ **A task board next to your calendar.** Assignments, readings and exam prep on a board or a list, with checklists, quick notes and due dates you can show on the calendar.
 - 🎨 **Make it yours.** 18 built-in themes (Catppuccin, Dracula, Tokyo Night, Nord…) or design your own.
 - 🔒 **Your files stay yours.** Everything is a normal folder of `.md`, `.pdf` and audio files on your own disk.
+- 💾 **Your whole semester in one zip.** Back up everything in one click and restore it on any computer.
+- 💻 **A real desktop app.** Installers for Windows, macOS and Linux: no Python, no Node, no login, and it works offline. Or self-host it for a group.
 - 🆓 **Free and open source.** Self-host it for yourself or your friends. No account with us, no tracking.
 
 ## A quick tour
@@ -178,12 +185,83 @@ that's hard to read. Your theme follows you to every device.
 - **Close what you don't need**: hide the calendar or the task panel (`Shift+C` / `Shift+T`) and the other one gets the room.
 - **Trash with restore**: deleted classes come back with all their notes, recordings and documents.
 - **Multiple accounts** on one install for you and your friends, with no public sign-up.
+- **Backup and restore** of everything in one zip, with a safety backup made before every restore ([details](#backing-up-and-restoring-your-data)).
 - **Calendar export** to `.ics`, which also works as a portable backup of your schedule.
 - **Task export** to `.csv`, with checklists and quick notes, ready for any spreadsheet.
 
 ---
 
 ## Get started in 3 minutes
+
+Two ways to run it:
+
+- **[Desktop app](#desktop-app)**: download an installer, open it, done. One person, one computer, works offline.
+- **[Self-host it](#self-host-it)**: run it on your computer or a server with one script or Docker, and open it in a browser. Accounts for you and your friends.
+
+### Desktop app
+
+**[⬇ Download the latest release](https://github.com/Nimaj2002/UniHelperProMax/releases/latest)** and pick the file for your system:
+
+| System | File |
+|---|---|
+| Windows 10 or newer (x64) | `UniHelperProMax-Setup-<version>-x64.exe` |
+| macOS 13 or newer (Apple Silicon) | `UniHelperProMax-<version>-arm64.dmg` |
+| Linux x64, any distribution | `UniHelperProMax-<version>-x86_64.AppImage` (needs `libfuse2`; `libfuse2t64` on Ubuntu 24.04) |
+| Debian / Ubuntu x64 | `unihelperpromax_<version>_amd64.deb` |
+
+Nothing else to install: the app brings its own server. On first start it asks where to keep your
+notes (it suggests `Documents/UniHelperProMax`) and then opens straight into the app, with no login.
+Everything except the transcription and AI providers you set up works offline.
+
+**Opening it the first time.** This release isn't code-signed, so your system warns you once:
+
+- **Windows** shows "Windows protected your PC" (SmartScreen). Click **More info** → **Run anyway**.
+  It means Windows doesn't know the publisher, not that something is wrong with the file. If
+  **Smart App Control** is on, Windows may block unsigned programs entirely with no "Run anyway";
+  use the [self-hosted](#self-host-it) version instead.
+- **macOS**: open the `.dmg`, drag UniHelperProMax to Applications, then open it. If macOS says it
+  can't verify the app, open **System Settings → Privacy & Security**, scroll down, click
+  **Open Anyway** and confirm. (Or in Terminal:
+  `xattr -dr com.apple.quarantine /Applications/UniHelperProMax.app`.)
+- **Linux**: for the AppImage, `chmod +x UniHelperProMax-*.AppImage` and run it. For the `.deb`,
+  `sudo apt install ./unihelperpromax_*_amd64.deb`, then start it from your app menu.
+
+**Updating.** Download the new version and install it over the old one. Your data and settings
+stay, and the database is backed up before an upgrade changes it (the three newest backups are
+kept). The app doesn't update itself.
+
+**Settings → Desktop** shows the version, the data folder (open it, move it, or point the app at
+another one), the port, and the log folder.
+
+**Port.** The app's server listens on `127.0.0.1:47813`, reachable only from your own computer. If
+that port is taken, it tries 47814–47817. Change it in Settings → Desktop → Port; the app restarts.
+Unfinished recordings and unsaved drafts kept under the old port aren't recovered, so the change
+is blocked while there are any.
+
+**Where things are kept:**
+
+| | Windows | macOS | Linux |
+|---|---|---|---|
+| Your data folder: notes, recordings, documents, chats (default) | `Documents\UniHelperProMax` | `~/Documents/UniHelperProMax` | `~/Documents/UniHelperProMax` |
+| Database, upgrade backups and restore safety backup (`backups/`) | `%LOCALAPPDATA%\UniHelperProMax\backend` | `~/Library/Application Support/UniHelperProMax/backend` | `~/.local/share/UniHelperProMax/backend` |
+| Window and port settings (`desktop.json`) | `%APPDATA%\UniHelperProMax` | `~/Library/Application Support/UniHelperProMax` | `~/.config/UniHelperProMax` |
+| Logs | `%APPDATA%\UniHelperProMax\logs` | `~/Library/Logs/UniHelperProMax` | `~/.config/UniHelperProMax/logs` |
+
+API keys are protected by the system's key store where there is one, otherwise by a key file in a
+`keys` folder next to `backend` ([key protection](#key-protection)).
+
+**Uninstalling never deletes your data.** On Windows use Settings → Apps; the uninstaller tells you
+where your data stays. On macOS delete the app from Applications; on Linux delete the AppImage or
+run `sudo apt remove unihelperpromax`. Installing again picks up the same data. To remove
+everything, also delete the folders in the table above.
+
+**Coming from a self-hosted install?** The desktop app starts with its own empty database. Make a
+backup in the web version (**Settings → Backup & restore**) and restore it in the desktop app; it
+works the other way around too.
+
+### Self-host it
+
+One script installs everything and builds the app; you then open it in your browser.
 
 **macOS / Linux**
 
@@ -639,6 +717,12 @@ The owner must choose a new password at the next sign-in.
 - Task manager (Feature 012): [spec](specs/012-task-manager/spec.md) ·
   [plan](specs/012-task-manager/plan.md) ·
   [quickstart & validation](specs/012-task-manager/quickstart.md)
+- Desktop app (Feature 015): [spec](specs/015-desktop-app-packaging/spec.md) ·
+  [plan](specs/015-desktop-app-packaging/plan.md) ·
+  [quickstart & validation](specs/015-desktop-app-packaging/quickstart.md) ·
+  building and releasing: [desktop/README.md](desktop/README.md)
+- Backup and restore (Feature 016): [spec](specs/016-data-backup-restore/spec.md) ·
+  [plan](specs/016-data-backup-restore/plan.md)
 
 ## Contributing
 
