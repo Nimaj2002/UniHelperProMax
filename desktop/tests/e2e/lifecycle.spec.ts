@@ -26,6 +26,9 @@ test("killing the app leaves no backend behind", async () => {
   const ours = backendPids().filter((p) => !before.has(p));
   expect(ours.length).toBe(1);
 
-  app.process().kill("SIGKILL"); // TerminateProcess on Windows
+  // Kill the Electron main process itself: on Windows app.process() is the cmd.exe wrapper
+  // Playwright launches it through, and killing that leaves the app running.
+  const mainPid = await app.evaluate(() => process.pid);
+  process.kill(mainPid, "SIGKILL"); // TerminateProcess on Windows
   expect(await waitUntil(() => !backendPids().includes(ours[0]), 10_000)).toBe(true);
 });
