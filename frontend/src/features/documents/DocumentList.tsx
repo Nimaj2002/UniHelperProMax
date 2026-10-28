@@ -1,16 +1,30 @@
-import { DotsThree, FilePdf, UploadSimple } from "@phosphor-icons/react";
+import { CaretRight, DotsThree, FilePdf, UploadSimple } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useSession } from "@/features/classes/api";
 import { FileDropZone } from "@/features/imports/AudioDropZone";
 import { formatBytes } from "@/features/imports/audioFiles";
 import { UploadList } from "@/features/imports/UploadList";
 import type { SidePanelSectionProps } from "@/features/sessions/workspace-panels";
 import { formatDay } from "@/lib/dates";
-import { allDocumentsKey, deleteDocument, documentKey, prefetchReader, renameDocument, useDocuments, type Document } from "./api";
+import { cn } from "@/lib/utils";
+import {
+  allDocumentsKey,
+  deleteDocument,
+  documentKey,
+  documentsKey,
+  hideDocument,
+  prefetchReader,
+  renameDocument,
+  showDocument,
+  useDocuments,
+  useHiddenDocuments,
+  type Document,
+} from "./api";
 import { DeleteDocumentDialog, RenameDocumentDialog } from "./DocumentDialogs";
 import { PDF_ACCEPT } from "./pdfFiles";
 import { documentQueue } from "./queue";
@@ -29,9 +43,15 @@ function sessionDay(key: string) {
 /**
  * "Documents" in the session's side panel (007 FR-001–FR-010): upload, list, open, rename, delete.
  * Lists the documents of every session of the course; one uploaded to another session says which.
+ * A PDF is renamed or deleted only in the session it was uploaded to; elsewhere it can only be
+ * hidden from this session's list (017).
  */
 export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePanelSectionProps) {
   const docs = useDocuments(sessionKey);
+  const session = useSession(sessionKey);
+  const hidden = useHiddenDocuments(sessionKey);
+  const hiddenList = hidden.data ?? [];
+  const [showHidden, setShowHidden] = useState(false);
   const qc = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
   const queue = documentQueue();
@@ -41,6 +61,28 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
   const onDelete = (doc: Document) => setDialog({ kind: "delete", doc });
   // every session of the course lists the document
   const refresh = () => qc.invalidateQueries({ queryKey: allDocumentsKey });
+  // only this session's lists change (documentsKey covers the hidden list too)
+  const refreshHere = () => qc.invalidateQueries({ queryKey: documentsKey(sessionKey) });
+  const onShow = async (doc: Document) => {
+    try {
+      await showDocument(sessionKey, doc.id);
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+    await refreshHere();
+  };
+  const onRemove = async (doc: Document) => {
+    try {
+      await hideDocument(sessionKey, doc.id);
+    } catch (err) {
+      toast.error((err as Error).message);
+      await refresh();
+      return;
+    }
+    closeDocument(doc.id);
+    await refreshHere();
+    toast.success(`Removed “${doc.name}” from this and later sessions.`, { action: { label: "Undo", onClick: () => void onShow(doc) } });
+  };
   const hasDocuments = list.length > 0;
   useEffect(() => {
     if (hasDocuments) prefetchReader();
@@ -53,7 +95,7 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
           others={list.filter((d) => d.id !== dialog.doc.id).map((d) => d.name)}
           onClose={() => setDialog(null)}
           onSubmit={async (name) => {
-            const renamed = await renameDocument(dialog.doc.id, dialog.doc.version, name).catch(async (err) => {
+            const renamed = await renameDocument(dialog.doc.id, dialog.doc.version, name, sessionKey).catch(async (err) => {
               await refresh();
               throw err;
             });
@@ -66,9 +108,10 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
       {dialog?.kind === "delete" && (
         <DeleteDocumentDialog
           doc={dialog.doc}
+          scope={session.data?.kind === "event" ? "event" : "course"}
           onClose={() => setDialog(null)}
           onConfirm={async () => {
-            await deleteDocument(dialog.doc.id, dialog.doc.version).catch(async (err) => {
+            await deleteDocument(dialog.doc.id, dialog.doc.version, sessionKey).catch(async (err) => {
               await refresh();
               throw err;
             });
@@ -134,15 +177,54 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onSelect={() => onRename(d)}>Rename…</DropdownMenuItem>
-                    <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => onDelete(d)}>
-                      Delete…
-                    </DropdownMenuItem>
+                    {d.sessionKey === sessionKey ? (
+                      <>
+                        <DropdownMenuItem onSelect={() => onRename(d)}>Rename…</DropdownMenuItem>
+                        <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => onDelete(d)}>
+                          Delete…
+                        </DropdownMenuItem>
+                      </>
+                    ) : (
+                      <DropdownMenuItem onSelect={() => void onRemove(d)}>Remove from this and later sessions</DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </li>
             ))}
           </ul>
+          {hiddenList.length > 0 && (
+            <div className="grid gap-0.5 px-1">
+              <button
+                type="button"
+                aria-expanded={showHidden}
+                aria-controls={`removed-documents-${sessionKey}`}
+                onClick={() => setShowHidden((v) => !v)}
+                className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground hover:bg-accent focus-visible:bg-accent focus-visible:outline-none"
+              >
+                <CaretRight size={12} aria-hidden className={cn("shrink-0 transition-transform motion-reduce:transition-none", showHidden && "rotate-90")} />
+                Removed from this session ({hiddenList.length})
+              </button>
+              {showHidden && (
+                <ul id={`removed-documents-${sessionKey}`} className="grid gap-0.5">
+                  {hiddenList.map((d) => (
+                    <li key={d.id} className="flex items-center gap-1 px-2 py-1">
+                      <span className="grid min-w-0 flex-1 gap-0.5">
+                        <span className="truncate text-sm text-muted-foreground" title={d.name}>
+                          {d.name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatBytes(d.size)} · from {sessionDay(d.sessionKey)}
+                        </span>
+                      </span>
+                      <Button size="sm" variant="ghost" className="h-7 shrink-0 px-2 text-xs" aria-label={`Show again: ${d.name}`} onClick={() => void onShow(d)}>
+                        Show again
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
       </FileDropZone>
     </>

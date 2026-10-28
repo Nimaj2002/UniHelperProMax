@@ -72,13 +72,25 @@ export function RenameDocumentDialog({ doc, others, onSubmit, onClose }: { doc: 
   );
 }
 
-export function deleteText(doc: Document): string {
+/** Every session of the course (or occurrence of the event) lists the PDF, so it goes from all of them (017 FR-009). */
+export function deleteText(doc: Document, scope: "course" | "event" = "course"): string {
   const n = doc.annotationCount;
   const annotations = n === 0 ? "" : n === 1 ? " Its annotation is deleted too." : ` Its ${n} annotations are deleted too.`;
-  return `The PDF is removed from this session's documents folder.${annotations} This can't be undone.`;
+  const others = scope === "event" ? "the event's other occurrences" : "the course's other sessions";
+  return `The PDF is removed from this session's documents folder.${annotations} It is also listed in ${others} and will disappear from all of them. This can't be undone.`;
 }
 
-export function DeleteDocumentDialog({ doc, onConfirm, onClose }: { doc: Document; onConfirm: () => Promise<unknown>; onClose: () => void }) {
+export function DeleteDocumentDialog({
+  doc,
+  scope = "course",
+  onConfirm,
+  onClose,
+}: {
+  doc: Document;
+  scope?: "course" | "event";
+  onConfirm: () => Promise<unknown>;
+  onClose: () => void;
+}) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string>();
   return (
@@ -86,7 +98,7 @@ export function DeleteDocumentDialog({ doc, onConfirm, onClose }: { doc: Documen
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete “{doc.name}”?</AlertDialogTitle>
-          <AlertDialogDescription>{deleteText(doc)}</AlertDialogDescription>
+          <AlertDialogDescription>{deleteText(doc, scope)}</AlertDialogDescription>
         </AlertDialogHeader>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}
         <AlertDialogFooter>
@@ -99,7 +111,13 @@ export function DeleteDocumentDialog({ doc, onConfirm, onClose }: { doc: Documen
               try {
                 await onConfirm();
               } catch (err) {
-                setError(isApiError(err, "version_conflict") ? "The document changed meanwhile. Reload and try again." : "Couldn't delete the document.");
+                setError(
+                  isApiError(err, "version_conflict")
+                    ? "The document changed meanwhile. Reload and try again."
+                    : isApiError(err, "not_owning_session")
+                      ? err.title
+                      : "Couldn't delete the document.",
+                );
               } finally {
                 setPending(false);
               }

@@ -1,0 +1,71 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 017 additions
+  version: 1.0.0
+  description: |
+    Additive to the 007 documents contract (same conventions: camelCase JSON, RFC 9457 problems,
+    CSRF header on writes). See contracts/documents-api.md for the prose contract.
+    Changes to existing operations (additive):
+    - `GET /sessions/{sessionKey}/documents` leaves out the documents hidden in that session.
+    - `DELETE /documents/{documentId}` and `PATCH /documents/{documentId}` (when the body has
+      `name`) take an optional query parameter `fromSession` (a session key). When it is given and
+      isn't the session the PDF was uploaded to, they answer 409 `not_owning_session` and change
+      nothing. `pageCount` patches ignore it.
+servers:
+  - url: /api/v1
+
+paths:
+  /sessions/{sessionKey}/documents/hidden:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [documents]
+      summary: The course PDFs hidden in this session, newest first ([] when none)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "urn:unihelper:openapi:007#/components/schemas/Document" }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /sessions/{sessionKey}/documents/{documentId}/hidden:
+    parameters:
+      - { $ref: "#/components/parameters/SessionKey" }
+      - { $ref: "#/components/parameters/DocumentId" }
+    put:
+      tags: [documents]
+      summary: Hide a course PDF in this session (idempotent); the PDF itself is untouched
+      responses:
+        "204": { description: Hidden }
+        "404": { $ref: "#/components/responses/Problem" }   # session, or document not in scope
+        "409": { $ref: "#/components/responses/Problem" }   # own_session
+    delete:
+      tags: [documents]
+      summary: List the PDF in this session again (idempotent; never creates a session folder)
+      responses:
+        "204": { description: Shown }
+        "404": { $ref: "#/components/responses/Problem" }   # session, or document not in scope
+
+components:
+  parameters:
+    SessionKey: { name: sessionKey, in: path, required: true, schema: { type: string } }
+    DocumentId: { name: documentId, in: path, required: true, schema: { type: string } }
+
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }

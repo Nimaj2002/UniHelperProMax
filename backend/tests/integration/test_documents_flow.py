@@ -52,3 +52,32 @@ def test_disconnect_mid_upload_leaves_nothing(
     assert start["status"] == 400
     assert sorted(p.name for p in documents_dir(tmp_data_dir).iterdir()) == ["seed.pdf"]
     assert staged_files(tmp_data_dir) == []
+
+
+def test_hiding_in_another_session_keeps_the_pdf(
+    owner_client: TestClient, tmp_data_dir: Path
+) -> None:
+    """017 US1: hiding a course PDF in a session that doesn't own it changes nothing of the PDF."""
+    from tests.contract.test_annotations import FOUR, _upserts
+
+    c = owner_client
+    monday = make_session(c)
+    wednesday = monday.replace("2026-09-28", "2026-09-30")
+    r = upload_pdf(c, monday, "Lecture 5.pdf", fx.text_pdf(3))
+    assert r.status_code == 201, r.text
+    doc = r.json()
+    ops = c.post(f"{API}/documents/{doc['id']}/annotations/ops", json={"ops": _upserts(FOUR[:1])})
+    assert ops.status_code == 200, ops.text
+    assert c.put(f"{API}/documents/{doc['id']}/position", json={"page": 2}).status_code == 200
+    folder = documents_dir(tmp_data_dir)
+    files = {p.name: p.read_bytes() for p in folder.iterdir()}
+    assert set(files) == {"Lecture 5.pdf", "Lecture 5.annotations.json"}
+
+    assert c.put(f"{API}/sessions/{wednesday}/documents/{doc['id']}/hidden").status_code == 204
+
+    assert {p.name: p.read_bytes() for p in folder.iterdir()} == files
+    assert c.get(f"{API}/documents/{doc['id']}/file").content == fx.text_pdf(3)
+    assert c.get(f"{API}/documents/{doc['id']}/position").json() == {"page": 2}
+    annotations = c.get(f"{API}/documents/{doc['id']}/annotations").json()["annotations"]
+    assert [a["id"] for a in annotations] == [FOUR[0]["id"]]
+    assert [d["id"] for d in c.get(f"{API}/sessions/{monday}/documents").json()] == [doc["id"]]

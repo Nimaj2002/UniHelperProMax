@@ -172,3 +172,28 @@ def test_restoring_the_safety_backup_undoes_a_restore(
     assert later["id"] in {n["id"] for n in notes}
     with zipfile.ZipFile(io.BytesIO(safety)) as zf:
         assert json.loads(zf.read("manifest.json"))["kind"] == "unihelper-backup"
+
+
+def test_a_hidden_pdf_stays_hidden_after_a_restore(
+    app: FastAPI, owner_client: TestClient
+) -> None:
+    """017 FR-007: which PDFs a session hides is part of the backup."""
+    from tests import pdf_fixtures as fx
+    from tests.contract.document_helpers import make_session, upload_pdf
+
+    bh.inline_jobs(app)
+    c = owner_client
+    monday = make_session(c)
+    wednesday = monday.replace("2026-09-28", "2026-09-30")
+    doc = upload_pdf(c, monday, "slides.pdf", fx.text_pdf(1)).json()
+    hidden = f"{API}/sessions/{wednesday}/documents/{doc['id']}/hidden"
+    assert c.put(hidden).status_code == 204
+    _job, data = bh.make_backup(c)
+    assert c.delete(hidden).status_code == 204  # shown again after the backup
+
+    assert bh.restore(c, data)["phase"] == "done"
+
+    assert c.get(f"{API}/sessions/{wednesday}/documents").json() == []
+    assert [d["id"] for d in c.get(f"{API}/sessions/{wednesday}/documents/hidden").json()] == [
+        doc["id"]
+    ]

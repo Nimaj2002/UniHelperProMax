@@ -18,10 +18,14 @@ describe("document dialogs", () => {
     expect(renameProblem("Trees", ["Handout"])).toBeUndefined();
   });
 
-  it("delete names the annotations that go with the PDF", () => {
-    expect(deleteText(doc())).toBe("The PDF is removed from this session's documents folder. Its 12 annotations are deleted too. This can't be undone.");
+  it("delete names the annotations that go with the PDF, and every session that lists it", () => {
+    const shared = "It is also listed in the course's other sessions and will disappear from all of them.";
+    expect(deleteText(doc())).toBe(`The PDF is removed from this session's documents folder. Its 12 annotations are deleted too. ${shared} This can't be undone.`);
     expect(deleteText(doc({ annotationCount: 1 }))).toContain("Its annotation is deleted too.");
-    expect(deleteText(doc({ annotationCount: 0 }))).toBe("The PDF is removed from this session's documents folder. This can't be undone.");
+    expect(deleteText(doc({ annotationCount: 0 }))).toBe(`The PDF is removed from this session's documents folder. ${shared} This can't be undone.`);
+    expect(deleteText(doc({ annotationCount: 0 }), "event")).toContain(
+      "It is also listed in the event's other occurrences and will disappear from all of them.",
+    );
   });
 
   it("rename refuses a taken name without a request; delete waits for confirmation", async () => {

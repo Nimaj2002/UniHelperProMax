@@ -67,9 +67,43 @@ async def import_document(
         raise
 
 
+@router.get("/sessions/{session_key}/documents/hidden", response_model=list[Document])
+def list_hidden_documents(
+    session_key: str, user: CurrentUser, db: DbSession, storage: Storage
+) -> Any:
+    """The course PDFs hidden in this session (017 FR-006)."""
+    return svc.list_hidden_documents(db, storage, user, session_key)
+
+
+@router.put(
+    "/sessions/{session_key}/documents/{document_id}/hidden",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def hide_document(
+    session_key: str, document_id: str, user: CurrentUser, db: DbSession, storage: Storage
+) -> Response:
+    """Hide a course PDF in a session that doesn't own it (017 FR-003); the PDF is untouched."""
+    svc.hide_document(db, storage, user, session_key, document_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.delete(
+    "/sessions/{session_key}/documents/{document_id}/hidden",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def show_document(session_key: str, document_id: str, user: CurrentUser, db: DbSession) -> Response:
+    """List a hidden PDF in this session again (017 FR-006)."""
+    svc.show_document(db, user, session_key, document_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get("/documents/{document_id}", response_model=Document)
 def get_document(document_id: str, user: CurrentUser, db: DbSession, storage: Storage) -> Any:
     return svc.get_document(db, storage, user, document_id)
+
+
+# 017 FR-010: the session the user acts from; a rename or delete from another session is refused
+FromSession = Annotated[str | None, Query(alias="fromSession", min_length=1)]
 
 
 @router.patch("/documents/{document_id}", response_model=Document)
@@ -80,18 +114,24 @@ def patch_document(
     user: CurrentUser,
     db: DbSession,
     storage: Storage,
+    from_session: FromSession = None,
 ) -> Any:
     if body.name is not None:
-        return svc.rename_document(db, storage, user, document_id, version, body.name)
+        return svc.rename_document(db, storage, user, document_id, version, body.name, from_session)
     assert body.page_count is not None
     return svc.set_page_count(db, storage, user, document_id, version, body.page_count)
 
 
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_document(
-    document_id: str, version: IfMatch, user: CurrentUser, db: DbSession, storage: Storage
+    document_id: str,
+    version: IfMatch,
+    user: CurrentUser,
+    db: DbSession,
+    storage: Storage,
+    from_session: FromSession = None,
 ) -> Response:
-    svc.delete_document(db, storage, user, document_id, version)
+    svc.delete_document(db, storage, user, document_id, version, from_session)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

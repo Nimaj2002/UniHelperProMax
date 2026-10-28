@@ -18,23 +18,27 @@ pytestmark = pytest.mark.integration
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "backups" / "rev0014-minimal.zip"
 
 
-def _relabel(data: bytes, **over: object) -> bytes:
-    files = bh.zip_files(data)
+def _relabel(data: bytes, *, drop: tuple[str, ...] = (), **over: object) -> bytes:
+    """`data` relabelled with `over`, without the data files of the tables in `drop`."""
+    paths = {f"data/{t}.jsonl" for t in drop}
+    files = {n: b for n, b in bh.zip_files(data).items() if n not in paths}
     manifest = json.loads(files["manifest.json"]) | over
+    manifest["entries"] = [e for e in manifest["entries"] if e["path"] not in paths]
     return bh.rebuild(files, manifest)
 
 
 def test_a_backup_from_an_older_revision_is_upgraded(
     app: FastAPI, owner_client: TestClient, tmp_data_dir: Path
 ) -> None:
-    """0014 only added users.data_epoch, which isn't in a backup, so a head backup labelled
-    0013 is a genuine 0013 backup: restoring it runs the 0013 → head migrations."""
+    """0014 only added users.data_epoch, which isn't in a backup, and 0015 only added
+    document_hides, so a head backup without that table's data, labelled 0013, is a genuine 0013
+    backup: restoring it runs the 0013 → head migrations."""
     bh.inline_jobs(app)
     c = owner_client
     key = make_session(c)
     note = create_note(c, key, "Lecture 1", "upgrade me")
     _job, data = bh.make_backup(c)
-    older = _relabel(data, schemaRevision="0013", appVersion="1.0.0")
+    older = _relabel(data, drop=("document_hides",), schemaRevision="0013", appVersion="1.0.0")
     job = bh.upload(c, older)
     assert job["summary"]["willUpgrade"] is True and job["summary"]["appVersion"] == "1.0.0"
     assert bh.restore(c, older)["phase"] == "done"

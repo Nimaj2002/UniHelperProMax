@@ -77,3 +77,21 @@ class AnnotationOp(Base):
     )
     result_json: Mapped[str] = mapped_column(Text, nullable=False)
     applied_at: Mapped[str] = mapped_column(String, nullable=False, default=now_iso)
+
+
+class DocumentHide(Base):
+    """A course PDF hidden from one session's list (017); the PDF itself is untouched. Deleting
+    the document or purging the session folder drops the row."""
+
+    __tablename__ = "document_hides"
+
+    session_folder_id: Mapped[str] = mapped_column(
+        String, ForeignKey("session_folders.id", ondelete="CASCADE"), primary_key=True
+    )
+    document_id: Mapped[str] = mapped_column(
+        String, ForeignKey("documents.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    user_id: Mapped[str] = mapped_column(
+        String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    created_at: Mapped[str] = mapped_column(String, nullable=False, default=now_iso)

@@ -31,6 +31,7 @@ _INCLUDED = frozenset(
         "documents",
         "document_positions",
         "annotation_ops",
+        "document_hides",
         "chats",
         "chat_drafts",
         "chat_uploads",

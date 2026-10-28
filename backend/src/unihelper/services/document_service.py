@@ -22,7 +22,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import Select, select
+from sqlalchemy import ColumnElement, Select, and_, select
 from sqlalchemy.orm import Session
 
 from unihelper.api.errors import ApiError, not_found
@@ -30,7 +30,7 @@ from unihelper.api.uploads import StagedUpload
 from unihelper.db.engine import on_rollback
 from unihelper.domain.naming import name_key, normalize_display, safe_name, unique_sibling
 from unihelper.domain.pdf_probe import probe_pdf
-from unihelper.models import Document, DocumentPosition, SessionFolder, User
+from unihelper.models import Document, DocumentHide, DocumentPosition, SessionFolder, User
 from unihelper.services import session_folder_service as sfs
 from unihelper.services.recording_service import session_import_lock
 from unihelper.storage.storage_service import StorageService
@@ -155,14 +155,88 @@ def list_documents(
     db: Session, storage: StorageService, user: User, key: str
 ) -> list[dict[str, Any]]:
     """The documents of the session's course (or event series), whichever of its sessions they
-    were uploaded to."""
+    were uploaded to, except those hidden in this session (017)."""
+    resolved = sfs.resolve(db, user, key)
+    stmt = scope_of(user, resolved).documents(user).where(~_hidden_in(user, resolved))
+    rows = db.scalars(stmt.order_by(Document.uploaded_at.desc(), Document.id.desc()))
+    return [view(db, storage, user, d) for d in rows]
+
+
+def _hides_up_to(user: User, r: sfs.ResolvedSession) -> Select[DocumentHide]:
+    """The hides that reach this session: a PDF removed in a session stays hidden in that session
+    and every later one of the course (or event series)."""
+    # shortcut: compares original dates, so a session moved in the calendar keeps its old place
+    return (
+        select(DocumentHide)
+        .join(SessionFolder, SessionFolder.id == DocumentHide.session_folder_id)
+        .where(
+            SessionFolder.id.in_(scope_of(user, r).folder_ids),
+            SessionFolder.original_date <= r.day,
+        )
+    )
+
+
+def _hidden_in(user: User, r: sfs.ResolvedSession) -> ColumnElement[bool]:
+    """Whether a document is hidden in this session; never the PDFs uploaded to it."""
+    hidden = _hides_up_to(user, r).where(DocumentHide.document_id == Document.id).exists()
+    if r.folder is None:
+        return hidden
+    return and_(hidden, Document.session_folder_id != r.folder.id)
+
+
+def _in_scope(db: Session, user: User, r: sfs.ResolvedSession, document_id: str) -> Document:
+    """The document, when it's listed (or hidden) in the session's course or event series."""
+    d = db.scalar(scope_of(user, r).documents(user).where(Document.id == document_id))
+    if d is None:
+        raise not_found("Document")
+    return d
+
+
+def hide_document(
+    db: Session, storage: StorageService, user: User, key: str, document_id: str
+) -> None:
+    """Hide a course PDF in a session that doesn't own it (017 FR-003, FR-004): this session's and
+    later sessions' lists change; the PDF, its file and its annotations stay in the owning
+    session."""
+    resolved = sfs.resolve(db, user, key)
+    d = _in_scope(db, user, resolved, document_id)
+    if resolved.folder is not None and resolved.folder.id == d.session_folder_id:
+        raise ApiError(
+            409, "own_session", "This PDF was uploaded to this session; delete it instead."
+        )
+    folder = sfs.get_or_create_folder(db, storage, user, resolved)
+    if db.get(DocumentHide, (folder.id, d.id)) is None:
+        db.add(DocumentHide(session_folder_id=folder.id, document_id=d.id, user_id=user.id))
+    db.commit()
+    log.info("document %s hidden in session folder %s", d.id, folder.id)
+
+
+def list_hidden_documents(
+    db: Session, storage: StorageService, user: User, key: str
+) -> list[dict[str, Any]]:
+    """The course's (or event series') documents hidden in this session (017 FR-006)."""
     resolved = sfs.resolve(db, user, key)
     rows = db.scalars(
         scope_of(user, resolved)
         .documents(user)
+        .where(_hidden_in(user, resolved))
         .order_by(Document.uploaded_at.desc(), Document.id.desc())
     )
     return [view(db, storage, user, d) for d in rows]
+
+
+def show_document(db: Session, user: User, key: str, document_id: str) -> None:
+    """List a hidden PDF in this session again (017 FR-006, Undo). This drops the hides that reach
+    this session, so the PDF is listed again from where it was removed on. Never creates a
+    folder."""
+    resolved = sfs.resolve(db, user, key)
+    d = _in_scope(db, user, resolved, document_id)
+    hides = db.scalars(_hides_up_to(user, resolved).where(DocumentHide.document_id == d.id)).all()
+    for hide in hides:
+        db.delete(hide)
+    if hides:
+        db.commit()
+        log.info("document %s shown again from session %s", d.id, key)
 
 
 def get_document(
@@ -314,14 +388,35 @@ def _name_taken(scope: DocumentScope) -> ApiError:
     )
 
 
+def _check_owning_session(
+    db: Session, user: User, d: Document, from_session: str | None, message: str
+) -> None:
+    """Refuse a rename or delete made from a session that didn't upload the PDF (017 FR-010), so
+    a stale screen can't change another session's PDF. Without `from_session`, as before."""
+    if from_session is None:
+        return
+    folder = sfs.resolve(db, user, from_session).folder
+    if folder is None or folder.id != d.session_folder_id:
+        raise ApiError(409, "not_owning_session", message)
+
+
 def rename_document(
-    db: Session, storage: StorageService, user: User, document_id: str, version: int, name: str
+    db: Session,
+    storage: StorageService,
+    user: User,
+    document_id: str,
+    version: int,
+    name: str,
+    from_session: str | None = None,
 ) -> dict[str, Any]:
     """Rename the document; its PDF and annotation sidecar are renamed together (FR-009)."""
     from unihelper.api.deps import check_version
     from unihelper.api.errors import validation_error
 
     d = get_owned(db, user, document_id)
+    _check_owning_session(
+        db, user, d, from_session, "Rename this PDF in the session it was uploaded to."
+    )
     check_version(version, d.version)
     name = normalize_display(name)
     if not name:
@@ -364,7 +459,12 @@ def rename_document(
 
 
 def delete_document(
-    db: Session, storage: StorageService, user: User, document_id: str, version: int
+    db: Session,
+    storage: StorageService,
+    user: User,
+    document_id: str,
+    version: int,
+    from_session: str | None = None,
 ) -> None:
     """Delete the document: its row, then its PDF and annotation sidecar (FR-010, user-confirmed).
     The files go only after the row's deletion committed; a file that can't be removed then stays
@@ -372,6 +472,14 @@ def delete_document(
     from unihelper.api.deps import check_version
 
     d = get_owned(db, user, document_id)
+    _check_owning_session(
+        db,
+        user,
+        d,
+        from_session,
+        "This PDF belongs to another session. Remove it from this session instead, or delete it "
+        "in the session it was uploaded to.",
+    )
     check_version(version, d.version)
     with document_file_lock(d.id):
         parts, _ = pdf_parts(db, user, d)

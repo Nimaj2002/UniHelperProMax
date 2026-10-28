@@ -11,7 +11,7 @@ from unihelper.models.calendar_import import (
 from unihelper.models.chat import Chat, ChatDraft, ChatRun, ChatUpload
 from unihelper.models.class_series import ClassLink, ClassSeries
 from unihelper.models.course import Course
-from unihelper.models.document import AnnotationOp, Document, DocumentPosition
+from unihelper.models.document import AnnotationOp, Document, DocumentHide, DocumentPosition
 from unihelper.models.event_series import EventLink, EventSeries
 from unihelper.models.note import Note
 from unihelper.models.recording import Recording
@@ -47,6 +47,7 @@ __all__ = [
     "ClassSeries",
     "Course",
     "Document",
+    "DocumentHide",
     "DocumentPosition",
     "EventLink",
     "EventSeries",

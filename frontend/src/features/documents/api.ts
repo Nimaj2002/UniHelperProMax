@@ -10,12 +10,21 @@ export const documentsKey = (sessionKey: string) => ["documents", sessionKey] as
 /** Every session's document list: a document is listed by all sessions of its course. */
 export const allDocumentsKey = ["documents"] as const;
 export const documentKey = (id: string) => ["document", id] as const;
+/** The course PDFs hidden in a session (017); under `documentsKey`, so refreshing that list refreshes it too. */
+export const hiddenDocumentsKey = (sessionKey: string) => ["documents", sessionKey, "hidden"] as const;
 
 export function useDocuments(sessionKey: string) {
   return useQuery({
     queryKey: documentsKey(sessionKey),
     queryFn: () => apiFetch<Document[]>(`/sessions/${enc(sessionKey)}/documents`),
     placeholderData: keepPreviousData,
+  });
+}
+
+export function useHiddenDocuments(sessionKey: string) {
+  return useQuery({
+    queryKey: hiddenDocumentsKey(sessionKey),
+    queryFn: () => apiFetch<Document[]>(`/sessions/${enc(sessionKey)}/documents/hidden`),
   });
 }
 
@@ -101,11 +110,22 @@ export function postAnnotationOps(id: string, ops: AnnotationOp[], keepalive = f
   });
 }
 
-export function renameDocument(id: string, version: number, name: string) {
-  return apiFetch<Document>(`/documents/${enc(id)}`, { method: "PATCH", body: { name }, version });
+/** Renames the PDF; `fromSession` must be the session it was uploaded to (017 FR-010). */
+export function renameDocument(id: string, version: number, name: string, fromSession: string) {
+  return apiFetch<Document>(`/documents/${enc(id)}`, { method: "PATCH", body: { name }, version, query: { fromSession } });
 }
 
-/** Deletes the PDF and its annotation sidecar (007 FR-010). */
-export function deleteDocument(id: string, version: number) {
-  return apiFetch<void>(`/documents/${enc(id)}`, { method: "DELETE", version });
+/** Hides a course PDF in a session that doesn't own it (017 FR-003); the PDF itself is untouched. */
+export function hideDocument(sessionKey: string, id: string) {
+  return apiFetch<void>(`/sessions/${enc(sessionKey)}/documents/${enc(id)}/hidden`, { method: "PUT" });
+}
+
+/** Lists a hidden PDF in the session again (017 FR-006, Undo). */
+export function showDocument(sessionKey: string, id: string) {
+  return apiFetch<void>(`/sessions/${enc(sessionKey)}/documents/${enc(id)}/hidden`, { method: "DELETE" });
+}
+
+/** Deletes the PDF and its annotation sidecar (007 FR-010), from the session it was uploaded to (017 FR-010). */
+export function deleteDocument(id: string, version: number, fromSession: string) {
+  return apiFetch<void>(`/documents/${enc(id)}`, { method: "DELETE", version, query: { fromSession } });
 }

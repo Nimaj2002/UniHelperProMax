@@ -864,6 +864,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sessions/{session_key}/documents/hidden": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Hidden Documents
+         * @description The course PDFs hidden in this session (017 FR-006).
+         */
+        get: operations["list_hidden_documents_api_v1_sessions__session_key__documents_hidden_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sessions/{session_key}/documents/{document_id}/hidden": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Hide Document
+         * @description Hide a course PDF in a session that doesn't own it (017 FR-003); the PDF is untouched.
+         */
+        put: operations["hide_document_api_v1_sessions__session_key__documents__document_id__hidden_put"];
+        post?: never;
+        /**
+         * Show Document
+         * @description List a hidden PDF in this session again (017 FR-006).
+         */
+        delete: operations["show_document_api_v1_sessions__session_key__documents__document_id__hidden_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/documents/{document_id}": {
         parameters: {
             query?: never;
@@ -7223,6 +7267,97 @@ export interface operations {
             };
         };
     };
+    list_hidden_documents_api_v1_sessions__session_key__documents_hidden_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Document"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hide_document_api_v1_sessions__session_key__documents__document_id__hidden_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_document_api_v1_sessions__session_key__documents__document_id__hidden_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_document_api_v1_documents__document_id__get: {
         parameters: {
             query?: never;
@@ -7256,7 +7391,9 @@ export interface operations {
     };
     delete_document_api_v1_documents__document_id__delete: {
         parameters: {
-            query?: never;
+            query?: {
+                fromSession?: string | null;
+            };
             header?: {
                 "If-Match"?: string | null;
             };
@@ -7287,7 +7424,9 @@ export interface operations {
     };
     patch_document_api_v1_documents__document_id__patch: {
         parameters: {
-            query?: never;
+            query?: {
+                fromSession?: string | null;
+            };
             header?: {
                 "If-Match"?: string | null;
             };

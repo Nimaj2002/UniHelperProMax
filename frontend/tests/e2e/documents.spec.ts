@@ -250,6 +250,54 @@ test("US7: rename an annotated document; delete it after confirmation", async ({
   await expect(page.getByRole("region", { name: "Documents" }).getByText("No documents yet.")).toBeVisible();
 });
 
+test("017: removing a PDF in another session keeps it; only its own session deletes it", async ({ page }, testInfo) => {
+  test.setTimeout(120_000); // many page loads
+  const { docs, url } = await openSession(page, testInfo, "DOCH ");
+  await uploadPdf(page, "Week 1.pdf", textPdf(2));
+  const other = url.replace("2026-10-05", "2026-09-30");
+
+  // in an earlier session of the course: only "Remove from this and later sessions"
+  await page.goto(other);
+  await docs.getByRole("button", { name: "Actions for Week 1" }).click();
+  await expect(page.getByRole("menuitem", { name: /Rename|Delete/ })).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "Remove from this and later sessions" }).click();
+  await expect(page.getByText("Removed “Week 1” from this and later sessions.")).toBeVisible();
+  await expect(docs.getByText("No documents yet.")).toBeVisible();
+
+  // later sessions don't list it either
+  await page.goto(url.replace("2026-10-05", "2026-10-07"));
+  await expect(docs.getByText("No documents yet.")).toBeVisible();
+
+  // the session it was uploaded to still has it and opens it
+  await page.goto(url);
+  await docs.getByRole("button", { name: /^Week 1/ }).click();
+  await expect(page.getByRole("tab", { name: /^Week 1/ })).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("tabpanel", { name: /^Week 1/ })).toBeVisible({ timeout: 15000 });
+
+  // bring it back by keyboard
+  await page.goto(other);
+  const removed = docs.getByRole("button", { name: "Removed from this session (1)" });
+  await removed.focus();
+  await page.keyboard.press("Enter");
+  await docs.getByRole("button", { name: "Show again: Week 1" }).click();
+  await expect(docs.getByRole("button", { name: "Actions for Week 1" })).toBeVisible();
+  await expect(removed).toBeHidden();
+
+  // hide again, then delete in its own session: gone everywhere
+  await docs.getByRole("button", { name: "Actions for Week 1" }).click();
+  await page.getByRole("menuitem", { name: "Remove from this and later sessions" }).click();
+  await page.goto(url);
+  await docs.getByRole("button", { name: "Actions for Week 1" }).click();
+  await page.getByRole("menuitem", { name: "Delete…" }).click();
+  const confirm = page.getByRole("alertdialog", { name: "Delete “Week 1”?" });
+  await expect(confirm).toContainText("It is also listed in the course's other sessions and will disappear from all of them.");
+  await confirm.getByRole("button", { name: "Delete document" }).click();
+  await expect(page.getByText("Deleted “Week 1”.")).toBeVisible();
+  await page.goto(other);
+  await expect(docs.getByText("No documents yet.")).toBeVisible();
+  await expect(docs.getByRole("button", { name: /Removed from this session/ })).toHaveCount(0);
+});
+
 /** The reader's code is fetched in the background once a session lists documents. */
 async function readerPrefetched(page: Page) {
   await page.waitForFunction(() => performance.getEntriesByType("resource").some((e) => e.name.includes("PdfReader")));
