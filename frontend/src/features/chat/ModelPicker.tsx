@@ -131,7 +131,7 @@ export function ModelPicker({ choices, value, missingLabel, onChange, attachment
             size="sm"
             disabled={disabled}
             aria-label={label}
-            className="h-7 max-w-[60%] min-w-0 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+            className="h-7 max-w-[60%] min-w-0 shrink gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
           >
             <span className="truncate">{value?.model.displayName ?? missingLabel ?? "Choose a model"}</span>
             {value && (
