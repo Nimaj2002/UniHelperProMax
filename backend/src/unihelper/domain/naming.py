@@ -72,6 +72,7 @@ def class_date_folder_name(day: date, start: time, existing: Iterable[str]) -> s
 # ---- events (feature 009, research R1) ---------------------------------------------------
 
 EVENTS_DIR = "_Events"  # <year>/<semester>/_Events/<event folder>/ — no course may take it
+GENERAL_NOTES_DIR = "General Notes"  # 018: <user>/General Notes/*.md — no year folder may take it
 
 
 def is_reserved_course_folder(name: str) -> bool:

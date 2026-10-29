@@ -34,6 +34,7 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
     "last_semester_id": None,  # 009 research R9: preselected semester in the forms
     "quick_create_type": "class",  # 009: type the quick form opens with
     "recording_bar_style": "full",  # floating recording pill: full | compact | minimal
+    "general_notes_collapsed": False,  # 018: home page General notes section
 }
 NULLABLE_PREFERENCES = {"last_semester_id"}  # an explicit null clears these
 MAX_TABS = 50

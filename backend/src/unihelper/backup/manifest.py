@@ -39,7 +39,8 @@ README_TEXT = """UniHelperProMax backup
 This zip holds one account's data from UniHelperProMax:
 
   files/      your notes (.md), recordings, documents, annotations and chats, in the same
-              folders the app uses (<year>/<semester>/<course>/<class date>/...)
+              folders the app uses (<year>/<semester>/<course>/<class date>/...); general
+              notes not tied to a class are in General Notes/
   data/       your classes, events, tasks, settings and themes, one JSON object per line
   manifest.json   when and with which version this backup was made, and a checksum of
                   every file, so the app can tell a damaged backup

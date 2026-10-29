@@ -23,6 +23,7 @@ def test_preferences(owner_client: TestClient) -> None:
         "lastSemesterId": None,  # 009
         "quickCreateType": "class",  # 009
         "recordingBarStyle": "full",
+        "generalNotesCollapsed": False,  # 018
     }
     check(r.json(), "Preferences", spec="002")
     r = c.patch(f"{API}/preferences", json={"editorMode": "raw"})

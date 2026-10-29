@@ -56,16 +56,16 @@ export function NoteNameDialog({ title, description, submitLabel, initial = "", 
 }
 
 export function DeleteNoteDialog({
-  name, fileName, pending, error, onConfirm, onClose,
-}: { name: string; fileName: string; pending: boolean; error?: string; onConfirm: () => void; onClose: () => void }) {
+  name, fileName, where = "this session's notes folder", pending, error, onConfirm, onClose,
+}: { name: string; fileName: string; where?: string; pending: boolean; error?: string; onConfirm: () => void; onClose: () => void }) {
   return (
     <AlertDialog open onOpenChange={(o) => !o && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Delete “{name}”?</AlertDialogTitle>
           <AlertDialogDescription>
-            The file <span className="font-medium text-foreground">{fileName}</span> is removed from this session's notes
-            folder. This can't be undone.
+            The file <span className="font-medium text-foreground">{fileName}</span> is removed from {where}. This can't be
+            undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         {error && <p role="alert" className="text-sm text-danger">{error}</p>}

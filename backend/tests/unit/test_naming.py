@@ -4,7 +4,13 @@ from datetime import date, time
 
 import pytest
 
-from unihelper.domain.naming import class_date_folder_name, name_key, safe_name, unique_sibling
+from unihelper.domain.naming import (
+    GENERAL_NOTES_DIR,
+    class_date_folder_name,
+    name_key,
+    safe_name,
+    unique_sibling,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -54,3 +60,8 @@ def test_class_date_folder_name() -> None:
     assert class_date_folder_name(d, t, []) == "2026-10-05"
     assert class_date_folder_name(d, t, ["2026-10-05"]) == "2026-10-05 1400"
     assert class_date_folder_name(d, t, ["2026-10-05", "2026-10-05 1400"]) == "2026-10-05 1400 (2)"
+
+
+def test_general_notes_dir_is_a_safe_readable_name() -> None:
+    assert GENERAL_NOTES_DIR == "General Notes"
+    assert safe_name(GENERAL_NOTES_DIR) == GENERAL_NOTES_DIR

@@ -11,14 +11,21 @@ import logging
 import threading
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import ColumnElement, and_, select
 from sqlalchemy.orm import Session
 
 from unihelper.api.errors import ApiError, not_found, validation_error
 from unihelper.db.engine import on_rollback
-from unihelper.domain.naming import name_key, normalize_display, safe_name, unique_sibling
+from unihelper.domain.naming import (
+    GENERAL_NOTES_DIR,
+    name_key,
+    normalize_display,
+    safe_name,
+    unique_sibling,
+)
 from unihelper.models import Note, SessionFolder, User
 from unihelper.models.base import now_iso
 from unihelper.services import session_folder_service as sfs
@@ -53,8 +60,12 @@ def _clean_name(name: str) -> str:
     return cleaned
 
 
-def _name_taken() -> ApiError:
-    msg = "A note with this name already exists in this session."
+def _name_taken(general: bool = False) -> ApiError:
+    msg = (
+        "A general note with this name already exists."
+        if general
+        else "A note with this name already exists in this session."
+    )
     return ApiError(
         409, "name_taken", msg, errors=[{"field": "/name", "code": "name_taken", "message": msg}]
     )
@@ -64,10 +75,10 @@ def _file_name(name: str, siblings: list[str]) -> str:
     return unique_sibling(f"{safe_name(name)}.md", siblings)
 
 
-def meta(note: Note, folder: SessionFolder) -> dict[str, Any]:
+def meta(note: Note, folder: SessionFolder | None) -> dict[str, Any]:
     return {
         "id": note.id,
-        "session_key": folder.session_key,
+        "session_key": None if folder is None else folder.session_key,
         "name": note.name,
         "file_name": note.file_name,
         "version": note.version,
@@ -80,10 +91,19 @@ def meta(note: Note, folder: SessionFolder) -> dict[str, Any]:
 # ---- lookups -------------------------------------------------------------------------------
 
 
-def _note_with_path(db: Session, user: User, note_id: str) -> tuple[Note, SessionFolder, list[str]]:
+def _general_parts(user: User, file_name: str) -> list[str]:
+    return [user.username, GENERAL_NOTES_DIR, file_name]
+
+
+def _note_with_path(
+    db: Session, user: User, note_id: str
+) -> tuple[Note, SessionFolder | None, list[str]]:
+    """The note, its session folder (None for a general note, 018) and its file's path parts."""
     note = db.get(Note, note_id)
     if note is None or note.user_id != user.id:
         raise not_found("Note")
+    if note.session_folder_id is None:
+        return note, None, _general_parts(user, note.file_name)
     folder = db.get(SessionFolder, note.session_folder_id)
     assert folder is not None
     r = sfs.resolve(db, user, folder.session_key)
@@ -152,6 +172,99 @@ def create_note(
     db.add(note)
     db.flush()
     return {**meta(note, folder), "content": content, "hash": digest, "missing": False}
+
+
+# ---- general notes (018) -------------------------------------------------------------------
+
+
+def _general_rows(db: Session, user: User) -> list[Note]:
+    return list(
+        db.scalars(select(Note).where(Note.session_folder_id.is_(None), Note.user_id == user.id))
+    )
+
+
+def create_general_note(
+    db: Session, storage: StorageService, user: User, name: str, content: str = ""
+) -> dict[str, Any]:
+    """A note in `<user>/General Notes/`, not tied to any session (018 FR-009, FR-010)."""
+    name = _clean_name(name)
+    _check_text(content)
+    rows = _general_rows(db, user)
+    if any(n.name_key == name_key(name) for n in rows):
+        raise _name_taken(general=True)
+    siblings = [n.file_name for n in rows]
+    file_name = _file_name(name, siblings)
+    parts = _general_parts(user, file_name)
+    # never clobber a file that already exists on disk under that name
+    while storage.read_bytes(parts) is not None:
+        siblings.append(file_name)
+        file_name = _file_name(name, siblings)
+        parts[-1] = file_name
+    digest, size = storage.write_text_atomic(parts, content)  # creates the folder
+    on_rollback(db, lambda: storage.delete_content_file(parts))
+    note = Note(
+        user_id=user.id,
+        session_folder_id=None,
+        name=name,
+        name_key=name_key(name),
+        file_name=file_name,
+        file_key=file_name.casefold(),
+        content_hash=digest,
+        size=size,
+    )
+    db.add(note)
+    db.flush()
+    return {**meta(note, None), "content": content, "hash": digest, "missing": False}
+
+
+def list_general_notes(db: Session, storage: StorageService, user: User) -> list[dict[str, Any]]:
+    """The user's general notes, newest change first, synced with the folder (018 research R5):
+    a `.md` file added outside the app gets a row, a row whose file is gone is dropped. The last
+    change is the later of the app's save and the file's mtime; rows aren't rewritten for it, so
+    an open editor's version stays valid."""
+    files = storage.list_files([user.username, GENERAL_NOTES_DIR], ".md")
+    by_key = {f.casefold(): (f, mtime) for f, mtime in files.items()}
+    rows = _general_rows(db, user)
+    for note in rows:
+        if note.file_key not in by_key:
+            db.delete(note)
+    known = {n.file_key for n in rows}
+    names = {n.name_key for n in rows if n.file_key in by_key}
+    for key, (file_name, _mtime) in by_key.items():
+        if key in known:
+            continue
+        data = storage.read_bytes(_general_parts(user, file_name))
+        if data is None:  # removed since the scan
+            continue
+        stem = normalize_display(file_name[: -len(".md")])[:120] or "Untitled"
+        name = stem
+        n = 2
+        while name_key(name) in names:
+            suffix = f" ({n})"
+            name, n = stem[: 120 - len(suffix)] + suffix, n + 1
+        names.add(name_key(name))
+        db.add(
+            Note(
+                user_id=user.id,
+                session_folder_id=None,
+                name=name,
+                name_key=name_key(name),
+                file_name=file_name,
+                file_key=key,
+                content_hash=storage.hash_bytes(data),
+                size=len(data),
+            )
+        )
+    db.flush()
+    out = []
+    for note in _general_rows(db, user):
+        m = meta(note, None)
+        changed = datetime.fromtimestamp(by_key[note.file_key][1], UTC).isoformat(
+            timespec="seconds"
+        )
+        m["updated_at"] = max(m["updated_at"], changed)
+        out.append(m)
+    return sorted(out, key=lambda m: (m["updated_at"], m["id"]), reverse=True)
 
 
 def _decode(data: bytes) -> str:
@@ -339,6 +452,13 @@ def import_replace(
 # ---- rename / delete (US4) ----------------------------------------------------------------
 
 
+def _scope(user: User, folder: SessionFolder | None) -> ColumnElement[bool]:
+    """Notes whose names must differ: the session's, or the user's general notes (018)."""
+    if folder is None:
+        return and_(Note.session_folder_id.is_(None), Note.user_id == user.id)
+    return Note.session_folder_id == folder.id
+
+
 def rename_note(
     db: Session, storage: StorageService, user: User, note_id: str, version: int, name: str
 ) -> dict[str, Any]:
@@ -347,19 +467,13 @@ def rename_note(
     note, folder, parts = _note_with_path(db, user, note_id)
     check_version(version, note.version)
     name = _clean_name(name)
+    scope = _scope(user, folder)
     clash = db.scalar(
-        select(Note).where(
-            Note.session_folder_id == folder.id, Note.name_key == name_key(name), Note.id != note.id
-        )
+        select(Note).where(scope, Note.name_key == name_key(name), Note.id != note.id)
     )
     if clash is not None:
-        raise _name_taken()
-    siblings = [
-        f
-        for f in db.scalars(
-            select(Note.file_name).where(Note.session_folder_id == folder.id, Note.id != note.id)
-        )
-    ]
+        raise _name_taken(general=folder is None)
+    siblings = list(db.scalars(select(Note.file_name).where(scope, Note.id != note.id)))
     new_file = _file_name(name, siblings)
     if new_file != note.file_name:
         undo = storage.rename_file(parts, [*parts[:-1], new_file])

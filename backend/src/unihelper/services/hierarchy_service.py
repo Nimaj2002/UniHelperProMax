@@ -12,6 +12,7 @@ from unihelper.api.errors import ApiError, not_found, validation_error
 from unihelper.db.engine import on_rollback
 from unihelper.domain.naming import (
     EVENTS_DIR,
+    GENERAL_NOTES_DIR,
     is_reserved_course_folder,
     name_key,
     normalize_display,
@@ -87,6 +88,12 @@ def _folder_for(name: str, siblings: list[str]) -> tuple[str, str]:
     return folder, folder.casefold()
 
 
+def _year_folders(db: Session, user: User) -> list[str]:
+    """Folder names a year can't take: other years' and the user's `General Notes` (018)."""
+    taken = list(db.scalars(select(Year.folder_name).where(Year.user_id == user.id)))
+    return [*taken, GENERAL_NOTES_DIR]
+
+
 def _course_folder_for(name: str, siblings: list[str]) -> tuple[str, str]:
     """A course folder never takes the semester's `_Events` folder (009 research R1)."""
     return _folder_for(name, [*siblings, EVENTS_DIR])
@@ -141,8 +148,7 @@ def get_or_create_year(
     existing = db.scalar(select(Year).where(Year.user_id == user.id, Year.name_key == key))
     if existing is not None:
         return existing, False
-    siblings = list(db.scalars(select(Year.folder_name).where(Year.user_id == user.id)))
-    folder, folder_key = _folder_for(name, siblings)
+    folder, folder_key = _folder_for(name, _year_folders(db, user))
     _shift_years_down(db, user)
     year = Year(
         user_id=user.id,
@@ -353,8 +359,7 @@ def rename_year(db: Session, storage: StorageService, user: User, year: Year, na
     )
     if clash is not None:
         raise _name_taken()
-    siblings = list(db.scalars(select(Year.folder_name).where(Year.user_id == user.id)))
-    _rename(db, storage, year, name, siblings, year_parts(user, year))
+    _rename(db, storage, year, name, _year_folders(db, user), year_parts(user, year))
     return year
 
 

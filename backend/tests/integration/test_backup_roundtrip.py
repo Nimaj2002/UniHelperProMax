@@ -197,3 +197,21 @@ def test_a_hidden_pdf_stays_hidden_after_a_restore(
     assert [d["id"] for d in c.get(f"{API}/sessions/{wednesday}/documents/hidden").json()] == [
         doc["id"]
     ]
+
+
+def test_a_general_note_survives_a_restore(
+    app: FastAPI, owner_client: TestClient, tmp_data_dir: Path
+) -> None:
+    """018 FR-020: general notes (no session) and their `General Notes/` files are backed up."""
+    from tests.contract.test_general_notes import folder, general
+
+    bh.inline_jobs(app)
+    c = owner_client
+    n = general(c, "Ideas", "keep me")
+    _job, data = bh.make_backup(c)
+    assert c.delete(f"{API}/notes/{n['id']}", headers={"If-Match": '"1"'}).status_code == 204
+
+    assert bh.restore(c, data)["phase"] == "done"
+
+    assert [x["id"] for x in c.get(f"{API}/general-notes").json()] == [n["id"]]
+    assert (folder(tmp_data_dir) / "Ideas.md").read_text() == "keep me"

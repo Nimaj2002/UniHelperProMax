@@ -17,6 +17,7 @@ import { requestTaskDetails } from "./openTask";
 import { LAST_OPEN_MESSAGE, PanelCloseButton } from "./PanelCloseButton";
 import { PANEL_ID, PANEL_NAME, PanelRail, SHOW_PANEL_ID } from "./PanelRail";
 import { TasksPanel } from "./TasksPanel";
+import { COLUMN_SECTION_ID, useTasksColumn, type ColumnSection } from "./tasksColumn";
 import { PanelsProvider, usePanels } from "./usePanels";
 
 const OTHER: Record<Panel, Panel> = { calendar: "tasks", tasks: "calendar" };
@@ -95,14 +96,26 @@ export function HomePage() {
   );
 
   const openOne = useCallback(
-    (panel: Panel) => {
+    (panel: Panel, target?: () => HTMLElement | null | undefined) => {
       autoClosed.current = null;
       if (openPanel(panel) !== "opened") return;
       const made = autoClosed.current as Panel | null;
       announce(made ? `${PANEL_NAME[panel]} opened. ${MAKE_ROOM[made]}` : `${PANEL_NAME[panel]} opened`);
-      focusWhenReady(() => firstControl(panel));
+      focusWhenReady(() => target?.() ?? firstControl(panel));
     },
     [openPanel, announce],
+  );
+
+  // (018) the Tasks column: Tasks above General notes; a rail item opens the panel on its section
+  const column = useTasksColumn();
+  const { setCollapsed: setSectionCollapsed } = column;
+  const openSection = useCallback(
+    (section: ColumnSection) => {
+      setSectionCollapsed(section, false);
+      const toggle = section === "tasks" ? "#home-tasks-toggle" : `#panel-section-${COLUMN_SECTION_ID.notes}-title button`;
+      openOne("tasks", () => document.querySelector<HTMLElement>(toggle));
+    },
+    [setSectionCollapsed, openOne],
   );
 
   // `/?task=<id>` (a course page's task, FR-052): open the Tasks panel once the column is measured
@@ -217,7 +230,7 @@ export function HomePage() {
               {panel === "calendar" ? (
                 <CalendarPanel open={open.calendar} leading={open.calendar && opener} trailing={trailing("calendar")} />
               ) : (
-                <TasksPanel open={open.tasks} leading={!open.calendar && opener} trailing={trailing("tasks")} />
+                <TasksPanel open={open.tasks} leading={!open.calendar && opener} trailing={trailing("tasks")} column={column} />
               )}
               {!open[panel] && !focus && (
                 <PanelRail
@@ -225,6 +238,7 @@ export function HomePage() {
                   onOpen={() => openOne(panel)}
                   openCount={panel === "tasks" ? counts.open : undefined}
                   overdueCount={panel === "tasks" ? counts.overdue : undefined}
+                  onOpenSection={panel === "tasks" ? openSection : undefined}
                 />
               )}
             </div>

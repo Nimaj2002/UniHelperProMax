@@ -16,6 +16,8 @@ export interface SideRailItem {
   /** Appended to the name while the indicator shows, e.g. "recording in progress". */
   status?: string;
   onActivate: () => void;
+  /** Shown under the item's button, e.g. the home Tasks item's open count (018). */
+  content?: ReactNode;
 }
 
 export interface SideRailReopen {
@@ -109,7 +111,7 @@ export function SideRail({ side, label, reopen, items = [], className, "data-rai
           {items.map((item) => {
             const ItemIcon = item.icon;
             const name = railItemName(item);
-            return (
+            const button = (
               <Tooltip key={item.id}>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" className="relative size-8" onClick={item.onActivate} aria-label={name} data-rail-item={item.id}>
@@ -119,6 +121,13 @@ export function SideRail({ side, label, reopen, items = [], className, "data-rai
                 </TooltipTrigger>
                 <TooltipContent side={tip}>{name}</TooltipContent>
               </Tooltip>
+            );
+            if (!item.content) return button;
+            return (
+              <div key={item.id} className="flex flex-col items-center gap-0.5">
+                {button}
+                {item.content}
+              </div>
             );
           })}
         </div>

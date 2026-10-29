@@ -12,7 +12,7 @@ MAX_CONTENT = 5 * 1024 * 1024
 
 class NoteMeta(ApiModel):
     id: str
-    session_key: str
+    session_key: str | None  # None for a general note (018)
     name: str
     file_name: str
     version: int
@@ -110,3 +110,4 @@ class Preferences(ApiModel):
     last_semester_id: str | None = Field(default=None, min_length=1, max_length=64)  # 009 R9
     quick_create_type: Literal["class", "event"] | None = None  # 009
     recording_bar_style: Literal["full", "compact", "minimal"] | None = None
+    general_notes_collapsed: bool | None = None  # 018

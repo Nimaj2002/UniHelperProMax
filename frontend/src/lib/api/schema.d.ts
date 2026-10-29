@@ -571,6 +571,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/general-notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List General Notes */
+        get: operations["list_general_notes_api_v1_general_notes_get"];
+        put?: never;
+        /** Create General Note */
+        post: operations["create_general_note_api_v1_general_notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/notes/search": {
         parameters: {
             query?: never;
@@ -3685,7 +3703,7 @@ export interface components {
             /** Id */
             id: string;
             /** Sessionkey */
-            sessionKey: string;
+            sessionKey: string | null;
             /** Name */
             name: string;
             /** Filename */
@@ -3728,7 +3746,7 @@ export interface components {
             /** Id */
             id: string;
             /** Sessionkey */
-            sessionKey: string;
+            sessionKey: string | null;
             /** Name */
             name: string;
             /** Filename */
@@ -3834,6 +3852,8 @@ export interface components {
             quickCreateType?: ("class" | "event") | null;
             /** Recordingbarstyle */
             recordingBarStyle?: ("full" | "compact" | "minimal") | null;
+            /** Generalnotescollapsed */
+            generalNotesCollapsed?: boolean | null;
         };
         /** PreflightItem */
         PreflightItem: {
@@ -6505,6 +6525,59 @@ export interface operations {
             path: {
                 session_key: string;
             };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Note"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_general_notes_api_v1_general_notes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteMeta"][];
+                };
+            };
+        };
+    };
+    create_general_note_api_v1_general_notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody: {

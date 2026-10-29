@@ -76,7 +76,7 @@ test("US9: Tasks closes to a 44 px rail and comes back by rail and Shift+T", asy
   await expect(rail).toBeVisible();
   // after the ≤ 200 ms transition
   await expect.poll(async () => Math.round((await box(rail)).width)).toBe(44);
-  await expect(rail).toContainText("Tasks");
+  await expect(rail.locator("[data-rail-item=tasks]")).toBeVisible(); // 018: an item per section
   const show = page.locator("#show-tasks");
   await expect(show).toHaveAttribute("aria-keyshortcuts", "Shift+T");
   await expect(show).toHaveAccessibleName(/^Show tasks/);
@@ -143,9 +143,20 @@ test("US10: the last open panel can't be closed, by button or shortcut", async (
   const close = page.locator("#close-calendar");
   await expect(close).toBeDisabled();
   await expect(close).toHaveAccessibleDescription("At least one panel stays open");
-  // a real pointer path (Radix ignores a single jump that leaves another tooltip's trigger)
+  // the Calendar widens over 200 ms: measure the button once it has stopped moving
+  let lastX = NaN;
+  await expect
+    .poll(async () => {
+      const x = Math.round((await box(close)).x);
+      const settled = x === lastX;
+      lastX = x;
+      return settled;
+    }, { intervals: [100] })
+    .toBe(true);
+  // a real pointer path (Radix ignores a single jump that leaves another tooltip's trigger),
+  // straight up from below so it doesn't cross the focus mode button beside it
   const b = await box(close);
-  await page.mouse.move(400, 400, { steps: 5 });
+  await page.mouse.move(b.x + b.width / 2, b.y + 200, { steps: 5 });
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 10 });
   await expect(page.getByRole("tooltip").filter({ hasText: "At least one panel stays open" })).toBeVisible();
   await close.click({ force: true });

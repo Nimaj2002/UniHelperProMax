@@ -1,7 +1,8 @@
-import { CalendarBlank, Kanban } from "@phosphor-icons/react";
+import { CalendarBlank, Kanban, NotePencil, SidebarSimple } from "@phosphor-icons/react";
 import { SideRail } from "@/app/shell/SideRail";
 import { formatCount } from "@/features/tasks/model/counts";
 import type { Panel } from "./homeWidths";
+import type { ColumnSection } from "./tasksColumn";
 
 export const SHOW_PANEL_ID: Record<Panel, string> = { calendar: "show-calendar", tasks: "show-tasks" };
 export const PANEL_ID: Record<Panel, string> = { calendar: "calendar-panel", tasks: "tasks-panel" };
@@ -15,6 +16,8 @@ interface Props {
   openCount?: number;
   /** Tasks rail: open tasks past due. */
   overdueCount?: number;
+  /** Tasks rail (018): an item per section, like the session panel's rail; opens on that section. */
+  onOpenSection?: (section: ColumnSection) => void;
 }
 
 /** "Show tasks, 7 open, 2 overdue" (contracts/ui-home-tasks.md). */
@@ -30,10 +33,49 @@ export function railLabel(panel: Panel, openCount?: number, overdueCount?: numbe
 /**
  * A closed home panel (FR-071–FR-073): a 44 px card like the left card's rail; the whole strip is
  * the reopen button with the panel's icon, vertical name and, for Tasks, the open count and an
- * overdue "!" (text, never color alone).
+ * overdue "!" (text, never color alone). (018) The Tasks rail is the session panel's kind: a
+ * reopen button and an item per section (Tasks with its counts, General notes).
  */
-export function PanelRail({ panel, onOpen, openCount, overdueCount }: Props) {
+export function PanelRail({ panel, onOpen, openCount, overdueCount, onOpenSection }: Props) {
   const name = PANEL_NAME[panel];
+  const counts = (
+    <>
+      {openCount !== undefined && (
+        <span aria-hidden className="text-xs tabular-nums text-muted-foreground" data-testid="rail-open-count">
+          {formatCount(openCount)}
+        </span>
+      )}
+      {!!overdueCount && (
+        <span className="text-sm font-bold text-warning" data-testid="rail-overdue">
+          <span aria-hidden>!</span>
+          <span className="sr-only">{overdueCount} overdue</span>
+        </span>
+      )}
+    </>
+  );
+  if (panel === "tasks" && onOpenSection)
+    return (
+      <SideRail
+        side="right"
+        data-rail={panel}
+        label="Tasks panel rail"
+        reopen={{
+          id: SHOW_PANEL_ID.tasks,
+          label: railLabel(panel, openCount, overdueCount),
+          tooltip: "Show tasks",
+          shortcut: PANEL_SHORTCUT.tasks,
+          shortcutHint: PANEL_SHORTCUT.tasks,
+          icon: SidebarSimple,
+          mirrored: true,
+          controls: PANEL_ID.tasks,
+          onActivate: onOpen,
+        }}
+        items={[
+          { id: "tasks", icon: Kanban, name: "Tasks", onActivate: () => onOpenSection("tasks"), content: counts },
+          { id: "notes", icon: NotePencil, name: "General notes", onActivate: () => onOpenSection("notes") },
+        ]}
+      />
+    );
   return (
     <SideRail
       side={panel === "calendar" ? "left" : "right"}
@@ -50,17 +92,7 @@ export function PanelRail({ panel, onOpen, openCount, overdueCount }: Props) {
         content: (
           <>
             <span aria-hidden className="text-sm font-medium [writing-mode:vertical-rl]">{name}</span>
-            {panel === "tasks" && openCount !== undefined && (
-              <span aria-hidden className="text-xs tabular-nums text-muted-foreground" data-testid="rail-open-count">
-                {formatCount(openCount)}
-              </span>
-            )}
-            {panel === "tasks" && !!overdueCount && (
-              <span className="text-sm font-bold text-warning" data-testid="rail-overdue">
-                <span aria-hidden>!</span>
-                <span className="sr-only">{overdueCount} overdue</span>
-              </span>
-            )}
+            {panel === "tasks" && counts}
           </>
         ),
       }}

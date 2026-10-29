@@ -1,22 +1,30 @@
 <!--
 Sync Impact Report
 ==================
-Version change: 1.3.0 → 1.4.0
-Bump rationale: MINOR — new Principle VIII (Desktop App Data Safety) added. No existing
-principle, section or governance rule changed.
+Version change: 1.4.0 → 1.5.0
+Bump rationale: MINOR — Principle II gains a new allowed storage location (a per-user reserved
+`General Notes` folder for notes not tied to a course, session or event), and Principle I
+clarifies that discarding a still-empty note that was just created is not a destructive
+operation. Both are expansions; no existing rule is removed or redefined. Reason: feature 018
+(Home General Notes), plan.md Complexity Tracking / research R6, R8.
 
-Modified principles: none
-Added sections: VIII. Desktop App Data Safety
+Modified principles:
+  - I. User Work Is Never Lost — added the empty-new-note clarification
+  - II. Data Ownership & Open Formats — added the General Notes folder rule
+Added sections: none
 Removed sections: none
 
 Templates reviewed (not modified by this command; they read the constitution at runtime):
-  - .specify/templates/plan-template.md      ✅ Constitution Check picks up the new principle
+  - .specify/templates/plan-template.md      ✅ no change required
   - .specify/templates/spec-template.md      ✅ no change required
   - .specify/templates/tasks-template.md     ✅ no change required
 
-Follow-up TODOs:
-  - Development Workflow & Quality Gates and Governance still say "Principles I–VII"; they were
-    left unchanged as instructed, so they do not yet name Principle VIII.
+Dependent specs/plans to review:
+  - specs/018-home-quick-notes/plan.md — Principle II gate now passes; update its row to ✅
+
+Follow-up TODOs (carried over from 1.4.0):
+  - Development Workflow & Quality Gates and Governance still say "Principles I–VII"; they do
+    not yet name Principle VIII.
 -->
 
 # UniHelperProMax Constitution
@@ -37,7 +45,8 @@ per-class Markdown notes, record lecture audio, and transcribe that audio into t
 - Transcription MUST only ever append to a note. No transcription flow may overwrite, truncate,
   or replace existing note content.
 - Destructive operations (deleting a note, recording, class, or semester) MUST require explicit
-  user confirmation.
+  user confirmation. Discarding a note that was created in the same editing action and still
+  has no content is not destructive and MAY happen without confirmation.
 
 **Rationale**: A lost lecture or a clobbered note cannot be recreated. Durability is the core
 promise of the product and outranks every other concern.
@@ -58,6 +67,11 @@ promise of the product and outranks every other concern.
 - The reserved events folder name MUST NOT be able to collide with any course folder: course
   names MUST be rejected (or otherwise prevented) from taking the reserved name. The exact
   reserved name is fixed by the feature's plan.
+- Notes not tied to any course, session or event ("general notes") MUST be stored as plain
+  Markdown files in one reserved folder directly inside the user's storage folder, beside the
+  year folders: `<user-folder>/General Notes/`. That folder holds only these notes. Year folder
+  names MUST NOT be able to take the reserved name (the year keeps its display name; its folder
+  name is made different).
 - Original uploaded PDFs MUST never be modified by the app. Annotations MUST be stored outside
   the original file — as a sidecar file or as a separate annotated copy next to it, as the
   feature's plan decides — so the original stays byte-for-byte intact and the user's work stays
@@ -212,4 +226,4 @@ can be undone.
 - **Compliance review**: every plan's Constitution Check and every code review MUST verify
   compliance with Principles I–VII. Unjustified violations block merge.
 
-**Version**: 1.4.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-26
+**Version**: 1.5.0 | **Ratified**: 2026-10-04 | **Last Amended**: 2026-10-29

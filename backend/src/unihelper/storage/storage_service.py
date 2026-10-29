@@ -23,7 +23,7 @@ from datetime import timedelta
 from pathlib import Path, PurePosixPath
 from typing import BinaryIO
 
-from unihelper.domain.naming import safe_name
+from unihelper.domain.naming import GENERAL_NOTES_DIR, safe_name
 
 UPLOADS_DIR = ".uploads"  # staging for imports; usernames can't start with "." (safe_name)
 SIDECAR_SUFFIX = ".annotations.json"  # 007: annotations next to the PDF, never inside it
@@ -100,6 +100,20 @@ class StorageService:
             return path.read_bytes()
         except FileNotFoundError:
             return None
+
+    def list_files(self, rel_parts: Sequence[str], suffix: str) -> dict[str, float]:
+        """Regular files directly in a folder whose name ends with `suffix` (any case), mapped
+        to their modification time. A missing folder has none (018 general notes)."""
+        folder = self.path_for(rel_parts)
+        try:
+            entries = list(os.scandir(folder))
+        except (FileNotFoundError, NotADirectoryError):
+            return {}
+        return {
+            e.name: e.stat().st_mtime
+            for e in entries
+            if e.is_file(follow_symlinks=False) and e.name.casefold().endswith(suffix.casefold())
+        }
 
     def file_hash(self, parts: Sequence[str]) -> str | None:
         data = self.read_bytes(parts)
@@ -206,12 +220,16 @@ class StorageService:
     def delete_content_file(self, parts: Sequence[str]) -> None:
         """Delete exactly one note (`.md` in `notes/`), recording/imported audio (an audio
         extension in `audios/`) or document file (`.pdf` or `*.annotations.json` in
-        `documents/`). Anything else is refused."""
+        `documents/`), or a general note (`.md` in `<user>/General Notes/`, 018). Anything else
+        is refused."""
         path = self.path_for(parts)
         allowed = {"notes": {".md"}, "audios": AUDIO_EXTENSIONS, "documents": {".pdf"}}
         sidecar = path.parent.name == "documents" and path.name.lower().endswith(SIDECAR_SUFFIX)
+        general = (
+            len(parts) == 3 and parts[1] == GENERAL_NOTES_DIR and path.suffix.lower() == ".md"
+        )
         if path.is_dir() or not (
-            sidecar or path.suffix.lower() in allowed.get(path.parent.name, set())
+            sidecar or general or path.suffix.lower() in allowed.get(path.parent.name, set())
         ):
             raise StoragePathError("Only note, recording and document files can be deleted")
         try:

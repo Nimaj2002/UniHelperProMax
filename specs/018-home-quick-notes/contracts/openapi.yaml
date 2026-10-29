@@ -1,0 +1,84 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 018 additions
+  version: 1.0.0
+  description: |
+    Additive to the 002 notes contract (same conventions: camelCase JSON, RFC 9457 problems,
+    CSRF header on writes). See contracts/general-notes-api.md for the prose contract.
+    Changes to existing operations (additive):
+    - `GET/PUT/PATCH/DELETE /notes/{noteId}…` also accept general-note ids; for those,
+      `sessionKey` is null and names are unique among the user's general notes.
+    - `Preferences` gains `generalNotesCollapsed` (documented in the 002 contract).
+servers:
+  - url: /api/v1
+
+paths:
+  /general-notes:
+    get:
+      tags: [notes]
+      summary: The user's general notes, newest change first, synced with `General Notes/`
+      responses:
+        "200":
+          description: OK ([] when the folder is missing)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/GeneralNoteMeta" }
+    post:
+      tags: [notes]
+      summary: Create a general note in `<user>/General Notes/` (creates the folder)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "urn:unihelper:openapi:002#/components/schemas/NoteCreate" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GeneralNote" }
+        "409": { $ref: "#/components/responses/Problem" }   # name_taken
+        "422": { $ref: "#/components/responses/Problem" }   # name_required, name_too_long, content_not_text
+
+components:
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+
+    GeneralNoteMeta:
+      type: object
+      required: [id, sessionKey, name, fileName, version, size, createdAt, updatedAt]
+      properties:
+        id: { type: string }
+        sessionKey: { type: "null" }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        fileName: { type: string }
+        version: { type: integer }
+        size: { type: integer }
+        createdAt: { type: string }
+        updatedAt: { type: string, description: later of the app's last save and the file's mtime }
+
+    GeneralNote:
+      allOf:
+        - $ref: "#/components/schemas/GeneralNoteMeta"
+        - type: object
+          required: [content, hash, missing]
+          properties:
+            content: { type: string }
+            hash: { type: string }
+            missing: { type: boolean }

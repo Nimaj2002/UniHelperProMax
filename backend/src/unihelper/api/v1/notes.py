@@ -34,6 +34,18 @@ def create_note(
     return note_service.create_note(db, storage, user, session_key, body.name, body.content)
 
 
+@router.get("/general-notes", response_model=list[NoteMeta])
+def list_general_notes(user: CurrentUser, db: DbSession, storage: Storage) -> Any:
+    return note_service.list_general_notes(db, storage, user)
+
+
+@router.post("/general-notes", response_model=Note, status_code=status.HTTP_201_CREATED)
+def create_general_note(
+    body: NoteCreate, user: CurrentUser, db: DbSession, storage: Storage
+) -> Any:
+    return note_service.create_general_note(db, storage, user, body.name, body.content)
+
+
 @router.get("/notes/search", response_model=list[NoteSearchHit])
 def search_notes(
     user: CurrentUser,
