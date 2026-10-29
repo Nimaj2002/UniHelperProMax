@@ -10,6 +10,7 @@ import { useEffect, useRef } from "react";
 import { useResolvedTheme } from "@/app/theme";
 import { documentFileUrl, type Document } from "../api";
 import { syncViewerAnnotations } from "./viewerAnnotations";
+import { syncViewerPosition } from "./viewerPosition";
 
 const TAG = "uh-pdf-viewer";
 
@@ -70,13 +71,17 @@ export default function PdfReader({ document: doc }: Props) {
     viewer.config = config;
     target.appendChild(viewer);
     let stopSync: (() => void) | null = null;
+    let stopPosition: (() => void) | null = null;
     let live = true;
     void viewer.registry.then((registry: PluginRegistry) => {
-      if (live) stopSync = syncViewerAnnotations(registry, doc.id);
+      if (!live) return;
+      stopSync = syncViewerAnnotations(registry, doc.id);
+      stopPosition = syncViewerPosition(registry, doc.id);
     });
     return () => {
       live = false;
       stopSync?.();
+      stopPosition?.();
       viewer.remove();
     };
   }, [doc.id, theme]);
