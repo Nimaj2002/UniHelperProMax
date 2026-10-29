@@ -3832,6 +3832,8 @@ export interface components {
             lastSemesterId?: string | null;
             /** Quickcreatetype */
             quickCreateType?: ("class" | "event") | null;
+            /** Recordingbarstyle */
+            recordingBarStyle?: ("full" | "compact" | "minimal") | null;
         };
         /** PreflightItem */
         PreflightItem: {

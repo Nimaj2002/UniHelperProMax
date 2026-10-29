@@ -15,12 +15,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { usePreferences, useUpdatePreferences } from "@/features/sessions/api";
+import { usePreferences, useUpdatePreferences, type Preferences } from "@/features/sessions/api";
 import { isApiError } from "@/lib/api";
 import { createTheme, deleteTheme, themesKey, updateTheme, useThemes, type Theme } from "../api";
 import { BUILT_IN, contrastIssues, keyColorsOf, type Base, type ColorSet } from "./colors";
 import { PRESETS, type Preset } from "./presets";
 import { fileName, parseFile, toFile, type ThemeData } from "./themeFile";
+
+type RecordingBarStyle = NonNullable<Preferences["recordingBarStyle"]>;
+
+const RECORDING_BAR_STYLES: [RecordingBarStyle, string, string][] = [
+  ["full", "Full", "Recording label, time, go to session and stop."],
+  ["compact", "Compact", "A small droplet with time, go back and stop."],
+  ["minimal", "Minimal", "Only a go back button."],
+];
 
 interface Option {
   id: string;
@@ -158,6 +166,26 @@ export function AppearanceSettings() {
         </div>
       </header>
       {importError && <p role="alert" className="text-sm text-danger">{importError}</p>}
+
+      <section aria-labelledby="recording-bar-style" className="grid gap-2">
+        <h3 id="recording-bar-style" className="text-sm font-semibold text-muted-foreground">Recording indicator</h3>
+        <RadioGroup
+          value={prefs.data?.recordingBarStyle ?? "full"}
+          onValueChange={(v) => updatePrefs.mutate({ recordingBarStyle: v as RecordingBarStyle })}
+          aria-labelledby="recording-bar-style"
+          className="grid gap-3 sm:grid-cols-3"
+        >
+          {RECORDING_BAR_STYLES.map(([id, name, hint]) => (
+            <div key={id} className="flex items-start gap-2 rounded-lg border border-divider bg-surface-elevated p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary">
+              <RadioGroupItem value={id} id={`recording-bar-${id}`} className="mt-1" />
+              <Label htmlFor={`recording-bar-${id}`} className="grid cursor-pointer gap-1 font-normal">
+                <span className="font-medium">{name}</span>
+                <span className="text-sm text-muted-foreground">{hint}</span>
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
+      </section>
 
       <RadioGroup value={active} onValueChange={(v) => updatePrefs.mutate({ theme: v })} aria-label="Theme" className="grid gap-6">
         {groups.filter((g) => g.options.length > 0).map((g) => (

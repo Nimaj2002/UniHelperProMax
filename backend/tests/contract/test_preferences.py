@@ -22,6 +22,7 @@ def test_preferences(owner_client: TestClient) -> None:
         "readerDarkPages": False,  # 007
         "lastSemesterId": None,  # 009
         "quickCreateType": "class",  # 009
+        "recordingBarStyle": "full",
     }
     check(r.json(), "Preferences", spec="002")
     r = c.patch(f"{API}/preferences", json={"editorMode": "raw"})
@@ -63,3 +64,11 @@ def test_preferences_009_last_semester_and_quick_create_type(owner_client: TestC
     assert (prefs["lastSemesterId"], prefs["quickCreateType"]) == (None, "event")
     assert c.patch(f"{API}/preferences", json={"quickCreateType": "task"}).status_code == 422
     assert c.patch(f"{API}/preferences", json={"lastSemesterId": ""}).status_code == 422
+
+
+def test_preferences_recording_bar_style(owner_client: TestClient) -> None:
+    c = owner_client
+    r = c.patch(f"{API}/preferences", json={"recordingBarStyle": "minimal"})
+    assert r.json()["recordingBarStyle"] == "minimal"
+    assert c.get(f"{API}/preferences").json()["recordingBarStyle"] == "minimal"
+    assert c.patch(f"{API}/preferences", json={"recordingBarStyle": "huge"}).status_code == 422

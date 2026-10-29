@@ -320,3 +320,4 @@ components:
         readerDarkPages: { type: boolean, description: "added by feature 007 (FR-022a)" }
         lastSemesterId: { type: [string, "null"], description: "added by feature 009 (research R9)" }
         quickCreateType: { type: string, enum: [class, event], description: "added by feature 009" }
+        recordingBarStyle: { type: string, enum: [full, compact, minimal], description: "floating recording pill style" }
