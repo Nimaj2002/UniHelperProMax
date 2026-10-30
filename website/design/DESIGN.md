@@ -1,60 +1,93 @@
-# Steep — Style Reference
-> serif analytics on warm paper
+# LaunchDarkly — Style Reference
+> Neon control room — a dark cockpit where violet signals pulse through charcoal panels.
 
-**Theme:** light
+**Theme:** dark
 
 Source measurements are normalized; roles and recommendations are interpreted. Font summary lists are independent, not paired by position. HTML examples are reconstructions, not source components.
 
-Steep renders analytics as editorial — serif Signifier headlines float over a near-monochrome white canvas while a single warm peach accent (#fbe1d1) punctuates an otherwise achromatic system. The page reads like a product magazine spread: oversized italicized display type, generous breathing room, large soft-edged cards at 24px radius, and pill-shaped controls that sit flat against the surface. Components feel quiet and weightless — shadows are barely-there, borders are hairline, and color is rationed to functional emphasis (a peach callout card, a dark brown label on peach). The product surfaces (region tables, activation charts, AI composers) are presented as floating artifacts around the headline, not nested in a dashboard shell.
+LaunchDarkly is a midnight control room: deep charcoal canvas, cool violet-blue as the only chromatic voice, and white type that cuts through like console output. The interface is dense and technical without feeling cluttered — it borrows the visual language of developer tools (monospace code, panel grids, pill-shaped inputs) and wraps it in a confident marketing skin. The violet→blue gradient (#405bff → #7084ff) acts as the brand's electronic pulse, appearing in glows, hero text, active states, and decorative washes rather than flat fills. Components are pill-soft (30-60px radii dominate), borders are hairline-white on near-black, and elevation is communicated through glow rather than shadow.
 
 ## Tokens — Colors
 
 | Name | Value | Token | Role |
 |------|-------|-------|------|
-| Ink Black | `#17191c` | `--color-ink-black` | Primary text, filled button background, nav logo — the only dark surface in the system; every CTA and body headline resolves to this near-black |
-| Paper White | `#ffffff` | `--color-paper-white` | Page canvas, button text, elevated card surfaces — the dominant background tone carrying ~76 frequency points |
-| Mist Gray | `#f2f2f3` | `--color-mist-gray` | Card surfaces, secondary backgrounds, input fills — the quiet layer beneath paper for nested content |
-| Fog White | `#fafafb` | `--color-fog-white` | Secondary page background for alternating sections, hover surfaces — one step above paper for subtle band variation |
-| Slate Gray | `#777b86` | `--color-slate-gray` | Link color, muted helper text, footer copy — cool desaturated gray that sits between body text and disabled |
-| Ash Gray | `#979799` | `--color-ash-gray` | Tertiary labels, category tags (Marketing, Finance, Sales) — one step lighter than link color |
-| Smoke Gray | `#a3a6af` | `--color-smoke-gray` | Placeholder text (Ask anything…), disabled labels — the lightest functional gray, used when text recedes |
-| Blush Peach | `#fbe1d1` | `--color-blush-peach` | Accent card background, warm highlight wash — the only chromatic surface in the system; creates editorial warmth against monochrome |
-| Sienna Brown | `#5d2a1a` | `--color-sienna-brown` | Text and stroke on peach surfaces, dark accent for chart line strokes — a warm deep brown that pairs with Blush Peach like ink on kraft paper |
+| Signal Violet | `linear-gradient(179deg, #405bff 1.06%, #7084ff 123.42%)` | `--color-signal-violet` | Hero text accent, link underlines, icon glows, decorative gradient endpoint — the brand's chromatic signature; used as paint, not fill; Hero ambient washes, card glow halos, decorative background floods |
+| Voltage Blue | `#405bff` | `--color-voltage-blue` | Violet outline accent for tags, dividers, and focused UI edges. Do not promote it to the primary CTA color |
+| Midnight Ink | `#0e0e0e` | `--color-midnight-ink` | Page canvas, deepest background layer |
+| Carbon | `#191919` | `--color-carbon` | Surface level 1 — nav pill, card backgrounds, button fills, footer |
+| Graphite | `#414042` | `--color-graphite` | Surface level 2 — elevated panels, card borders, secondary surfaces |
+| Steel | `#58595b` | `--color-steel` | Input borders, inactive form fields |
+| Slate | `#6d6e71` | `--color-slate` | Muted helper text, disabled labels |
+| Fog | `#a7a9ac` | `--color-fog` | Secondary text, subtle borders, placeholder copy |
+| Ash | `#d1d3d4` | `--color-ash` | Tertiary text, icon strokes, list dividers |
+| Paper | `#ffffff` | `--color-paper` | Primary text, heading fills, icon strokes, card backgrounds in product-screenshot panels |
+| Smoke | `#2c2c2c` | `--color-smoke` | List dividers, row separators in dense tables |
+| Plasma Cyan | `#3dd6f5` | `--color-plasma-cyan` | Secondary gradient endpoint — used sparingly in radial glows for atmospheric warmth |
 
 ## Tokens — Typography
 
-### Signifier — Display and headline serif — used exclusively for H1/H2 at three sizes; weight stays at 400 (regular) at every scale, which is the signature choice: the serif whispers authority rather than shouting in bold · `--font-signifier`
-- **Substitute:** GT Sectra, Tiempos Headline, Source Serif 4, or ui-serif/Georgia as fallback
-- **Weights:** 400
-- **Sizes:** 44px, 64px, 90px
-- **Line height:** 1.30
-- **Letter spacing:** -2.25px at 90px, -0.96px at 64px, -0.66px at 44px
-- **Role:** Display and headline serif — used exclusively for H1/H2 at three sizes; weight stays at 400 (regular) at every scale, which is the signature choice: the serif whispers authority rather than shouting in bold
+### bodyFont — bodyFont — detected in extracted data but not described by AI · `--font-bodyfont`
+- **Weights:** 400, 500, 600, 700
+- **Sizes:** 12px, 13px, 14px, 15px, 16px, 18px, 20px, 22px, 24px, 26px, 28px, 32px, 36px, 40px, 66px, 84px, 85px, 100px, 125px
+- **Line height:** 1, 1.09, 1.2, 1.3, 1.4, 1.5, 1.6, 1.71
+- **Letter spacing:** 0.129, 0.167
+- **Role:** bodyFont — detected in extracted data but not described by AI
 
-### Sohne — Body, UI, and navigation sans — the workhorse covering everything from 14px metadata to 26px subheads; the half-step weights (430, 450, 480) create fine-grained hierarchy without jumping to bold · `--font-sohne`
-- **Substitute:** Inter, Söhne (Klim Type Foundry), or ui-sans-serif/system-ui stack
-- **Weights:** 400, 430, 450, 480, 500
-- **Sizes:** 14px, 15px, 16px, 17px, 18px, 20px, 22px, 26px
-- **Line height:** 1.00–1.50
-- **Letter spacing:** -0.234px at 26px, -0.162px at 18px, 0 at body sizes
-- **Role:** Body, UI, and navigation sans — the workhorse covering everything from 14px metadata to 26px subheads; the half-step weights (430, 450, 480) create fine-grained hierarchy without jumping to bold
+### Sohne / custom grotesk — Primary interface and display typeface. Weight 500 dominates headings — heavier than typical marketing sites (400-600) but lighter than editorial displays (700-800), landing in a confident middle register. The largest sizes (84-125px) carry very tight line-height (1.0-1.09), letting headlines stack as a solid block of type. Letter-spacing opens up to 0.129-0.167em on small uppercase labels (eyebrows, tags) but stays normal on body and display. · `--font-sohne-custom-grotesk`
+- **Substitute:** Inter, Geist, Söhne (if licensed), or Space Grotesk
+- **Weights:** 400, 500, 600, 700
+- **Sizes:** 12, 13, 14, 15, 16, 18, 20, 22, 24, 26, 28, 32, 36, 40, 66, 84, 85, 100, 125
+- **Line height:** 1.20, 1.30, 1.40, 1.50, 1.60
+- **Role:** Primary interface and display typeface. Weight 500 dominates headings — heavier than typical marketing sites (400-600) but lighter than editorial displays (700-800), landing in a confident middle register. The largest sizes (84-125px) carry very tight line-height (1.0-1.09), letting headlines stack as a solid block of type. Letter-spacing opens up to 0.129-0.167em on small uppercase labels (eyebrows, tags) but stays normal on body and display.
+
+### Sohne Mono / JetBrains Mono — Code snippets, SDK names, technical labels. Normal letter-spacing, 1.50-1.65 line-height for readability. Appears in the hero email input and the 'Copy, paste, go.' code block. · `--font-sohne-mono-jetbrains-mono`
+- **Substitute:** JetBrains Mono, IBM Plex Mono, Geist Mono
+- **Weights:** 400
+- **Sizes:** 14, 16, 20, 22
+- **Line height:** 1.50, 1.65
+- **Role:** Code snippets, SDK names, technical labels. Normal letter-spacing, 1.50-1.65 line-height for readability. Appears in the hero email input and the 'Copy, paste, go.' code block.
+
+### monoFont — monoFont — detected in extracted data but not described by AI · `--font-monofont`
+- **Weights:** 400
+- **Sizes:** 16px, 20px, 22px
+- **Line height:** 1.09, 1.5, 1.65
+- **Role:** monoFont — detected in extracted data but not described by AI
+
+### Arial — Arial — detected in extracted data but not described by AI · `--font-arial`
+- **Weights:** 400
+- **Sizes:** 13px
+- **Line height:** 1.2
+- **Role:** Arial — detected in extracted data but not described by AI
+
+### Helvetica — Helvetica — detected in extracted data but not described by AI · `--font-helvetica`
+- **Weights:** 400
+- **Sizes:** 15px
+- **Line height:** 1.5
+- **Letter spacing:** 0.007
+- **Role:** Helvetica — detected in extracted data but not described by AI
+
+### headingFont1 — headingFont1 — detected in extracted data but not described by AI · `--font-headingfont1`
+- **Weights:** 500
+- **Sizes:** 125px
+- **Line height:** 1
+- **Role:** headingFont1 — detected in extracted data but not described by AI
 
 ### Type Scale
 
 | Role | Family | Weight | Size | Line Height | Letter Spacing | Token |
 |------|--------|--------|------|-------------|----------------|-------|
-| caption | — | — | 15px | 1.5 | — | `--text-caption` |
-| body | — | — | 17px | 1.35 | — | `--text-body` |
-| body-lg | — | — | 20px | 1.35 | — | `--text-body-lg` |
-| subheading | — | — | 22px | 1.5 | — | `--text-subheading` |
-| heading-sm | — | — | 26px | 1.18 | -0.23px | `--text-heading-sm` |
-| heading | — | — | 44px | 1.3 | -0.66px | `--text-heading` |
-| heading-lg | — | — | 64px | 1.3 | -0.96px | `--text-heading-lg` |
-| display | — | — | 90px | 1.3 | -2.25px | `--text-display` |
+| caption | — | — | 12px | 1.5 | — | `--text-caption` |
+| body-sm | — | — | 14px | 1.5 | — | `--text-body-sm` |
+| body | — | — | 16px | 1.5 | — | `--text-body` |
+| subheading | — | — | 20px | 1.4 | — | `--text-subheading` |
+| heading-sm | — | — | 24px | 1.3 | — | `--text-heading-sm` |
+| heading | — | — | 36px | 1.2 | — | `--text-heading` |
+| heading-lg | — | — | 66px | 1.09 | — | `--text-heading-lg` |
+| display | — | — | 100px | 1 | — | `--text-display` |
 
 ## Tokens — Spacing & Shapes
 
-**Base unit:** 4px
+**Base unit:** 8px
 
 **Density:** comfortable
 
@@ -62,176 +95,169 @@ Steep renders analytics as editorial — serif Signifier headlines float over a 
 
 | Name | Value | Token |
 |------|-------|-------|
-| 4 | 4px | `--spacing-4` |
 | 8 | 8px | `--spacing-8` |
-| 12 | 12px | `--spacing-12` |
 | 16 | 16px | `--spacing-16` |
-| 20 | 20px | `--spacing-20` |
 | 24 | 24px | `--spacing-24` |
-| 28 | 28px | `--spacing-28` |
 | 32 | 32px | `--spacing-32` |
 | 40 | 40px | `--spacing-40` |
+| 48 | 48px | `--spacing-48` |
 | 64 | 64px | `--spacing-64` |
+| 72 | 72px | `--spacing-72` |
 | 80 | 80px | `--spacing-80` |
-| 96 | 96px | `--spacing-96` |
-| 124 | 124px | `--spacing-124` |
-| 128 | 128px | `--spacing-128` |
+| 104 | 104px | `--spacing-104` |
+| 120 | 120px | `--spacing-120` |
 | 160 | 160px | `--spacing-160` |
 
 ### Border Radius
 
 | Element | Value |
 |---------|-------|
-| cards | 24px |
-| images | 12px |
-| inputs | 16px |
-| buttons | 9999px |
-| smallCards | 16px |
-| elevatedCards | 20px |
+| tags | 30px |
+| cards | 30px |
+| inputs | 10px |
+| buttons | 30px |
+| navPill | 60px |
 
 ### Shadows
 
 | Name | Value | Token |
 |------|-------|-------|
-| subtle | `oklab(0 0 0 / 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.08) ...` | `--shadow-subtle` |
-| subtle-2 | `oklab(0 0 0 / 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0...` | `--shadow-subtle-2` |
-| subtle-3 | `rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1)...` | `--shadow-subtle-3` |
+| lg | `rgba(0, 0, 0, 0.45) 0px 4px 20px 0px` | `--shadow-lg` |
 
 ### Layout
 
 - **Page max-width:** 1200px
-- **Section gap:** 80px
-- **Card padding:** 20px
-- **Element gap:** 8px
+- **Section gap:** 80-120px
+- **Card padding:** 32-48px
+- **Element gap:** 16-24px
 
 ## Components
 
-### Pill Button — Filled
-**Role:** Primary call-to-action (Get started, Book a demo)
+### Floating Nav Pill
+**Role:** Primary site navigation
 
-Background #17191c, text #ffffff, border 1px solid #ffffff (invisible against fill), border-radius 9999px (fully rounded), padding 0 20px, height auto with text. Sohne 16px weight 400. No shadow. The pill shape and dark fill against white is the signature action element — it reads as a solid black lozenge.
+Centered floating pill at top of viewport, 60px radius, Carbon (#191919) fill, 1px white-alpha border. Contains: logo with arrow icon, nav links (Platform, Solutions, Resources, Developers, Pricing) with chevron dropdowns, Sign In text link, Sandbox text link, and Voltage Blue (#405bff) 'Get a demo' button. Sits 16-24px from viewport top with horizontal margin. No traditional header bar — the pill IS the header.
 
-### Pill Button — Ghost
-**Role:** Secondary action paired with filled primary (Book a demo beside Get started)
+### Primary Action Button
+**Role:** Main CTA
 
-Background transparent, text #17191c, border 1px solid #17191c, border-radius 9999px, padding 0 20px. Sohne 16px weight 400. Shares the pill geometry with the filled variant so they read as a matched pair on the same baseline.
+Voltage Blue (#405bff) fill, white text, 30px radius, 16px vertical × 24px horizontal padding. Used for 'Get a demo' in nav and 'Get started' in hero form. No border, no shadow — the saturated blue is enough presence.
 
-### Text Link with Arrow
-**Role:** Inline navigation and section transitions (Learn more →, Read the story →)
+### Hero Form Input
+**Role:** Email capture
 
-No background, no border, no border-radius, text #17191c, Sohne 16px weight 400, padding 20px 0. The arrow glyph (→) is part of the label, not a separate icon. This is the lowest-emphasis interactive element — underlines only on hover.
+Large dark input with Carbon (#191919) fill, 10px radius, 1px subtle border. Internal layout: email field (white text, #58595b placeholder) fills left, Voltage Blue 'Get started' button fills right. The whole composite has a soft blue glow halo (rgba(64,91,255,0.25) box-shadow) making it feel like a glowing console. Approximately 600px wide, centered, with generous vertical padding (~16-20px).
 
-### Nav Link
-**Role:** Top navigation items (Product, Resources, Customers, Pricing)
+### Segmented Tab Control
+**Role:** Section navigation
 
-No background or border, text #17191c, Sohne 16px weight 400, padding 2px 0. Sits in a transparent top bar with the logo left and CTAs right. The nav is whisper-quiet — no background, no shadow, no separator.
+Three-tab pill control (Release / Observe / Iterate) with 30px radius, Carbon fill, 1px border. Active tab indicated by a small Voltage Blue dot to the left of the label and brighter white text. Inactive tabs use Ash (#d1d3d4) text. Centered above a two-column section.
 
-### Neutral Card
-**Role:** Feature blocks, content containers, and base card surface
+### Feature Checklist Item
+**Role:** Section bullet list
 
-Background #f2f2f3, border-radius 24px, no shadow, no border, padding varies (0 internally with content children providing their own padding). This is the default workhorse card — flat, soft, and quiet.
+Checkmark icon in Voltage Blue or white, followed by white text at ~16-18px. No background, no card. Vertical stack with 12-16px gap between items.
 
-### Accent Peach Card
-**Role:** Editorial highlight or callout panel (customer quotes, feature spotlights)
+### Sub-feature Card
+**Role:** Linked feature callout
 
-Background #fbe1d1, text and strokes #5d2a1a, border-radius 24px, no shadow, no border. The warm-on-warm palette creates a kraft-paper effect — these cards should be rare (one per page maximum) to preserve their impact.
+Semi-transparent dark card with subtle violet/blue glow at edges, rounded 16-20px radius. Contains: small icon (blue or violet), white label text, right-arrow icon. Sits inside a larger section as a navigational sub-element.
 
-### Floating Product Artifact
-**Role:** Hero and section visual elements (region table, activation chart, registration card, AI composer)
+### Product Screenshot Panel
+**Role:** Embedded UI demonstration
 
-Background #ffffff, border-radius 20px, subtle box-shadow: 0 0 0 1px rgba(4,23,43,0.05), 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1), padding 16px 20px 12px 12px. These are the product UI fragments that float around hero text — they are the only elements with visible shadow, and only at 10% opacity.
+Pure white (#ffffff) card with 12-20px radius and soft shadow, containing the actual LaunchDarkly product interface (pipeline configuration). Contrasts sharply with the dark page — the product UI is always shown as 'light' even on the dark marketing page, signaling that the real tool has its own bright workspace.
 
-### Input / Composer
-**Role:** AI question input field (Ask anything…)
+### Code Snippet Block
+**Role:** SDK code example
 
-Background #ffffff, border 1px solid #ececec or hairline, border-radius 16px, padding 16px, placeholder text #a3a6af in Sohne 16px. Contains left-side @ and ⓘ icons and a right-side dark circular send button (40px diameter, #17191c fill, white arrow icon).
+Dark Carbon (#191919) panel with 12-16px radius, containing syntax-highlighted code. Language tabs (JavaScript / Python / iOS / React) at top in Ash text with active language in white. Code uses mono font at 14-16px with Dracula-inspired syntax colors (green strings, cyan keywords, pink literals). Copy button in top-right corner.
 
-### Stat Card with Chart
-**Role:** Data display fragment (Registrations 2.4k, Activation 46.2%)
+### SDK/Resource Card
+**Role:** Linkable resource tile
 
-White floating artifact surface with a bold metric in Sohne 20px weight 500 #17191c, a delta line (↑ 5.5x vs last week) in Sohne 14px #777b86, and a minimal line or radial chart in #5d2a1a stroke. No axes, no gridlines — the chart is a gestural line, not a data dashboard.
+Dark card (Carbon fill) with 1px white-alpha border, 20-30px radius, 32-40px padding. Contains: small icon top-left, white heading text (~18-20px weight 500), white subtext at 14-15px weight 400. Used in grids of 3 columns to link to Docs, Demo Project, Discord, etc.
 
-### Avatar Bubble
-**Role:** User presence indicator on floating cards (JB, AF initials)
+### Logo Strip
+**Role:** Social proof
 
-Circular, 40px diameter, border-radius 9999px, background tinted (light green for JB, light blue for AF), 2-letter monogram in Sohne weight 500, small directional arrow (cursor pointer) extending from the bubble edge.
+Horizontal row of grayscale partner/customer logos (SpaceX, Tricentis, GoPro, Volvo, Ally, Priceline) at ~70% opacity, Ash or Fog tone. Logos are rendered in white-alpha on the dark background — no boxes, no borders, just quiet type marks.
 
-### Tag / Category Label
-**Role:** Section or content category markers (Marketing, Finance, Sales)
+### Hero Headline
+**Role:** Primary page heading
 
-No background, no border, text in Sohne 14px weight 400 #979799. Intentionally ghost-like — these are typographic tags, not badges. They group without visual weight.
+Two-line display headline at 84-100px, weight 500, line-height 1.0-1.09. First line in white ('Move at AI speed.'), second line in Signal Violet ('Stay in control.'). The violet second line is the signature — the brand literally colorizes its differentiator. Letter-spacing tight (normal or slight negative).
+
+### Ghost / Outlined Action
+**Role:** Secondary CTA
+
+Transparent fill with 1px Signal Violet (#7084ff) border, Signal Violet text, 30px radius. Used for secondary actions where the primary blue button already exists. The violet outline echoes the hero accent — secondary actions share the brand's signature hue rather than fading to neutral.
 
 ## Do's and Don'ts
 
 ### Do
-- Use Signifier weight 400 at 44/64/90px for all display and heading copy; never substitute a sans-serif at these sizes
-- Use the peach #fbe1d1 card surface at most once per page and only for editorial emphasis — treat it as a rare accent, not a background
-- Set border-radius to 9999px on all buttons and 24px on all content cards; these are the two structural radii of the system
-- Pair every filled pill button (#17191c) with a ghost pill button (#17191c border, transparent fill) as a secondary action on the same row
-- Use Sohne half-step weights (430, 450, 480) for body hierarchy before reaching weight 500 — the scale is finer than standard 400/500/700
-- Set letter-spacing to -0.025em on 90px display, -0.015em on 64/44px headings, and -0.009em on 26/18px Sohne — tighter tracking at larger sizes is the typographic signature
-- Keep the 4px base unit: use 4/8/12/16/20/24px for component padding, and 80px for section gaps
+- Use 30px radius for all buttons, tags, and cards — the pill-softness is non-negotiable for this brand
+- Use 60px radius for the top navigation pill and any full-width pill containers
+- Use Signal Violet (#7084ff) for the second half of hero headlines to split the message into 'what' (white) and 'why it matters' (violet)
+- Render embedded product screenshots as pure white panels on the dark canvas — the contrast signals 'this is the real workspace'
+- Use the #405bff → #7084ff linear gradient at 179deg for ambient glows behind cards and hero text
+- Set body text at 16-18px weight 400, white on Carbon — never below 14px for readability on dark
+- Use mono font for SDK names, code, and technical identifiers — the monospace voice is part of the developer-tool identity
 
 ### Don't
-- Don't use chromatic colors beyond the peach/brown pair — the system is intentionally 97% achromatic; introducing blue, green, or purple will break the editorial restraint
-- Don't use bold (600+) or semibold (500) weights in Signifier — the serif stays at 400 across all sizes, that restraint is the signature
-- Don't apply drop shadows to content cards (Neutral Card or Accent Peach Card) — only floating product artifacts earn elevation
-- Don't use border-radius below 16px on cards or below 9999px on buttons — sharp corners and moderate radii are not part of this system
-- Don't underline inline text links at rest — the arrow suffix (→) carries the link affordance; underlines appear only on hover
-- Don't place the peach #fbe1d1 card on a non-white section background — it needs Paper White or Card Mist beneath it to read as warm-on-neutral
-- Don't use the #5d2a1a Sienna Brown outside peach surfaces — it's the ink for Blush Peach cards and chart strokes, never body text on white
+- Don't use square corners or small radii (4-8px) on user-facing components — they break the pill language
+- Don't use drop shadows for elevation — use glow (rgba(64,91,255,0.25) or rgba(112,132,255,0.19)) instead to stay on-brand
+- Don't introduce additional accent colors — the entire system is monochromatic-plus-violet; adding green, red, or yellow dilutes the signal
+- Don't use white or gray for primary action buttons — Voltage Blue (#405bff) is the only correct fill for a main CTA
+- Don't center-align body copy or feature lists — only headlines and hero blocks center; everything else is left-aligned
+- Don't use 1.5+ line-height on display headlines — keep it tight (1.0-1.09) so the type stacks as a solid block
+- Don't put dark product screenshots on the page — the real product UI is always bright/white, creating the page's key visual tension
 
 ## Surfaces
 
 | Level | Name | Value | Purpose |
 |-------|------|-------|---------|
-| 0 | Canvas | `#ffffff` | Default page background; the white paper everything sits on |
-| 1 | Card Mist | `#f2f2f3` | Quietly nested content blocks, feature cards, tab panels |
-| 2 | Section Fog | `#fafafb` | Alternating section bands that break up the white canvas without contrast |
-| 3 | Accent Blush | `#fbe1d1` | Editorial accent cards; the chromatic punctuation of the system |
-| 4 | Elevated White | `#ffffff` | Floating product UI artifacts (region tables, activation charts, AI composer) that overlap hero/section content with subtle shadow |
+| 0 | Midnight Canvas | `#0e0e0` | Page background — the void beneath everything |
+| 1 | Carbon Panel | `#191919` | Nav pill, footer, primary card surface |
+| 2 | Graphite Edge | `#414042` | Card borders, elevated panel outlines, subtle separation on dark |
+| 3 | Product White | `#ffffff` | Embedded product screenshots — the LaunchDarkly pipeline UI appears as a bright white card floating on the dark canvas |
 
 ## Elevation
 
-- **Floating Product Artifact:** `0 0 0 1px rgba(4,23,43,0.05), 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)`
-- **Modal / Overlay Card:** `oklab(0 0 0 / 0.05) 0px 0px 0px 1px, rgba(0,0,0,0.1) 0px 8px 40px 0px`
-- **Dropdown / Popover:** `oklab(0 0 0 / 0.05) 0px 0px 0px 1px, rgba(0,0,0,0.08) 0px 4px 24px 0px`
+- **Floating Nav Pill:** `0 4px 20px rgba(0, 0, 0, 0.45)`
+- **Hero Form Input:** `0 0 40px rgba(64, 91, 255, 0.25)`
 
 ## Imagery
 
-Imagery is product-first, not lifestyle: floating UI fragments (region tables with 5-row data, line charts showing activation over Aug–Nov, radial progress rings, AI input composers) are positioned as cropped screenshots around editorial headlines. No photography, no illustration, no abstract graphics. All product visuals sit on white floating-artifact cards with hairline borders and soft 10% shadows. Avatar circles carry a small directional cursor pointer — a visual motif that signals live interaction. The hero composition is a text-and-UI collage, not a centered headline with a stock photo.
+Imagery is sparse and functional. The primary visual content is embedded product UI screenshots — bright white panels showing the LaunchDarkly pipeline interface floating on the dark page. The hero has no photography or illustration; it relies on type, glow, and a large form input. Customer logos appear as a grayscale strip. The code-snippet section uses syntax-highlighted mono text as a visual element. There is no lifestyle photography, no abstract 3D, no decorative illustration — the brand's visual language is the product itself, the code, and the type.
 
 ## Layout
 
-Page model is max-width 1200px centered, with hero sections going near full-bleed but staying within the container. The hero pattern is a centered oversized serif headline with a subhead and pill button pair, surrounded by four floating product artifact cards (region table top-left, registration card right, activation chart bottom-left, AI composer bottom-center) that overlap the white canvas at varied offsets. Sections alternate between Paper White and Card Mist backgrounds to create quiet rhythm without strong contrast. Feature sections use a 2-column text+UI layout with generous 80px vertical gaps. Navigation is a single transparent top bar (no background, no border, no shadow) with logo left, nav links center, and two CTAs (text link + filled pill) right. The overall density is spacious — the page breathes between sections, and content never crowds the edges.
+Full-bleed dark canvas with max-width 1200px content containers centered inside. The hero is a tall vertical block (80-100vh) with centered headline + subtext + form input stacked vertically with generous breathing room. Below the hero, sections alternate between two-column layouts (text-left / product-screenshot-right) and three-column card grids. The floating nav pill sits fixed at top center. Section gaps are large (80-120px) to let the dark canvas breathe between content blocks. Content rhythm: hero → logo strip → tabbed feature section (2-col) → code integration section (2-col) → resource card grid (3-col).
 
 ## Agent Prompt Guide
 
-## Quick Color Reference
-- text: #17191c
-- background: #ffffff
-- border: #ececec
-- muted text: #777b86
-- accent: #fbe1d1
-- primary action: #17191c (filled action)
+**Quick Color Reference**
+- text: #ffffff
+- background: #0e0e0e
+- card/surface: #191919
+- border: rgba(255,255,255,0.1) or #414042
+- accent: #7084ff
+- primary action: #191919 (filled action)
 
-## Example Component Prompts
-1. **Hero headline + accent card collage**: White canvas (#ffffff). Display headline at 90px Signifier weight 400, #17191c, letter-spacing -2.25px, with one italicized phrase mid-sentence. Subhead at 17px Sohne weight 400, #777b86. Below: a filled pill button (background #17191c, text #ffffff, border-radius 9999px, padding 0 20px, Sohne 16px) and a ghost pill button (background transparent, border 1px solid #17191c, text #17191c, border-radius 9999px) side by side. Surround the text with three white floating product artifact cards: a data table card, a line chart card, and a stat card — each with background #ffffff, border-radius 20px, box-shadow 0 0 0 1px rgba(4,23,43,0.05) + 0 20px 25px -5px rgba(0,0,0,0.1), positioned with negative margins to overlap the text margins.
-
-2. **Accent editorial card**: Background #fbe1d1, text #5d2a1a, border-radius 24px, no shadow, padding 40px. Title at 26px Sohne weight 450, #5d2a1a, letter-spacing -0.23px. Body quote at 18px Sohne weight 430, #5d2a1a. Attribution at 14px Sohne weight 400, #5d2a1a. Place this card once on a #ffffff section, never on a colored or dark background.
-
-3. **Neutral feature card**: Background #f2f2f3, border-radius 24px, no shadow, padding 32px 20px. Category label at 14px Sohne weight 400, #979799 (no background, no badge style). Title at 20px Sohne weight 500, #17191c. Body at 16px Sohne weight 400, #17191c, line-height 1.5. Text link below: Sohne 16px weight 400, #17191c, no border-radius, padding 20px 0, with → arrow suffix.
-
-4. **AI composer input**: White background #ffffff, border 1px solid #ececec, border-radius 16px, padding 16px, width 480px. Placeholder text Ask anything… at 16px Sohne weight 400, #a3a6af. Left side: two ghost icon buttons (40px circle, no fill). Right side: 40px circular send button with background #17191c, white arrow icon centered.
-
-5. **Section with alternating background**: Section background #fafafb (Fog White), padding 80px vertical. Section title at 64px Signifier weight 400, #17191c, letter-spacing -0.96px. Subhead at 18px Sohne weight 430, #777b86. Below: 3-column grid of neutral feature cards (#f2f2f3 background, 24px radius, 20px padding, no shadow) with 24px column gap.
+**Example Component Prompts**
+1. **Hero headline block**: Full-width dark section, centered. First line 'Move at AI speed.' at 96px weight 500, #ffffff, line-height 1.0. Second line 'Stay in control.' at 96px weight 500, #7084ff, line-height 1.0. Subtext below at 18px weight 400, #d1d3d4, max-width 560px centered.
+2. Create a Primary Action Button: #191919 background, #ffffff text, 9999px radius, compact pill padding. Use this filled treatment for the main CTA.
+3. **Floating nav pill**: Fixed top center, 60px border-radius, #191919 fill, 1px solid rgba(255,255,255,0.08) border, padding 8px 8px 8px 24px. Logo left, links in #d1d3d4 at 14px, 'Get a demo' button (Voltage Blue, white, 30px radius) right.
+4. **Product screenshot card**: White #ffffff panel, 16px radius, 32px padding, contains embedded light-UI screenshot. Sits on dark canvas with a subtle rgba(64,91,255,0.2) glow.
+5. **Code snippet block**: Dark #191919 panel, 12px radius, 24px padding. Language tabs at top (#d1d3d4 inactive, #ffffff active). Code in mono font 14px, syntax colors: strings #a6e22e, keywords #66d9ef, literals #f92672.
 
 ## Similar Brands
 
-- **Linear** — Same monochrome dark-text-on-white approach with oversized serif-free type and pill-shaped CTAs; Linear's restraint matches Steep's editorial minimalism
-- **Pitch** — Presentation tool that pairs serif display headlines with a warm accent palette and floating UI cards; shares the editorial-product hybrid visual language
-- **Arc** — Browser with a soft warm-toned monochrome interface, generous border-radius on cards, and the same whisper-quiet typography approach
-- **Framer** — Large serif headlines floating over white with minimal chrome and pill controls; shares the magazine-spread page architecture
+- **Linear** — Same dark-canvas + single-accent-glow approach; both treat the product UI itself as the hero visual, and both use pill-shaped inputs and tight type stacks.
+- **Vercel** — Shares the monochrome dark palette with one chromatic accent, gradient-driven glow effects, and the practice of rendering product interfaces as bright white cards on a dark page.
+- **Datadog** — Both use deep charcoal surfaces with violet/purple brand accents, and both embed real product dashboards (not mockups) as the primary visual proof.
+- **Stripe** — Similar typographic confidence — large weight-500 display headlines, tight line-height, and the strategy of using color selectively on a subset of words in a headline for emphasis.
 
 ## Quick Start
 
@@ -240,99 +266,99 @@ Page model is max-width 1200px centered, with hero sections going near full-blee
 ```css
 :root {
   /* Colors */
-  --color-ink-black: #17191c;
-  --color-paper-white: #ffffff;
-  --color-mist-gray: #f2f2f3;
-  --color-fog-white: #fafafb;
-  --color-slate-gray: #777b86;
-  --color-ash-gray: #979799;
-  --color-smoke-gray: #a3a6af;
-  --color-blush-peach: #fbe1d1;
-  --color-sienna-brown: #5d2a1a;
+  --color-signal-violet: #7084ff;
+  --gradient-signal-violet: linear-gradient(179deg, #405bff 1.06%, #7084ff 123.42%);
+  --color-voltage-blue: #405bff;
+  --color-midnight-ink: #0e0e0e;
+  --color-carbon: #191919;
+  --color-graphite: #414042;
+  --color-steel: #58595b;
+  --color-slate: #6d6e71;
+  --color-fog: #a7a9ac;
+  --color-ash: #d1d3d4;
+  --color-paper: #ffffff;
+  --color-smoke: #2c2c2c;
+  --color-plasma-cyan: #3dd6f5;
 
   /* Typography — Font Families */
-  --font-signifier: 'Signifier', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-sohne: 'Sohne', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-bodyfont: 'bodyFont', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sohne-custom-grotesk: 'Sohne / custom grotesk', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sohne-mono-jetbrains-mono: 'Sohne Mono / JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-monofont: 'monoFont', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-arial: 'Arial', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-helvetica: 'Helvetica', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-headingfont1: 'headingFont1', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Typography — Scale */
-  --text-caption: 15px;
+  --text-caption: 12px;
   --leading-caption: 1.5;
-  --text-body: 17px;
-  --leading-body: 1.35;
-  --text-body-lg: 20px;
-  --leading-body-lg: 1.35;
-  --text-subheading: 22px;
-  --leading-subheading: 1.5;
-  --text-heading-sm: 26px;
-  --leading-heading-sm: 1.18;
-  --tracking-heading-sm: -0.23px;
-  --text-heading: 44px;
-  --leading-heading: 1.3;
-  --tracking-heading: -0.66px;
-  --text-heading-lg: 64px;
-  --leading-heading-lg: 1.3;
-  --tracking-heading-lg: -0.96px;
-  --text-display: 90px;
-  --leading-display: 1.3;
-  --tracking-display: -2.25px;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.5;
+  --text-body: 16px;
+  --leading-body: 1.5;
+  --text-subheading: 20px;
+  --leading-subheading: 1.4;
+  --text-heading-sm: 24px;
+  --leading-heading-sm: 1.3;
+  --text-heading: 36px;
+  --leading-heading: 1.2;
+  --text-heading-lg: 66px;
+  --leading-heading-lg: 1.09;
+  --text-display: 100px;
+  --leading-display: 1;
 
   /* Typography — Weights */
   --font-weight-regular: 400;
-  --font-weight-w430: 430;
-  --font-weight-w450: 450;
-  --font-weight-w480: 480;
   --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
   /* Spacing */
-  --spacing-unit: 4px;
-  --spacing-4: 4px;
+  --spacing-unit: 8px;
   --spacing-8: 8px;
-  --spacing-12: 12px;
   --spacing-16: 16px;
-  --spacing-20: 20px;
   --spacing-24: 24px;
-  --spacing-28: 28px;
   --spacing-32: 32px;
   --spacing-40: 40px;
+  --spacing-48: 48px;
   --spacing-64: 64px;
+  --spacing-72: 72px;
   --spacing-80: 80px;
-  --spacing-96: 96px;
-  --spacing-124: 124px;
-  --spacing-128: 128px;
+  --spacing-104: 104px;
+  --spacing-120: 120px;
   --spacing-160: 160px;
 
   /* Layout */
   --page-max-width: 1200px;
-  --section-gap: 80px;
-  --card-padding: 20px;
-  --element-gap: 8px;
+  --section-gap: 80-120px;
+  --card-padding: 32-48px;
+  --element-gap: 16-24px;
 
   /* Border Radius */
-  --radius-sm: 0.01px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
-  --radius-2xl-2: 20px;
-  --radius-3xl: 24px;
+  --radius-md: 4px;
+  --radius-lg: 10px;
+  --radius-2xl: 20px;
+  --radius-3xl: 30px;
+  --radius-3xl-2: 40px;
+  --radius-3xl-3: 46px;
+  --radius-full: 60px;
+  --radius-full-2: 100px;
 
   /* Named Radii */
-  --radius-cards: 24px;
-  --radius-images: 12px;
-  --radius-inputs: 16px;
-  --radius-buttons: 9999px;
-  --radius-smallcards: 16px;
-  --radius-elevatedcards: 20px;
+  --radius-tags: 30px;
+  --radius-cards: 30px;
+  --radius-inputs: 10px;
+  --radius-buttons: 30px;
+  --radius-navpill: 60px;
 
   /* Shadows */
-  --shadow-subtle: oklab(0 0 0 / 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.08) 0px 4px 24px 0px;
-  --shadow-subtle-2: oklab(0 0 0 / 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 8px 40px 0px;
-  --shadow-subtle-3: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+  --shadow-lg: rgba(0, 0, 0, 0.45) 0px 4px 20px 0px;
 
   /* Surfaces */
-  --surface-canvas: #ffffff;
-  --surface-card-mist: #f2f2f3;
-  --surface-section-fog: #fafafb;
-  --surface-accent-blush: #fbe1d1;
-  --surface-elevated-white: #ffffff;
+  --surface-midnight-canvas: #0e0e0;
+  --surface-carbon-panel: #191919;
+  --surface-graphite-edge: #414042;
+  --surface-product-white: #ffffff;
 }
 ```
 
@@ -341,69 +367,71 @@ Page model is max-width 1200px centered, with hero sections going near full-blee
 ```css
 @theme {
   /* Colors */
-  --color-ink-black: #17191c;
-  --color-paper-white: #ffffff;
-  --color-mist-gray: #f2f2f3;
-  --color-fog-white: #fafafb;
-  --color-slate-gray: #777b86;
-  --color-ash-gray: #979799;
-  --color-smoke-gray: #a3a6af;
-  --color-blush-peach: #fbe1d1;
-  --color-sienna-brown: #5d2a1a;
+  --color-signal-violet: #7084ff;
+  --color-voltage-blue: #405bff;
+  --color-midnight-ink: #0e0e0e;
+  --color-carbon: #191919;
+  --color-graphite: #414042;
+  --color-steel: #58595b;
+  --color-slate: #6d6e71;
+  --color-fog: #a7a9ac;
+  --color-ash: #d1d3d4;
+  --color-paper: #ffffff;
+  --color-smoke: #2c2c2c;
+  --color-plasma-cyan: #3dd6f5;
 
   /* Typography */
-  --font-signifier: 'Signifier', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-sohne: 'Sohne', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-bodyfont: 'bodyFont', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sohne-custom-grotesk: 'Sohne / custom grotesk', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sohne-mono-jetbrains-mono: 'Sohne Mono / JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-monofont: 'monoFont', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-arial: 'Arial', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-helvetica: 'Helvetica', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-headingfont1: 'headingFont1', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Typography — Scale */
-  --text-caption: 15px;
+  --text-caption: 12px;
   --leading-caption: 1.5;
-  --text-body: 17px;
-  --leading-body: 1.35;
-  --text-body-lg: 20px;
-  --leading-body-lg: 1.35;
-  --text-subheading: 22px;
-  --leading-subheading: 1.5;
-  --text-heading-sm: 26px;
-  --leading-heading-sm: 1.18;
-  --tracking-heading-sm: -0.23px;
-  --text-heading: 44px;
-  --leading-heading: 1.3;
-  --tracking-heading: -0.66px;
-  --text-heading-lg: 64px;
-  --leading-heading-lg: 1.3;
-  --tracking-heading-lg: -0.96px;
-  --text-display: 90px;
-  --leading-display: 1.3;
-  --tracking-display: -2.25px;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.5;
+  --text-body: 16px;
+  --leading-body: 1.5;
+  --text-subheading: 20px;
+  --leading-subheading: 1.4;
+  --text-heading-sm: 24px;
+  --leading-heading-sm: 1.3;
+  --text-heading: 36px;
+  --leading-heading: 1.2;
+  --text-heading-lg: 66px;
+  --leading-heading-lg: 1.09;
+  --text-display: 100px;
+  --leading-display: 1;
 
   /* Spacing */
-  --spacing-4: 4px;
   --spacing-8: 8px;
-  --spacing-12: 12px;
   --spacing-16: 16px;
-  --spacing-20: 20px;
   --spacing-24: 24px;
-  --spacing-28: 28px;
   --spacing-32: 32px;
   --spacing-40: 40px;
+  --spacing-48: 48px;
   --spacing-64: 64px;
+  --spacing-72: 72px;
   --spacing-80: 80px;
-  --spacing-96: 96px;
-  --spacing-124: 124px;
-  --spacing-128: 128px;
+  --spacing-104: 104px;
+  --spacing-120: 120px;
   --spacing-160: 160px;
 
   /* Border Radius */
-  --radius-sm: 0.01px;
-  --radius-xl: 12px;
-  --radius-2xl: 16px;
-  --radius-2xl-2: 20px;
-  --radius-3xl: 24px;
+  --radius-md: 4px;
+  --radius-lg: 10px;
+  --radius-2xl: 20px;
+  --radius-3xl: 30px;
+  --radius-3xl-2: 40px;
+  --radius-3xl-3: 46px;
+  --radius-full: 60px;
+  --radius-full-2: 100px;
 
   /* Shadows */
-  --shadow-subtle: oklab(0 0 0 / 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.08) 0px 4px 24px 0px;
-  --shadow-subtle-2: oklab(0 0 0 / 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 8px 40px 0px;
-  --shadow-subtle-3: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
+  --shadow-lg: rgba(0, 0, 0, 0.45) 0px 4px 20px 0px;
 }
 ```
