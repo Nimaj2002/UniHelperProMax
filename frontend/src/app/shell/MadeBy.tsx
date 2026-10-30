@@ -14,9 +14,9 @@ export function MadeBy({ variant = "full" }: { variant?: "full" | "icon" }) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-8 text-muted-foreground" asChild>
+          <Button variant="ghost" size="icon" className="group size-8 text-muted-foreground" asChild>
             <a href={AUTHOR_URL} target="_blank" rel="noopener noreferrer" aria-label="Made with love by Nima">
-              <Heart size={18} weight="fill" className="text-danger" />
+              <Heart size={18} weight="fill" className="text-danger motion-safe:group-hover:animate-heartbeat" />
             </a>
           </Button>
         </TooltipTrigger>
@@ -25,8 +25,8 @@ export function MadeBy({ variant = "full" }: { variant?: "full" | "icon" }) {
     );
   }
   return (
-    <p className="px-2 text-center text-xs text-muted-foreground">
-      Made with ❤️ by{" "}
+    <p className="group px-2 text-center text-xs text-muted-foreground">
+      Made with <span className="inline-block motion-safe:group-hover:animate-heartbeat">❤️</span> by{" "}
       <a href={AUTHOR_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-foreground underline-offset-4 hover:underline">
         Nima
       </a>
@@ -55,7 +55,7 @@ export function CreditStrip() {
           size={16}
           weight="fill"
           aria-hidden
-          className="shrink-0 text-danger transition-transform duration-200 group-hover:scale-125 motion-reduce:transition-none"
+          className="shrink-0 text-danger motion-safe:group-hover:animate-heartbeat"
         />
         <span aria-hidden className="whitespace-nowrap tracking-wide">
           by <span className="font-medium text-foreground">Nima</span>

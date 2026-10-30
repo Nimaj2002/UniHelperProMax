@@ -76,9 +76,9 @@ export function CalendarPage({ compact = false, leading, trailing }: Props = {})
         <motion.div
           key={`${view}:${range.from}`}
           className="flex min-h-0 flex-1 flex-col"
-          initial={reduceMotion ? false : { opacity: 0, y: 4 }}
+          initial={reduceMotion ? false : { opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.15, ease: "easeOut" }}
+          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
         >
           {view === "day" && <DayView date={date} sessions={list} tz={tz} drafts={drafts} tasks={tasks} />}
           {view === "week" && <WeekView date={date} sessions={list} tz={tz} drafts={drafts} tasks={tasks} />}
