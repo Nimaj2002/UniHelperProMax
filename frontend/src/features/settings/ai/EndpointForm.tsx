@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ApiError } from "@/lib/api";
 import { initialKeyDraft, KeyField, keyPayload, type KeyDraft } from "../KeyField";
 import {
@@ -17,6 +18,7 @@ import {
   type AiEndpoint, type AiEndpointTest, type AiStyle, type AiStyleId, type AiTestResult, type BaseUrlResult,
 } from "./api";
 import { fromDraft, ModelList, toDraft, type ModelDraft } from "./ModelList";
+import { findPreset, LOCAL_SERVERS, WELL_KNOWN, type Preset } from "./presets";
 
 const OUTCOME: Record<AiTestResult["outcome"], { title: string; icon: Icon; tone: string }> = {
   working: { title: "Working", icon: CheckCircle, tone: "text-success" },
@@ -30,6 +32,11 @@ const OUTCOME: Record<AiTestResult["outcome"], { title: string; icon: Icon; tone
 };
 
 const FIELDS = new Set(["name", "style", "baseUrl", "apiKey", "models"]);
+
+type Source = "local" | "known" | "custom";
+
+const initialSource = (ep?: AiEndpoint): Source =>
+  !ep ? "custom" : ep.locality === "local" ? "local" : findPreset(WELL_KNOWN, ep.style, ep.baseUrl) ? "known" : "custom";
 
 type Check = { style: AiStyleId; url: string; result?: BaseUrlResult; error?: string };
 
@@ -59,9 +66,27 @@ export function EndpointForm({ styles, endpoint, onDone }: EndpointFormProps) {
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [check, setCheck] = useState<Check | null>(null);
+  const [source, setSource] = useState<Source>(() => initialSource(endpoint));
 
   const spec = styles.find((s) => s.id === style) ?? styles[0];
   const url = baseUrl.trim();
+  const known = findPreset(WELL_KNOWN, style, baseUrl);
+  const localServer = findPreset(LOCAL_SERVERS, style, baseUrl);
+
+  const changeSource = (next: Source) => {
+    edited();
+    setSource(next);
+    if (next === "local") setStyle("openai"); // every local server speaks the OpenAI-compatible style
+  };
+  const pick = (list: Preset[], id: string) => {
+    const p = list.find((x) => x.id === id);
+    if (!p) return;
+    edited();
+    setStyle(p.style);
+    setBaseUrl(p.baseUrl);
+    // only fill the name while it is empty or still another preset's name
+    if (!name.trim() || [...WELL_KNOWN, ...LOCAL_SERVERS].some((x) => x.name === name)) setName(p.name);
+  };
 
   // FR-015/FR-016: normalise as the student types (300 ms debounce)
   useEffect(() => {
@@ -125,7 +150,8 @@ export function EndpointForm({ styles, endpoint, onDone }: EndpointFormProps) {
     e.preventDefault();
     const missing: Record<string, string> = {};
     if (!name.trim()) missing.name = "Enter a name.";
-    if (!url) missing.baseUrl = "Enter the base URL.";
+    if (source === "known" && !known) missing.preset = "Pick a provider.";
+    else if (!url) missing.baseUrl = "Enter the base URL.";
     if (Object.keys(missing).length) return setErrors(missing);
     setSaving(true);
     setErrors({});
@@ -167,50 +193,118 @@ export function EndpointForm({ styles, endpoint, onDone }: EndpointFormProps) {
       </div>
 
       <fieldset className="grid gap-2">
-        <legend className="mb-1 text-sm font-medium">Style</legend>
-        <RadioGroup value={style} onValueChange={(v) => { edited(); setStyle(v as AiStyleId); }} className="grid gap-2 sm:grid-cols-3" aria-label="Style">
-          {styles.map((s) => (
-            <Label key={s.id} htmlFor={`ai-style-${s.id}`} className="flex cursor-pointer items-start gap-3 rounded-lg border border-divider bg-surface-elevated p-3 font-normal has-[[data-state=checked]]:border-primary">
-              <RadioGroupItem value={s.id} id={`ai-style-${s.id}`} className="mt-0.5" />
-              <span className="grid min-w-0 gap-0.5">
-                <span className="font-medium">{s.label}</span>
-                {s.exampleBaseUrls.map((u) => (
-                  <span key={u} className="truncate font-mono text-xs text-muted-foreground">{u}</span>
-                ))}
+        <legend className="mb-1 text-sm font-medium">Connection</legend>
+        <RadioGroup value={source === "local" ? "local" : "endpoint"} onValueChange={(v) => changeSource(v === "local" ? "local" : "known")} className="grid gap-2 sm:grid-cols-2" aria-label="Connection">
+          {([["local", "Local", "A server on this computer, no API key"], ["endpoint", "Endpoint", "An online AI service"]] as const).map(([id, label, hint]) => (
+            <Label key={id} htmlFor={`ai-conn-${id}`} className="flex cursor-pointer items-center gap-3 rounded-lg border border-divider bg-surface-elevated p-3 font-normal has-[[data-state=checked]]:border-primary">
+              <RadioGroupItem value={id} id={`ai-conn-${id}`} />
+              <span className="grid gap-0.5">
+                <span className="font-medium">{label}</span>
+                <span className="text-xs text-muted-foreground">{hint}</span>
               </span>
             </Label>
           ))}
         </RadioGroup>
       </fieldset>
 
-      <div className="grid gap-2">
-        <Label htmlFor="ai-base-url">Base URL</Label>
-        <div className="flex flex-wrap items-center gap-2">
-          <Input
-            id="ai-base-url"
-            type="url"
-            inputMode="url"
-            className="max-w-md"
-            placeholder={spec?.exampleBaseUrls[0]}
-            value={baseUrl}
-            onChange={(e) => { edited(); setBaseUrl(e.target.value); }}
-            aria-invalid={baseUrlError ? true : undefined}
-            aria-describedby="ai-base-url-note"
-          />
-          {current?.result && (
-            <Badge variant="outline">{current.result.locality === "local" ? "Local" : "Remote"}</Badge>
-          )}
-        </div>
-        <div id="ai-base-url-note" aria-live="polite" className="grid gap-1 text-sm">
-          {baseUrlError ? (
-            <p className="text-danger">{baseUrlError}</p>
-          ) : current?.result?.removedPath ? (
-            <p className="text-muted-foreground">Removed {current.result.removedPath} — the app adds it</p>
-          ) : null}
-        </div>
-      </div>
+      {source !== "local" && (
+        <fieldset className="grid gap-2">
+          <legend className="mb-1 text-sm font-medium">Endpoint</legend>
+          <RadioGroup value={source} onValueChange={(v) => changeSource(v as Source)} className="grid gap-2 sm:grid-cols-2" aria-label="Endpoint">
+            {([["known", "Well-known", "Pick a provider from the list"], ["custom", "Custom", "Choose the style and address yourself"]] as const).map(([id, label, hint]) => (
+              <Label key={id} htmlFor={`ai-src-${id}`} className="flex cursor-pointer items-center gap-3 rounded-lg border border-divider bg-surface-elevated p-3 font-normal has-[[data-state=checked]]:border-primary">
+                <RadioGroupItem value={id} id={`ai-src-${id}`} />
+                <span className="grid gap-0.5">
+                  <span className="font-medium">{label}</span>
+                  <span className="text-xs text-muted-foreground">{hint}</span>
+                </span>
+              </Label>
+            ))}
+          </RadioGroup>
+        </fieldset>
+      )}
 
-      <KeyField
+      {source === "local" && (
+        <div className="grid gap-2">
+          <Label htmlFor="ai-local-server">Server<span className="font-normal text-muted-foreground"> (fills the address)</span></Label>
+          <Select value={localServer?.id ?? ""} onValueChange={(v) => pick(LOCAL_SERVERS, v)}>
+            <SelectTrigger id="ai-local-server" className="w-full max-w-xs">
+              <SelectValue placeholder="Pick a server" />
+            </SelectTrigger>
+            <SelectContent position="popper" className="max-h-72">
+              {LOCAL_SERVERS.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
+      {source === "known" && (
+        <div className="grid gap-2">
+          <Label htmlFor="ai-preset">Provider</Label>
+          <Select value={known?.id ?? ""} onValueChange={(v) => pick(WELL_KNOWN, v)}>
+            <SelectTrigger id="ai-preset" className="w-full max-w-xs" aria-invalid={errors.preset ? true : undefined} aria-describedby="ai-preset-note">
+              <SelectValue placeholder="Pick a provider" />
+            </SelectTrigger>
+            <SelectContent position="popper" className="max-h-72">
+              {WELL_KNOWN.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <p id="ai-preset-note" className={errors.preset ? "text-sm text-danger" : "truncate font-mono text-xs text-muted-foreground"}>
+            {errors.preset ?? known?.baseUrl}
+          </p>
+        </div>
+      )}
+
+      {source === "custom" && (
+        <fieldset className="grid gap-2">
+          <legend className="mb-1 text-sm font-medium">Style</legend>
+          <RadioGroup value={style} onValueChange={(v) => { edited(); setStyle(v as AiStyleId); }} className="grid gap-2 sm:grid-cols-3" aria-label="Style">
+            {styles.map((s) => (
+              <Label key={s.id} htmlFor={`ai-style-${s.id}`} className="flex cursor-pointer items-start gap-3 rounded-lg border border-divider bg-surface-elevated p-3 font-normal has-[[data-state=checked]]:border-primary">
+                <RadioGroupItem value={s.id} id={`ai-style-${s.id}`} className="mt-0.5" />
+                <span className="grid min-w-0 gap-0.5">
+                  <span className="font-medium">{s.label}</span>
+                  {s.exampleBaseUrls.map((u) => (
+                    <span key={u} className="truncate font-mono text-xs text-muted-foreground">{u}</span>
+                  ))}
+                </span>
+              </Label>
+            ))}
+          </RadioGroup>
+        </fieldset>
+      )}
+      {source !== "known" && (
+        <>
+          <div className="grid gap-2">
+            <Label htmlFor="ai-base-url">Base URL</Label>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                id="ai-base-url"
+                type="url"
+                inputMode="url"
+                className="max-w-md"
+                placeholder={spec?.exampleBaseUrls[0]}
+                value={baseUrl}
+                onChange={(e) => { edited(); setBaseUrl(e.target.value); }}
+                aria-invalid={baseUrlError ? true : undefined}
+                aria-describedby="ai-base-url-note"
+              />
+              {current?.result && (
+                <Badge variant="outline">{current.result.locality === "local" ? "Local" : "Remote"}</Badge>
+              )}
+            </div>
+            <div id="ai-base-url-note" aria-live="polite" className="grid gap-1 text-sm">
+              {baseUrlError ? (
+                <p className="text-danger">{baseUrlError}</p>
+              ) : current?.result?.removedPath ? (
+                <p className="text-muted-foreground">Removed {current.result.removedPath} — the app adds it</p>
+              ) : null}
+            </div>
+          </div>
+        </>
+      )}
+
+      {source !== "local" && <KeyField
         id="ai-api-key"
         label={<>API key<span className="font-normal text-muted-foreground"> (optional for local endpoints)</span></>}
         saved={endpoint?.key}
@@ -218,7 +312,7 @@ export function EndpointForm({ styles, endpoint, onDone }: EndpointFormProps) {
         draft={key}
         onChange={(next) => { edited(); setKey(next); }}
         error={errors.apiKey}
-      />
+      />}
 
       <div className="grid gap-2">
         <Label htmlFor="ai-test-model">

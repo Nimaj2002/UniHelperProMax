@@ -216,4 +216,38 @@ describe("Settings → AI", () => {
     expect(row).toHaveAttribute("aria-expanded", "true");
     expect(within(list).getByLabelText("Display name")).toHaveValue("claude-c");
   }, 20_000);
+
+  it("fills style, address and name from a well-known provider and hides the key for local servers", async () => {
+    const user = userEvent.setup();
+    const { calls } = api([], [
+      ["POST", "/api/v1/ai/base-url/check", () => json({ baseUrl: "https://openrouter.ai/api/v1", removedPath: null, locality: "remote" })],
+      ["POST", "/api/v1/ai/endpoints", () => json({ ...CLAUDE, id: "ep-3" }, 201)],
+    ]);
+    renderWithProviders(<AiSettingsPage />);
+    await user.click(await screen.findByRole("button", { name: "Add endpoint" }));
+
+    await user.click(screen.getByRole("radio", { name: /Well-known/ }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(screen.getByText("Pick a provider.")).toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: "Provider" }));
+    await user.click(await screen.findByRole("option", { name: "OpenRouter" }));
+    expect(screen.queryByRole("textbox", { name: "Base URL" })).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("OpenRouter");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(bodyOf(calls, "/api/v1/ai/endpoints")).toMatchObject({ name: "OpenRouter", style: "openai", baseUrl: "https://openrouter.ai/api/v1" }));
+  }, 20_000);
+
+  it("local mode fills the address from a server and asks for no key", async () => {
+    const user = userEvent.setup();
+    api([], [["POST", "/api/v1/ai/base-url/check", () => json({ baseUrl: "http://localhost:11434/v1", removedPath: null, locality: "local" })]]);
+    renderWithProviders(<AiSettingsPage />);
+    await user.click(await screen.findByRole("button", { name: "Add endpoint" }));
+    await user.click(screen.getByRole("radio", { name: /Local/ }));
+    expect(screen.queryByRole("radio", { name: /Well-known/ })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("API key (optional for local endpoints)")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("combobox", { name: /Server/ }));
+    await user.click(await screen.findByRole("option", { name: "Ollama" }));
+    expect(screen.getByRole("textbox", { name: "Base URL" })).toHaveValue("http://localhost:11434/v1");
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Ollama");
+  }, 20_000);
 });
