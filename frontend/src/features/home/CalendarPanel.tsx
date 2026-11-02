@@ -18,7 +18,7 @@ function onScrollCapture(e: UIEvent<HTMLElement>) {
 }
 
 /**
- * The home page's Calendar panel (FR-063): the calendar with its compact 40 px header. It stays
+ * The home page's Calendar panel (FR-063): the compact header and the calendar, each in its own card. It stays
  * mounted while closed (hidden and inert, FR-075), marked so the calendar's single-key shortcuts
  * stay off (FR-095). Coming back to the home page restores the time grid's scroll (FR-089).
  */
@@ -36,6 +36,7 @@ export function CalendarPanel({ open, leading, trailing }: Props) {
       data-calendar-closed={open ? undefined : ""}
       label="Calendar"
       body="fill"
+      chrome={false}
       hidden={!open}
       inert={!open}
       className="@container/calendar h-full"

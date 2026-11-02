@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router";
+import { Card } from "@/app/shell/Card";
 import { useMe } from "@/features/auth/api";
 import { useSessions } from "@/features/classes/api";
 import { useShowTasks } from "@/features/tasks/calendar/showTasks";
@@ -66,34 +67,43 @@ export function CalendarPage({ compact = false, leading, trailing }: Props = {})
   return (
     <EntryGuardProvider blocked={blocked}>
       {/* inside the home page the panel is the "Calendar" landmark (an unnamed section is none) */}
-      <section aria-label={compact ? undefined : "Calendar"} className="flex h-full min-h-0 flex-col" aria-busy={sessions.isFetching}>
-        <CalendarToolbar view={view} date={date} tz={tz} compact={compact} leading={leading} trailing={trailing} />
-        {sessions.isError && (
-          <p role="alert" className="border-b border-divider px-4 py-2 text-sm text-danger">
-            Couldn't load sessions. Check your connection; the calendar retries automatically.
-          </p>
+      <section aria-label={compact ? undefined : "Calendar"} className={compact ? "flex h-full min-h-0 flex-col gap-2" : "flex h-full min-h-0 flex-col"} aria-busy={sessions.isFetching}>
+        {compact ? (
+          // home page: the header bar is its own card, like Settings' credit bar
+          <Card className="shrink-0" body="fill">
+            <CalendarToolbar view={view} date={date} tz={tz} compact leading={leading} trailing={trailing} />
+          </Card>
+        ) : (
+          <CalendarToolbar view={view} date={date} tz={tz} />
         )}
-        <motion.div
-          key={`${view}:${range.from}`}
-          className="flex min-h-0 flex-1 flex-col"
-          initial={reduceMotion ? false : { opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {view === "day" && <DayView date={date} sessions={list} tz={tz} drafts={drafts} tasks={tasks} />}
-          {view === "week" && <WeekView date={date} sessions={list} tz={tz} drafts={drafts} tasks={tasks} />}
-          {view === "month" && (
-            <MonthView
-              date={date}
-              sessions={list}
-              tz={tz}
-              tasks={tasks}
-              draft={drafts.state.draft}
-              onCreateDraft={(d) => drafts.start(d, MONTH_DRAFT, "month", "open")}
-            />
+        <Body card={compact}>
+          {sessions.isError && (
+            <p role="alert" className="border-b border-divider px-4 py-2 text-sm text-danger">
+              Couldn't load sessions. Check your connection; the calendar retries automatically.
+            </p>
           )}
-        </motion.div>
-        <QuickCreate drafts={drafts} />
+          <motion.div
+            key={`${view}:${range.from}`}
+            className="flex min-h-0 flex-1 flex-col"
+            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {view === "day" && <DayView date={date} sessions={list} tz={tz} drafts={drafts} tasks={tasks} />}
+            {view === "week" && <WeekView date={date} sessions={list} tz={tz} drafts={drafts} tasks={tasks} />}
+            {view === "month" && (
+              <MonthView
+                date={date}
+                sessions={list}
+                tz={tz}
+                tasks={tasks}
+                draft={drafts.state.draft}
+                onCreateDraft={(d) => drafts.start(d, MONTH_DRAFT, "month", "open")}
+              />
+            )}
+          </motion.div>
+          <QuickCreate drafts={drafts} />
+        </Body>
         {/* 009 FR-043: drafts are announced, not their aria-hidden blocks */}
         <div role="status" aria-live="polite" className="sr-only" data-testid="draft-announcer">
           {message}
@@ -101,6 +111,17 @@ export function CalendarPage({ compact = false, leading, trailing }: Props = {})
         <ShortcutsDialog open={help} onOpenChange={setHelp} />
       </section>
     </EntryGuardProvider>
+  );
+}
+
+/** The calendar under the header: its own card on the home page, inline on the full page. */
+function Body({ card, children }: { card: boolean; children: ReactNode }) {
+  return card ? (
+    <Card className="flex-1" body="fill">
+      {children}
+    </Card>
+  ) : (
+    <>{children}</>
   );
 }
 
