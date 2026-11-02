@@ -36,6 +36,7 @@ def test_preferences(owner_client: TestClient) -> None:
             "sound": True,
             "systemNotifications": False,
             "indicatorCombo": "combined",
+            "timerBarStyle": "full",
             "dailyGoalMin": None,
         },
     }
@@ -144,5 +145,5 @@ def test_time_preferences_patch_nested(owner_client: TestClient) -> None:
     assert r.json()["time"]["pomodoroWorkMin"] == 50
     check(r.json(), "Preferences", spec="002")
     for bad in ({"pomodoroWorkMin": 0}, {"pomodoroPeriods": 9}, {"longRunningHours": 13},
-                {"indicatorCombo": "both"}):  # fmt: skip
+                {"indicatorCombo": "both"}, {"timerBarStyle": "tiny"}):  # fmt: skip
         assert c.patch(f"{API}/preferences", json={"time": bad}).status_code == 422

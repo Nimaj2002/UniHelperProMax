@@ -17,6 +17,7 @@ export const TIME_DEFAULTS: TimePrefs = {
   sound: true,
   systemNotifications: false,
   indicatorCombo: "combined",
+  timerBarStyle: "full",
   dailyGoalMin: null,
 };
 

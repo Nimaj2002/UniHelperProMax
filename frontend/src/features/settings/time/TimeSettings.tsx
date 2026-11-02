@@ -9,7 +9,11 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { askNotificationPermission, notificationPermission } from "@/features/time/alerts";
+import type { Timer } from "@/features/time/api";
 import { useSetTimePrefs, useTimePrefs, type TimePrefs } from "@/features/time/prefs";
+import { RecordingPill } from "@/features/recordings/RecordingBar";
+import { usePreferences } from "@/features/sessions/api";
+import { Badge, PILL, TimerPart } from "@/features/time/TimerPill";
 
 type NumberKey = "pomodoroWorkMin" | "pomodoroShortMin" | "pomodoroLongMin" | "pomodoroPeriods";
 const NUMBERS: { key: NumberKey; label: string; min: number; max: number; unit: string }[] = [
@@ -24,6 +28,19 @@ const COMBOS: { id: TimePrefs["indicatorCombo"]; name: string; hint: string }[] 
   { id: "stacked", name: "Two indicators, stacked", hint: "The recording indicator above the timer's." },
   { id: "recording_first", name: "Recording first", hint: "Only the recording indicator, with a small badge for the timer's time." },
 ];
+
+const BAR_STYLES: { id: TimePrefs["timerBarStyle"]; name: string; hint: string }[] = [
+  { id: "full", name: "Full", hint: "Time, what you're working on, pause and stop." },
+  { id: "compact", name: "Compact", hint: "Time, pause and stop." },
+  { id: "minimal", name: "Minimal", hint: "Only the time; select it to open Time." },
+];
+
+// look-only timer for the preview: started 12 min 34 s ago
+const PREVIEW_TIMER: Timer = {
+  style: "track", state: "running", startedAt: new Date(Date.now() - 754_000).toISOString(), pausedAt: null, pausedMs: 0,
+  plannedEndAt: null, finishedAt: null, description: "Problem set 3", tagId: null, courseId: null, taskId: null, sessionKey: null,
+  linkTitle: null, phase: null, period: null, focusMinutes: null, goal: null, hidePanels: false, reminderAck: 0, version: 1,
+};
 
 /** A number field saved on blur when it is in range; otherwise it says the range. */
 function NumberField({ id, label, value, min, max, unit, onSave }: { id: string; label: string; value: number; min: number; max: number; unit: string; onSave: (n: number) => void }) {
@@ -90,6 +107,16 @@ export function TimeSettings() {
   const prefs = useTimePrefs();
   const save = useSetTimePrefs();
   const [permission, setPermission] = useState(notificationPermission);
+  const recordingStyle = usePreferences().data?.recordingBarStyle ?? "full";
+  // look-only recording pill for the previews below
+  const recordingPill = (badge?: React.ReactNode) => (
+    <RecordingPill style={recordingStyle} elapsed={2_710_000} label="Lecture 4 · Linear algebra" back="/" onStop={() => {}} badge={badge} />
+  );
+  const timerPill = (
+    <section className={PILL}>
+      <TimerPart timer={PREVIEW_TIMER} style={prefs.timerBarStyle} />
+    </section>
+  );
 
   const setNotifications = async (on: boolean) => {
     if (!on) return save({ systemNotifications: false });
@@ -138,6 +165,27 @@ export function TimeSettings() {
         {permission === "unsupported" && <p className="text-sm text-muted-foreground">System notifications aren't available here; the sound and the message in the app still work.</p>}
       </Section>
 
+      <Section id="time-bar-style" title="Timer indicator" hint="The pill that floats over every screen while a timer runs.">
+        <RadioGroup value={prefs.timerBarStyle} onValueChange={(v) => save({ timerBarStyle: v as TimePrefs["timerBarStyle"] })} aria-labelledby="time-bar-style" className="grid gap-3 sm:grid-cols-3">
+          {BAR_STYLES.map(({ id, name, hint }) => (
+            <div key={id} className="flex items-start gap-2 rounded-lg border border-divider bg-surface-elevated p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary">
+              <RadioGroupItem value={id} id={`time-bar-${id}`} className="mt-1" />
+              <Label htmlFor={`time-bar-${id}`} className="grid cursor-pointer gap-1 font-normal">
+                <span className="font-medium">{name}</span>
+                <span className="text-sm text-muted-foreground">{hint}</span>
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
+        <figure className="grid gap-2">
+          <figcaption className="text-xs font-medium text-muted-foreground">Preview</figcaption>
+          {/* inert: look-only copy of the real pill; its buttons must not pause or stop the real timer */}
+          <div inert aria-hidden className="flex justify-center rounded-lg border border-dashed border-divider bg-surface p-6">
+            {timerPill}
+          </div>
+        </figure>
+      </Section>
+
       <Section id="time-indicator" title="Indicator when recording and timer run together" hint="A recording is never hidden or stopped by a timer.">
         <RadioGroup value={prefs.indicatorCombo} onValueChange={(v) => save({ indicatorCombo: v as TimePrefs["indicatorCombo"] })} aria-labelledby="time-indicator" className="grid gap-3 sm:grid-cols-3">
           {COMBOS.map(({ id, name, hint }) => (
@@ -150,6 +198,25 @@ export function TimeSettings() {
             </div>
           ))}
         </RadioGroup>
+        <figure className="grid gap-2">
+          <figcaption className="text-xs font-medium text-muted-foreground">Preview</figcaption>
+          {/* inert: look-only copies; mirrors the layouts in TimeBar and ActivityPills */}
+          <div inert aria-hidden className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-divider bg-surface p-6">
+            {prefs.indicatorCombo === "recording_first" ? (
+              recordingPill(<Badge timer={PREVIEW_TIMER} />)
+            ) : prefs.indicatorCombo === "combined" ? (
+              <div className="flex max-w-full flex-wrap items-center justify-center gap-2">
+                {recordingPill()}
+                {timerPill}
+              </div>
+            ) : (
+              <>
+                {recordingPill()}
+                {timerPill}
+              </>
+            )}
+          </div>
+        </figure>
       </Section>
 
       <Section id="time-goal" title="Daily goal" hint="Today in Time mode shows your progress.">

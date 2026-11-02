@@ -12,7 +12,7 @@ import { RecordingBar } from "@/features/recordings/RecordingBar";
 import { useTags, useTimerActions, type Timer } from "./api";
 import { useShownTimer, useTimerOwnsRecordingPill } from "./indicator";
 import { TIME_HREF, requestTimePanel } from "./openTime";
-import { useTimePrefs } from "./prefs";
+import { useTimePrefs, type TimePrefs } from "./prefs";
 import { phaseLabel, reminderDue, STYLE_ICON, timerDisplay } from "./TimerCard";
 import { useTick } from "./useTick";
 
@@ -28,7 +28,10 @@ export function useOpenTime(): () => void {
   };
 }
 
-function TimerPart({ timer }: { timer: Timer }) {
+export type TimerBarStyle = TimePrefs["timerBarStyle"];
+
+/** The timer part of the pill; `style` overrides the setting (Settings → Time preview). */
+export function TimerPart({ timer, style: forced }: { timer: Timer; style?: TimerBarStyle }) {
   const actions = useTimerActions();
   const prefs = useTimePrefs();
   const tags = useTags().data ?? [];
@@ -39,6 +42,7 @@ function TimerPart({ timer }: { timer: Timer }) {
   const label = timer.description || timer.linkTitle || tag?.name || phaseLabel(timer, prefs.pomodoroPeriods);
   const paused = timer.state === "paused";
   const reminder = reminderDue(timer, prefs.longRunningHours, now);
+  const style = forced ?? prefs.timerBarStyle;
 
   const pause = () => {
     if (timer.style !== "track") return void (paused ? actions.resume() : actions.pause());
@@ -52,39 +56,43 @@ function TimerPart({ timer }: { timer: Timer }) {
       <button
         type="button"
         onClick={open}
-        className="flex min-w-0 items-center gap-2 rounded-full py-1 pl-3 pr-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={`flex min-w-0 items-center gap-2 rounded-full py-1 pl-3 ${style === "minimal" && reminder === null ? "pr-3" : "pr-1"} text-left outline-none focus-visible:ring-2 focus-visible:ring-ring`}
         aria-label={`${phaseLabel(timer, prefs.pomodoroPeriods)} timer${paused ? ", paused" : ""}: ${label}. Open Time`}
       >
         <Icon size={16} aria-hidden className="shrink-0" />
         <span className="shrink-0 font-mono tabular-nums" aria-hidden>
           {timerDisplay(timer, now)}
         </span>
-        <span className="min-w-0 max-w-[14rem] truncate text-muted-foreground" aria-hidden>
-          {label}
-        </span>
+        {style === "full" && (
+          <span className="min-w-0 max-w-[14rem] truncate text-muted-foreground" aria-hidden>
+            {label}
+          </span>
+        )}
       </button>
       {reminder !== null ? (
         <span className="flex shrink-0 items-center gap-1 pr-1" role="group" aria-label="Still working?">
-          <span className="text-xs font-medium">Still working?</span>
+          {style === "full" && <span className="text-xs font-medium">Still working?</span>}
           <Button size="sm" variant="outline" className="h-7 rounded-full" onClick={() => void actions.patch({ reminderAck: reminder })}>
             Keep running
           </Button>
         </span>
       ) : (
-        timer.state !== "waiting" && (
+        style !== "minimal" && timer.state !== "waiting" && (
           <Button size="icon" variant="ghost" className="size-7 shrink-0 rounded-full" aria-label={paused ? "Resume timer" : "Pause timer"} title={paused ? "Resume" : "Pause"} onClick={pause}>
             {paused ? <Play size={16} aria-hidden /> : <Pause size={16} aria-hidden />}
           </Button>
         )
       )}
-      <Button size="icon" variant="destructive" className="mr-0.5 size-7 shrink-0 rounded-full" aria-label="Stop timer" title="Stop timer" onClick={() => void actions.stop()}>
-        <Stop size={16} weight="fill" aria-hidden />
-      </Button>
+      {style !== "minimal" && (
+        <Button size="icon" variant="destructive" className="mr-0.5 size-7 shrink-0 rounded-full" aria-label="Stop timer" title="Stop timer" onClick={() => void actions.stop()}>
+          <Stop size={16} weight="fill" aria-hidden />
+        </Button>
+      )}
     </>
   );
 }
 
-function Badge({ timer }: { timer: Timer }) {
+export function Badge({ timer }: { timer: Timer }) {
   const now = useTick(true);
   const Icon = STYLE_ICON[timer.style];
   return (

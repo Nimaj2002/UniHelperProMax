@@ -5282,6 +5282,8 @@ export interface components {
             systemNotifications?: boolean | null;
             /** Indicatorcombo */
             indicatorCombo?: ("combined" | "stacked" | "recording_first") | null;
+            /** Timerbarstyle */
+            timerBarStyle?: ("full" | "compact" | "minimal") | null;
             /** Dailygoalmin */
             dailyGoalMin?: number | null;
         };

@@ -125,6 +125,7 @@ class TimePreferences(ApiModel):
     sound: bool | None = None
     system_notifications: bool | None = None
     indicator_combo: Literal["combined", "stacked", "recording_first"] | None = None
+    timer_bar_style: Literal["full", "compact", "minimal"] | None = None  # like recording_bar_style
     daily_goal_min: int | None = Field(default=None, ge=1, le=1440)  # null = no goal
 
 

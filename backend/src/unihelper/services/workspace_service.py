@@ -47,6 +47,7 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
         "sound": True,
         "system_notifications": False,
         "indicator_combo": "combined",
+        "timer_bar_style": "full",  # floating timer pill: full | compact | minimal
         "daily_goal_min": None,
     },
 }

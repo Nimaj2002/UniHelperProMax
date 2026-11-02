@@ -337,6 +337,7 @@ components:
             sound: { type: boolean }
             systemNotifications: { type: boolean }
             indicatorCombo: { type: string, enum: [combined, stacked, recording_first] }
+            timerBarStyle: { type: string, enum: [full, compact, minimal] }
             dailyGoalMin: { type: [integer, "null"], minimum: 1, maximum: 1440 }
         shortcuts:
           type: object
