@@ -110,6 +110,24 @@ CommandId = Annotated[
 ]
 
 
+class TimePreferences(ApiModel):
+    """020: timer settings; every field optional so a PATCH can change one."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    pomodoro_work_min: int | None = Field(default=None, ge=1, le=120)
+    pomodoro_short_min: int | None = Field(default=None, ge=1, le=60)
+    pomodoro_long_min: int | None = Field(default=None, ge=1, le=120)
+    pomodoro_periods: int | None = Field(default=None, ge=2, le=8)
+    pomodoro_auto_start: bool | None = None
+    focus_hide_panels: bool | None = None
+    long_running_hours: int | None = Field(default=None, ge=1, le=12)  # null = off
+    sound: bool | None = None
+    system_notifications: bool | None = None
+    indicator_combo: Literal["combined", "stacked", "recording_first"] | None = None
+    daily_goal_min: int | None = Field(default=None, ge=1, le=1440)  # null = no goal
+
+
 class Preferences(ApiModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -129,3 +147,4 @@ class Preferences(ApiModel):
     shortcuts: dict[CommandId, tuple[Chord | None, Chord | None]] | None = Field(
         default=None, max_length=200
     )
+    time: TimePreferences | None = None  # 020

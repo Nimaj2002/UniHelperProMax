@@ -1,6 +1,7 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { ReactNode } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useState, type ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { EventBlock } from "@/features/calendar/EventBlock";
@@ -11,12 +12,15 @@ import { shiftPeriod } from "@/features/calendar/navigation";
 import type { Session } from "@/features/classes/api";
 import { formatRangeLabel } from "@/lib/dates";
 
-/** The app's providers the calendar needs (tooltips on entries, links). */
+/** The app's providers the calendar needs (tooltips on entries, links, 020: tracked time). */
 function Shell({ children }: { children: ReactNode }) {
+  const [client] = useState(() => new QueryClient({ defaultOptions: { queries: { retry: false } } }));
   return (
-    <MemoryRouter>
-      <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={client}>
+      <MemoryRouter>
+        <TooltipProvider delayDuration={0}>{children}</TooltipProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 }
 

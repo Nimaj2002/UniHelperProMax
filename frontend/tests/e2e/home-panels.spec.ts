@@ -23,7 +23,7 @@ test("US8: first use at 1366 × 768 shows the left card, Calendar and Tasks as t
   const left = page.locator("#course-panel");
   for (const card of [left, calendar(page), tasks(page)]) await expect(card).toBeVisible();
   await expect(page.getByRole("region", { name: "Calendar" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Tasks" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Tasks and time" })).toBeVisible();
 
   for (const card of [calendar(page), tasks(page)]) {
     expect(await radius(card)).toBeGreaterThanOrEqual(13);

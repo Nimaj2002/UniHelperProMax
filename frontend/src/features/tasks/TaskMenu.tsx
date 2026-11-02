@@ -6,6 +6,7 @@ import { DotsThree } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { useTimerActions } from "@/features/time/api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,6 +48,7 @@ interface Props {
 }
 
 export function TaskMenu({ task, columns, onOpen, className }: Props) {
+  const timer = useTimerActions();
   const navigate = useNavigate();
   const moveTo = useMoveToColumn();
   const remove = useDeleteTask();
@@ -67,6 +69,8 @@ export function TaskMenu({ task, columns, onOpen, className }: Props) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem onSelect={() => onOpen(task.id)}>Open</DropdownMenuItem>
+        {/* 020 FR-056: a timer linked to the task; completing the task doesn't stop it */}
+        <DropdownMenuItem onSelect={() => void timer.start({ style: "track", taskId: task.id })}>Start timer</DropdownMenuItem>
         {task.event && (
           <DropdownMenuItem onSelect={() => navigate(eventWorkspacePath(task.event!.sessionKey))}>Open note</DropdownMenuItem>
         )}

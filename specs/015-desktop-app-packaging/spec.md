@@ -429,6 +429,7 @@ calendar file and a note; resize and move the window, quit and reopen.
   WebM with Opus on every system.
 - **FR-041**: The microphone MUST be the only permission the window grants, and only to the app's
   own address. All other permission requests MUST be refused without a prompt.
+  *(Amended by feature 020: the window may also grant notifications to the app's own address, for timer alerts.)*
 - **FR-042**: At the first recording, the app MUST explain why it needs the microphone before the
   system asks.
 - **FR-043**: If the system denies the microphone, the app MUST say so and show the steps to allow

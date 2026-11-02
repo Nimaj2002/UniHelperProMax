@@ -2063,6 +2063,300 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/time/timer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Timer */
+        get: operations["get_timer_api_v1_time_timer_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Timer */
+        patch: operations["patch_timer_api_v1_time_timer_patch"];
+        trace?: never;
+    };
+    "/api/v1/time/timer/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Timer */
+        post: operations["start_timer_api_v1_time_timer_start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/timer/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stop Timer */
+        post: operations["stop_timer_api_v1_time_timer_stop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/timer/set-end": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set End */
+        post: operations["set_end_api_v1_time_timer_set_end_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/timer/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause Timer */
+        post: operations["pause_timer_api_v1_time_timer_pause_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/timer/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resume Timer */
+        post: operations["resume_timer_api_v1_time_timer_resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/timer/advance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Advance Timer */
+        post: operations["advance_timer_api_v1_time_timer_advance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/timer/skip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Skip Phase */
+        post: operations["skip_phase_api_v1_time_timer_skip_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/timer/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset Cycle */
+        post: operations["reset_cycle_api_v1_time_timer_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/timer/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extend Focus */
+        post: operations["extend_focus_api_v1_time_timer_extend_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/timer/undo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Undo Timer */
+        post: operations["undo_timer_api_v1_time_timer_undo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Entries */
+        get: operations["list_entries_api_v1_time_entries_get"];
+        put?: never;
+        /** Create Entry */
+        post: operations["create_entry_api_v1_time_entries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/entries/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Entries */
+        get: operations["export_entries_api_v1_time_entries_export_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/entries/{entry_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Entry */
+        delete: operations["delete_entry_api_v1_time_entries__entry_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Entry */
+        patch: operations["patch_entry_api_v1_time_entries__entry_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/time/entries/{entry_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Entry */
+        post: operations["restore_entry_api_v1_time_entries__entry_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/tags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tags */
+        get: operations["list_tags_api_v1_time_tags_get"];
+        put?: never;
+        /** Create Tag */
+        post: operations["create_tag_api_v1_time_tags_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/time/tags/{tag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Tag */
+        delete: operations["delete_tag_api_v1_time_tags__tag_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Tag */
+        patch: operations["patch_tag_api_v1_time_tags__tag_id__patch"];
+        trace?: never;
+    };
     "/api/v1/task-columns": {
         parameters: {
             query?: never;
@@ -3279,6 +3573,86 @@ export interface components {
             /** Pagecount */
             pageCount?: number | null;
         };
+        /** EntryCreate */
+        EntryCreate: {
+            /** Courseid */
+            courseId?: string | null;
+            /** Taskid */
+            taskId?: string | null;
+            /** Sessionkey */
+            sessionKey?: string | null;
+            /**
+             * Startedat
+             * Format: date-time
+             */
+            startedAt: string;
+            /** Endedat */
+            endedAt?: string | null;
+            /** Durationseconds */
+            durationSeconds?: number | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Tagid */
+            tagId?: string | null;
+        };
+        /** EntryOut */
+        EntryOut: {
+            /** Id */
+            id: string;
+            /** Startedat */
+            startedAt: string;
+            /** Endedat */
+            endedAt: string;
+            /** Pausedseconds */
+            pausedSeconds: number;
+            /** Durationseconds */
+            durationSeconds: number;
+            /** Description */
+            description: string;
+            /** Tagid */
+            tagId: string | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "track" | "pomodoro" | "focus" | "manual";
+            /** Courseid */
+            courseId: string | null;
+            /** Taskid */
+            taskId: string | null;
+            /** Sessionkey */
+            sessionKey: string | null;
+            /** Linktitle */
+            linkTitle: string | null;
+            /** Version */
+            version: number;
+        };
+        /** EntryPatch */
+        EntryPatch: {
+            /** Courseid */
+            courseId?: string | null;
+            /** Taskid */
+            taskId?: string | null;
+            /** Sessionkey */
+            sessionKey?: string | null;
+            /** Startedat */
+            startedAt?: string | null;
+            /** Endedat */
+            endedAt?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Tagid */
+            tagId?: string | null;
+        };
+        /** EntryWithOverlaps */
+        EntryWithOverlaps: {
+            entry: components["schemas"]["EntryOut"];
+            /** Overlaps */
+            overlaps: components["schemas"]["Overlap"][];
+        };
         /** EventCreate */
         EventCreate: {
             /** Title */
@@ -3809,6 +4183,17 @@ export interface components {
              */
             suggestedEndDate: string;
         };
+        /** Overlap */
+        Overlap: {
+            /** Id */
+            id: string;
+            /** Description */
+            description: string;
+            /** Startedat */
+            startedAt: string;
+            /** Endedat */
+            endedAt: string;
+        };
         /** PasswordChange */
         PasswordChange: {
             /** Currentpassword */
@@ -3871,6 +4256,7 @@ export interface components {
                     components["schemas"]["Chord"] | null
                 ];
             } | null;
+            time?: components["schemas"]["TimePreferences"] | null;
         };
         /** PreflightItem */
         PreflightItem: {
@@ -4535,6 +4921,15 @@ export interface components {
             /** Taskid */
             taskId?: string | null;
         };
+        /** Settled */
+        Settled: {
+            /** Phase */
+            phase: ("work" | "short_break" | "long_break") | null;
+            /** Finishedat */
+            finishedAt: string;
+            /** Entryid */
+            entryId: string | null;
+        };
         /** SetupStatus */
         SetupStatus: {
             /** Needsowner */
@@ -4589,6 +4984,39 @@ export interface components {
             kind: "note" | "document" | "chat";
             /** Id */
             id: string;
+        };
+        /** TagCreate */
+        TagCreate: {
+            /** Name */
+            name: string;
+            /**
+             * Color
+             * @enum {string}
+             */
+            color: "tag-1" | "tag-2" | "tag-3" | "tag-4" | "tag-5" | "tag-6" | "tag-7" | "tag-8" | "tag-9" | "tag-10" | "tag-11" | "tag-12";
+        };
+        /** TagOut */
+        TagOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Color
+             * @enum {string}
+             */
+            color: "tag-1" | "tag-2" | "tag-3" | "tag-4" | "tag-5" | "tag-6" | "tag-7" | "tag-8" | "tag-9" | "tag-10" | "tag-11" | "tag-12";
+            /** Entrycount */
+            entryCount: number;
+            /** Version */
+            version: number;
+        };
+        /** TagPatch */
+        TagPatch: {
+            /** Name */
+            name?: string | null;
+            /** Color */
+            color?: ("tag-1" | "tag-2" | "tag-3" | "tag-4" | "tag-5" | "tag-6" | "tag-7" | "tag-8" | "tag-9" | "tag-10" | "tag-11" | "tag-12") | null;
         };
         /** TaskColumnCreate */
         TaskColumnCreate: {
@@ -4829,6 +5257,34 @@ export interface components {
             /** Lowcontrast */
             lowContrast: boolean;
         };
+        /**
+         * TimePreferences
+         * @description 020: timer settings; every field optional so a PATCH can change one.
+         */
+        TimePreferences: {
+            /** Pomodoroworkmin */
+            pomodoroWorkMin?: number | null;
+            /** Pomodoroshortmin */
+            pomodoroShortMin?: number | null;
+            /** Pomodorolongmin */
+            pomodoroLongMin?: number | null;
+            /** Pomodoroperiods */
+            pomodoroPeriods?: number | null;
+            /** Pomodoroautostart */
+            pomodoroAutoStart?: boolean | null;
+            /** Focushidepanels */
+            focusHidePanels?: boolean | null;
+            /** Longrunninghours */
+            longRunningHours?: number | null;
+            /** Sound */
+            sound?: boolean | null;
+            /** Systemnotifications */
+            systemNotifications?: boolean | null;
+            /** Indicatorcombo */
+            indicatorCombo?: ("combined" | "stacked" | "recording_first") | null;
+            /** Dailygoalmin */
+            dailyGoalMin?: number | null;
+        };
         /** Timeline */
         Timeline: {
             /** Courseid */
@@ -4870,6 +5326,197 @@ export interface components {
             noteCount: number;
             /** Audiocount */
             audioCount: number;
+        };
+        /** TimerAt */
+        TimerAt: {
+            /** At */
+            at?: string | null;
+        };
+        /** TimerOut */
+        TimerOut: {
+            /**
+             * Style
+             * @enum {string}
+             */
+            style: "track" | "pomodoro" | "focus";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "running" | "paused" | "waiting";
+            /** Startedat */
+            startedAt: string;
+            /** Pausedat */
+            pausedAt: string | null;
+            /** Pausedms */
+            pausedMs: number;
+            /** Plannedendat */
+            plannedEndAt: string | null;
+            /** Finishedat */
+            finishedAt: string | null;
+            /** Description */
+            description: string;
+            /** Tagid */
+            tagId: string | null;
+            /** Courseid */
+            courseId: string | null;
+            /** Taskid */
+            taskId: string | null;
+            /** Sessionkey */
+            sessionKey: string | null;
+            /** Linktitle */
+            linkTitle: string | null;
+            /** Phase */
+            phase: ("work" | "short_break" | "long_break") | null;
+            /** Period */
+            period: number | null;
+            /** Focusminutes */
+            focusMinutes: number | null;
+            /** Goal */
+            goal: string | null;
+            /** Hidepanels */
+            hidePanels: boolean;
+            /** Reminderack */
+            reminderAck: number;
+            /** Version */
+            version: number;
+        };
+        /** TimerPatch */
+        TimerPatch: {
+            /** Courseid */
+            courseId?: string | null;
+            /** Taskid */
+            taskId?: string | null;
+            /** Sessionkey */
+            sessionKey?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Tagid */
+            tagId?: string | null;
+            /** Reminderack */
+            reminderAck?: number | null;
+        };
+        /** TimerResponse */
+        TimerResponse: {
+            timer: components["schemas"]["TimerOut"] | null;
+            /** Servernow */
+            serverNow: string;
+            /**
+             * Settled
+             * @default []
+             */
+            settled: components["schemas"]["Settled"][];
+            undo?: components["schemas"]["Undo"] | null;
+            saved?: components["schemas"]["EntryOut"] | null;
+        };
+        /** TimerSetEnd */
+        TimerSetEnd: {
+            /**
+             * Endedat
+             * Format: date-time
+             */
+            endedAt: string;
+        };
+        /**
+         * TimerSnapshot
+         * @description What Undo needs to bring a timer back exactly as it was.
+         */
+        TimerSnapshot: {
+            /** Courseid */
+            courseId?: string | null;
+            /** Taskid */
+            taskId?: string | null;
+            /** Sessionkey */
+            sessionKey?: string | null;
+            /**
+             * Style
+             * @enum {string}
+             */
+            style: "track" | "pomodoro" | "focus";
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "running" | "paused" | "waiting";
+            /**
+             * Startedat
+             * Format: date-time
+             */
+            startedAt: string;
+            /** Pausedat */
+            pausedAt?: string | null;
+            /**
+             * Pausedms
+             * @default 0
+             */
+            pausedMs: number;
+            /** Plannedendat */
+            plannedEndAt?: string | null;
+            /** Finishedat */
+            finishedAt?: string | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Tagid */
+            tagId?: string | null;
+            /** Phase */
+            phase?: ("work" | "short_break" | "long_break") | null;
+            /** Period */
+            period?: number | null;
+            /** Focusminutes */
+            focusMinutes?: number | null;
+            /** Goal */
+            goal?: string | null;
+            /**
+             * Hidepanels
+             * @default false
+             */
+            hidePanels: boolean;
+            /**
+             * Reminderack
+             * @default 0
+             */
+            reminderAck: number;
+        };
+        /** TimerStart */
+        TimerStart: {
+            /** Courseid */
+            courseId?: string | null;
+            /** Taskid */
+            taskId?: string | null;
+            /** Sessionkey */
+            sessionKey?: string | null;
+            /**
+             * Style
+             * @enum {string}
+             */
+            style: "track" | "pomodoro" | "focus";
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Tagid */
+            tagId?: string | null;
+            /** Focusminutes */
+            focusMinutes?: number | null;
+            /** Goal */
+            goal?: string | null;
+            /**
+             * Hidepanels
+             * @default false
+             */
+            hidePanels: boolean;
+            /** At */
+            at?: string | null;
+        };
+        /** TimerUndo */
+        TimerUndo: {
+            undo: components["schemas"]["Undo"];
+            /** Timerversion */
+            timerVersion?: number | null;
         };
         /** TranscriptionJob */
         TranscriptionJob: {
@@ -5031,6 +5678,12 @@ export interface components {
             versions: components["schemas"]["UserVersionOut"][];
             /** Selected */
             selected: number;
+        };
+        /** Undo */
+        Undo: {
+            previous?: components["schemas"]["TimerSnapshot"] | null;
+            /** Entryid */
+            entryId?: string | null;
         };
         /**
          * UndoCreation
@@ -9906,6 +10559,702 @@ export interface operations {
                 };
                 content: {
                     "application/zip": unknown;
+                };
+            };
+        };
+    };
+    get_timer_api_v1_time_timer_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+        };
+    };
+    patch_timer_api_v1_time_timer_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimerPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_timer_api_v1_time_timer_start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimerStart"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stop_timer_api_v1_time_timer_stop_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TimerAt"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_end_api_v1_time_timer_set_end_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimerSetEnd"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pause_timer_api_v1_time_timer_pause_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TimerAt"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_timer_api_v1_time_timer_resume_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    advance_timer_api_v1_time_timer_advance_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    skip_phase_api_v1_time_timer_skip_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_cycle_api_v1_time_timer_reset_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extend_focus_api_v1_time_timer_extend_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undo_timer_api_v1_time_timer_undo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TimerUndo"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_entries_api_v1_time_entries_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                sessionKey?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_entry_api_v1_time_entries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntryCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryWithOverlaps"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_entries_api_v1_time_entries_export_csv_get: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                tz: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_entry_api_v1_time_entries__entry_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_entry_api_v1_time_entries__entry_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntryPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryWithOverlaps"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_entry_api_v1_time_entries__entry_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                entry_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tags_api_v1_time_tags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagOut"][];
+                };
+            };
+        };
+    };
+    create_tag_api_v1_time_tags_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_tag_api_v1_time_tags__tag_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_tag_api_v1_time_tags__tag_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                tag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

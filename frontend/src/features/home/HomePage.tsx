@@ -19,6 +19,7 @@ import { LAST_OPEN_MESSAGE, PanelCloseButton } from "./PanelCloseButton";
 import { PANEL_ID, PANEL_NAME, PanelRail, SHOW_PANEL_ID } from "./PanelRail";
 import { TasksPanel } from "./TasksPanel";
 import { SECTION_SWITCH_ID, useTasksColumn, type ColumnSection } from "./tasksColumn";
+import { onTimeRequest, takeTimeRequest, TIMER_CARD_ID } from "@/features/time/openTime";
 import { PanelsProvider, usePanels } from "./usePanels";
 
 const OTHER: Record<Panel, Panel> = { calendar: "tasks", tasks: "calendar" };
@@ -137,6 +138,32 @@ export function HomePage() {
       { replace: true },
     );
   }, [taskParam, measured, openPanel, setParams]);
+
+  // (020) Time mode from the floating timer pill or a calendar time block: `/?time` from another
+  // page, a request on this one; the panel opens on Time (width rules apply) and the timer card
+  // takes focus
+  const timeParam = params.has("time");
+  useEffect(() => {
+    const show = () => {
+      setSection("time");
+      openPanel("tasks");
+      focusWhenReady(() => document.getElementById(TIMER_CARD_ID));
+    };
+    if (timeParam && measured) {
+      takeTimeRequest();
+      show();
+      setParams(
+        (p) => {
+          const next = new URLSearchParams(p);
+          next.delete("time");
+          return next;
+        },
+        { replace: true },
+      );
+    }
+    if (measured && takeTimeRequest()) show();
+    return onTimeRequest(() => takeTimeRequest() && show());
+  }, [timeParam, measured, openPanel, setParams, setSection]);
 
   // calendar / tasks panel (FR-070; keys from the 019 keymap, Shift+C / Shift+T by default)
   const toggle = useRef<(p: Panel) => void>(() => {});

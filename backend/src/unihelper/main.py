@@ -38,6 +38,7 @@ from unihelper.api.v1 import (
     setup,
     tasks,
     themes,
+    time,
     timeline,
     transcription,
     trash,
@@ -96,6 +97,7 @@ def build_api_router() -> APIRouter:
         chat_runs,
         desktop_routes,  # 015: always registered; 404 not_desktop in web mode
         backup,  # 016
+        time,  # 020
     ):
         api.include_router(module.router)
     for router in tasks.routers:  # 012: /task-columns, /tasks, /quick-notes

@@ -511,7 +511,7 @@ test("Accessibility (012): home panels, rails, task details, quick notes, filter
     await expect(p.locator("[data-task-marker]")).not.toHaveCount(0);
     // two named panel landmarks; no button without a name
     await expect(p.getByRole("region", { name: "Calendar" })).toHaveCount(1);
-    await expect(p.getByRole("region", { name: "Tasks" })).toHaveCount(1);
+    await expect(p.getByRole("region", { name: "Tasks and time" })).toHaveCount(1);
     const unnamed = await p.evaluate(() =>
       [...document.querySelectorAll<HTMLElement>("#calendar-panel button, #tasks-panel button")]
         .filter((b) => b.offsetParent !== null && !(b.getAttribute("aria-label") || b.getAttribute("aria-labelledby") || b.textContent?.trim()))

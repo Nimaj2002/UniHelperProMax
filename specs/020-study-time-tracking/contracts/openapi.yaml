@@ -1,0 +1,277 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 020 additions (time tracking)
+  version: 1.0.0
+  description: |
+    Same conventions as earlier features: camelCase JSON, RFC 9457 problems, CSRF header on
+    writes, `If-Match: "<version>"` on writes to an existing timer, entry or tag. See
+    contracts/time-api.md for the prose contract.
+    Changes to existing operations (additive): `Preferences` gains `time` (020 data-model.md).
+servers:
+  - url: /api/v1
+
+paths:
+  /time/timer:
+    get:
+      tags: [time]
+      summary: The running timer (settles a phase that ended while no window was open)
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+    patch:
+      tags: [time]
+      summary: Edit the running timer's description, tag, links or reminder answer
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+        "409": { description: No timer runs }
+        "412": { description: Version conflict }
+  /time/timer/start:
+    post:
+      tags: [time]
+      summary: Start a timer; a running one is saved and replaced (undo returned)
+      responses:
+        "201": { $ref: "#/components/responses/Timer" }
+        "404": { description: Unknown tag, task, session or course }
+        "422": { description: Invalid ranges }
+  /time/timer/stop:
+    post:
+      tags: [time]
+      summary: Stop and save (under 5 s is discarded and undo returned)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+  /time/timer/set-end:
+    post:
+      tags: [time]
+      summary: Stop with a corrected end time
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+        "422": { description: End before start or in the future }
+  /time/timer/pause:
+    post:
+      tags: [time]
+      summary: Pause (Track — stop and save)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+  /time/timer/resume:
+    post:
+      tags: [time]
+      summary: Resume a paused Pomodoro or Focus timer
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+        "409": { description: Not paused }
+  /time/timer/advance:
+    post:
+      tags: [time]
+      summary: Finish a due phase, or start the waiting one
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+        "409": { description: Not due }
+  /time/timer/skip:
+    post:
+      tags: [time]
+      summary: Pomodoro — go to the next phase now
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+  /time/timer/reset:
+    post:
+      tags: [time]
+      summary: Pomodoro — save work so far and end the cycle
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+  /time/timer/extend:
+    post:
+      tags: [time]
+      summary: Focus — add 5 minutes (at most 480 in all)
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+        "422": { description: Over 480 minutes }
+  /time/timer/undo:
+    post:
+      tags: [time]
+      summary: Bring back a replaced or discarded timer
+      responses:
+        "200": { $ref: "#/components/responses/Timer" }
+        "409": { description: undo_unavailable }
+  /time/entries:
+    get:
+      tags: [time]
+      summary: Entries overlapping [from, to)
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: sessionKey, in: query, required: false, schema: { type: string } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Entry" } }
+    post:
+      tags: [time]
+      summary: Add time manually
+      responses:
+        "201": { $ref: "#/components/responses/EntryWithOverlaps" }
+        "422": { description: end_not_after_start }
+  /time/entries/{entryId}:
+    parameters:
+      - { name: entryId, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [time]
+      summary: Edit an entry
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200": { $ref: "#/components/responses/EntryWithOverlaps" }
+    delete:
+      tags: [time]
+      summary: Delete (restorable for 24 hours)
+      responses:
+        "204": { description: Deleted }
+  /time/entries/{entryId}/restore:
+    parameters:
+      - { name: entryId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [time]
+      summary: Undo a delete
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Entry" }
+  /time/entries/export.csv:
+    get:
+      tags: [time]
+      summary: CSV of entries overlapping [from, to), times in `tz`
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date-time } }
+        - { name: tz, in: query, required: true, schema: { type: string } }
+      responses:
+        "200": { description: CSV, content: { text/csv: {} } }
+  /time/tags:
+    get:
+      tags: [time]
+      summary: All tags with their entry counts
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/Tag" } }
+    post:
+      tags: [time]
+      summary: Create a tag
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tag" }
+        "409": { description: tag_name_taken }
+  /time/tags/{tagId}:
+    parameters:
+      - { name: tagId, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [time]
+      summary: Rename or recolor
+      parameters: [{ $ref: "#/components/parameters/IfMatch" }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tag" }
+    delete:
+      tags: [time]
+      summary: Delete; its entries become untagged
+      responses:
+        "204": { description: Deleted }
+
+components:
+  parameters:
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: { type: string }
+  responses:
+    Timer:
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/TimerResponse" }
+    EntryWithOverlaps:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [entry, overlaps]
+            properties:
+              entry: { $ref: "#/components/schemas/Entry" }
+              overlaps:
+                type: array
+                items:
+                  type: object
+                  required: [id, description, startedAt, endedAt]
+  schemas:
+    TimerResponse:
+      type: object
+      required: [timer, serverNow, settled, undo, saved]
+      properties:
+        timer: { oneOf: [{ $ref: "#/components/schemas/Timer" }, { type: "null" }] }
+        serverNow: { type: string }
+        settled: { type: array }
+        undo: { type: [object, "null"] }
+        saved: { oneOf: [{ $ref: "#/components/schemas/Entry" }, { type: "null" }] }
+    Timer:
+      type: object
+      required: [style, state, startedAt, pausedMs, description, version]
+      properties:
+        style: { enum: [track, pomodoro, focus] }
+        state: { enum: [running, paused, waiting] }
+        startedAt: { type: string }
+        pausedAt: { type: [string, "null"] }
+        pausedMs: { type: integer }
+        plannedEndAt: { type: [string, "null"] }
+        finishedAt: { type: [string, "null"] }
+        description: { type: string }
+        tagId: { type: [string, "null"] }
+        phase: { enum: [work, short_break, long_break, null] }
+        period: { type: [integer, "null"] }
+        focusMinutes: { type: [integer, "null"] }
+        version: { type: integer }
+    Entry:
+      type: object
+      required: [id, startedAt, endedAt, pausedSeconds, durationSeconds, description, source, version]
+      properties:
+        id: { type: string }
+        startedAt: { type: string }
+        endedAt: { type: string }
+        pausedSeconds: { type: integer, minimum: 0 }
+        durationSeconds: { type: integer, minimum: 0 }
+        description: { type: string, maxLength: 500 }
+        tagId: { type: [string, "null"] }
+        source: { enum: [track, pomodoro, focus, manual] }
+        courseId: { type: [string, "null"] }
+        taskId: { type: [string, "null"] }
+        sessionKey: { type: [string, "null"] }
+        linkTitle: { type: [string, "null"] }
+        version: { type: integer }
+    Tag:
+      type: object
+      required: [id, name, color, entryCount, version]
+      properties:
+        id: { type: string }
+        name: { type: string, minLength: 1, maxLength: 30 }
+        color: { type: string, pattern: "^tag-([1-9]|1[0-2])$" }
+        entryCount: { type: integer, minimum: 0 }
+        version: { type: integer }

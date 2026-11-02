@@ -1,4 +1,5 @@
 import { ArrowUUpLeft, StopCircle } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { usePreferences, type Preferences } from "@/features/sessions/api";
@@ -6,6 +7,7 @@ import { workspacePath } from "@/features/sessions/SessionTimeline";
 import { formatDuration, spokenDuration } from "./format";
 import { recorder, useRecorderState } from "./recorder";
 import { useElapsed } from "./useElapsed";
+import { useTimerOwnsRecordingPill } from "@/features/time/indicator";
 
 const PILL = "pointer-events-auto flex max-w-full min-w-0 items-center rounded-full border border-strong-border bg-surface-elevated text-sm shadow-[0_6px_20px_var(--shadow-tint)]";
 const DOT = <span aria-hidden className="size-2.5 shrink-0 animate-pulse rounded-full bg-danger motion-reduce:animate-none" />;
@@ -19,10 +21,12 @@ interface PillProps {
   back: string | null;
   stopping?: boolean;
   onStop: () => void;
+  /** 020: the running timer's time, when only the recording pill is shown ("Recording first"). */
+  badge?: ReactNode;
 }
 
 /** The pill itself, shared by the live bar and the Settings → Appearance preview. */
-export function RecordingPill({ style, elapsed, label, back, stopping, onStop }: PillProps) {
+export function RecordingPill({ style, elapsed, label, back, stopping, onStop, badge }: PillProps) {
   if (style === "minimal" && back) {
     return (
       <Button asChild size="sm" variant="outline" className={`${PILL} h-8 gap-1.5 px-2.5`}>
@@ -39,6 +43,7 @@ export function RecordingPill({ style, elapsed, label, back, stopping, onStop }:
       <section aria-label="Recording" className={`${PILL} gap-1.5 py-0.5 pr-0.5 pl-2.5`}>
         {DOT}
         <span className="shrink-0 font-mono text-xs tabular-nums" aria-label={`Elapsed ${spokenDuration(elapsed)}`}>{formatDuration(elapsed)}</span>
+        {badge}
         {back && (
           <Button asChild size="icon" variant="ghost" className="size-7 rounded-full">
             <Link to={back} aria-label="Go to session" title="Go to session">
@@ -59,6 +64,7 @@ export function RecordingPill({ style, elapsed, label, back, stopping, onStop }:
       <span className="shrink-0 font-medium">Recording</span>
       <span className="shrink-0 font-mono tabular-nums" aria-label={`Elapsed ${spokenDuration(elapsed)}`}>{formatDuration(elapsed)}</span>
       <span className="min-w-0 truncate text-muted-foreground">{label}</span>
+      {badge}
       {back && (
         <Button asChild size="sm" variant="ghost" className="h-7 shrink-0 rounded-full">
           <Link to={back}>Go to session</Link>
@@ -71,14 +77,21 @@ export function RecordingPill({ style, elapsed, label, back, stopping, onStop }:
   );
 }
 
-/** Pill floating over the main card on every screen while recording (FR-006; 008 FR-023); style set in Settings → Appearance. */
-export function RecordingBar() {
+/**
+ * Pill floating over the main card on every screen while recording (FR-006; 008 FR-023); style set
+ * in Settings → Appearance. (020) When a timer runs too, the timer's indicator may show this pill
+ * itself (`embedded`), combined with the timer or with a timer badge.
+ */
+export function RecordingBar({ embedded = false, badge }: { embedded?: boolean; badge?: ReactNode } = {}) {
+  const ownedByTimer = useTimerOwnsRecordingPill();
   const state = useRecorderState();
   const style = usePreferences().data?.recordingBarStyle ?? "full";
   const elapsed = useElapsed(state.status === "recording" ? state.startedAt : null);
   if (state.status !== "recording" && state.status !== "stopping") return null;
+  if (ownedByTimer && !embedded) return null;
   return (
     <RecordingPill
+      badge={badge}
       style={style}
       elapsed={elapsed}
       label={state.label}

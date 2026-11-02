@@ -1,6 +1,7 @@
-import { CalendarBlank, Kanban, NotePencil, SidebarSimple } from "@phosphor-icons/react";
+import { CalendarBlank, Kanban, NotePencil, SidebarSimple, Timer } from "@phosphor-icons/react";
 import { SideRail } from "@/app/shell/SideRail";
 import { formatCount } from "@/features/tasks/model/counts";
+import { RailTimeBadge } from "@/features/time/RailTimeBadge";
 import { useShortcut } from "@/lib/keymap";
 import type { Panel } from "./homeWidths";
 import type { ColumnSection } from "./tasksColumn";
@@ -36,7 +37,8 @@ export function railLabel(panel: Panel, openCount?: number, overdueCount?: numbe
  * A closed home panel (FR-071–FR-073): a 44 px card like the left card's rail; the whole strip is
  * the reopen button with the panel's icon, vertical name and, for Tasks, the open count and an
  * overdue "!" (text, never color alone). (018) The Tasks rail is the session panel's kind: a
- * reopen button and an item per section (Tasks with its counts, General notes).
+ * reopen button and an item per section (Tasks with its counts, General notes, (020) Time with a
+ * running timer's time).
  */
 export function PanelRail({ panel, onOpen, openCount, overdueCount, onOpenSection }: Props) {
   const name = PANEL_NAME[panel];
@@ -76,6 +78,7 @@ export function PanelRail({ panel, onOpen, openCount, overdueCount, onOpenSectio
         items={[
           { id: "tasks", icon: Kanban, name: "Tasks", onActivate: () => onOpenSection("tasks"), content: counts },
           { id: "notes", icon: NotePencil, name: "General notes", onActivate: () => onOpenSection("notes") },
+          { id: "time", icon: Timer, name: "Time", onActivate: () => onOpenSection("time"), content: <RailTimeBadge /> },
         ]}
       />
     );

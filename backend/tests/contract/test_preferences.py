@@ -25,6 +25,19 @@ def test_preferences(owner_client: TestClient) -> None:
         "recordingBarStyle": "full",
         "generalNotesCollapsed": False,  # 018
         "shortcuts": {},  # 019
+        "time": {  # 020
+            "pomodoroWorkMin": 25,
+            "pomodoroShortMin": 5,
+            "pomodoroLongMin": 15,
+            "pomodoroPeriods": 4,
+            "pomodoroAutoStart": False,
+            "focusHidePanels": False,
+            "longRunningHours": 3,
+            "sound": True,
+            "systemNotifications": False,
+            "indicatorCombo": "combined",
+            "dailyGoalMin": None,
+        },
     }
     check(r.json(), "Preferences", spec="002")
     r = c.patch(f"{API}/preferences", json={"editorMode": "raw"})
@@ -119,3 +132,17 @@ def test_preferences_019_shortcuts_invalid(
     r = owner_client.patch(f"{API}/preferences", json={"shortcuts": shortcuts})
     assert r.status_code == 422
     assert code in _codes(r)
+
+
+def test_time_preferences_patch_nested(owner_client: TestClient) -> None:
+    """020: `time` is merged key by key; null turns off the reminder; ranges are enforced."""
+    c = owner_client
+    r = c.patch(f"{API}/preferences", json={"time": {"pomodoroWorkMin": 50}})
+    assert r.json()["time"]["pomodoroWorkMin"] == 50 and r.json()["time"]["sound"] is True
+    r = c.patch(f"{API}/preferences", json={"time": {"longRunningHours": None}})
+    assert r.json()["time"]["longRunningHours"] is None
+    assert r.json()["time"]["pomodoroWorkMin"] == 50
+    check(r.json(), "Preferences", spec="002")
+    for bad in ({"pomodoroWorkMin": 0}, {"pomodoroPeriods": 9}, {"longRunningHours": 13},
+                {"indicatorCombo": "both"}):  # fmt: skip
+        assert c.patch(f"{API}/preferences", json={"time": bad}).status_code == 422

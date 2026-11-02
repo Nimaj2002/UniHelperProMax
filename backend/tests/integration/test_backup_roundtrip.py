@@ -51,8 +51,12 @@ def _uid(db_path: Path, username: str) -> str:
 
 def _second_web_app(tmp_path: Path, key_file: Path) -> FastAPI:
     return create_app(
-        Settings(data_dir=tmp_path / "data-2", transcription_autorun=False, key_store="file",
-                 key_file=key_file)
+        Settings(
+            data_dir=tmp_path / "data-2",
+            transcription_autorun=False,
+            key_store="file",
+            key_file=key_file,
+        )
     )
 
 
@@ -80,17 +84,13 @@ def test_restore_into_an_empty_installation(
         assert _rows(data2 / "unihelper.sqlite3", uid2) == rows_before
         assert bh.tree(data2 / "files" / "owner") == bh.tree(tmp_data_dir / "files" / "owner")
         settings = c2.get(f"{API}/settings/transcription").json()
-        provider = next(
-            p for p in settings["providers"] if p["providerId"] == "openai-compatible"
-        )
+        provider = next(p for p in settings["providers"] if p["providerId"] == "openai-compatible")
         assert provider["secret"]["configured"] is False
         endpoints = c2.get(f"{API}/ai/endpoints").json()
         assert endpoints and all(e["key"]["configured"] is False for e in endpoints)
         db = sqlite3.connect(data2 / "unihelper.sqlite3")
         assert db.execute("SELECT COUNT(*) FROM secrets").fetchone()[0] == 0
-        assert db.execute(
-            "SELECT data_epoch FROM users WHERE id = ?", (uid2,)
-        ).fetchone()[0] == 1
+        assert db.execute("SELECT data_epoch FROM users WHERE id = ?", (uid2,)).fetchone()[0] == 1
         db.close()
         # the restored data works: notes open
         notes = sorted((data2 / "files" / "owner").rglob("*.md"))
@@ -98,8 +98,12 @@ def test_restore_into_an_empty_installation(
 
 
 def test_a_web_backup_restores_in_the_desktop_app(
-    app: FastAPI, owner_client: TestClient, tmp_data_dir: Path, desktop_app: FastAPI,
-    desktop_client: TestClient, tmp_path: Path,
+    app: FastAPI,
+    owner_client: TestClient,
+    tmp_data_dir: Path,
+    desktop_app: FastAPI,
+    desktop_client: TestClient,
+    tmp_path: Path,
 ) -> None:
     bh.inline_jobs(app)
     bh.seed_everything(owner_client, tmp_data_dir / "files")
@@ -174,9 +178,7 @@ def test_restoring_the_safety_backup_undoes_a_restore(
         assert json.loads(zf.read("manifest.json"))["kind"] == "unihelper-backup"
 
 
-def test_a_hidden_pdf_stays_hidden_after_a_restore(
-    app: FastAPI, owner_client: TestClient
-) -> None:
+def test_a_hidden_pdf_stays_hidden_after_a_restore(app: FastAPI, owner_client: TestClient) -> None:
     """017 FR-007: which PDFs a session hides is part of the backup."""
     from tests import pdf_fixtures as fx
     from tests.contract.document_helpers import make_session, upload_pdf
@@ -229,3 +231,26 @@ def test_custom_shortcuts_survive_a_restore(app: FastAPI, owner_client: TestClie
     assert bh.restore(c, data)["phase"] == "done"
 
     assert c.get(f"{API}/preferences").json()["shortcuts"] == custom
+
+
+def test_time_tracking_round_trips(app: FastAPI, owner_client: TestClient) -> None:
+    """020 T080: tags, entries and the running timer are in the backup and come back."""
+    bh.inline_jobs(app)
+    c = owner_client
+    tag = c.post(f"{API}/time/tags", json={"name": "Homework", "color": "tag-2"}).json()
+    entry = c.post(f"{API}/time/entries", json={"startedAt": "2026-11-02T09:00:00Z",
+                   "durationSeconds": 1800, "tagId": tag["id"]}).json()["entry"]  # fmt: skip
+    timer = c.post(f"{API}/time/timer/start", json={"style": "track", "description": "Now"}).json()
+    _job, data = bh.make_backup(c)
+    c.delete(f"{API}/time/tags/{tag['id']}")
+    c.post(
+        f"{API}/time/timer/stop", json={}, headers={"If-Match": f'"{timer["timer"]["version"]}"'}
+    )
+
+    assert bh.restore(c, data)["phase"] == "done"
+    assert [t["name"] for t in c.get(f"{API}/time/tags").json()] == ["Homework"]
+    q = {"from": "2026-11-02T00:00:00Z", "to": "2026-11-03T00:00:00Z"}
+    restored = c.get(f"{API}/time/entries", params=q).json()
+    assert [(e["id"], e["tagId"]) for e in restored] == [(entry["id"], tag["id"])]
+    back = c.get(f"{API}/time/timer").json()["timer"]
+    assert back["startedAt"] == timer["timer"]["startedAt"] and back["description"] == "Now"

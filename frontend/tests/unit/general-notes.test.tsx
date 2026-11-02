@@ -208,6 +208,9 @@ describe("Tasks panel rail (018)", () => {
     expect(onOpenSection).toHaveBeenCalledWith("notes");
     await user.click(screen.getByRole("button", { name: "Tasks" }));
     expect(onOpenSection).toHaveBeenCalledWith("tasks");
+    // 020: a Time item reopens the panel in Time mode
+    await user.click(screen.getByRole("button", { name: "Time" }));
+    expect(onOpenSection).toHaveBeenCalledWith("time");
     expect(onOpen).not.toHaveBeenCalled();
   });
 });

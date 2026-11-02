@@ -1,5 +1,6 @@
-// The microphone is the only permission the window grants, and only to the app's own address
-// (FR-041, research R13). Both the request and the check handler are set: Chromium asks each.
+// The window grants only the microphone and (020: timer alerts) notifications, and only to the
+// app's own address (FR-041, research R13). Both the request and the check handler are set:
+// Chromium asks each.
 import { BrowserWindow, ipcMain, systemPreferences, type Session } from "electron";
 import { log } from "./logs";
 
@@ -38,10 +39,16 @@ export function registerPermissions(ses: Session, origin: () => string, mainWind
       webContents.id === mainWindow()?.webContents.id &&
       d.isMainFrame !== false;
     if (!allowed && permission === "media") log.info(`denied media request ${JSON.stringify(types)}`);
-    callback(allowed);
+    // 020 FR-036: end-of-phase notifications, for the app's own main window only
+    const notify =
+      permission === "notifications" &&
+      originOf(d.requestingUrl) === origin() &&
+      webContents.id === mainWindow()?.webContents.id;
+    callback(allowed || notify);
   });
   ses.setPermissionCheckHandler((_webContents, permission, requestingOrigin, details) => {
     probeLog(`check:${permission}`, details);
+    if (permission === "notifications") return originOf(requestingOrigin) === origin(); // 020
     return (
       !denyMic() &&
       permission === "media" &&

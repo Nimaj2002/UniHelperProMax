@@ -19,6 +19,7 @@ NOT_SECRET = {
     "folder_key": "case-insensitive folder name for uniqueness",
     "recurrence_key": "calendar import recurrence id",
     "event_key": "session key a task is linked to",
+    "session_key": "session or event a time entry is linked to (020)",
     "chat_key": "which chat a draft belongs to",
     "key_colors_json": "a theme's key colours",
     "content_hash": "SHA-256 of a note file",

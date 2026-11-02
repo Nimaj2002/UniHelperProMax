@@ -1,8 +1,8 @@
-// T032: the microphone is the only permission, and only for the app (FR-041).
+// T032: the microphone and (020) notifications are the only permissions, only for the app (FR-041).
 import { expect, test } from "@playwright/test";
 import { appWindow, fakeMicArgs, launchApp, newProfile, quit } from "./helpers";
 
-test("microphone allowed; camera, location and notifications denied without a prompt @microphone", async () => {
+test("microphone and notifications allowed; camera and location denied without a prompt @microphone", async () => {
   const profile = await newProfile();
   const app = await launchApp(profile, { args: fakeMicArgs() });
   const page = await appWindow(app, profile);
@@ -28,7 +28,7 @@ test("microphone allowed; camera, location and notifications denied without a pr
       notifications: await Notification.requestPermission(),
     };
   });
-  expect(result).toEqual({ audio: "allowed", video: "NotAllowedError", geolocation: "denied", notifications: "denied" });
+  expect(result).toEqual({ audio: "allowed", video: "NotAllowedError", geolocation: "denied", notifications: "granted" });
   await quit(app);
 });
 

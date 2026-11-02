@@ -24,6 +24,7 @@ const ShortcutsSettings = lazy(() => import("./shortcuts/ShortcutsSettings").the
 // 016: Settings → Backup & restore
 const BackupPage = lazy(() => import("./backup/BackupPage").then((m) => ({ default: m.BackupPage })));
 // 009 US4: Settings → Trash
+const TimeSettings = lazy(() => import("./time/TimeSettings").then((m) => ({ default: m.TimeSettings })));
 const TrashPage = lazy(() => import("./trash/TrashPage").then((m) => ({ default: m.TrashPage })));
 
 const loading = (node: ReactNode) => <Suspense fallback={<p role="status" className="text-sm text-muted-foreground">Loading…</p>}>{node}</Suspense>;
@@ -59,6 +60,7 @@ export const routes: RouteObject[] = [
       { path: "appearance", element: loading(<AppearanceSettings />) },
       { path: "appearance/themes/new", element: loading(<ThemeEditor />) },
       { path: "appearance/themes/:themeId", element: loading(<ThemeEditor />) },
+      { path: "time", element: loading(<TimeSettings />) },
       { path: "shortcuts", element: loading(<ShortcutsSettings />) },
       { path: "import-export", element: loading(<ImportExportPage />) },
       { path: "backup", element: loading(<BackupPage />) },

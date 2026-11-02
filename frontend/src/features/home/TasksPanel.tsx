@@ -1,4 +1,4 @@
-import { Kanban, NotePencil } from "@phosphor-icons/react";
+import { Kanban, NotePencil, Timer } from "@phosphor-icons/react";
 import {
   useCallback,
   useEffect,
@@ -22,6 +22,7 @@ import { TaskDetails } from "@/features/tasks/TaskDetails";
 import { TasksHeader } from "@/features/tasks/TasksHeader";
 import { useTaskFilters } from "@/features/tasks/useTaskFilters";
 import { useTaskView } from "@/features/tasks/view";
+import { TimePanel } from "@/features/time/TimePanel";
 import { GeneralNotesSection } from "./GeneralNotesSection";
 import { onTaskRequest, pendingTaskRequest, takeTaskRequest } from "./openTask";
 import {
@@ -34,7 +35,7 @@ interface Props {
   open: boolean;
   leading?: ReactNode;
   trailing?: ReactNode;
-  /** Which of Tasks and General notes is shown (018). */
+  /** Which of Tasks, General notes and (020) Time is shown (018). */
   column: TasksColumn;
 }
 
@@ -137,7 +138,7 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
       size="sm"
       value={section}
       onValueChange={(v) => v && setSection(v as ColumnSection)}
-      aria-label="Tasks or general notes"
+      aria-label="Tasks, general notes or time"
       className="h-7 shrink-0"
     >
       <ToggleGroupItem
@@ -158,6 +159,15 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
       >
         <NotePencil size={14} aria-hidden />
       </ToggleGroupItem>
+      <ToggleGroupItem
+        id={SECTION_SWITCH_ID.time}
+        value="time"
+        aria-label="Time"
+        title="Time"
+        className="h-7 px-2"
+      >
+        <Timer size={14} aria-hidden />
+      </ToggleGroupItem>
     </ToggleGroup>
   );
   const start = (
@@ -173,7 +183,7 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
       as="section"
       id="tasks-panel"
       data-panel="tasks"
-      label="Tasks"
+      label="Tasks and time"
       body="fill"
       bodyClassName="gap-2"
       chrome={false}
@@ -184,6 +194,8 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
       <div className="contents" inert={details !== null || undefined}>
         {section === "notes" ? (
           <GeneralNotesSection leading={start} trailing={trailing} />
+        ) : section === "time" ? (
+          <TimePanel leading={start} trailing={trailing} />
         ) : (
           <>
             <Card className="shrink-0" body="fill">

@@ -322,6 +322,22 @@ components:
         quickCreateType: { type: string, enum: [class, event], description: "added by feature 009" }
         recordingBarStyle: { type: string, enum: [full, compact, minimal], description: "floating recording pill style" }
         generalNotesCollapsed: { type: boolean, description: "added by feature 018" }
+        time:
+          type: object
+          description: "added by feature 020: timer settings (020 data-model.md)"
+          additionalProperties: false
+          properties:
+            pomodoroWorkMin: { type: integer, minimum: 1, maximum: 120 }
+            pomodoroShortMin: { type: integer, minimum: 1, maximum: 60 }
+            pomodoroLongMin: { type: integer, minimum: 1, maximum: 120 }
+            pomodoroPeriods: { type: integer, minimum: 2, maximum: 8 }
+            pomodoroAutoStart: { type: boolean }
+            focusHidePanels: { type: boolean }
+            longRunningHours: { type: [integer, "null"], minimum: 1, maximum: 12 }
+            sound: { type: boolean }
+            systemNotifications: { type: boolean }
+            indicatorCombo: { type: string, enum: [combined, stacked, recording_first] }
+            dailyGoalMin: { type: [integer, "null"], minimum: 1, maximum: 1440 }
         shortcuts:
           type: object
           description: "added by feature 019: custom shortcuts, {commandId: [main, alternate]}; only changed commands are stored"

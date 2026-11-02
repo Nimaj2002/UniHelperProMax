@@ -22,6 +22,7 @@ from unihelper.models.session_folder import SessionFolder
 from unihelper.models.task import Task, TaskChecklistItem, TaskQuickNote
 from unihelper.models.task_column import TaskColumn
 from unihelper.models.theme import Theme
+from unihelper.models.time_tracking import TimeEntry, TimeTag, TimeTimer
 from unihelper.models.transcription import ProviderConfig, TranscriptionJob, TranscriptionSettings
 from unihelper.models.trash_entry import TrashEntry
 from unihelper.models.ui_preferences import UiPreferences
@@ -64,6 +65,9 @@ __all__ = [
     "TaskColumn",
     "TaskQuickNote",
     "Theme",
+    "TimeEntry",
+    "TimeTag",
+    "TimeTimer",
     "TranscriptionJob",
     "TranscriptionSettings",
     "TrashEntry",

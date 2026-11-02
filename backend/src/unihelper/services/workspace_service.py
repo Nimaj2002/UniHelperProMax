@@ -36,7 +36,21 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
     "recording_bar_style": "full",  # floating recording pill: full | compact | minimal
     "general_notes_collapsed": False,  # 018: home page General notes section
     "shortcuts": {},  # 019: custom shortcuts {commandId: [main, alternate]}
+    "time": {  # 020: timer settings
+        "pomodoro_work_min": 25,
+        "pomodoro_short_min": 5,
+        "pomodoro_long_min": 15,
+        "pomodoro_periods": 4,
+        "pomodoro_auto_start": False,
+        "focus_hide_panels": False,
+        "long_running_hours": 3,
+        "sound": True,
+        "system_notifications": False,
+        "indicator_combo": "combined",
+        "daily_goal_min": None,
+    },
 }
+NULLABLE_TIME = {"long_running_hours", "daily_goal_min"}  # an explicit null turns these off
 NULLABLE_PREFERENCES = {"last_semester_id"}  # an explicit null clears these
 MAX_TABS = 50
 NEW_CHAT_ID = re.compile(r"new:[0-9a-f-]{8,64}")
@@ -161,7 +175,9 @@ def put_state(db: Session, user: User, key: str, body: Any) -> dict[str, Any]:
 def get_preferences(db: Session, user: User) -> dict[str, Any]:
     row = db.get(UiPreferences, user.id)
     stored = json.loads(row.data) if row else {}
-    return {**DEFAULT_PREFERENCES, **{k: v for k, v in stored.items() if k in DEFAULT_PREFERENCES}}
+    prefs = {**DEFAULT_PREFERENCES, **{k: v for k, v in stored.items() if k in DEFAULT_PREFERENCES}}
+    prefs["time"] = {**DEFAULT_PREFERENCES["time"], **(stored.get("time") or {})}
+    return prefs
 
 
 def patch_preferences(db: Session, user: User, changes: dict[str, Any]) -> dict[str, Any]:
@@ -171,10 +187,17 @@ def patch_preferences(db: Session, user: User, changes: dict[str, Any]) -> dict[
 
         if not valid_theme_choice(db, user, theme):
             raise validation_error("/theme", "unknown_theme", "Choose one of your themes.")
+    current = get_preferences(db, user)
+    time_changes = changes.pop("time", None)
     merged = {
-        **get_preferences(db, user),
+        **current,
         **{k: v for k, v in changes.items() if v is not None or k in NULLABLE_PREFERENCES},
     }
+    if time_changes is not None:  # 020: a nested patch; null keeps a value unless it may be off
+        merged["time"] = {
+            **current["time"],
+            **{k: v for k, v in time_changes.items() if v is not None or k in NULLABLE_TIME},
+        }
     row = db.get(UiPreferences, user.id)
     if row is None:
         row = UiPreferences(user_id=user.id)

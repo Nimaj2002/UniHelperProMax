@@ -14,6 +14,7 @@ import "@/features/imports/routes";
 import "@/features/recordings/routes";
 import { routes as sessionRoutes } from "@/features/sessions/routes";
 import { routes as settingsRoutes } from "@/features/settings/routes";
+import "@/features/time/routes";
 import "@/features/transcription/routes";
 
 export const featureRoutes: RouteObject[] = [

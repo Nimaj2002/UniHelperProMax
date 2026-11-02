@@ -63,6 +63,7 @@ export const COMMANDS: readonly Command[] = [
   c("shell.searchCourses", "General", "global", "Search courses", "Slash"),
   c("home.toggleCalendar", "General", "global", "Show or hide the calendar panel (home page)", "Shift+KeyC"),
   c("home.toggleTasks", "General", "global", "Show or hide the tasks panel (home page)", "Shift+KeyT"),
+  c("time.toggleTimer", "General", "global", "Start or stop the timer", "Alt+Shift+KeyS", null, W), // 020
 
   c("workspace.newNote", "Notes workspace", "workspace", "New note", "Alt+KeyN", null, W),
   c("workspace.importNote", "Notes workspace", "workspace", "Import a note", "Alt+Shift+KeyN", null, W),

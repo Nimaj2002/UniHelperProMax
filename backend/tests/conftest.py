@@ -255,3 +255,14 @@ def desktop_client(desktop_app) -> Iterator[TestClient]:  # type: ignore[no-unty
         headers={"X-UniHelper-Client": CLIENT_SECRET},
     ) as c:
         yield c
+
+
+@pytest.fixture
+def clock(monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
+    """020: a server clock the time tracking tests move by hand (`clock.tick(minutes=5)`)."""
+    from tests.contract.time_helpers import Clock
+    from unihelper.services import time_service
+
+    c = Clock()
+    monkeypatch.setattr(time_service, "now", lambda: c.now)
+    return c

@@ -11,6 +11,7 @@ import { NewClassButton } from "@/features/classes/NewClassButton";
 import { NewEventButton } from "@/features/events/NewEventButton";
 import { useOpenContextState } from "@/features/events/usePreselectedSemester";
 import { useShowTasks } from "@/features/tasks/calendar/showTasks";
+import { useShowTime } from "@/features/time/calendar/showTime";
 import { formatRangeLabel, formatShortRangeLabel, todayISO } from "@/lib/dates";
 import { hintOf, ShortcutKbd, useKeymap } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
@@ -86,6 +87,7 @@ export function CalendarToolbar({ view, date, tz, compact = false, leading, trai
           ))}
         </ToggleGroup>
         <ShowTasksSwitch />
+        <ShowTimeSwitch />
         {trailing}
       </div>
     );
@@ -130,6 +132,7 @@ export function CalendarToolbar({ view, date, tz, compact = false, leading, trai
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
+      <ShowTimeSwitch />
       <MainBarControls position="end" />
     </div>
   );
@@ -168,6 +171,24 @@ function ShowTasksSwitch() {
         </div>
       </TooltipTrigger>
       <TooltipContent>Show tasks on the calendar</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** 020 FR-044: tracked time on the calendar, on by default (remembered per browser). */
+function ShowTimeSwitch() {
+  const [on, setOn] = useShowTime();
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div className="flex shrink-0 items-center gap-1 px-1">
+          <Switch id="show-time-on-calendar" size="sm" checked={on} onCheckedChange={setOn} aria-label="Show time" />
+          <label htmlFor="show-time-on-calendar" aria-hidden className="hidden text-xs text-text-muted @[44rem]/calendar:inline">
+            Time
+          </label>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent>Show tracked time on the calendar</TooltipContent>
     </Tooltip>
   );
 }

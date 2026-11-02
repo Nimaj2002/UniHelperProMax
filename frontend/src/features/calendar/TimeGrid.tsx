@@ -6,6 +6,7 @@ import { matchFirst } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import { DueStrip } from "@/features/tasks/calendar/DueStrip";
 import { TaskMarker } from "@/features/tasks/calendar/TaskMarker";
+import { LANE_PX, TimeLane, useCalendarTime } from "@/features/time/calendar/TimeLane";
 import type { CalendarTask, CalendarTasks } from "@/features/tasks/calendar/useCalendarTasks";
 import { clickDraft, keyRangeMinutes, moveRange, rangeLabel, SNAP_MIN, type KeyRange, type RangeKey } from "./draft";
 import { EventBlock } from "./EventBlock";
@@ -64,6 +65,8 @@ export function TimeGrid({ days, sessions, tz, drafts, tasks }: Props) {
     slot: (9 * 60) / SLOT_MIN,
   }));
   const daysKey = days.join(",");
+  // 020: tracked time in a lane at each column's right edge ("Show time")
+  const time = useCalendarTime(days, tz);
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(nowMinutes(tz)), 60_000);
@@ -266,17 +269,21 @@ export function TimeGrid({ days, sessions, tz, drafts, tasks }: Props) {
                   style={{ top: (now / 60) * HOUR_PX }}
                 />
               )}
-              <ColumnEntries sessions={byDay.get(d) ?? NO_SESSIONS} layout={layoutOf(d)} onOpen={onOpenEntry} />
-              {tasks?.timed.has(d) && <TimedTasks entries={tasks.timed.get(d)!} />}
-              {draft && draft.date === d && (
-                <DraftBlock
-                  label={rangeLabel(draft)}
-                  top={(draft.startMin / 60) * HOUR_PX}
-                  height={Math.max(((draft.endMin - draft.startMin) / 60) * HOUR_PX - 2, MIN_EVENT_PX - 8)}
-                  placement={draftLayout?.get(DRAFT_KEY) ?? { column: 0, columns: 1 }}
-                  animate={!reduceMotion && phase !== "drag"}
-                />
-              )}
+              {/* entries, tasks and the draft keep clear of the time lane, so it never covers them */}
+              <div className="pointer-events-none absolute inset-y-0 left-0" style={{ right: time.on ? LANE_PX : 0 }}>
+                <ColumnEntries sessions={byDay.get(d) ?? NO_SESSIONS} layout={layoutOf(d)} onOpen={onOpenEntry} />
+                {tasks?.timed.has(d) && <TimedTasks entries={tasks.timed.get(d)!} />}
+                {draft && draft.date === d && (
+                  <DraftBlock
+                    label={rangeLabel(draft)}
+                    top={(draft.startMin / 60) * HOUR_PX}
+                    height={Math.max(((draft.endMin - draft.startMin) / 60) * HOUR_PX - 2, MIN_EVENT_PX - 8)}
+                    placement={draftLayout?.get(DRAFT_KEY) ?? { column: 0, columns: 1 }}
+                    animate={!reduceMotion && phase !== "drag"}
+                  />
+                )}
+              </div>
+              {time.on && <TimeLane day={d} blocks={time.byDay.get(d) ?? []} tz={tz} hourPx={HOUR_PX} />}
             </div>
           ))}
         </div>
@@ -336,7 +343,7 @@ const ColumnEntries = memo(function ColumnEntries({ sessions, layout, onOpen }: 
         session={s}
         kind={s.kind}
         compact={height < 40}
-        className="absolute z-10"
+        className="pointer-events-auto absolute z-10"
         style={{
           top: top + 1,
           height,

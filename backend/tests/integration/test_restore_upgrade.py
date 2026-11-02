@@ -30,24 +30,23 @@ def _relabel(data: bytes, *, drop: tuple[str, ...] = (), **over: object) -> byte
 def test_a_backup_from_an_older_revision_is_upgraded(
     app: FastAPI, owner_client: TestClient, tmp_data_dir: Path
 ) -> None:
-    """0014 only added users.data_epoch, which isn't in a backup, and 0015 only added
-    document_hides, so a head backup without that table's data, labelled 0013, is a genuine 0013
-    backup: restoring it runs the 0013 → head migrations."""
+    """0014 only added users.data_epoch, which isn't in a backup, 0015 only added document_hides
+    and 0017 only added the time tracking tables, so a head backup without those tables' data,
+    labelled 0013, is a genuine 0013 backup: restoring it runs the 0013 → head migrations."""
     bh.inline_jobs(app)
     c = owner_client
     key = make_session(c)
     note = create_note(c, key, "Lecture 1", "upgrade me")
     _job, data = bh.make_backup(c)
-    older = _relabel(data, drop=("document_hides",), schemaRevision="0013", appVersion="1.0.0")
+    dropped = ("document_hides", "time_tags", "time_timers", "time_entries")
+    older = _relabel(data, drop=dropped, schemaRevision="0013", appVersion="1.0.0")
     job = bh.upload(c, older)
     assert job["summary"]["willUpgrade"] is True and job["summary"]["appVersion"] == "1.0.0"
     assert bh.restore(c, older)["phase"] == "done"
     assert c.get(f"{API}/notes/{note['id']}").json()["content"] == "upgrade me"
 
 
-def test_the_committed_old_backup_still_restores(
-    app: FastAPI, owner_client: TestClient
-) -> None:
+def test_the_committed_old_backup_still_restores(app: FastAPI, owner_client: TestClient) -> None:
     bh.inline_jobs(app)
     data = FIXTURE.read_bytes()
     manifest = json.loads(bh.zip_files(data)["manifest.json"])

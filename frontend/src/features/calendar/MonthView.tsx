@@ -4,6 +4,8 @@ import type { Session } from "@/features/classes/api";
 import { formatDay, monthGrid, sameMonth, todayISO } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { TaskMarker } from "@/features/tasks/calendar/TaskMarker";
+import { useCalendarTime } from "@/features/time/calendar/TimeLane";
+import { formatDuration } from "@/features/time/clock";
 import type { CalendarTask, CalendarTasks } from "@/features/tasks/calendar/useCalendarTasks";
 import { rangeLabel, type Draft } from "./draft";
 import { EventBlock } from "./EventBlock";
@@ -53,6 +55,8 @@ export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft, 
     return () => ro.disconnect();
   }, [maxChips]);
 
+  // 020 FR-046: each day's tracked time ("Show time")
+  const time = useCalendarTime(days, tz);
   const byDay = new Map<string, Session[]>();
   for (const s of sessions) byDay.set(s.date, [...(byDay.get(s.date) ?? []), s]);
 
@@ -94,6 +98,12 @@ export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft, 
                     onCreateDraft(d);
                   }}
                 >
+                  {(time.totals.get(d) ?? 0) >= 60 && (
+                    <span className="float-right pt-0.5 text-[11px] tabular-nums text-text-muted" data-month-time={d}>
+                      <span className="sr-only">Tracked </span>
+                      {formatDuration(time.totals.get(d)!)}
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => navigate(calendarPath("day", d))}
