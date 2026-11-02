@@ -1,6 +1,6 @@
 [project]
 name = "unihelper"
-version = "1.0.3"
+version = "1.0.4"
 description = "UniHelperProMax backend: versioned REST JSON API over SQLite metadata and a human-readable file store"
 license = "AGPL-3.0-only"
 requires-python = ">=3.12"
