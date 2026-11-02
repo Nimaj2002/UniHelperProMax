@@ -11,6 +11,7 @@ import {
   forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent, type ReactNode,
 } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { chordFromEvent, hintOf, matches, ShortcutKbd, useKeymap } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import { attachmentKey, chatFileUrl, type ContextItemRef } from "./api";
 import { metaOf, removeAttachment, uploadAttachments, useAttachMeta, useAttachState } from "./attachments";
@@ -19,6 +20,8 @@ import { getDraft, useChatDraft } from "./drafts";
 /** One line of the text area (text-sm, leading-5) and its vertical padding. */
 export const LINE_PX = 20;
 const PAD_PX = 16;
+// keys that make a textarea line break by themselves
+const NATIVE_NEW_LINE = /^(Shift\+)?(Enter|NumpadEnter)$/;
 export const MAX_LINES = 8;
 export const MAX_BOX_PX = MAX_LINES * LINE_PX + PAD_PX;
 /** Browsers that size a text area to its content themselves: no measuring on each key, which
@@ -67,6 +70,7 @@ export const MessageBox = forwardRef<MessageBoxHandle, Props>(function MessageBo
   ref,
 ) {
   const draft = useChatDraft(sessionKey, chatId);
+  const keymap = useKeymap();
   const { uploads, message } = useAttachState(sessionKey, chatId);
   useAttachMeta();
   const area = useRef<HTMLTextAreaElement>(null);
@@ -111,17 +115,23 @@ export const MessageBox = forwardRef<MessageBoxHandle, Props>(function MessageBo
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Escape" && generating) {
+    // keys from the 019 keymap
+    if (generating && matches(e.nativeEvent, "chat.stop")) {
       e.preventDefault();
       e.stopPropagation();
       stop();
       return;
     }
-    if (e.key !== "Enter" || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey) return;
-    // never send while an input method composes text (Chinese, Japanese, …)
+    // never act while an input method composes text (Chinese, Japanese, …)
     if (e.nativeEvent.isComposing || e.keyCode === 229) return;
-    e.preventDefault();
-    void send();
+    if (matches(e.nativeEvent, "chat.send")) {
+      e.preventDefault();
+      void send();
+    } else if (matches(e.nativeEvent, "chat.newLine") && !NATIVE_NEW_LINE.test(chordFromEvent(e.nativeEvent)?.chord ?? "")) {
+      // a custom new-line key: type the line break the textarea would not type itself
+      e.preventDefault();
+      document.execCommand("insertText", false, "\n");
+    }
   };
 
   // FR-052: pictures pasted from the clipboard or dropped on the box are uploaded and attached
@@ -239,7 +249,7 @@ export const MessageBox = forwardRef<MessageBoxHandle, Props>(function MessageBo
           onChange={(e) => draft.setText(e.target.value)}
           onKeyDown={onKeyDown}
           onPaste={onPaste}
-          aria-keyshortcuts="Alt+K Enter Shift+Enter Escape"
+          aria-keyshortcuts={["workspace.focusChat", "chat.send", "chat.newLine", "chat.stop"].flatMap((id) => hintOf(keymap, id).aria ?? []).join(" ") || undefined}
           style={native ? { maxHeight: MAX_BOX_PX, minHeight: LINE_PX + PAD_PX, fieldSizing: "content", overflowY: "auto" } : { maxHeight: MAX_BOX_PX }}
           className="block w-full resize-none bg-transparent px-3 py-2 text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
         />
@@ -254,7 +264,7 @@ export const MessageBox = forwardRef<MessageBoxHandle, Props>(function MessageBo
                 <button
                   type="button"
                   aria-label="Stop"
-                  aria-keyshortcuts="Escape"
+                  aria-keyshortcuts={hintOf(keymap, "chat.stop").aria}
                   onClick={stop}
                   className="inline-flex size-7 shrink-0 items-center justify-center rounded-md bg-foreground text-background hover:opacity-90"
                 >
@@ -262,14 +272,14 @@ export const MessageBox = forwardRef<MessageBoxHandle, Props>(function MessageBo
                 </button>
               </TooltipTrigger>
               <TooltipContent>
-                Stop <kbd className="ml-1 font-mono">Esc</kbd>
+                Stop <ShortcutKbd id="chat.stop" />
               </TooltipContent>
             </Tooltip>
           ) : (
             <button
               type="button"
               aria-label="Send"
-              aria-keyshortcuts="Enter"
+              aria-keyshortcuts={hintOf(keymap, "chat.send").aria}
               aria-disabled={!canSend || undefined}
               onClick={() => void send()}
               className={cn(

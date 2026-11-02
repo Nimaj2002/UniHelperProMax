@@ -42,10 +42,10 @@ describe("message box keys", () => {
     const user = userEvent.setup();
     const { box, onSend } = setup();
     await user.type(box, "你好");
-    fireEvent.keyDown(box, { key: "Enter", isComposing: true });
-    fireEvent.keyDown(box, { key: "Enter", keyCode: 229 });
+    fireEvent.keyDown(box, { key: "Enter", code: "Enter", isComposing: true });
+    fireEvent.keyDown(box, { key: "Enter", code: "Enter", keyCode: 229 });
     expect(onSend).not.toHaveBeenCalled();
-    fireEvent.keyDown(box, { key: "Enter" });
+    fireEvent.keyDown(box, { key: "Enter", code: "Enter" });
     expect(onSend).toHaveBeenCalledTimes(1);
   });
 

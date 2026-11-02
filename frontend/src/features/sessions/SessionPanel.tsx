@@ -14,6 +14,7 @@ import { RIGHT_DEFAULT } from "@/app/shell/widths";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ShortcutKbd, useShortcut } from "@/lib/keymap";
 import { readLocal, writeLocal } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { useChatSection, useWorkspacePanels } from "./workspace-panels";
@@ -154,15 +155,16 @@ export function useSessionRail(expand: (section: SessionSection) => void): { rai
 
 function CloseButton() {
   const { toggleRight } = useLayout();
+  const { aria } = useShortcut("workspace.toggleRight");
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8" onClick={toggleRight} aria-controls={RIGHT_CARD_ID} aria-label="Close session panel" aria-keyshortcuts="Alt+BracketRight">
+        <Button variant="ghost" size="icon" className="size-8" onClick={toggleRight} aria-controls={RIGHT_CARD_ID} aria-label="Close session panel" aria-keyshortcuts={aria}>
           <SidebarSimple size={18} className="-scale-x-100" />
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        Close session panel <kbd className="ml-1 font-mono">Alt+]</kbd>
+        Close session panel <ShortcutKbd id="workspace.toggleRight" />
       </TooltipContent>
     </Tooltip>
   );

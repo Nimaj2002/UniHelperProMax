@@ -15,14 +15,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { usePreferences, useUpdatePreferences, type Preferences } from "@/features/sessions/api";
+import { RecordingPill, type RecordingBarStyle } from "@/features/recordings/RecordingBar";
+import { usePreferences, useUpdatePreferences } from "@/features/sessions/api";
 import { isApiError } from "@/lib/api";
 import { createTheme, deleteTheme, themesKey, updateTheme, useThemes, type Theme } from "../api";
 import { BUILT_IN, contrastIssues, keyColorsOf, type Base, type ColorSet } from "./colors";
 import { PRESETS, type Preset } from "./presets";
 import { fileName, parseFile, toFile, type ThemeData } from "./themeFile";
-
-type RecordingBarStyle = NonNullable<Preferences["recordingBarStyle"]>;
 
 const RECORDING_BAR_STYLES: [RecordingBarStyle, string, string][] = [
   ["full", "Full", "Recording label, time, go to session and stop."],
@@ -88,6 +87,7 @@ export function AppearanceSettings() {
   const [importError, setImportError] = useState<string>();
 
   const active = prefs.data?.theme ?? "system";
+  const barStyle = prefs.data?.recordingBarStyle ?? "full";
   const custom = themes.data ?? [];
   const presetOption = (p: Preset): Option => ({ id: p.id, name: p.name, swatches: swatchesOf(p.colors), preset: p });
   const groups: { title: string; options: Option[] }[] = [
@@ -138,39 +138,18 @@ export function AppearanceSettings() {
 
   return (
     <div className="grid gap-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="grid gap-1">
-          <h2 className="text-lg font-semibold">Appearance</h2>
-          <p className="text-sm text-muted-foreground">Your theme is saved to your account and used on every device.</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={() => fileInput.current?.click()}>
-            <UploadSimple size={16} aria-hidden /> Import…
-          </Button>
-          <Button onClick={() => setDialog({ kind: "new" })}>
-            <Plus size={16} aria-hidden /> New theme…
-          </Button>
-          <input
-            ref={fileInput}
-            type="file"
-            accept=".json,application/json"
-            className="sr-only"
-            tabIndex={-1}
-            aria-label="Theme file to import"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              e.target.value = "";
-              if (file) void importFile(file);
-            }}
-          />
-        </div>
+      <header className="grid gap-1">
+        <h2 className="text-lg font-semibold">Appearance</h2>
+        <p className="text-sm text-muted-foreground">Saved to your account and used on every device.</p>
       </header>
-      {importError && <p role="alert" className="text-sm text-danger">{importError}</p>}
 
-      <section aria-labelledby="recording-bar-style" className="grid gap-2">
-        <h3 id="recording-bar-style" className="text-sm font-semibold text-muted-foreground">Recording indicator</h3>
+      <section aria-labelledby="recording-bar-style" className="grid gap-4 rounded-xl border border-divider p-4 sm:p-6">
+        <div className="grid gap-1">
+          <h3 id="recording-bar-style" className="text-base font-semibold">Recording indicator</h3>
+          <p className="text-sm text-muted-foreground">The pill that floats over every screen while you record.</p>
+        </div>
         <RadioGroup
-          value={prefs.data?.recordingBarStyle ?? "full"}
+          value={barStyle}
           onValueChange={(v) => updatePrefs.mutate({ recordingBarStyle: v as RecordingBarStyle })}
           aria-labelledby="recording-bar-style"
           className="grid gap-3 sm:grid-cols-3"
@@ -185,60 +164,98 @@ export function AppearanceSettings() {
             </div>
           ))}
         </RadioGroup>
+        <figure className="grid gap-2">
+          <figcaption className="text-xs font-medium text-muted-foreground">Preview</figcaption>
+          {/* inert: look-only copy of the real pill; its buttons must not navigate or stop a recording */}
+          <div inert aria-hidden className="flex justify-center rounded-lg border border-dashed border-divider bg-surface p-6">
+            <RecordingPill style={barStyle} elapsed={754_000} label="Lecture 4 · Linear algebra" back="/" onStop={() => {}} />
+          </div>
+        </figure>
       </section>
 
-      <RadioGroup value={active} onValueChange={(v) => updatePrefs.mutate({ theme: v })} aria-label="Theme" className="grid gap-6">
-        {groups.filter((g) => g.options.length > 0).map((g) => (
-          <section key={g.title} aria-label={g.title} className="grid gap-2">
-            <h3 className="text-sm font-semibold text-muted-foreground">{g.title}</h3>
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {g.options.map((o) => (
-                <div key={o.id} className="flex items-start gap-2 rounded-lg border border-divider bg-surface-elevated p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary">
-                  <RadioGroupItem value={o.id} id={`theme-${o.id}`} className="mt-1" />
-                  <Label htmlFor={`theme-${o.id}`} className="grid min-w-0 flex-1 cursor-pointer gap-2 font-normal">
-                    <span className="flex min-w-0 items-center gap-2">
-                      <span className="min-w-0 truncate font-medium" title={o.name}>{o.name}</span>
-                      {active === o.id && <Badge variant="outline">Active</Badge>}
-                      {o.theme?.lowContrast && <Badge variant="outline">Low contrast</Badge>}
-                    </span>
-                    <span className="flex gap-1" aria-hidden>
-                      {o.swatches.map((c, i) => (
-                        <span key={i} className="size-5 rounded border border-divider" style={{ backgroundColor: c }} />
-                      ))}
-                    </span>
-                  </Label>
-                  {o.id !== "system" && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="size-7" aria-label={`Actions for ${o.name}`}>
-                          <DotsThree size={18} weight="bold" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {o.theme && (
-                          <>
-                            <DropdownMenuItem onSelect={() => navigate(`/settings/appearance/themes/${o.theme!.id}`)}>Edit</DropdownMenuItem>
-                            <DropdownMenuItem onSelect={() => setDialog({ kind: "rename", theme: o.theme! })}>Rename…</DropdownMenuItem>
-                          </>
-                        )}
-                        <DropdownMenuItem onSelect={() => void duplicate(sourceData(o))}>Duplicate</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => download(sourceData(o))}>
-                          <DownloadSimple size={14} aria-hidden /> Export
-                        </DropdownMenuItem>
-                        {o.theme && (
-                          <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => setDialog({ kind: "delete", theme: o.theme! })}>
-                            Delete…
+      <section aria-labelledby="themes-heading" className="grid gap-4 rounded-xl border border-divider p-4 sm:p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="grid gap-1">
+            <h3 id="themes-heading" className="text-base font-semibold">Themes</h3>
+            <p className="text-sm text-muted-foreground">Colours used across the app.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => fileInput.current?.click()}>
+              <UploadSimple size={16} aria-hidden /> Import…
+            </Button>
+            <Button onClick={() => setDialog({ kind: "new" })}>
+              <Plus size={16} aria-hidden /> New theme…
+            </Button>
+            <input
+              ref={fileInput}
+              type="file"
+              accept=".json,application/json"
+              className="sr-only"
+              tabIndex={-1}
+              aria-label="Theme file to import"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) void importFile(file);
+              }}
+            />
+          </div>
+        </div>
+        {importError && <p role="alert" className="text-sm text-danger">{importError}</p>}
+
+        <RadioGroup value={active} onValueChange={(v) => updatePrefs.mutate({ theme: v })} aria-label="Theme" className="grid gap-6">
+          {groups.filter((g) => g.options.length > 0).map((g) => (
+            <section key={g.title} aria-label={g.title} className="grid gap-2">
+              <h4 className="text-sm font-semibold text-muted-foreground">{g.title}</h4>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {g.options.map((o) => (
+                  <div key={o.id} className="flex items-start gap-2 rounded-lg border border-divider bg-surface-elevated p-3 has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:ring-1 has-[[data-state=checked]]:ring-primary">
+                    <RadioGroupItem value={o.id} id={`theme-${o.id}`} className="mt-1" />
+                    <Label htmlFor={`theme-${o.id}`} className="grid min-w-0 flex-1 cursor-pointer gap-2 font-normal">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="min-w-0 truncate font-medium" title={o.name}>{o.name}</span>
+                        {active === o.id && <Badge variant="outline">Active</Badge>}
+                        {o.theme?.lowContrast && <Badge variant="outline">Low contrast</Badge>}
+                      </span>
+                      <span className="flex gap-1" aria-hidden>
+                        {o.swatches.map((c, i) => (
+                          <span key={i} className="size-5 rounded border border-divider" style={{ backgroundColor: c }} />
+                        ))}
+                      </span>
+                    </Label>
+                    {o.id !== "system" && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-7" aria-label={`Actions for ${o.name}`}>
+                            <DotsThree size={18} weight="bold" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {o.theme && (
+                            <>
+                              <DropdownMenuItem onSelect={() => navigate(`/settings/appearance/themes/${o.theme!.id}`)}>Edit</DropdownMenuItem>
+                              <DropdownMenuItem onSelect={() => setDialog({ kind: "rename", theme: o.theme! })}>Rename…</DropdownMenuItem>
+                            </>
+                          )}
+                          <DropdownMenuItem onSelect={() => void duplicate(sourceData(o))}>Duplicate</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => download(sourceData(o))}>
+                            <DownloadSimple size={14} aria-hidden /> Export
                           </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              ))}
-            </div>
-          </section>
-        ))}
-      </RadioGroup>
+                          {o.theme && (
+                            <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => setDialog({ kind: "delete", theme: o.theme! })}>
+                              Delete…
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </RadioGroup>
+      </section>
 
       {dialog?.kind === "new" && (
         <NewThemeDialog

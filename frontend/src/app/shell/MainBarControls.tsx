@@ -1,12 +1,14 @@
 import { ArrowsIn, ArrowsOut, SidebarSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ShortcutKbd, useShortcut } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import { FOCUS_BUTTON_ID, LEFT_CARD_ID, SHOW_LEFT_ID, useLayout } from "./layout";
 
 /** Opens the side panel over the main card on narrow windows, where there is no rail (008 FR-011). */
 export function ShowSidePanelButton() {
   const { mode, focus, leftVisible, toggleLeft } = useLayout();
+  const { aria } = useShortcut("shell.toggleSidePanel");
   if (mode !== "overlay" || focus) return null;
   return (
     <Tooltip>
@@ -20,13 +22,13 @@ export function ShowSidePanelButton() {
           aria-controls={LEFT_CARD_ID}
           aria-expanded={leftVisible}
           aria-label="Show side panel"
-          aria-keyshortcuts="BracketLeft"
+          aria-keyshortcuts={aria}
         >
           <SidebarSimple size={18} />
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        Show side panel <kbd className="ml-1 font-mono">[</kbd>
+        Show side panel <ShortcutKbd id="shell.toggleSidePanel" />
       </TooltipContent>
     </Tooltip>
   );
@@ -35,6 +37,7 @@ export function ShowSidePanelButton() {
 /** Hides both side cards, or brings them back as they were (008 FR-024). */
 export function FocusModeButton() {
   const { focus, toggleFocus } = useLayout();
+  const { aria } = useShortcut("shell.toggleFocus");
   const label = focus ? "Leave focus mode" : "Enter focus mode";
   return (
     <Tooltip>
@@ -47,13 +50,13 @@ export function FocusModeButton() {
           onClick={toggleFocus}
           aria-pressed={focus}
           aria-label={label}
-          aria-keyshortcuts="Backslash"
+          aria-keyshortcuts={aria}
         >
           {focus ? <ArrowsIn size={18} /> : <ArrowsOut size={18} />}
         </Button>
       </TooltipTrigger>
       <TooltipContent>
-        {label} <kbd className="ml-1 font-mono">\</kbd>
+        {label} <ShortcutKbd id="shell.toggleFocus" />
       </TooltipContent>
     </Tooltip>
   );

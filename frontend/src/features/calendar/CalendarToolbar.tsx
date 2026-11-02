@@ -12,6 +12,7 @@ import { NewEventButton } from "@/features/events/NewEventButton";
 import { useOpenContextState } from "@/features/events/usePreselectedSemester";
 import { useShowTasks } from "@/features/tasks/calendar/showTasks";
 import { formatRangeLabel, formatShortRangeLabel, todayISO } from "@/lib/dates";
+import { hintOf, ShortcutKbd, useKeymap } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import { PERIOD_NOUN, shiftPeriod } from "./navigation";
 import { useSemesterWeek } from "./semesterWeek";
@@ -35,6 +36,8 @@ interface Props {
 
 export function CalendarToolbar({ view, date, tz, compact = false, leading, trailing }: Props) {
   const navigate = useNavigate();
+  const keymap = useKeymap();
+  const hint = (id: string) => hintOf(keymap, id);
   const go = (d: string, v: CalendarView = view) => navigate(calendarPath(v, d));
   const noun = PERIOD_NOUN[view];
 
@@ -44,9 +47,9 @@ export function CalendarToolbar({ view, date, tz, compact = false, leading, trai
         {leading}
         <Tooltip>
           <TooltipTrigger asChild>
-            <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => go(todayISO(tz))} aria-keyshortcuts="t">Today</Button>
+            <Button variant="outline" size="sm" className="h-7 px-2" onClick={() => go(todayISO(tz))} aria-keyshortcuts={hint("calendar.today").aria}>Today</Button>
           </TooltipTrigger>
-          <TooltipContent>Today <kbd className="ml-1 font-mono">T</kbd></TooltipContent>
+          <TooltipContent>Today <ShortcutKbd id="calendar.today" /></TooltipContent>
         </Tooltip>
         <Button variant="ghost" size="icon" className="size-7 shrink-0" aria-label={`Previous ${noun}`} onClick={() => go(shiftPeriod(view, date, -1))}>
           <CaretLeft size={16} />
@@ -76,7 +79,7 @@ export function CalendarToolbar({ view, date, tz, compact = false, leading, trai
           className="h-7 shrink-0"
         >
           {(Object.keys(VIEW_LABELS) as CalendarView[]).map((v) => (
-            <ToggleGroupItem key={v} value={v} aria-label={`${VIEW_LABELS[v][1]} view`} aria-keyshortcuts={v[0]} className="h-7 px-2">
+            <ToggleGroupItem key={v} value={v} aria-label={`${VIEW_LABELS[v][1]} view`} aria-keyshortcuts={hint(`calendar.${v}View`).aria} className="h-7 px-2">
               <span className="@[48rem]/calendar:hidden">{VIEW_LABELS[v][0]}</span>
               <span className="hidden @[48rem]/calendar:inline">{VIEW_LABELS[v][1]}</span>
             </ToggleGroupItem>
@@ -92,9 +95,9 @@ export function CalendarToolbar({ view, date, tz, compact = false, leading, trai
       <MainBarControls position="start" />
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="outline" size="sm" className="px-2 sm:px-3" onClick={() => go(todayISO(tz))} aria-keyshortcuts="t">Today</Button>
+          <Button variant="outline" size="sm" className="px-2 sm:px-3" onClick={() => go(todayISO(tz))} aria-keyshortcuts={hint("calendar.today").aria}>Today</Button>
         </TooltipTrigger>
-        <TooltipContent>Today <kbd className="ml-1 font-mono">T</kbd></TooltipContent>
+        <TooltipContent>Today <ShortcutKbd id="calendar.today" /></TooltipContent>
       </Tooltip>
       <Button variant="ghost" size="icon" className="size-8 sm:size-9" aria-label={`Previous ${noun}`} onClick={() => go(shiftPeriod(view, date, -1))}>
         <CaretLeft size={18} />
@@ -121,7 +124,7 @@ export function CalendarToolbar({ view, date, tz, compact = false, leading, trai
         className="shrink-0"
       >
         {(Object.keys(VIEW_LABELS) as CalendarView[]).map((v) => (
-          <ToggleGroupItem key={v} value={v} aria-label={`${VIEW_LABELS[v][1]} view`} aria-keyshortcuts={v[0]} className="px-2.5">
+          <ToggleGroupItem key={v} value={v} aria-label={`${VIEW_LABELS[v][1]} view`} aria-keyshortcuts={hint(`calendar.${v}View`).aria} className="px-2.5">
             <span className="sm:hidden">{VIEW_LABELS[v][0]}</span>
             <span className="hidden sm:inline">{VIEW_LABELS[v][1]}</span>
           </ToggleGroupItem>
@@ -172,6 +175,7 @@ function ShowTasksSwitch() {
 /** New class / New event when the panel is too narrow for their buttons (FR-064). */
 function MoreMenu({ className }: { className?: string }) {
   const navigate = useNavigate();
+  const keymap = useKeymap();
   const state = useOpenContextState();
   return (
     <DropdownMenu>
@@ -186,11 +190,11 @@ function MoreMenu({ className }: { className?: string }) {
         <TooltipContent>More</TooltipContent>
       </Tooltip>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onSelect={() => navigate("/classes/new", { state })} aria-keyshortcuts="n">
+        <DropdownMenuItem onSelect={() => navigate("/classes/new", { state })} aria-keyshortcuts={hintOf(keymap, "calendar.newClass").aria}>
           <Plus size={16} weight="bold" aria-hidden />
           New class
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => navigate("/events/new", { state })} aria-keyshortcuts="e">
+        <DropdownMenuItem onSelect={() => navigate("/events/new", { state })} aria-keyshortcuts={hintOf(keymap, "calendar.newEvent").aria}>
           <CalendarStar size={16} weight="bold" aria-hidden />
           New event
         </DropdownMenuItem>

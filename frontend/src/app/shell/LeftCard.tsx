@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ShortcutKbd, useShortcut } from "@/lib/keymap";
 import { readLocal, writeLocal } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { AccountMenu } from "./AccountMenu";
@@ -132,6 +133,7 @@ function Sections() {
  */
 export function LeftCard({ className, onNavigate }: { className?: string; onNavigate?: () => void }) {
   const { toggleLeft } = useLayout();
+  const { aria } = useShortcut("shell.toggleSidePanel");
   return (
     <Card
       as="aside"
@@ -147,12 +149,12 @@ export function LeftCard({ className, onNavigate }: { className?: string; onNavi
           </Link>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="ml-auto size-8" onClick={toggleLeft} aria-controls={LEFT_CARD_ID} aria-label="Hide side panel" aria-keyshortcuts="BracketLeft">
+              <Button variant="ghost" size="icon" className="ml-auto size-8" onClick={toggleLeft} aria-controls={LEFT_CARD_ID} aria-label="Hide side panel" aria-keyshortcuts={aria}>
                 <SidebarSimple size={18} />
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              Hide side panel <kbd className="ml-1 font-mono">[</kbd>
+              Hide side panel <ShortcutKbd id="shell.toggleSidePanel" />
             </TooltipContent>
           </Tooltip>
         </div>

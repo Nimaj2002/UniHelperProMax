@@ -322,3 +322,21 @@ components:
         quickCreateType: { type: string, enum: [class, event], description: "added by feature 009" }
         recordingBarStyle: { type: string, enum: [full, compact, minimal], description: "floating recording pill style" }
         generalNotesCollapsed: { type: boolean, description: "added by feature 018" }
+        shortcuts:
+          type: object
+          description: "added by feature 019: custom shortcuts, {commandId: [main, alternate]}; only changed commands are stored"
+          maxProperties: 200
+          propertyNames: { type: string, maxLength: 64, pattern: '^[a-z][A-Za-z0-9]*(\.[a-z][A-Za-z0-9]*)+$' }
+          additionalProperties:
+            type: array
+            minItems: 2
+            maxItems: 2
+            items:
+              oneOf:
+                - type: "null"
+                - type: object
+                  additionalProperties: false
+                  required: [chord, label]
+                  properties:
+                    chord: { type: string, pattern: '^(Ctrl\+)?(Meta\+)?(Alt\+)?(Shift\+)?[A-Za-z0-9]{1,24}$' }
+                    label: { type: string, minLength: 1, maxLength: 32 }

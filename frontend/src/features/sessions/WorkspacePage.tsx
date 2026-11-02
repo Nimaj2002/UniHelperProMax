@@ -19,6 +19,7 @@ import { DOC_ATTACH, DOC_DETACH, DocumentTabView } from "@/features/documents/re
 import { useNoteImporter } from "@/features/imports/useNoteImporter";
 import { isApiError } from "@/lib/api";
 import { formatDay, wallTime } from "@/lib/dates";
+import { ShortcutKbd } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import {
   fetchNote, fetchWorkspace, notesKey, putWorkspace, saveNoteContent, useCreateNote, useDeleteNote,
@@ -503,10 +504,10 @@ export function WorkspacePage() {
         </p>
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
           <button type="button" onClick={() => setDialog({ kind: "new" })} className="text-sm font-medium text-primary underline underline-offset-4">
-            New note <kbd className="ml-1 font-mono text-xs text-muted-foreground">Alt+N</kbd>
+            New note <ShortcutKbd id="workspace.newNote" className="text-xs text-muted-foreground" />
           </button>
           <button type="button" onClick={noteImporter.pick} className="text-sm font-medium text-primary underline underline-offset-4">
-            Import note <kbd className="ml-1 font-mono text-xs text-muted-foreground">Alt+Shift+N</kbd>
+            Import note <ShortcutKbd id="workspace.importNote" className="text-xs text-muted-foreground" />
           </button>
         </div>
       </div>

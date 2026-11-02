@@ -2,6 +2,7 @@ import { CalendarStar, CaretDown, CaretRight, DotsSixVertical, MagnifyingGlass, 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type DragEvent, type KeyboardEvent } from "react";
 import { Link } from "react-router";
 import { Input } from "@/components/ui/input";
+import { matches, useShortcut } from "@/lib/keymap";
 import { hasModifier, isTypingTarget } from "@/lib/shortcuts";
 import { readLocal, writeLocal } from "@/lib/storage";
 import { swatchStyle, type ColorKey } from "@/lib/palette";
@@ -51,10 +52,12 @@ function useCourseQuery() {
 export function CourseSearch() {
   const query = useCourseQuery();
   const searchRef = useRef<HTMLInputElement>(null);
+  const { aria } = useShortcut("shell.searchCourses");
   // "/" focuses the search (FR-023); while the side panel is closed the shell opens it first
   useEffect(() => {
     const onKey = (e: globalThis.KeyboardEvent) => {
-      if (e.key === "/" && !hasModifier(e) && !isTypingTarget(e.target)) {
+      if (e.defaultPrevented || (!hasModifier(e) && isTypingTarget(e.target))) return;
+      if (matches(e, "shell.searchCourses")) {
         e.preventDefault();
         searchRef.current?.focus();
       }
@@ -72,7 +75,7 @@ export function CourseSearch() {
         type="search"
         placeholder="Search courses"
         aria-controls="course-list"
-        aria-keyshortcuts="/"
+        aria-keyshortcuts={aria}
         autoComplete="off"
         value={query}
         onChange={(e) => setCourseQuery(e.target.value)}

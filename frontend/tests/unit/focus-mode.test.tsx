@@ -83,7 +83,7 @@ describe("focus mode (008 US4)", () => {
     setOpenSpy.mockClear();
     const stored = localStorage.getItem("uh.panel.collapsed");
 
-    fireEvent.keyDown(document.body, { key: "\\" });
+    fireEvent.keyDown(document.body, { key: "\\", code: "Backslash" });
     expect(side()).toBeNull();
     expect(audio()).toBeNull();
     expect(screen.getByRole("button", { name: "Leave focus mode" })).toHaveAttribute("aria-pressed", "true");
@@ -100,7 +100,7 @@ describe("focus mode (008 US4)", () => {
   it("ignores \\ with modifiers and while typing", async () => {
     render();
     await screen.findByRole("button", { name: "Enter focus mode" });
-    for (const mod of ["altKey", "ctrlKey", "metaKey"]) fireEvent.keyDown(document.body, { key: "\\", [mod]: true });
+    for (const mod of ["altKey", "ctrlKey", "metaKey"]) fireEvent.keyDown(document.body, { key: "\\", code: "Backslash", [mod]: true });
     expect(side()).not.toBeNull();
     const user = userEvent.setup();
     await user.click(screen.getByRole("textbox", { name: "Note" }));
@@ -112,13 +112,13 @@ describe("focus mode (008 US4)", () => {
   it("[ and the audio toggle leave focus mode first, then toggle", async () => {
     render();
     await screen.findByRole("button", { name: "Enter focus mode" });
-    fireEvent.keyDown(document.body, { key: "\\" });
-    fireEvent.keyDown(document.body, { key: "[" });
+    fireEvent.keyDown(document.body, { key: "\\", code: "Backslash" });
+    fireEvent.keyDown(document.body, { key: "[", code: "BracketLeft" });
     expect(screen.getByRole("button", { name: "Enter focus mode" })).toBeInTheDocument();
     expect(rail()).not.toBeNull(); // left card toggled closed after focus mode ended
     expect(audio()).not.toBeNull();
 
-    fireEvent.keyDown(document.body, { key: "\\" });
+    fireEvent.keyDown(document.body, { key: "\\", code: "Backslash" });
     fireEvent.click(screen.getByRole("button", { name: "toggle audio" }));
     expect(screen.getByRole("button", { name: "Enter focus mode" })).toBeInTheDocument();
     expect(audio()).toBeNull();
@@ -127,7 +127,7 @@ describe("focus mode (008 US4)", () => {
   it("is not remembered across a reload", async () => {
     const first = render();
     await screen.findByRole("button", { name: "Enter focus mode" });
-    fireEvent.keyDown(document.body, { key: "\\" });
+    fireEvent.keyDown(document.body, { key: "\\", code: "Backslash" });
     first.unmount();
     render();
     await screen.findByRole("button", { name: "Enter focus mode" });
@@ -145,13 +145,13 @@ describe("focus mode (008 US4)", () => {
       expect(audio()).toBeNull();
       expect(audioRail()).not.toBeNull();
 
-      fireEvent.keyDown(document.body, { key: "\\" });
+      fireEvent.keyDown(document.body, { key: "\\", code: "Backslash" });
       expect(audio()).toBeNull();
       expect(audioRail()).toBeNull();
       expect(pill()).not.toBeNull();
       expect(screen.getByRole("region", { name: "Activity" })).toContainElement(pill());
 
-      fireEvent.keyDown(document.body, { key: "\\" });
+      fireEvent.keyDown(document.body, { key: "\\", code: "Backslash" });
       expect(audioRail()).not.toBeNull();
     } finally {
       unregister();

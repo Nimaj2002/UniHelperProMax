@@ -1,6 +1,7 @@
 import { ArrowArcLeft, ArrowArcRight, Pause, Play, SpeakerHigh, SpeakerSlash, Stop } from "@phosphor-icons/react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
+import { hintOf, matchFirst, useKeymap } from "@/lib/keymap";
 import { Slider } from "@/components/ui/slider";
 import { usePreferences, useUpdatePreferences } from "@/features/sessions/api";
 import { audioUrl, type Recording } from "./api";
@@ -8,6 +9,7 @@ import { formatDuration } from "./format";
 import { claimPlayback, releasePlayback } from "./nowPlaying";
 
 const SKIP = 5;
+const PLAYER_COMMANDS = ["player.playPause", "player.back", "player.forward", "player.volumeUp", "player.volumeDown", "player.mute"] as const;
 
 /** Play/pause, stop, seek, ±5 s, volume + mute (FR-017–FR-022). */
 /** Why playback failed, in words. A browser may not decode a valid imported format (006). */
@@ -24,6 +26,8 @@ export function Player({ recording }: { recording: Recording }) {
   const audio = useRef<HTMLAudioElement>(null);
   const prefs = usePreferences();
   const updatePrefs = useUpdatePreferences();
+  const keymap = useKeymap();
+  const keys = (id: string) => hintOf(keymap, id).aria;
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
   const [mediaDuration, setMediaDuration] = useState<number | null>(null);
@@ -80,27 +84,17 @@ export function Player({ recording }: { recording: Recording }) {
   const onKey = (e: KeyboardEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
     if (target.closest("[role='slider']") && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"].includes(e.key)) return;
-    const k = e.key.toLowerCase();
-    if (k === " " || k === "k") {
-      if (target.tagName === "BUTTON" && k === " ") return;
-      e.preventDefault();
-      void toggle();
-    } else if (k === "j" || e.key === "ArrowLeft") {
-      e.preventDefault();
-      seek(time - SKIP);
-    } else if (k === "l" || e.key === "ArrowRight") {
-      e.preventDefault();
-      seek(time + SKIP);
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setVolume(volume + 0.1);
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setVolume(volume - 0.1);
-    } else if (k === "m") {
-      e.preventDefault();
-      updatePrefs.mutate({ playerMuted: !muted });
-    }
+    // keys from the 019 keymap
+    const command = matchFirst(e.nativeEvent, PLAYER_COMMANDS);
+    // Space on a focused button presses that button
+    if (!command || (target.tagName === "BUTTON" && e.key === " ")) return;
+    e.preventDefault();
+    if (command === "player.playPause") void toggle();
+    else if (command === "player.back") seek(time - SKIP);
+    else if (command === "player.forward") seek(time + SKIP);
+    else if (command === "player.volumeUp") setVolume(volume + 0.1);
+    else if (command === "player.volumeDown") setVolume(volume - 0.1);
+    else updatePrefs.mutate({ playerMuted: !muted });
   };
 
   return (
@@ -126,21 +120,21 @@ export function Player({ recording }: { recording: Recording }) {
       {/* transport and volume wrap onto two lines when the panel is narrow */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
         <div className="flex shrink-0 items-center gap-1">
-          <Button size="icon" variant="ghost" aria-label={playing ? "Pause" : "Play"} aria-keyshortcuts="Space K" onClick={() => void toggle()}>
+          <Button size="icon" variant="ghost" aria-label={playing ? "Pause" : "Play"} aria-keyshortcuts={keys("player.playPause")} onClick={() => void toggle()}>
             {playing ? <Pause size={18} weight="fill" /> : <Play size={18} weight="fill" />}
           </Button>
           <Button size="icon" variant="ghost" aria-label="Stop" onClick={stop}>
             <Stop size={18} weight="fill" />
           </Button>
-          <Button size="icon" variant="ghost" aria-label="Back 5 seconds" aria-keyshortcuts="J ArrowLeft" onClick={() => seek(time - SKIP)}>
+          <Button size="icon" variant="ghost" aria-label="Back 5 seconds" aria-keyshortcuts={keys("player.back")} onClick={() => seek(time - SKIP)}>
             <ArrowArcLeft size={18} />
           </Button>
-          <Button size="icon" variant="ghost" aria-label="Forward 5 seconds" aria-keyshortcuts="L ArrowRight" onClick={() => seek(time + SKIP)}>
+          <Button size="icon" variant="ghost" aria-label="Forward 5 seconds" aria-keyshortcuts={keys("player.forward")} onClick={() => seek(time + SKIP)}>
             <ArrowArcRight size={18} />
           </Button>
         </div>
         <div className="flex min-w-32 flex-1 items-center gap-1">
-          <Button size="icon" variant="ghost" className="shrink-0" aria-label={muted ? "Unmute" : "Mute"} aria-keyshortcuts="M" onClick={() => updatePrefs.mutate({ playerMuted: !muted })}>
+          <Button size="icon" variant="ghost" className="shrink-0" aria-label={muted ? "Unmute" : "Mute"} aria-keyshortcuts={keys("player.mute")} onClick={() => updatePrefs.mutate({ playerMuted: !muted })}>
             {muted ? <SpeakerSlash size={18} /> : <SpeakerHigh size={18} />}
           </Button>
           <Slider

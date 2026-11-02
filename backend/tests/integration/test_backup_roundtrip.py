@@ -215,3 +215,17 @@ def test_a_general_note_survives_a_restore(
 
     assert [x["id"] for x in c.get(f"{API}/general-notes").json()] == [n["id"]]
     assert (folder(tmp_data_dir) / "Ideas.md").read_text() == "keep me"
+
+
+def test_custom_shortcuts_survive_a_restore(app: FastAPI, owner_client: TestClient) -> None:
+    """019 FR-011: custom shortcuts live in the preferences, which are backed up."""
+    bh.inline_jobs(app)
+    c = owner_client
+    custom = {"workspace.newNote": [{"chord": "Alt+Shift+KeyM", "label": "Alt+Shift+M"}, None]}
+    c.patch(f"{API}/preferences", json={"shortcuts": custom})
+    _job, data = bh.make_backup(c)
+    c.patch(f"{API}/preferences", json={"shortcuts": {}})
+
+    assert bh.restore(c, data)["phase"] == "done"
+
+    assert c.get(f"{API}/preferences").json()["shortcuts"] == custom

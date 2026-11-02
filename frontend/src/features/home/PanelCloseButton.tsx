@@ -1,8 +1,9 @@
 import { X } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ShortcutKbd, useShortcut } from "@/lib/keymap";
 import type { Panel } from "./homeWidths";
-import { PANEL_ID, PANEL_SHORTCUT } from "./PanelRail";
+import { PANEL_COMMAND, PANEL_ID } from "./PanelRail";
 
 export const LAST_OPEN_MESSAGE = "At least one panel stays open";
 
@@ -13,6 +14,7 @@ export const LAST_OPEN_MESSAGE = "At least one panel stays open";
  */
 export function PanelCloseButton({ panel, disabled, onClose }: { panel: Panel; disabled: boolean; onClose: () => void }) {
   const reasonId = `close-${panel}-reason`;
+  const { aria } = useShortcut(PANEL_COMMAND[panel]);
   return (
     <>
       <Tooltip>
@@ -26,14 +28,14 @@ export function PanelCloseButton({ panel, disabled, onClose }: { panel: Panel; d
             aria-controls={PANEL_ID[panel]}
             aria-disabled={disabled || undefined}
             aria-describedby={disabled ? reasonId : undefined}
-            aria-keyshortcuts={PANEL_SHORTCUT[panel]}
+            aria-keyshortcuts={aria}
             onClick={onClose}
           >
             <X size={16} />
           </Button>
         </TooltipTrigger>
         <TooltipContent>
-          {disabled ? LAST_OPEN_MESSAGE : <>Close {panel} <kbd className="ml-1 font-mono">{PANEL_SHORTCUT[panel]}</kbd></>}
+          {disabled ? LAST_OPEN_MESSAGE : <>Close {panel} <ShortcutKbd id={PANEL_COMMAND[panel]} /></>}
         </TooltipContent>
       </Tooltip>
       {disabled && (

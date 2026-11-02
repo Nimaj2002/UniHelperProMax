@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import date
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import ConfigDict, Field
 
@@ -96,6 +96,20 @@ class WorkspaceState(ApiModel):
     split: SplitState | None = None
 
 
+class Chord(ApiModel):
+    """019: a shortcut key: modifiers in fixed order, then a `KeyboardEvent.code`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    chord: str = Field(pattern=r"^(Ctrl\+)?(Meta\+)?(Alt\+)?(Shift\+)?[A-Za-z0-9]{1,24}$")
+    label: str = Field(min_length=1, max_length=32)
+
+
+CommandId = Annotated[
+    str, Field(pattern=r"^[a-z][A-Za-z0-9]*(\.[a-z][A-Za-z0-9]*)+$", max_length=64)
+]
+
+
 class Preferences(ApiModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -111,3 +125,7 @@ class Preferences(ApiModel):
     quick_create_type: Literal["class", "event"] | None = None  # 009
     recording_bar_style: Literal["full", "compact", "minimal"] | None = None
     general_notes_collapsed: bool | None = None  # 018
+    # 019: custom shortcuts, {commandId: [main, alternate]}; only changed commands are stored
+    shortcuts: dict[CommandId, tuple[Chord | None, Chord | None]] | None = Field(
+        default=None, max_length=200
+    )

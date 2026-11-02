@@ -2,6 +2,7 @@ import { SidebarSimple } from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ShortcutKbd, useShortcut } from "@/lib/keymap";
 import { AccountMenu } from "./AccountMenu";
 import { Card } from "./Card";
 import { AppMark } from "./LeftCard";
@@ -13,6 +14,7 @@ import { usePanelActions } from "./registry";
 export function Rail() {
   const { toggleLeft } = useLayout();
   const footer = usePanelActions("footer");
+  const { aria } = useShortcut("shell.toggleSidePanel");
   return (
     <Card as="aside" id={LEFT_CARD_ID} label="Side panel" className="h-full" body="fill">
       <div className="flex h-full flex-col items-center gap-2 py-2">
@@ -27,13 +29,13 @@ export function Rail() {
               aria-controls={LEFT_CARD_ID}
               aria-expanded={false}
               aria-label="Show side panel"
-              aria-keyshortcuts="BracketLeft"
+              aria-keyshortcuts={aria}
             >
               <SidebarSimple size={18} />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">
-            Show side panel <kbd className="ml-1 font-mono">[</kbd>
+            Show side panel <ShortcutKbd id="shell.toggleSidePanel" />
           </TooltipContent>
         </Tooltip>
         <Link to="/" aria-label="Go to home" className="rounded-md">

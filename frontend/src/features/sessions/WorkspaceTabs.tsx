@@ -2,6 +2,7 @@ import { ChatCircleText, CheckCircle, CircleNotch, Columns, FilePdf, WarningCirc
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ShortcutKbd, useShortcut } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import { getSaver, useSaveStatus, type SaveStatus } from "./autosave";
 import { paneOf, same, tabKey, type Side, type TabRef, type WorkspaceTabs as TabsState } from "./tabState";
@@ -62,6 +63,7 @@ const SIDE_TEXT: Record<Side, { mark: string; sr: string }> = {
  */
 export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClose, onToggleSplit, onMoveToOtherPane, actions, end, start, add }: Props) {
   const listRef = useRef<HTMLDivElement>(null);
+  const splitKeys = useShortcut("workspace.toggleSplit").aria;
   const [menuFor, setMenuFor] = useState<TabRef | null>(null);
   const tabs = state.tabs.filter((t) => titleOf(t) !== undefined);
   const splitOn = splitAvailable && !!state.split?.enabled;
@@ -187,7 +189,7 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
                 type="button"
                 aria-label="Split"
                 aria-pressed={splitOn}
-                aria-keyshortcuts="Alt+Backslash"
+                aria-keyshortcuts={splitKeys}
                 onClick={onToggleSplit}
                 className={cn(
                   "inline-flex size-8 shrink-0 items-center justify-center rounded-md",
@@ -198,7 +200,7 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
               </button>
             </TooltipTrigger>
             <TooltipContent>
-              Split view <kbd className="ml-1 font-mono">Alt+\</kbd>
+              Split view <ShortcutKbd id="workspace.toggleSplit" />
             </TooltipContent>
           </Tooltip>
         )}

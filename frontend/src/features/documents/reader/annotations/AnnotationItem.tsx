@@ -8,6 +8,7 @@ import { ChatCircleText } from "@phosphor-icons/react";
 import { useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover";
+import { hintOf, matches, matchFirst, useKeymap } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import { accessibleName, arrowStep, bounds, screenDeltaToPage, translate } from "./edit";
 import { rectToViewport, type Matrix } from "./geometry";
@@ -57,7 +58,7 @@ export function NoteEditor({ initial, label, onDone, className, style }: { initi
       onChange={(e) => setText(e.target.value)}
       onBlur={finish}
       onKeyDown={(e) => {
-        if (e.key === "Escape" || (e.key === "Enter" && (e.ctrlKey || e.metaKey))) {
+        if (matches(e.nativeEvent, "pdfAnnotationEditor.finish")) {
           e.preventDefault();
           e.stopPropagation();
           finish();
@@ -69,8 +70,17 @@ export function NoteEditor({ initial, label, onDone, className, style }: { initi
   );
 }
 
+const ANNOTATION_COMMANDS = [
+  "pdfAnnotation.up", "pdfAnnotation.down", "pdfAnnotation.left", "pdfAnnotation.right",
+  "pdfAnnotation.delete", "pdfAnnotation.edit", "pdfAnnotation.menu",
+] as const;
+const MOVE_DIR: Partial<Record<(typeof ANNOTATION_COMMANDS)[number], string>> = {
+  "pdfAnnotation.up": "ArrowUp", "pdfAnnotation.down": "ArrowDown", "pdfAnnotation.left": "ArrowLeft", "pdfAnnotation.right": "ArrowRight",
+};
+
 export function AnnotationItem({ a, model, transform, inverse, scale, interactive, selected, onSelect, onEscape }: Props) {
   const [menu, setMenu] = useState(false);
+  const keymap = useKeymap();
   const [editing, setEditing] = useState(false);
   const [drag, setDrag] = useState<{ x: number; y: number; dx: number; dy: number; moved: boolean } | null>(null);
   const box = rectToViewport(transform, bounds(a));
@@ -81,14 +91,17 @@ export function AnnotationItem({ a, model, transform, inverse, scale, interactiv
 
   const onKeyDown = (e: KeyboardEvent<HTMLElement>) => {
     if (editing || menu) return;
-    const step = arrowStep(inverse, e.key, MOVE_STEP * (e.shiftKey ? 10 : 1));
+    // keys from the 019 keymap; Shift + a move key is a bigger step, Esc (deselect) stays fixed
+    const command = matchFirst(e.nativeEvent, ANNOTATION_COMMANDS);
+    const dir = command && MOVE_DIR[command];
+    const step = dir && arrowStep(inverse, dir, MOVE_STEP * (e.shiftKey ? 10 : 1));
     let handled = true;
     if (step) move(step[0], step[1]);
-    else if (e.key === "Delete" || e.key === "Backspace") {
+    else if (command === "pdfAnnotation.delete") {
       model.remove(a.id);
       onSelect(null);
-    } else if (e.key === "Enter" && (a.type === "textbox" || a.type === "comment")) setEditing(true);
-    else if (e.key.toLowerCase() === "c" && !e.ctrlKey && !e.metaKey && !e.altKey) setMenu(true);
+    } else if (command === "pdfAnnotation.edit" && (a.type === "textbox" || a.type === "comment")) setEditing(true);
+    else if (command === "pdfAnnotation.menu") setMenu(true);
     else if (e.key === "Escape") {
       onSelect(null);
       onEscape();
@@ -126,7 +139,7 @@ export function AnnotationItem({ a, model, transform, inverse, scale, interactiv
   const shared = {
     "data-annotation": a.id,
     "aria-label": name,
-    "aria-keyshortcuts": "Delete Enter C ArrowUp ArrowDown ArrowLeft ArrowRight",
+    "aria-keyshortcuts": ANNOTATION_COMMANDS.flatMap((id) => hintOf(keymap, id).aria ?? []).join(" ") || undefined,
     onKeyDown,
     onFocus: () => onSelect(a.id),
     onPointerDown,

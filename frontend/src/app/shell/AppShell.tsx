@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties }
 import { Outlet } from "react-router";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { matches, useShortcut } from "@/lib/keymap";
 import { hasModifier, isTypingTarget } from "@/lib/shortcuts";
 import { readLocal, writeLocal } from "@/lib/storage";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,7 @@ function RightCardView({ card, className }: { card: RightCard; className?: strin
 /** The closed right card's rail (014 FR-005): reopen, then one item per section. */
 function RightRail({ card, onOpen }: { card: RightCard; onOpen: () => void }) {
   const rail = card.rail!;
+  const hint = useShortcut("workspace.toggleRight");
   return (
     <SideRail
       side="right"
@@ -68,8 +70,8 @@ function RightRail({ card, onOpen }: { card: RightCard; onOpen: () => void }) {
       reopen={{
         id: SHOW_RIGHT_ID,
         label: rail.reopenLabel,
-        shortcut: "Alt+BracketRight",
-        shortcutHint: "Alt+]",
+        shortcut: hint.aria,
+        shortcutHint: hint.label,
         icon: SidebarSimple,
         mirrored: true,
         controls: RIGHT_CARD_ID,
@@ -144,13 +146,12 @@ function Shell() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (hasModifier(e) || isTypingTarget(e.target)) return;
-      // "[" side panel (001 FR-023), "/" course search (FR-023), "\" focus mode (008 FR-024).
-      // Bare "\" is free: split view is Alt+\ (useWorkspaceKeyboard), and the editor, PDF reader,
-      // audio player and calendar keymaps don't bind it.
-      if (e.key === "[") toggleLeft();
-      else if (e.key === "\\") toggleFocus();
-      else if (e.key === "/" && !document.getElementById("course-search")) {
+      // a focused tool handles its own keys first (019 research R5); bare keys never while typing
+      if (e.defaultPrevented || (!hasModifier(e) && isTypingTarget(e.target))) return;
+      // side panel (001 FR-023), course search (FR-023), focus mode (008 FR-024); keys from the keymap (019)
+      if (matches(e, "shell.toggleSidePanel")) toggleLeft();
+      else if (matches(e, "shell.toggleFocus")) toggleFocus();
+      else if (matches(e, "shell.searchCourses") && !document.getElementById("course-search")) {
         showLeft();
         focusWhenMounted("course-search");
       } else return;

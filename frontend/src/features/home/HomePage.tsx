@@ -9,6 +9,7 @@ import { useBareMain, useLayout } from "@/app/shell/layout";
 import { useTaskCounts } from "@/features/tasks/useTaskCounts";
 import { FocusModeButton, ShowSidePanelButton } from "@/app/shell/MainBarControls";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
+import { matches } from "@/lib/keymap";
 import { hasModifier, isTypingTarget } from "@/lib/shortcuts";
 import { cn } from "@/lib/utils";
 import { CalendarPanel } from "./CalendarPanel";
@@ -138,15 +139,15 @@ export function HomePage() {
     );
   }, [taskParam, measured, openPanel, setParams]);
 
-  // Shift+C / Shift+T (FR-070, R13): by key position so other layouts work; never while typing
+  // calendar / tasks panel (FR-070; keys from the 019 keymap, Shift+C / Shift+T by default)
   const toggle = useRef<(p: Panel) => void>(() => {});
   useEffect(() => {
     toggle.current = (p) => (open[p] ? closeOne(p) : openOne(p));
   });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!e.shiftKey || e.defaultPrevented || hasModifier(e) || isTypingTarget(e.target)) return;
-      const panel: Panel | null = e.code === "KeyC" ? "calendar" : e.code === "KeyT" ? "tasks" : null;
+      if (e.defaultPrevented || (!hasModifier(e) && isTypingTarget(e.target))) return;
+      const panel: Panel | null = matches(e, "home.toggleCalendar") ? "calendar" : matches(e, "home.toggleTasks") ? "tasks" : null;
       if (!panel) return;
       if (document.querySelector("[role='dialog'][data-state='open'],[role='alertdialog'][data-state='open']")) return;
       e.preventDefault();

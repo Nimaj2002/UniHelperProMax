@@ -581,6 +581,10 @@ With focus in the reader:
 
 ## Notes workspace shortcuts
 
+These are the default keys. You can change any shortcut listed in **Settings → Keyboard shortcuts**
+(a main and an alternate key per command, reset one or all, or remove one); your keys follow your
+account to every device and are part of your backups.
+
 | Keys | Action |
 |---|---|
 | `Alt+N` | New note |

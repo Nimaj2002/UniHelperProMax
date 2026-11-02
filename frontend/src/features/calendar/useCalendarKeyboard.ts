@@ -1,31 +1,17 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { todayISO } from "@/lib/dates";
+import { matchFirst } from "@/lib/keymap";
 import { hasModifier, isTypingTarget } from "@/lib/shortcuts";
 import { shiftPeriod } from "./navigation";
 import { calendarPath, type CalendarView } from "./state";
 
-export const CALENDAR_SHORTCUTS: [string, string][] = [
-  ["T", "Go to today"],
-  ["D / W / M", "Day, week or month view"],
-  ["← / →  or  K / J", "Previous / next period"],
-  ["N", "New class"],
-  ["E", "New event"],
-  ["/", "Search courses"],
-  ["[", "Show or hide the course panel"],
-  ["Shift + C", "Show or hide the calendar panel (home page)"],
-  ["Shift + T", "Show or hide the tasks panel (home page)"],
-  ["Enter / Space", "Pick up the focused task card or column (task board)"],
-  ["↑ / ↓ / ← / →", "Move a picked-up card within its column or to the next column"],
-  ["Enter  or  Esc", "Drop the picked-up card, or cancel the move"],
-  ["Arrow keys", "Move between 15-minute slots, or a day left/right (inside the calendar grid)"],
-  ["Shift + ↑ / ↓", "Shorten or extend the highlighted range (inside the calendar grid)"],
-  ["Enter", "New class or event for the highlighted range, or open the focused session"],
-  ["Esc", "Clear the range, cancel a new entry, or close a dialog"],
-  ["?", "Show keyboard shortcuts"],
-];
+const CALENDAR_COMMANDS = [
+  "calendar.today", "calendar.dayView", "calendar.weekView", "calendar.monthView", "calendar.nextPeriod",
+  "calendar.prevPeriod", "calendar.newClass", "calendar.newEvent", "calendar.help",
+] as const;
 
-/** Global calendar shortcuts; ignored while typing, inside dialogs, or inside the time grid. */
+/** Global calendar shortcuts (keys from the 019 keymap); ignored while typing, inside dialogs, or inside the time grid. */
 export function useCalendarKeyboard(view: CalendarView, date: string, tz: string, onHelp: () => void) {
   const navigate = useNavigate();
   // read the latest view/date at key time: rapid key presses must not use a stale closure
@@ -36,7 +22,8 @@ export function useCalendarKeyboard(view: CalendarView, date: string, tz: string
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const { view, date } = current.current;
-      if (e.defaultPrevented || hasModifier(e) || isTypingTarget(e.target)) return;
+      // a focused tool (the time grid, a menu) handles its own keys first (019 research R5)
+      if (e.defaultPrevented || (!hasModifier(e) && isTypingTarget(e.target))) return;
       const target = e.target instanceof Element ? e.target : null;
       if (target?.closest("[role='dialog'],[role='alertdialog'],[role='menu'],[role='listbox']")) return;
       // home page (012 FR-095): not while focus is in the Tasks panel or the Calendar panel is closed
@@ -47,18 +34,18 @@ export function useCalendarKeyboard(view: CalendarView, date: string, tz: string
         current.current = { view: v, date: d };
         navigate(calendarPath(v, d));
       };
-      switch (e.key) {
-        case "t": go(todayISO(tz)); break;
-        case "d": go(date, "day"); break;
-        case "w": go(date, "week"); break;
-        case "m": go(date, "month"); break;
-        case "j": go(shiftPeriod(view, date, 1)); break;
-        case "k": go(shiftPeriod(view, date, -1)); break;
-        case "ArrowRight": if (inGrid) return; go(shiftPeriod(view, date, 1)); break;
-        case "ArrowLeft": if (inGrid) return; go(shiftPeriod(view, date, -1)); break;
-        case "n": navigate("/classes/new"); break;
-        case "e": navigate("/events/new"); break;
-        case "?": onHelp(); break;
+      // arrow keys inside the grid move between its slots, even where the grid doesn't handle them
+      if (inGrid && e.key.startsWith("Arrow")) return;
+      switch (matchFirst(e, CALENDAR_COMMANDS)) {
+        case "calendar.today": go(todayISO(tz)); break;
+        case "calendar.dayView": go(date, "day"); break;
+        case "calendar.weekView": go(date, "week"); break;
+        case "calendar.monthView": go(date, "month"); break;
+        case "calendar.nextPeriod": go(shiftPeriod(view, date, 1)); break;
+        case "calendar.prevPeriod": go(shiftPeriod(view, date, -1)); break;
+        case "calendar.newClass": navigate("/classes/new"); break;
+        case "calendar.newEvent": navigate("/events/new"); break;
+        case "calendar.help": onHelp(); break;
         default: return;
       }
       e.preventDefault();

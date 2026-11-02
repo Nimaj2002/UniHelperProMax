@@ -95,7 +95,7 @@ describe("CoursePanel", () => {
     render();
     const user = userEvent.setup();
     await screen.findByText("CS 201");
-    await user.keyboard("/");
+    await user.keyboard("[Slash]"); // user-event has no US "/" key: send the browser's code
     expect(screen.getByRole("searchbox")).toHaveFocus();
     screen.getByRole("link", { name: "CS 201" }).focus();
     await user.keyboard("{Enter}");

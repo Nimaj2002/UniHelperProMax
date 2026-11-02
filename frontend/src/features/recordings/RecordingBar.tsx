@@ -1,7 +1,7 @@
 import { ArrowUUpLeft, StopCircle } from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
-import { usePreferences } from "@/features/sessions/api";
+import { usePreferences, type Preferences } from "@/features/sessions/api";
 import { workspacePath } from "@/features/sessions/SessionTimeline";
 import { formatDuration, spokenDuration } from "./format";
 import { recorder, useRecorderState } from "./recorder";
@@ -10,19 +10,23 @@ import { useElapsed } from "./useElapsed";
 const PILL = "pointer-events-auto flex max-w-full min-w-0 items-center rounded-full border border-strong-border bg-surface-elevated text-sm shadow-[0_6px_20px_var(--shadow-tint)]";
 const DOT = <span aria-hidden className="size-2.5 shrink-0 animate-pulse rounded-full bg-danger motion-reduce:animate-none" />;
 
-/** Pill floating over the main card on every screen while recording (FR-006; 008 FR-023); style set in Settings → Appearance. */
-export function RecordingBar() {
-  const state = useRecorderState();
-  const style = usePreferences().data?.recordingBarStyle ?? "full";
-  const elapsed = useElapsed(state.status === "recording" ? state.startedAt : null);
-  if (state.status !== "recording" && state.status !== "stopping") return null;
-  const back = state.sessionKey ? workspacePath(state.courseId, state.sessionKey) : null;
-  const stop = () => void recorder().stop();
+export type RecordingBarStyle = NonNullable<Preferences["recordingBarStyle"]>;
 
+interface PillProps {
+  style: RecordingBarStyle;
+  elapsed: number;
+  label?: string | null;
+  back: string | null;
+  stopping?: boolean;
+  onStop: () => void;
+}
+
+/** The pill itself, shared by the live bar and the Settings → Appearance preview. */
+export function RecordingPill({ style, elapsed, label, back, stopping, onStop }: PillProps) {
   if (style === "minimal" && back) {
     return (
       <Button asChild size="sm" variant="outline" className={`${PILL} h-8 gap-1.5 px-2.5`}>
-        <Link to={back} aria-label={`Recording ${spokenDuration(elapsed)}. Go back to session`} title={state.label ?? undefined}>
+        <Link to={back} aria-label={`Recording ${spokenDuration(elapsed)}. Go back to session`} title={label ?? undefined}>
           {DOT}
           <ArrowUUpLeft size={16} aria-hidden />
         </Link>
@@ -42,7 +46,7 @@ export function RecordingBar() {
             </Link>
           </Button>
         )}
-        <Button size="icon" variant="destructive" className="size-7 rounded-full" aria-label="Stop recording" title="Stop recording" onClick={stop} disabled={state.status === "stopping"}>
+        <Button size="icon" variant="destructive" className="size-7 rounded-full" aria-label="Stop recording" title="Stop recording" onClick={onStop} disabled={stopping}>
           <StopCircle size={16} weight="fill" aria-hidden />
         </Button>
       </section>
@@ -54,15 +58,33 @@ export function RecordingBar() {
       {DOT}
       <span className="shrink-0 font-medium">Recording</span>
       <span className="shrink-0 font-mono tabular-nums" aria-label={`Elapsed ${spokenDuration(elapsed)}`}>{formatDuration(elapsed)}</span>
-      <span className="min-w-0 truncate text-muted-foreground">{state.label}</span>
+      <span className="min-w-0 truncate text-muted-foreground">{label}</span>
       {back && (
         <Button asChild size="sm" variant="ghost" className="h-7 shrink-0 rounded-full">
           <Link to={back}>Go to session</Link>
         </Button>
       )}
-      <Button size="sm" variant="destructive" className="h-7 shrink-0 rounded-full" onClick={stop} disabled={state.status === "stopping"}>
+      <Button size="sm" variant="destructive" className="h-7 shrink-0 rounded-full" onClick={onStop} disabled={stopping}>
         <StopCircle size={16} weight="fill" aria-hidden /> Stop
       </Button>
     </section>
+  );
+}
+
+/** Pill floating over the main card on every screen while recording (FR-006; 008 FR-023); style set in Settings → Appearance. */
+export function RecordingBar() {
+  const state = useRecorderState();
+  const style = usePreferences().data?.recordingBarStyle ?? "full";
+  const elapsed = useElapsed(state.status === "recording" ? state.startedAt : null);
+  if (state.status !== "recording" && state.status !== "stopping") return null;
+  return (
+    <RecordingPill
+      style={style}
+      elapsed={elapsed}
+      label={state.label}
+      back={state.sessionKey ? workspacePath(state.courseId, state.sessionKey) : null}
+      stopping={state.status === "stopping"}
+      onStop={() => void recorder().stop()}
+    />
   );
 }

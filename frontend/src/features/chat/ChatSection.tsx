@@ -12,6 +12,7 @@ import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { isApiError } from "@/lib/api";
+import { ShortcutKbd, useShortcut } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import {
   attachmentKey, chatKey, chatsOfSession, editTurn, isNewChatId, MAX_ATTACHMENTS, preflight, regenerate, sendMessage, startChat, updateChatFresh,
@@ -36,24 +37,26 @@ import {
 
 // ---- small header buttons ---------------------------------------------------------------------
 
-export function HeaderButton({ label, onClick, keys, kbd, pressed, children }: { label: string; onClick: () => void; keys?: string; kbd?: string; pressed?: boolean; children: ReactNode }) {
+/** `command`: a keymap command whose current key the button names (019). */
+export function HeaderButton({ label, onClick, command, pressed, children }: { label: string; onClick: () => void; command?: string; pressed?: boolean; children: ReactNode }) {
+  const { aria } = useShortcut(command ?? "");
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-8" aria-label={label} aria-keyshortcuts={keys} aria-pressed={pressed} onClick={onClick}>
+        <Button variant="ghost" size="icon" className="size-8" aria-label={label} aria-keyshortcuts={aria} aria-pressed={pressed} onClick={onClick}>
           {children}
         </Button>
       </TooltipTrigger>
       <TooltipContent>
         {label}
-        {kbd && <kbd className="ml-1 font-mono">{kbd}</kbd>}
+        {command && <ShortcutKbd id={command} />}
       </TooltipContent>
     </Tooltip>
   );
 }
 
 export const NewChatButton = ({ onClick }: { onClick: () => void }) => (
-  <HeaderButton label="New chat" keys="Alt+Shift+K" kbd="Alt+Shift+K" onClick={onClick}>
+  <HeaderButton label="New chat" command="workspace.newChat" onClick={onClick}>
     <Plus size={18} aria-hidden />
   </HeaderButton>
 );

@@ -12,6 +12,7 @@ import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMe } from "@/features/auth/api";
+import { matchFirst } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import {
   useCreateColumn,
@@ -46,6 +47,11 @@ export interface BoardProps {
 
 const noop = () => {};
 const DEFAULT_CARD_H = 64;
+// 019: keys from the keymap
+const BOARD_COMMANDS = ["taskBoard.pickUpOrDrop", "taskBoard.up", "taskBoard.down", "taskBoard.left", "taskBoard.right", "taskBoard.cancel"] as const;
+const CARD_MOVE: Partial<Record<(typeof BOARD_COMMANDS)[number], "up" | "down" | "left" | "right">> = {
+  "taskBoard.up": "up", "taskBoard.down": "down", "taskBoard.left": "left", "taskBoard.right": "right",
+};
 
 type CardProps = Omit<ComponentProps<typeof TaskCard>, "menu" | "floating" | "columns"> & {
   columns: readonly TaskColumn[];
@@ -187,25 +193,24 @@ export function Board({ filter, onOpenTask = noop, onQuickNotes = noop }: BoardP
 
   const onMoveKeyDown = (e: KeyboardEvent<HTMLElement>, taskId: string) => {
     const current = kbRef.current;
-    const keys: Record<string, KeyboardMoveAction["type"]> = {
-      ArrowUp: "up", ArrowDown: "down", ArrowLeft: "left", ArrowRight: "right",
-    };
+    const command = matchFirst(e.nativeEvent, BOARD_COMMANDS);
     if (current?.taskId !== taskId) {
-      if (e.key !== "Enter" && e.key !== " ") return;
+      if (command !== "taskBoard.pickUpOrDrop") return;
       e.preventDefault();
       setKbHeight(e.currentTarget.closest<HTMLElement>("[data-task-id]")?.offsetHeight ?? DEFAULT_CARD_H);
       step({ type: "pickUp", taskId, layout: layoutRef.current });
       return;
     }
-    if (keys[e.key]) {
-      step({ type: keys[e.key] as "up", layout: layoutRef.current });
-    } else if (e.key === "Enter" || e.key === " ") {
+    const move = command && CARD_MOVE[command];
+    if (move) {
+      step({ type: move, layout: layoutRef.current });
+    } else if (command === "taskBoard.pickUpOrDrop") {
       const { before } = step({ type: "drop" });
       if (before && (before.target.columnId !== before.origin.columnId || before.target.index !== before.origin.index)) {
         refocus.current = taskId;
         commitMove(taskId, before.target);
       }
-    } else if (e.key === "Escape") {
+    } else if (command === "taskBoard.cancel") {
       step({ type: "cancel" });
     } else return;
     e.preventDefault();
@@ -241,26 +246,27 @@ export function Board({ filter, onOpenTask = noop, onQuickNotes = noop }: BoardP
   const onHandleKeyDown = (e: KeyboardEvent<HTMLElement>, columnId: string) => {
     const current = colKbRef.current;
     const n = columns.length;
+    const command = matchFirst(e.nativeEvent, BOARD_COMMANDS);
     if (current?.columnId !== columnId) {
-      if (e.key !== "Enter" && e.key !== " ") return;
+      if (command !== "taskBoard.pickUpOrDrop") return;
       e.preventDefault();
       const origin = columns.findIndex((c) => c.id === columnId);
       setCol({ columnId, origin, index: origin });
       announce(`Picked up column ${columnName(columnId)}. Position ${origin + 1} of ${n}.`);
       return;
     }
-    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
-      const index = Math.max(0, Math.min(n - 1, current.index + (e.key === "ArrowLeft" ? -1 : 1)));
+    if (command === "taskBoard.left" || command === "taskBoard.right") {
+      const index = Math.max(0, Math.min(n - 1, current.index + (command === "taskBoard.left" ? -1 : 1)));
       setCol({ ...current, index });
       announce(`Column ${columnName(columnId)}, position ${index + 1} of ${n}.`);
-    } else if (e.key === "Enter" || e.key === " ") {
+    } else if (command === "taskBoard.pickUpOrDrop") {
       setCol(null);
       if (current.index !== current.origin) {
         refocusColumn.current = columnId;
         commitColumnOrder(columnId, current.index);
       }
       announce(`Column ${columnName(columnId)} dropped at position ${current.index + 1} of ${n}.`);
-    } else if (e.key === "Escape") {
+    } else if (command === "taskBoard.cancel") {
       setCol(null);
       announce("Move cancelled.");
     } else return;

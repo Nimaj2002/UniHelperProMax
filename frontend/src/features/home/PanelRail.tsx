@@ -1,13 +1,15 @@
 import { CalendarBlank, Kanban, NotePencil, SidebarSimple } from "@phosphor-icons/react";
 import { SideRail } from "@/app/shell/SideRail";
 import { formatCount } from "@/features/tasks/model/counts";
+import { useShortcut } from "@/lib/keymap";
 import type { Panel } from "./homeWidths";
 import type { ColumnSection } from "./tasksColumn";
 
 export const SHOW_PANEL_ID: Record<Panel, string> = { calendar: "show-calendar", tasks: "show-tasks" };
 export const PANEL_ID: Record<Panel, string> = { calendar: "calendar-panel", tasks: "tasks-panel" };
 export const PANEL_NAME: Record<Panel, string> = { calendar: "Calendar", tasks: "Tasks" };
-export const PANEL_SHORTCUT: Record<Panel, string> = { calendar: "Shift+C", tasks: "Shift+T" };
+/** 019: the keymap command that shows or hides each panel. */
+export const PANEL_COMMAND: Record<Panel, string> = { calendar: "home.toggleCalendar", tasks: "home.toggleTasks" };
 
 interface Props {
   panel: Panel;
@@ -38,6 +40,7 @@ export function railLabel(panel: Panel, openCount?: number, overdueCount?: numbe
  */
 export function PanelRail({ panel, onOpen, openCount, overdueCount, onOpenSection }: Props) {
   const name = PANEL_NAME[panel];
+  const hint = useShortcut(PANEL_COMMAND[panel]);
   const counts = (
     <>
       {openCount !== undefined && (
@@ -63,8 +66,8 @@ export function PanelRail({ panel, onOpen, openCount, overdueCount, onOpenSectio
           id: SHOW_PANEL_ID.tasks,
           label: railLabel(panel, openCount, overdueCount),
           tooltip: "Show tasks",
-          shortcut: PANEL_SHORTCUT.tasks,
-          shortcutHint: PANEL_SHORTCUT.tasks,
+          shortcut: hint.aria,
+          shortcutHint: hint.label,
           icon: SidebarSimple,
           mirrored: true,
           controls: PANEL_ID.tasks,
@@ -84,8 +87,8 @@ export function PanelRail({ panel, onOpen, openCount, overdueCount, onOpenSectio
         id: SHOW_PANEL_ID[panel],
         label: railLabel(panel, openCount, overdueCount),
         tooltip: `Show ${panel}`,
-        shortcut: PANEL_SHORTCUT[panel],
-        shortcutHint: PANEL_SHORTCUT[panel],
+        shortcut: hint.aria,
+        shortcutHint: hint.label,
         icon: panel === "calendar" ? CalendarBlank : Kanban,
         controls: PANEL_ID[panel],
         onActivate: onOpen,

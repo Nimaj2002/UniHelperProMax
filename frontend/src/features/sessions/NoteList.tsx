@@ -1,5 +1,6 @@
 import { DotsThree, Plus, UploadSimple } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { hintOf, useKeymap } from "@/lib/keymap";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -23,14 +24,15 @@ interface Props {
 /** The session's notes in creation order (FR-016); open notes are marked. Its "Notes" header is
  * the left panel's collapsible section. */
 export function NoteList({ notes, openIds, activeId, loading, onNew, onImport, importing, onOpen, onRename, onDelete }: Props) {
+  const keymap = useKeymap();
   return (
     <div className="grid gap-2">
       <div className="mx-2 grid grid-cols-2 gap-2">
-        <Button size="sm" variant="outline" className="justify-start" onClick={onNew} aria-keyshortcuts="Alt+N">
+        <Button size="sm" variant="outline" className="justify-start" onClick={onNew} aria-keyshortcuts={hintOf(keymap, "workspace.newNote").aria}>
           <Plus size={14} aria-hidden /> New note
         </Button>
         {onImport && (
-          <Button size="sm" variant="outline" className="justify-start" onClick={onImport} disabled={importing} aria-keyshortcuts="Alt+Shift+N">
+          <Button size="sm" variant="outline" className="justify-start" onClick={onImport} disabled={importing} aria-keyshortcuts={hintOf(keymap, "workspace.importNote").aria}>
             <UploadSimple size={14} aria-hidden /> Import note
           </Button>
         )}

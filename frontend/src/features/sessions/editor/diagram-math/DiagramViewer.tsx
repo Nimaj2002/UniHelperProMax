@@ -1,6 +1,7 @@
 import { ArrowCounterClockwise, MagnifyingGlassMinus, MagnifyingGlassPlus } from "@phosphor-icons/react";
 import { type KeyboardEvent, type PointerEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { matchFirst } from "@/lib/keymap";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 interface Props {
@@ -12,6 +13,8 @@ interface Props {
 
 const STEP = 1.25;
 const PAN = 40;
+
+const DIAGRAM_COMMANDS = ["diagram.zoomIn", "diagram.zoomOut", "diagram.reset", "diagram.panLeft", "diagram.panRight", "diagram.panUp", "diagram.panDown"] as const;
 
 /** A drawn diagram, large, with zoom and panning (FR-042). Escape closes it; focus returns to the diagram. */
 export function DiagramViewer({ open, onOpenChange, svg, title }: Props) {
@@ -26,20 +29,20 @@ export function DiagramViewer({ open, onOpenChange, svg, title }: Props) {
   const zoomBy = (f: number) => setZoom((z) => Math.min(8, Math.max(0.25, z * f)));
 
   const onKeyDown = (e: KeyboardEvent) => {
-    const keys: Record<string, () => void> = {
-      "+": () => zoomBy(STEP),
-      "=": () => zoomBy(STEP),
-      "-": () => zoomBy(1 / STEP),
-      "0": reset,
-      ArrowLeft: () => setPan((p) => ({ ...p, x: p.x + PAN })),
-      ArrowRight: () => setPan((p) => ({ ...p, x: p.x - PAN })),
-      ArrowUp: () => setPan((p) => ({ ...p, y: p.y + PAN })),
-      ArrowDown: () => setPan((p) => ({ ...p, y: p.y - PAN })),
+    // keys from the 019 keymap
+    const actions: Record<(typeof DIAGRAM_COMMANDS)[number], () => void> = {
+      "diagram.zoomIn": () => zoomBy(STEP),
+      "diagram.zoomOut": () => zoomBy(1 / STEP),
+      "diagram.reset": reset,
+      "diagram.panLeft": () => setPan((p) => ({ ...p, x: p.x + PAN })),
+      "diagram.panRight": () => setPan((p) => ({ ...p, x: p.x - PAN })),
+      "diagram.panUp": () => setPan((p) => ({ ...p, y: p.y + PAN })),
+      "diagram.panDown": () => setPan((p) => ({ ...p, y: p.y - PAN })),
     };
-    const action = keys[e.key];
-    if (action && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const command = matchFirst(e.nativeEvent, DIAGRAM_COMMANDS);
+    if (command) {
       e.preventDefault();
-      action();
+      actions[command]();
     }
   };
 

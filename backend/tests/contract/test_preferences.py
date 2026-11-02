@@ -24,6 +24,7 @@ def test_preferences(owner_client: TestClient) -> None:
         "quickCreateType": "class",  # 009
         "recordingBarStyle": "full",
         "generalNotesCollapsed": False,  # 018
+        "shortcuts": {},  # 019
     }
     check(r.json(), "Preferences", spec="002")
     r = c.patch(f"{API}/preferences", json={"editorMode": "raw"})
@@ -73,3 +74,48 @@ def test_preferences_recording_bar_style(owner_client: TestClient) -> None:
     assert r.json()["recordingBarStyle"] == "minimal"
     assert c.get(f"{API}/preferences").json()["recordingBarStyle"] == "minimal"
     assert c.patch(f"{API}/preferences", json={"recordingBarStyle": "huge"}).status_code == 422
+
+
+NEW_NOTE = {"chord": "Alt+Shift+KeyM", "label": "Alt+Shift+M"}
+
+
+def _codes(r: object) -> set[str]:
+    return {e["code"] for e in r.json()["errors"]}  # type: ignore[attr-defined]
+
+
+def test_preferences_019_shortcuts(owner_client: TestClient) -> None:
+    c = owner_client
+    first = {"workspace.newNote": [NEW_NOTE, None]}
+    r = c.patch(f"{API}/preferences", json={"shortcuts": first})
+    assert r.status_code == 200, r.text
+    assert r.json()["shortcuts"] == first
+    check(r.json(), "Preferences", spec="002")
+    assert c.get(f"{API}/preferences").json()["shortcuts"] == first
+    # another key keeps the map; a new map replaces it whole; {} clears it
+    assert c.patch(f"{API}/preferences", json={"theme": "dark"}).json()["shortcuts"] == first
+    second = {"player.playPause": [{"chord": "Space", "label": "Space"}, None]}
+    assert c.patch(f"{API}/preferences", json={"shortcuts": second}).json()["shortcuts"] == second
+    assert c.patch(f"{API}/preferences", json={"shortcuts": {}}).json()["shortcuts"] == {}
+
+
+@pytest.mark.parametrize(
+    ("shortcuts", "code"),
+    [
+        ({f"a.c{i}": [None, None] for i in range(201)}, "too_long"),
+        ({"NewNote": [None, None]}, "string_pattern_mismatch"),
+        ({"a." + "b" * 63: [None, None]}, "string_too_long"),
+        ({"a.b": [None]}, "missing"),
+        ({"a.b": [None, None, None]}, "too_long"),
+        ({"a.b": [{"chord": "Alt+K!", "label": "x"}, None]}, "string_pattern_mismatch"),
+        ({"a.b": [{"chord": "Shift+Alt+KeyK", "label": "x"}, None]}, "string_pattern_mismatch"),
+        ({"a.b": [{"chord": "KeyK", "label": ""}, None]}, "string_too_short"),
+        ({"a.b": [{"chord": "KeyK", "label": "x" * 33}, None]}, "string_too_long"),
+        ({"a.b": [{"chord": "KeyK", "label": "K", "extra": 1}, None]}, "extra_forbidden"),
+    ],
+)
+def test_preferences_019_shortcuts_invalid(
+    owner_client: TestClient, shortcuts: dict[str, object], code: str
+) -> None:
+    r = owner_client.patch(f"{API}/preferences", json={"shortcuts": shortcuts})
+    assert r.status_code == 422
+    assert code in _codes(r)

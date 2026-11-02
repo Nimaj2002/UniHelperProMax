@@ -13,6 +13,7 @@ import { useCallback, useEffect, useId, useRef, useState, type DragEvent, type K
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { hintOf, matches, useKeymap } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import { taskKeys, useReplaceChecklist, type ChecklistItem, type TaskDetail } from "./api";
 import { SaveState } from "./SaveState";
@@ -43,6 +44,7 @@ interface Props {
 
 export function ChecklistEditor({ task }: Props) {
   const qc = useQueryClient();
+  const keymap = useKeymap();
   const replace = useReplaceChecklist();
   const [items, setItems] = useState<Item[]>(() => fromServer(task.checklist));
   const [status, setStatus] = useState<"saved" | "saving" | "error">("saved");
@@ -181,9 +183,9 @@ export function ChecklistEditor({ task }: Props) {
     } else if (e.key === "Backspace" && item.text === "" && !e.altKey) {
       e.preventDefault();
       remove(item.key, { undo: false, focusPrevious: true });
-    } else if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+    } else if (matches(e.nativeEvent, "checklist.moveUp") || matches(e.nativeEvent, "checklist.moveDown")) {
       e.preventDefault();
-      move(item.key, index + (e.key === "ArrowUp" ? -1 : 1));
+      move(item.key, index + (matches(e.nativeEvent, "checklist.moveUp") ? -1 : 1));
     }
   };
 
@@ -264,7 +266,7 @@ export function ChecklistEditor({ task }: Props) {
                 value={item.text}
                 maxLength={TEXT_MAX}
                 aria-label={`Checklist item ${index + 1}`}
-                aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+                aria-keyshortcuts={[hintOf(keymap, "checklist.moveUp").aria, hintOf(keymap, "checklist.moveDown").aria].filter(Boolean).join(" ") || undefined}
                 placeholder="Item"
                 className={cn(
                   "h-7 min-w-0 flex-1 rounded-sm bg-transparent px-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring",

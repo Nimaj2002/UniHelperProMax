@@ -2,6 +2,7 @@ import { useReducedMotion } from "motion/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { Session } from "@/features/classes/api";
 import { formatDay, formatHHmm, minutesOf, nowMinutes, todayISO } from "@/lib/dates";
+import { matchFirst } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import { DueStrip } from "@/features/tasks/calendar/DueStrip";
 import { TaskMarker } from "@/features/tasks/calendar/TaskMarker";
@@ -34,6 +35,14 @@ interface Props {
   /** 012: tasks to show ("Show tasks" on): timed markers on the grid, date-only in the due strip. */
   tasks?: CalendarTasks;
 }
+
+const GRID_COMMANDS = [
+  "calendarGrid.shrink", "calendarGrid.extend", "calendarGrid.up", "calendarGrid.down", "calendarGrid.left",
+  "calendarGrid.right", "calendarGrid.open", "calendarGrid.cancel",
+] as const;
+const ARROW: Partial<Record<(typeof GRID_COMMANDS)[number], RangeKey>> = {
+  "calendarGrid.up": "ArrowUp", "calendarGrid.down": "ArrowDown", "calendarGrid.left": "ArrowLeft", "calendarGrid.right": "ArrowRight",
+};
 
 /** The slot button a draft's start (or any time) belongs to, for focus return (009 FR-043). */
 export function slotSelector(date: string, min: number): string {
@@ -146,22 +155,33 @@ export function TimeGrid({ days, sessions, tz, drafts, tasks }: Props) {
     // only the slot buttons (shadcn parts carry their own `data-slot` names)
     if (!target.dataset.slot || !target.hasAttribute("data-slot-at")) return;
     const [d, s] = target.dataset.slot.split("-").map(Number);
-    const arrows: Record<string, RangeKey> = { ArrowUp: "ArrowUp", ArrowDown: "ArrowDown", ArrowLeft: "ArrowLeft", ArrowRight: "ArrowRight" };
     const sel = selection();
-    if (arrows[e.key]) {
+    // keys from the 019 keymap; PageUp/PageDown/Home/End stay fixed (not on the shortcuts page)
+    const command = matchFirst(e.nativeEvent, GRID_COMMANDS);
+    const done = () => {
       e.preventDefault();
       e.stopPropagation();
-      if (e.shiftKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
-        select(moveRange(sel ?? { day: d, slot: s, len: 1 }, arrows[e.key], true, days.length));
-      } else if (sel) {
-        select(moveRange(sel, arrows[e.key], false, days.length));
-      } else {
-        const [dd, ds] = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[arrows[e.key]];
+    };
+    if (command === "calendarGrid.shrink" || command === "calendarGrid.extend") {
+      done();
+      const dir: RangeKey = command === "calendarGrid.shrink" ? "ArrowUp" : "ArrowDown";
+      select(moveRange(sel ?? { day: d, slot: s, len: 1 }, dir, true, days.length));
+    } else if (command && ARROW[command]) {
+      done();
+      const dir = ARROW[command];
+      if (sel) select(moveRange(sel, dir, false, days.length));
+      else {
+        const [dd, ds] = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[dir];
         focusSlot(d + dd, s + ds);
       }
-    } else if (e.key === "PageUp" || e.key === "PageDown") {
+    } else if (command === "calendarGrid.open") {
+      e.preventDefault(); // no native button click
+      openAt(d, s);
+    } else if (command === "calendarGrid.cancel" && draft && phase !== "open") {
       e.preventDefault();
-      e.stopPropagation();
+      drafts.discard(draft.id);
+    } else if (e.key === "PageUp" || e.key === "PageDown") {
+      done();
       focusSlot(d, s + (e.key === "PageUp" ? -4 : 4));
     } else if (e.key === "Home") {
       e.preventDefault();
@@ -169,12 +189,6 @@ export function TimeGrid({ days, sessions, tz, drafts, tasks }: Props) {
     } else if (e.key === "End") {
       e.preventDefault();
       focusSlot(d, SLOTS - 1);
-    } else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault(); // no native button click
-      openAt(d, s);
-    } else if (e.key === "Escape" && draft && phase !== "open") {
-      e.preventDefault();
-      drafts.discard(draft.id);
     }
   };
 

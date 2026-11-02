@@ -2884,6 +2884,16 @@ export interface components {
             /** Items */
             items: components["schemas"]["ChecklistItemIn"][];
         };
+        /**
+         * Chord
+         * @description 019: a shortcut key: modifiers in fixed order, then a `KeyboardEvent.code`.
+         */
+        Chord: {
+            /** Chord */
+            chord: string;
+            /** Label */
+            label: string;
+        };
         /** ChunkResult */
         ChunkResult: {
             /** Nextseq */
@@ -3854,6 +3864,13 @@ export interface components {
             recordingBarStyle?: ("full" | "compact" | "minimal") | null;
             /** Generalnotescollapsed */
             generalNotesCollapsed?: boolean | null;
+            /** Shortcuts */
+            shortcuts?: {
+                [key: string]: [
+                    components["schemas"]["Chord"] | null,
+                    components["schemas"]["Chord"] | null
+                ];
+            } | null;
         };
         /** PreflightItem */
         PreflightItem: {

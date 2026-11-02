@@ -108,7 +108,10 @@ export function useUpdatePreferences() {
     onMutate: (patch) => {
       const prev = qc.getQueryData<Preferences>(preferencesKey);
       qc.setQueryData<Preferences>(preferencesKey, { ...prev, ...patch });
+      return { prev };
     },
+    // a failed save puts the last saved preferences back (019 FR-012)
+    onError: (_err, _patch, ctx) => qc.setQueryData(preferencesKey, ctx?.prev),
     onSuccess: (p) => qc.setQueryData(preferencesKey, p),
   });
 }

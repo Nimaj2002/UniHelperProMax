@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { AccountSettings } from "./account/AccountSettings";
 import { RestoreHost } from "./backup/RestoreOverlay";
 import { SettingsLayout } from "./SettingsLayout";
+import { KeymapSync } from "@/lib/keymap";
 import { ThemeSync } from "./ThemeSync";
 import { TranscriptionSettingsPage } from "./transcription/TranscriptionSettings";
 
@@ -44,6 +45,7 @@ function SettingsButton({ variant = "full" }: PanelActionProps) {
 registerPanelAction({ id: "settings", slot: "footer", component: SettingsButton, priority: 10 });
 registerAccountMenuItem({ id: "settings", label: "Settings", priority: 0, onSelect: (nav) => nav("/settings") });
 registerGlobalHost({ id: "theme-sync", component: ThemeSync });
+registerGlobalHost({ id: "keymap-sync", component: KeymapSync }); // 019: custom shortcuts
 registerGlobalHost({ id: "restore-host", component: RestoreHost }); // 016: restore overlay, reload
 
 export const routes: RouteObject[] = [
