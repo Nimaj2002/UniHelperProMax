@@ -70,6 +70,7 @@ export async function launchApp(
       ...(process.env as Record<string, string>),
       UNIHELPER_DESKTOP_PROFILE: profile.dir,
       UNIHELPER_QUIET: "1",
+      UNIHELPER_NO_UPDATE: "1",
       ...(opts.env ?? {}),
     },
     timeout: 60_000,

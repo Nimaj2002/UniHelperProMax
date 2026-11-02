@@ -8,6 +8,7 @@ import { log, openMainLog } from "./logs";
 import { applyProfileOverride, resolvePaths, type Paths } from "./paths";
 import { registerMicrophoneIpc, registerPermissions } from "./permissions";
 import { SettingsStore } from "./settingsStore";
+import { checkForUpdates } from "./updates";
 
 /** Ports tried after the saved one when it is taken (the saved port + 1 … + 4). */
 const FALLBACK_PORTS = 4;
@@ -263,5 +264,6 @@ function run(): void {
     });
     registerIpc();
     await launch();
+    checkForUpdates();
   });
 }
