@@ -234,7 +234,7 @@ kept). The app doesn't update itself.
 another one), the port, and the log folder.
 
 **Port.** The app's server listens on `127.0.0.1:47813`, reachable only from your own computer. If
-that port is taken, it tries 47814–47817. Change it in Settings → Desktop → Port; the app restarts.
+that port is taken, it tries 47814, 47815, … until it finds a free one, and keeps that one. Change it in Settings → Desktop → Port; the app restarts.
 Unfinished recordings and unsaved drafts kept under the old port aren't recovered, so the change
 is blocked while there are any.
 

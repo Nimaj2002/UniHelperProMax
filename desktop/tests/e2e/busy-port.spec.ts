@@ -51,13 +51,15 @@ test("no fallback while unsent work waits under the saved port", async () => {
   }
 });
 
-test("every candidate taken shows the port error page", async () => {
+test("several taken ports in a row are all skipped", async () => {
   const profile = await newProfile();
-  const blockers = await Promise.all([0, 1, 2, 3, 4].map((i) => hold(profile.port + i)));
+  const blockers = await Promise.all([0, 1, 2, 3, 4, 5].map((i) => hold(profile.port + i)));
   try {
     const app = await launchApp(profile);
-    expect(await errorText(app)).toContain(`Ports ${profile.port}–${profile.port + 4} are all in use`);
-    await app.close();
+    const page = await app.firstWindow();
+    await page.waitForURL(`http://127.0.0.1:${profile.port + 6}/**`, { timeout: 60_000 });
+    expect(JSON.parse(fs.readFileSync(profile.settingsFile, "utf8")).port).toBe(profile.port + 6);
+    await quit(app);
   } finally {
     blockers.forEach((b) => b.close());
   }

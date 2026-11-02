@@ -3,7 +3,7 @@
 # Environment variables (all optional):
 #   UNIHELPER_DATA_DIR    where notes, PDFs, recordings and the database live (default backend\data)
 #   UNIHELPER_HOST        address to listen on (default 127.0.0.1; 0.0.0.0 for your whole network)
-#   UNIHELPER_PORT        port (default 8000)
+#   UNIHELPER_PORT        port (default 8000; if taken, the next free one is used)
 
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSCommandPath
@@ -20,6 +20,13 @@ $env:UNIHELPER_STATIC_DIR = Join-Path $Root 'frontend\dist'
 $hostAddr = if ($env:UNIHELPER_HOST) { $env:UNIHELPER_HOST } else { '127.0.0.1' }
 $port     = if ($env:UNIHELPER_PORT) { $env:UNIHELPER_PORT } else { '8000' }
 New-Item -ItemType Directory -Force -Path $env:UNIHELPER_DATA_DIR | Out-Null
+# The port is taken by another program: try the next one.
+function Test-PortFree([int]$p) {
+    $l = [System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Parse($hostAddr), $p)
+    try { $l.Start(); return $true } catch { return $false } finally { $l.Stop() }
+}
+$port = [int]$port
+while (-not (Test-PortFree $port)) { $port++ }
 
 Write-Host "UniHelperProMax on http://localhost:$port  (data: $env:UNIHELPER_DATA_DIR, Ctrl+C to stop)"
 Push-Location (Join-Path $Root 'backend')

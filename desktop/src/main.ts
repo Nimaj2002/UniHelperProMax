@@ -10,8 +10,6 @@ import { registerMicrophoneIpc, registerPermissions } from "./permissions";
 import { SettingsStore } from "./settingsStore";
 import { checkForUpdates } from "./updates";
 
-/** Ports tried after the saved one when it is taken (the saved port + 1 … + 4). */
-const FALLBACK_PORTS = 4;
 import { appSession, createWindow, injectClientSecret, startupPage } from "./window";
 
 applyProfileOverride();
@@ -106,12 +104,12 @@ function run(): void {
     injectClientSecret(port, () => backend.clientSecret()); // replaces the previous port's hook
   }
 
-  /** The saved port first; when it is taken, the next few ports, unless the last run left
+  /** The saved port first; when it is taken, every port after it, unless the last run left
    * recording audio or drafts in the window's storage, which belongs to the saved port. */
   function portCandidates(saved: number, pendingWork: boolean): number[] {
     if (pendingWork) return [saved];
     const out = [saved];
-    for (let i = 1; i <= FALLBACK_PORTS && saved + i <= 65535; i++) out.push(saved + i);
+    for (let p = saved + 1; p <= 65535; p++) out.push(p);
     return out;
   }
 
