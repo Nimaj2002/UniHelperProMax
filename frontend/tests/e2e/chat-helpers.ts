@@ -3,10 +3,17 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, type Locator, type Page } from "@playwright/test";
 
 const LLM = `http://localhost:${process.env.E2E_LLM_PORT ?? 8021}`;
-export const FAKE = { openai: `${LLM}/v1`, anthropic: `${LLM}/anthropic`, gemini: `${LLM}/gemini` } as const;
+export const FAKE = {
+  openai: `${LLM}/v1`,
+  anthropic: `${LLM}/anthropic`,
+  gemini: `${LLM}/gemini`,
+} as const;
 
 export async function csrf(page: Page) {
-  return (await page.context().cookies()).find((c) => c.name === "uh_csrf")?.value ?? "";
+  return (
+    (await page.context().cookies()).find((c) => c.name === "uh_csrf")?.value ??
+    ""
+  );
 }
 
 export interface SeedModel {
@@ -20,7 +27,13 @@ export interface SeedModel {
 /** Create an endpoint with these models ({modelId: displayName or capabilities}); returns it. */
 export async function seedEndpoint(
   page: Page,
-  opts: { name: string; style: "openai" | "anthropic" | "gemini"; baseUrl?: string; models: Record<string, string | SeedModel>; apiKey?: string },
+  opts: {
+    name: string;
+    style: "openai" | "anthropic" | "gemini";
+    baseUrl?: string;
+    models: Record<string, string | SeedModel>;
+    apiKey?: string;
+  },
 ) {
   const r = await page.request.post("/api/v1/ai/endpoints", {
     headers: { "X-CSRF-Token": await csrf(page) },
@@ -35,7 +48,11 @@ export async function seedEndpoint(
         return {
           modelId,
           displayName: spec.name,
-          capabilities: { images: !!spec.images, pdf: !!spec.pdf, audio: !!spec.audio },
+          capabilities: {
+            images: !!spec.images,
+            pdf: !!spec.pdf,
+            audio: !!spec.audio,
+          },
           hidden: false,
           source: "manual",
           ...(spec.contextLimit ? { contextLimit: spec.contextLimit } : {}),
@@ -44,22 +61,48 @@ export async function seedEndpoint(
     },
   });
   expect(r.status(), await r.text()).toBe(201);
-  return (await r.json()) as { id: string; models: { id: string; modelId: string }[] };
+  return (await r.json()) as {
+    id: string;
+    models: { id: string; modelId: string }[];
+  };
 }
 
-/** The Chat section of the session panel. */
-export const chatSection = (page: Page) => page.locator("section:has(> div > #panel-section-session-chat-title)");
-export const messageBox = (scope: Locator) => scope.getByRole("textbox", { name: "Message" });
-export const conversation = (scope: Locator) => scope.getByRole("log", { name: "Conversation" });
-export const answers = (scope: Locator) => conversation(scope).getByRole("article", { name: "Assistant" });
+/** The session panel while it shows Chat (its header buttons sit in the header card, above the chat). */
+export const chatSection = (page: Page) =>
+  page.locator("#workspace-session-panel");
+
+/** Start the session panel on Chat (it shows Recordings or Chat, one at a time); a layout set later is kept. */
+export const chatFirst = (page: Page) =>
+  page.addInitScript(() => {
+    if (!localStorage.getItem("uh.sessionPanel"))
+      localStorage.setItem(
+        "uh.sessionPanel",
+        JSON.stringify({ open: true, width: 360, section: "chat" }),
+      );
+  });
+export const messageBox = (scope: Locator) =>
+  scope.getByRole("textbox", { name: "Message" });
+export const conversation = (scope: Locator) =>
+  scope.getByRole("log", { name: "Conversation" });
+export const answers = (scope: Locator) =>
+  conversation(scope).getByRole("article", { name: "Assistant" });
 
 /** Choose a model in a message box's model picker by its display name. */
-export async function pickModel(page: Page, scope: Locator, displayName: string) {
+export async function pickModel(
+  page: Page,
+  scope: Locator,
+  displayName: string,
+) {
   await scope.getByRole("button", { name: /^Model:/ }).click();
   const search = page.getByRole("searchbox", { name: "Search models" });
   if (await search.isVisible()) await search.fill(displayName);
-  await page.getByRole("listbox", { name: "Models" }).getByRole("option", { name: new RegExp(`^${displayName}`) }).click();
-  await expect(scope.getByRole("button", { name: new RegExp(`^Model: ${displayName},`) })).toBeVisible();
+  await page
+    .getByRole("listbox", { name: "Models" })
+    .getByRole("option", { name: new RegExp(`^${displayName}`) })
+    .click();
+  await expect(
+    scope.getByRole("button", { name: new RegExp(`^Model: ${displayName},`) }),
+  ).toBeVisible();
 }
 
 /** Type a message and press Enter. */
@@ -72,11 +115,24 @@ export async function ask(scope: Locator, text: string) {
 
 /** axe on the page, or only inside `include` (e.g. an open dialog over a dimmed page). */
 export async function axeClean(page: Page, include?: string) {
-  await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity));
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every(
+        (a) =>
+          a.playState !== "running" ||
+          a.effect?.getTiming().iterations === Infinity,
+      ),
+  );
   const builder = new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]);
   const scan = await (include ? builder.include(include) : builder).analyze();
-  expect(scan.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(", ")}`)).toEqual([]);
+  expect(
+    scan.violations.map(
+      (v) => `${v.id}: ${v.nodes.map((n) => n.target).join(", ")}`,
+    ),
+  ).toEqual([]);
 }
 
 /** The open note's editor, in live (rich) or raw mode. */
-export const noteEditor = (page: Page) => page.locator('.cm-content, [aria-label="editable markdown"]').first();
+export const noteEditor = (page: Page) =>
+  page.locator('.cm-content, [aria-label="editable markdown"]').first();

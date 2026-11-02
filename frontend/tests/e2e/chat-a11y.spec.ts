@@ -8,9 +8,18 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { tag } from "./helpers";
 import { openSession, sessionPanel, VIEWPORT } from "./layout-helpers";
-import { answers, axeClean, chatSection, csrf, pickModel, seedEndpoint } from "./chat-helpers";
+import {
+  answers,
+  axeClean,
+  chatSection,
+  csrf,
+  pickModel,
+  seedEndpoint,
+  chatFirst,
+} from "./chat-helpers";
 
 test.use({ viewport: VIEWPORT });
+test.beforeEach(({ page }) => chatFirst(page));
 
 const panelBox = (page: Page) => page.locator("#chat-box-panel");
 
@@ -25,13 +34,20 @@ async function recordAnnouncements(region: Locator) {
     }).observe(el, { childList: true, characterData: true, subtree: true });
   });
 }
-const announced = (page: Page) => page.evaluate(() => (window as unknown as { __said: string[] }).__said);
+const announced = (page: Page) =>
+  page.evaluate(() => (window as unknown as { __said: string[] }).__said);
 
-test("SC-008: the whole chat flow by keyboard, with focus returning to the message box", async ({ page }, testInfo) => {
+test("SC-008: the whole chat flow by keyboard, with focus returning to the message box", async ({
+  page,
+}, testInfo) => {
   test.setTimeout(120_000);
   const t = tag(testInfo.project.name);
   await openSession(page, `CY${t} 501`);
-  await seedEndpoint(page, { name: `Keyboard ${t}`, style: "openai", models: { echo: `Key echo ${t}`, slow: `Key slow ${t}` } });
+  await seedEndpoint(page, {
+    name: `Keyboard ${t}`,
+    style: "openai",
+    models: { echo: `Key echo ${t}`, slow: `Key slow ${t}` },
+  });
   await page.reload();
   await expect(sessionPanel(page)).toBeVisible();
 
@@ -42,7 +58,10 @@ test("SC-008: the whole chat flow by keyboard, with focus returning to the messa
   await page.keyboard.press("Alt+KeyK");
   await expect(panelBox(page)).toBeFocused();
   const chat = chatSection(page);
-  await expect(chat.getByRole("button", { name: "New chat" })).toHaveAttribute("aria-keyshortcuts", "Alt+Shift+K");
+  await expect(chat.getByRole("button", { name: "New chat" })).toHaveAttribute(
+    "aria-keyshortcuts",
+    "Alt+Shift+K",
+  );
   await expect(panelBox(page)).toHaveAttribute("aria-keyshortcuts", /Alt\+K/);
 
   // the model picker by arrows (Tab → Attach → Model); the default is the account's last model
@@ -56,12 +75,20 @@ test("SC-008: the whole chat flow by keyboard, with focus returning to the messa
     await page.keyboard.press("Enter");
     await expect(models).toBeFocused();
     for (let i = 0; i < 40; i++) {
-      if ((await models.getAttribute("aria-activedescendant")) === (await models.getByRole("option", { name: new RegExp(`^${name}`) }).getAttribute("id"))) break;
+      if (
+        (await models.getAttribute("aria-activedescendant")) ===
+        (await models
+          .getByRole("option", { name: new RegExp(`^${name}`) })
+          .getAttribute("id"))
+      )
+        break;
       await page.keyboard.press("ArrowDown");
     }
     await page.keyboard.press("Enter");
     await expect(models).toBeHidden();
-    await expect(chat.getByRole("button", { name: new RegExp(`^Model: ${name},`) })).toBeVisible();
+    await expect(
+      chat.getByRole("button", { name: new RegExp(`^Model: ${name},`) }),
+    ).toBeVisible();
     await expect(panelBox(page)).toBeFocused();
   };
   await choose(`Key echo ${t}`);
@@ -69,7 +96,9 @@ test("SC-008: the whole chat flow by keyboard, with focus returning to the messa
   // type, Enter (the chat starts), then the next answer: only "started" and "complete" are announced
   await page.keyboard.type("Hello by keyboard");
   await page.keyboard.press("Enter");
-  await expect(answers(chat).last()).toContainText("You said: Hello by keyboard");
+  await expect(answers(chat).last()).toContainText(
+    "You said: Hello by keyboard",
+  );
   const status = chat.getByRole("status");
   await expect(status).toHaveText("Answer complete");
   await recordAnnouncements(status);
@@ -124,7 +153,10 @@ test("SC-008: the whole chat flow by keyboard, with focus returning to the messa
   await expect(page.getByRole("menuitem", { name: "Delete" })).toBeFocused();
   await page.keyboard.press("Enter");
   await expect(renamed).toBeHidden();
-  const undo = page.locator("[data-sonner-toast]").filter({ hasText: "Chat deleted" }).getByRole("button", { name: "Undo" });
+  const undo = page
+    .locator("[data-sonner-toast]")
+    .filter({ hasText: "Chat deleted" })
+    .getByRole("button", { name: "Undo" });
   await undo.focus();
   await page.keyboard.press("Enter");
   await expect(renamed).toBeVisible();
@@ -143,18 +175,26 @@ test("SC-008: the whole chat flow by keyboard, with focus returning to the messa
   await expect(chat.getByRole("list", { name: "Chats" })).toBeVisible();
 });
 
-test("FR-069: axe passes in this colour scheme and in a user-created theme", async ({ page }, testInfo) => {
+test("FR-069: axe passes in this colour scheme and in a user-created theme", async ({
+  page,
+}, testInfo) => {
   test.setTimeout(120_000);
   const t = tag(testInfo.project.name);
   const { url } = await openSession(page, `CZ${t} 502`);
-  await seedEndpoint(page, { name: `Themes ${t}`, style: "openai", models: { echo: `Theme echo ${t}` } });
+  await seedEndpoint(page, {
+    name: `Themes ${t}`,
+    style: "openai",
+    models: { echo: `Theme echo ${t}` },
+  });
   await page.reload();
   const chat = chatSection(page);
   await pickModel(page, chat, `Theme echo ${t}`);
   const check = async () => {
     await expect(chat.getByRole("textbox", { name: "Message" })).toBeEnabled();
     await axeClean(page);
-    await chat.getByRole("textbox", { name: "Message" }).fill("Theme check with `code` and **bold**");
+    await chat
+      .getByRole("textbox", { name: "Message" })
+      .fill("Theme check with `code` and **bold**");
     await chat.getByRole("textbox", { name: "Message" }).press("Enter");
     await expect(answers(chat).last()).toContainText("You said:");
     await axeClean(page);
@@ -165,14 +205,26 @@ test("FR-069: axe passes in this colour scheme and in a user-created theme", asy
   await check();
   if (testInfo.project.name.includes("dark")) return;
   const setTheme = async (theme: string) =>
-    expect((await page.request.patch("/api/v1/preferences", { data: { theme }, headers: { "X-CSRF-Token": await csrf(page) } })).ok()).toBe(true);
+    expect(
+      (
+        await page.request.patch("/api/v1/preferences", {
+          data: { theme },
+          headers: { "X-CSRF-Token": await csrf(page) },
+        })
+      ).ok(),
+    ).toBe(true);
   try {
     await page.goto("/settings/appearance");
     await page.getByRole("button", { name: "New theme…" }).click();
-    await page.getByRole("dialog").getByRole("textbox", { name: "Name" }).fill(`Chat a11y ${t}`);
+    await page
+      .getByRole("dialog")
+      .getByRole("textbox", { name: "Name" })
+      .fill(`Chat a11y ${t}`);
     await page.getByRole("button", { name: "Create and edit" }).click();
     await page.getByRole("button", { name: "Save theme" }).click();
-    await page.getByRole("radio", { name: new RegExp(`Chat a11y ${t}`) }).click();
+    await page
+      .getByRole("radio", { name: new RegExp(`Chat a11y ${t}`) })
+      .click();
     await page.goto(url);
     await check();
   } finally {
@@ -180,12 +232,18 @@ test("FR-069: axe passes in this colour scheme and in a user-created theme", asy
   }
 });
 
-test("FR-073: with reduced motion nothing animates and the indicators stay visible", async ({ page }, testInfo) => {
+test("FR-073: with reduced motion nothing animates and the indicators stay visible", async ({
+  page,
+}, testInfo) => {
   test.setTimeout(90_000);
   const t = tag(testInfo.project.name);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await openSession(page, `CR${t} 503`);
-  await seedEndpoint(page, { name: `Motion ${t}`, style: "openai", models: { slow: `Motion slow ${t}` } });
+  await seedEndpoint(page, {
+    name: `Motion ${t}`,
+    style: "openai",
+    models: { slow: `Motion slow ${t}` },
+  });
   await page.reload();
   const chat = chatSection(page);
   await pickModel(page, chat, `Motion slow ${t}`);
@@ -196,10 +254,21 @@ test("FR-073: with reduced motion nothing animates and the indicators stay visib
   await expect(page.getByRole("region", { name: "Answering" })).toBeVisible();
   await chat.getByRole("button", { name: "Back to history" }).click();
   await expect(chat.getByText("Generating")).toBeVisible();
-  const running = await page.evaluate(() =>
-    document.getAnimations().filter((a) => a.playState === "running" && (a.effect?.getTiming().iterations ?? 1) === Infinity).length,
+  const running = await page.evaluate(
+    () =>
+      document
+        .getAnimations()
+        .filter(
+          (a) =>
+            a.playState === "running" &&
+            (a.effect?.getTiming().iterations ?? 1) === Infinity,
+        ).length,
   );
   expect(running).toBe(0);
-  for (const run of (await (await page.request.get("/api/v1/chat-runs/active")).json()) as { id: string }[])
-    await page.request.post(`/api/v1/chat-runs/${run.id}/stop`, { headers: { "X-CSRF-Token": await csrf(page) } });
+  for (const run of (await (
+    await page.request.get("/api/v1/chat-runs/active")
+  ).json()) as { id: string }[])
+    await page.request.post(`/api/v1/chat-runs/${run.id}/stop`, {
+      headers: { "X-CSRF-Token": await csrf(page) },
+    });
 });

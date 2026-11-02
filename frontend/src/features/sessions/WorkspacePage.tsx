@@ -1,61 +1,132 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { createPortal } from "react-dom";
 import { useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import { useLayout, useRightCard, type RightCard } from "@/app/shell/layout";
-import { FocusModeButton, ShowSidePanelButton } from "@/app/shell/MainBarControls";
+import {
+  FocusModeButton,
+  ShowSidePanelButton,
+} from "@/app/shell/MainBarControls";
 import { usePanelSections, type PanelSection } from "@/app/shell/panelSection";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
 import { isNewChatId, newChatId, useChats } from "@/features/chat/api";
-import { focusBox, HISTORY, setChatTabsHost, setPanelChat, useChatPlacement } from "@/features/chat/chatPlacement";
+import {
+  focusBox,
+  HISTORY,
+  setChatTabsHost,
+  setPanelChat,
+  useChatPlacement,
+} from "@/features/chat/chatPlacement";
 import { ChatTab } from "@/features/chat/ChatTab";
 import { useSession } from "@/features/classes/api";
 import { useDocuments } from "@/features/documents/api";
 import { useEventDetail, useEventTimeline } from "@/features/events/api";
 import { eventTimelineItems } from "@/features/events/timeline";
 import { confirmCloseDocument } from "@/features/documents/leaveGuards";
-import { DOC_ATTACH, DOC_DETACH, DocumentTabView } from "@/features/documents/reader/DocumentTabView";
+import {
+  DOC_ATTACH,
+  DOC_DETACH,
+  DocumentTabView,
+} from "@/features/documents/reader/DocumentTabView";
 import { useNoteImporter } from "@/features/imports/useNoteImporter";
 import { isApiError } from "@/lib/api";
 import { formatDay, wallTime } from "@/lib/dates";
 import { ShortcutKbd } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import {
-  fetchNote, fetchWorkspace, notesKey, putWorkspace, saveNoteContent, useCreateNote, useDeleteNote,
-  useNotes, usePreferences, useRenameNote, useTimeline, type Note, type NoteMeta,
+  fetchNote,
+  fetchWorkspace,
+  notesKey,
+  putWorkspace,
+  saveNoteContent,
+  useCreateNote,
+  useDeleteNote,
+  useNotes,
+  usePreferences,
+  useRenameNote,
+  useTimeline,
+  type Note,
+  type NoteMeta,
 } from "./api";
-import { ensureSaver, getSaver, onServerAppend, onServerReplace, readDraft, removeSaver, useSaveStatus, type SaveFn } from "./autosave";
+import {
+  ensureSaver,
+  getSaver,
+  onServerAppend,
+  onServerReplace,
+  readDraft,
+  removeSaver,
+  useSaveStatus,
+  type SaveFn,
+} from "./autosave";
 import { AddTabButton } from "./AddTabButton";
 import { ConflictDialog } from "./ConflictDialog";
-import { MarkdownEditor, type EditorMode, type MarkdownEditorHandle } from "./editor/MarkdownEditor";
+import {
+  MarkdownEditor,
+  type EditorMode,
+  type MarkdownEditorHandle,
+} from "./editor/MarkdownEditor";
 import { NoteList } from "./NoteList";
 import { DeleteNoteDialog, NoteNameDialog } from "./NoteDialogs";
-import { SessionPanel, useSessionPanelLayout, useSessionRail } from "./SessionPanel";
+import {
+  SessionPanel,
+  useSessionPanelLayout,
+  useSessionRail,
+} from "./SessionPanel";
 import { SessionTimeline, type TimelineItem } from "./SessionTimeline";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import { SessionChip } from "./SessionChip";
 import { paneId, StatusLabel, tabDomId, WorkspaceTabs } from "./WorkspaceTabs";
 import {
-  EMPTY, fromServer, panes, reduceTabs, same, toServer, type Side, type TabAction, type TabRef, type WorkspaceTabs as TabsState,
+  EMPTY,
+  fromServer,
+  panes,
+  reduceTabs,
+  same,
+  toServer,
+  type Side,
+  type TabAction,
+  type TabRef,
+  type WorkspaceTabs as TabsState,
 } from "./tabState";
 import { useSidePanelSections } from "./workspace-panels";
 
 const saveFn: SaveFn = (id, content, version, baseHash, keepalive) =>
-  saveNoteContent(id, content, version, baseHash, keepalive).then((r) => ({ version: r.version, hash: r.hash }));
+  saveNoteContent(id, content, version, baseHash, keepalive).then((r) => ({
+    version: r.version,
+    hash: r.hash,
+  }));
 
 /** Fetch a note and set up its autosaver once; restore a local draft left by a crash/reload. */
 async function loadNote(id: string): Promise<Note> {
   const note = await fetchNote(id);
   if (!getSaver(id)) {
-    const saver = ensureSaver(id, { content: note.content, version: note.version, hash: note.hash }, saveFn);
+    const saver = ensureSaver(
+      id,
+      { content: note.content, version: note.version, hash: note.hash },
+      saveFn,
+    );
     const draft = readDraft(id);
     if (draft && draft.content !== note.content) {
       if (draft.baseVersion === note.version) {
         saver.update(draft.content);
         toast.info(`Restored unsaved text in “${note.name}”.`);
       } else {
-        saver.markDraftConflict(draft.content, { version: note.version, hash: note.hash, content: note.content });
+        saver.markDraftConflict(draft.content, {
+          version: note.version,
+          hash: note.hash,
+          content: note.content,
+        });
       }
     }
   }
@@ -83,7 +154,13 @@ function useElementWidth(ref: RefObject<HTMLElement | null>) {
  * (`hosts`), which this slot borrows while it shows that document, so the reader keeps page,
  * zoom and scroll across tab switches and moves between panes (research R11).
  */
-function DocSlot({ host, parking }: { host: HTMLElement; parking: RefObject<HTMLElement | null> }) {
+function DocSlot({
+  host,
+  parking,
+}: {
+  host: HTMLElement;
+  parking: RefObject<HTMLElement | null>;
+}) {
   const slot = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     slot.current?.appendChild(host);
@@ -108,16 +185,33 @@ interface NotePaneProps {
 
 /** One pane's note editor; stays mounted (hidden) while the pane shows a document. */
 function NotePane({ noteId, meta, visible, mode, editorRef }: NotePaneProps) {
-  const query = useQuery({ queryKey: ["note", noteId], queryFn: () => loadNote(noteId), staleTime: Infinity, gcTime: Infinity });
+  const query = useQuery({
+    queryKey: ["note", noteId],
+    queryFn: () => loadNote(noteId),
+    staleTime: Infinity,
+    gcTime: Infinity,
+  });
   const note = query.data;
   const snap = useSaveStatus(getSaver(noteId));
   if (!note || !meta) {
-    return visible ? <p className="grid h-full place-items-center p-8 text-sm text-muted-foreground">Opening note…</p> : null;
+    return visible ? (
+      <p className="grid h-full place-items-center p-8 text-sm text-muted-foreground">
+        Opening note…
+      </p>
+    ) : null;
   }
   return (
-    <div className={cn("relative flex h-full min-h-0 flex-col bg-editor-surface", !visible && "hidden")}>
+    <div
+      className={cn(
+        "relative flex h-full min-h-0 flex-col bg-editor-surface",
+        !visible && "hidden",
+      )}
+    >
       {note.missing && snap?.status !== "conflict" && (
-        <p role="status" className="border-b border-divider px-4 py-2 text-sm text-warning">
+        <p
+          role="status"
+          className="border-b border-divider px-4 py-2 text-sm text-warning"
+        >
           This note's file is missing on disk. Typing will save it again.
         </p>
       )}
@@ -129,7 +223,11 @@ function NotePane({ noteId, meta, visible, mode, editorRef }: NotePaneProps) {
           label={`${meta.name} — Markdown note`}
           mode={mode}
           onChange={(id, text) => getSaver(id)?.update(text)}
-          onEscape={() => document.getElementById(tabDomId({ kind: "note", id: noteId }))?.focus()}
+          onEscape={() =>
+            document
+              .getElementById(tabDomId({ kind: "note", id: noteId }))
+              ?.focus()
+          }
         />
       </div>
       {/* the save state floats over the corner, using no layout space (008 FR-017) */}
@@ -155,12 +253,20 @@ export function WorkspacePage() {
   const session = useSession(sessionKey);
   const timeline = useTimeline(courseId || undefined);
   const eventTimeline = useEventTimeline(semesterId || undefined);
-  const eventDetail = useEventDetail(semesterId ? session.data?.lineageId : undefined);
+  const eventDetail = useEventDetail(
+    semesterId ? session.data?.lineageId : undefined,
+  );
   const timelineEntries = useMemo<TimelineItem[] | undefined>(
-    () => (semesterId ? eventTimeline.data && eventTimelineItems(eventTimeline.data, semesterId) : timeline.data?.entries),
+    () =>
+      semesterId
+        ? eventTimeline.data &&
+          eventTimelineItems(eventTimeline.data, semesterId)
+        : timeline.data?.entries,
     [semesterId, eventTimeline.data, timeline.data],
   );
-  const sessionsTitle = semesterId ? `Events · ${eventDetail.data?.semesterName ?? "Semester"}` : "Sessions";
+  const sessionsTitle = semesterId
+    ? `Events · ${eventDetail.data?.semesterName ?? "Semester"}`
+    : "Sessions";
   const notes = useNotes(sessionKey);
   const documents = useDocuments(sessionKey);
   const prefs = usePreferences();
@@ -177,8 +283,13 @@ export function WorkspacePage() {
   const panesRef = useRef<HTMLDivElement>(null);
   const mainWidth = useElementWidth(mainRef);
 
-  const [tabState, setTabState] = useState<{ ws: TabsState; sessionKey: string | null }>({ ws: EMPTY, sessionKey: null });
-  const [dialog, setDialog] = useState<{ kind: "new" } | { kind: "rename" | "delete"; note: NoteMeta } | null>(null);
+  const [tabState, setTabState] = useState<{
+    ws: TabsState;
+    sessionKey: string | null;
+  }>({ ws: EMPTY, sessionKey: null });
+  const [dialog, setDialog] = useState<
+    { kind: "new" } | { kind: "rename" | "delete"; note: NoteMeta } | null
+  >(null);
   const [deleteError, setDeleteError] = useState<string>();
 
   const mode: EditorMode = prefs.data?.editorMode ?? "live";
@@ -187,11 +298,18 @@ export function WorkspacePage() {
   const allSideSections = useSidePanelSections();
   const sessionData = session.data;
   const sideSections = useMemo(
-    () => allSideSections.filter((s) => !s.when || (sessionData !== undefined && s.when(sessionData))),
+    () =>
+      allSideSections.filter(
+        (s) => !s.when || (sessionData !== undefined && s.when(sessionData)),
+      ),
     [allSideSections, sessionData],
   );
   const leftSections = useMemo<PanelSection[]>(
-    () => [{ id: "notes", title: "Notes" }, ...sideSections.map(({ id, title }) => ({ id, title })), { id: "sessions", title: sessionsTitle }],
+    () => [
+      { id: "notes", title: "Notes" },
+      ...sideSections.map(({ id, title }) => ({ id, title })),
+      { id: "sessions", title: sessionsTitle },
+    ],
     [sideSections, sessionsTitle],
   );
   const sidePanel = usePanelSections(leftSections);
@@ -204,14 +322,20 @@ export function WorkspacePage() {
   const view = panes(ws, splitAvailable);
   const activeId = ws.active?.kind === "note" ? ws.active.id : null;
   const openIds = ws.tabs.filter((t) => t.kind === "note").map((t) => t.id);
-  const act = useCallback((a: TabAction) => setTabState((t) => ({ ...t, ws: reduceTabs(t.ws, a) })), []);
+  const act = useCallback(
+    (a: TabAction) => setTabState((t) => ({ ...t, ws: reduceTabs(t.ws, a) })),
+    [],
+  );
   const chats = useChats(sessionKey);
 
   // ---- workspace state per session (FR-013, 007 FR-013/FR-014a) -------------------------
   useEffect(() => {
     let live = true;
     // `?note=<id>` (e.g. "Open note" after a transcription) also opens and selects that note
-    const withLinked = (s: TabsState) => (linkedNote ? reduceTabs(s, { type: "open", tab: { kind: "note", id: linkedNote } }) : s);
+    const withLinked = (s: TabsState) =>
+      linkedNote
+        ? reduceTabs(s, { type: "open", tab: { kind: "note", id: linkedNote } })
+        : s;
     fetchWorkspace(sessionKey).then(
       (s) => live && setTabState({ ws: withLinked(fromServer(s)), sessionKey }),
       () => live && setTabState({ ws: withLinked(EMPTY), sessionKey }),
@@ -244,14 +368,35 @@ export function WorkspacePage() {
   useEffect(() => sendPendingTabs, [sessionKey, sendPendingTabs]);
 
   // transcripts appended by the server appear in the open editor without reload (004 FR-009)
-  useEffect(() => onServerAppend((noteId, text) => eachEditor((e) => e.appendContent(noteId, text))), [eachEditor]);
+  useEffect(
+    () =>
+      onServerAppend((noteId, text) =>
+        eachEditor((e) => e.appendContent(noteId, text)),
+      ),
+    [eachEditor],
+  );
   // a note replaced by an import shows its new content (006 FR-020)
-  useEffect(() => onServerReplace((noteId, text) => eachEditor((e) => e.replaceContent(noteId, text))), [eachEditor]);
+  useEffect(
+    () =>
+      onServerReplace((noteId, text) =>
+        eachEditor((e) => e.replaceContent(noteId, text)),
+      ),
+    [eachEditor],
+  );
 
   // ---- tab actions -----------------------------------------------------------------------
-  const openNote = useCallback((id: string) => act({ type: "open", tab: { kind: "note", id } }), [act]);
-  const openDocument = useCallback((id: string) => act({ type: "open", tab: { kind: "document", id } }), [act]);
-  const closeDeletedDocument = useCallback((id: string) => act({ type: "close", tab: { kind: "document", id } }), [act]);
+  const openNote = useCallback(
+    (id: string) => act({ type: "open", tab: { kind: "note", id } }),
+    [act],
+  );
+  const openDocument = useCallback(
+    (id: string) => act({ type: "open", tab: { kind: "document", id } }),
+    [act],
+  );
+  const closeDeletedDocument = useCallback(
+    (id: string) => act({ type: "close", tab: { kind: "document", id } }),
+    [act],
+  );
 
   const closeTab = useCallback(
     (tab: TabRef) => {
@@ -264,7 +409,9 @@ export function WorkspacePage() {
       // 014 FR-045: the chat goes back to the history list; an answer in progress goes on
       if (tab.kind === "chat") return act({ type: "close", tab });
       // unsent annotation changes: try now, else ask (007 FR-029)
-      void confirmCloseDocument(tab.id).then((go) => go && act({ type: "close", tab }));
+      void confirmCloseDocument(tab.id).then(
+        (go) => go && act({ type: "close", tab }),
+      );
     },
     [act, eachEditor],
   );
@@ -280,38 +427,54 @@ export function WorkspacePage() {
 
   // the session panel lives in the shell's right column (008 R2, 014 US2); its layout is kept per
   // browser, seeded once from the account preference the audio card used before
-  const { layout: panelLayout, setOpen: setPanelOpen, setWidth: setPanelWidth, setShare, setCollapsed: setSectionCollapsed } = useSessionPanelLayout(
+  const {
+    layout: panelLayout,
+    setOpen: setPanelOpen,
+    setWidth: setPanelWidth,
+    setSection,
+  } = useSessionPanelLayout(
     prefs.isSuccess ? !!prefs.data.workspaceRightCollapsed : undefined,
   );
-  const expandSection = useCallback((section: "recordings" | "chat") => setSectionCollapsed(section, false), [setSectionCollapsed]);
-  const { rail, watchers: railWatchers } = useSessionRail(expandSection);
+  const { rail, watchers: railWatchers } = useSessionRail(setSection);
   const sessionPanel = useMemo<RightCard>(
     () => ({
       label: "Session panel",
       description: "This session's recordings and chat",
-      body: <SessionPanel sessionKey={sessionKey} layout={panelLayout} setShare={setShare} setCollapsed={setSectionCollapsed} />,
+      body: (
+        <SessionPanel
+          sessionKey={sessionKey}
+          layout={panelLayout}
+          setSection={setSection}
+        />
+      ),
+      chrome: false,
       open: panelLayout.open,
       setOpen: setPanelOpen,
       width: panelLayout.width,
       setWidth: setPanelWidth,
       rail,
     }),
-    [sessionKey, panelLayout, setShare, setSectionCollapsed, setPanelOpen, setPanelWidth, rail],
+    [sessionKey, panelLayout, setSection, setPanelOpen, setPanelWidth, rail],
   );
   useRightCard(session.isError ? null : sessionPanel);
 
-  const noteImporter = useNoteImporter({ sessionKey, notes: noteList, onOpen: openNote });
+  const noteImporter = useNoteImporter({
+    sessionKey,
+    notes: noteList,
+    onOpen: openNote,
+  });
 
   // 014 Alt+K / Alt+Shift+K (contracts/ui-contract.md "Shortcuts added")
   const placeChat = useChatPlacement(sessionKey);
   const showChatInPanel = useCallback(() => {
-    expandSection("chat");
+    setSection("chat");
     layout.showRight();
     requestAnimationFrame(() => focusBox({ place: "panel" }));
-  }, [expandSection, layout]);
+  }, [setSection, layout]);
   const focusChat = useCallback(() => {
     const active = ws.active;
-    if (active?.kind === "chat") return focusBox({ place: "tab", id: active.id });
+    if (active?.kind === "chat")
+      return focusBox({ place: "tab", id: active.id });
     const chatTabs = ws.tabs.filter((t) => t.kind === "chat");
     // the panel's chat was expanded into a tab (and the panel closed): go to that tab
     if (!panelLayout.open && layout.overlay !== "right" && chatTabs.length) {
@@ -347,25 +510,40 @@ export function WorkspacePage() {
   });
 
   // ---- tab names ----------------------------------------------------------------------------
-  const noteById = useMemo(() => new Map(noteList.map((n) => [n.id, n])), [noteList]);
-  const docById = useMemo(() => new Map(docList.map((d) => [d.id, d])), [docList]);
-  const chatById = useMemo(() => new Map((chats.data ?? []).map((c) => [c.id, c.title])), [chats.data]);
+  const noteById = useMemo(
+    () => new Map(noteList.map((n) => [n.id, n])),
+    [noteList],
+  );
+  const docById = useMemo(
+    () => new Map(docList.map((d) => [d.id, d])),
+    [docList],
+  );
+  const chatById = useMemo(
+    () => new Map((chats.data ?? []).map((c) => [c.id, c.title])),
+    [chats.data],
+  );
   const titleOf = useCallback(
     (t: TabRef) =>
       t.kind === "note"
         ? noteById.get(t.id)?.name
         : t.kind === "chat"
-          ? isNewChatId(t.id) ? "New chat" : (chatById.get(t.id) ?? "Chat")
+          ? isNewChatId(t.id)
+            ? "New chat"
+            : (chatById.get(t.id) ?? "Chat")
           : docById.get(t.id)?.name,
     [noteById, docById, chatById],
   );
 
   // ---- chat tabs (014 US5): the chat feature moves chats between the panel and tabs ------------
-  const chatTabIds = useMemo(() => ws.tabs.filter((t) => t.kind === "chat").map((t) => t.id), [ws.tabs]);
+  const chatTabIds = useMemo(
+    () => ws.tabs.filter((t) => t.kind === "chat").map((t) => t.id),
+    [ws.tabs],
+  );
   // "attach the open note" (US6): the active note tab, else the last one active while a chat tab is
   const [lastNote, setLastNote] = useState<string | null>(null);
   if (activeId && activeId !== lastNote) setLastNote(activeId);
-  const openNoteId = activeId ?? (lastNote && openIds.includes(lastNote) ? lastNote : null);
+  const openNoteId =
+    activeId ?? (lastNote && openIds.includes(lastNote) ? lastNote : null);
   useEffect(() => {
     if (tabState.sessionKey !== sessionKey) return;
     const chat = (id: string): TabRef => ({ kind: "chat", id });
@@ -375,7 +553,8 @@ export function WorkspacePage() {
       open: (id) => act({ type: "open", tab: chat(id) }),
       focus: (id) => act({ type: "open", tab: chat(id) }),
       close: (id) => act({ type: "close", tab: chat(id) }),
-      replace: (from, to) => act({ type: "replace", from: chat(from), to: chat(to) }),
+      replace: (from, to) =>
+        act({ type: "replace", from: chat(from), to: chat(to) }),
       openNoteId,
     });
   }, [sessionKey, tabState.sessionKey, chatTabIds, act, openNoteId]);
@@ -385,14 +564,21 @@ export function WorkspacePage() {
   useEffect(() => {
     if (!chatsUpdated || chats.isPlaceholderData) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs the tabs with the server's chat list
-    act({ type: "retain", valid: (t) => t.kind !== "chat" || isNewChatId(t.id) || chatById.has(t.id) });
+    act({
+      type: "retain",
+      valid: (t) =>
+        t.kind !== "chat" || isNewChatId(t.id) || chatById.has(t.id),
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the list (or the session's tabs) load
   }, [chatsUpdated, tabState.sessionKey]);
 
   // ---- note editors per pane ----------------------------------------------------------------
   // A pane showing a document keeps its last note's editor mounted but hidden, so undo history and
   // scroll survive; it is dropped when that note is closed or shown in the other pane.
-  const [held, setHeld] = useState<Record<Side, string | null>>({ left: null, right: null });
+  const [held, setHeld] = useState<Record<Side, string | null>>({
+    left: null,
+    right: null,
+  });
   const editorNote = (side: Side): string | null => {
     const shown = side === "left" ? view.left : view.right;
     if (shown?.kind === "note") return shown.id;
@@ -404,7 +590,8 @@ export function WorkspacePage() {
   };
   const leftNote = editorNote("left");
   const rightNote = editorNote("right");
-  if (held.left !== leftNote || held.right !== rightNote) setHeld({ left: leftNote, right: rightNote });
+  if (held.left !== leftNote || held.right !== rightNote)
+    setHeld({ left: leftNote, right: rightNote });
   useEffect(() => {
     // an editor's cached state for a note now edited in the other pane is stale
     if (leftNote) rightEditor.current?.forget(leftNote);
@@ -415,7 +602,12 @@ export function WorkspacePage() {
   const activeMeta = activeId ? noteById.get(activeId) : undefined;
   const activeSaver = activeId ? getSaver(activeId) : undefined;
   const activeSnap = useSaveStatus(activeSaver);
-  const editorOf = (noteId: string) => (leftNote === noteId ? leftEditor.current : rightNote === noteId ? rightEditor.current : null);
+  const editorOf = (noteId: string) =>
+    leftNote === noteId
+      ? leftEditor.current
+      : rightNote === noteId
+        ? rightEditor.current
+        : null;
 
   const keepBoth = async () => {
     if (!activeSaver || !activeMeta) return;
@@ -423,13 +615,24 @@ export function WorkspacePage() {
     let created: Note | null = null;
     for (let i = 1; i < 20 && !created; i++) {
       try {
-        created = await createNote.mutateAsync({ name: i === 1 ? base : `${base} ${i}`, content: activeSaver.content });
+        created = await createNote.mutateAsync({
+          name: i === 1 ? base : `${base} ${i}`,
+          content: activeSaver.content,
+        });
       } catch (err) {
         if (!isApiError(err, "name_taken")) throw err;
       }
     }
     if (!created) return;
-    ensureSaver(created.id, { content: created.content, version: created.version, hash: created.hash }, saveFn);
+    ensureSaver(
+      created.id,
+      {
+        content: created.content,
+        version: created.version,
+        hash: created.hash,
+      },
+      saveFn,
+    );
     const text = activeSaver.adoptTheirsAfterCopy();
     eachEditor((e) => e.replaceContent(activeSaver.noteId, text));
     openNote(created.id);
@@ -445,7 +648,9 @@ export function WorkspacePage() {
   // ---- document readers: one per open document tab, kept mounted (research R11) ------------
   const parking = useRef<HTMLDivElement>(null);
   const [hosts] = useState(() => new Map<string, HTMLDivElement>());
-  const openDocIds = ws.tabs.filter((t) => t.kind === "document" && docById.has(t.id)).map((t) => t.id);
+  const openDocIds = ws.tabs
+    .filter((t) => t.kind === "document" && docById.has(t.id))
+    .map((t) => t.id);
   const hostFor = (id: string) => {
     let h = hosts.get(id);
     if (!h) {
@@ -486,28 +691,64 @@ export function WorkspacePage() {
     ...Object.fromEntries(
       sideSections.map(({ id, component: Section }) => [
         id,
-        <Section key={id} sessionKey={sessionKey} openDocument={openDocument} closeDocument={closeDeletedDocument} />,
+        <Section
+          key={id}
+          sessionKey={sessionKey}
+          openDocument={openDocument}
+          closeDocument={closeDeletedDocument}
+        />,
       ]),
     ),
     sessions: (
-      <nav aria-label={semesterId ? "Events of this semester" : "Sessions of this course"} className="py-1">
-        {timelineEntries && <SessionTimeline entries={timelineEntries} variant="compact" activeKey={sessionKey} />}
+      <nav
+        aria-label={
+          semesterId ? "Events of this semester" : "Sessions of this course"
+        }
+        className="py-1"
+      >
+        {timelineEntries && (
+          <SessionTimeline
+            entries={timelineEntries}
+            variant="compact"
+            activeKey={sessionKey}
+          />
+        )}
       </nav>
     ),
   };
-  const leftBody = (id: string) => <div className="py-2">{leftContent[id]}</div>;
+  const leftBody = (id: string) => (
+    <div className="py-2">{leftContent[id]}</div>
+  );
   const emptyPane = (
     <div className="grid h-full place-items-center p-8 text-center">
       <div className="grid max-w-sm gap-3">
         <p className="text-sm text-muted-foreground">
-          {noteList.length || docList.length ? "Choose a note or document on the left, or start a new note." : "No notes for this session yet."}
+          {noteList.length || docList.length
+            ? "Choose a note or document on the left, or start a new note."
+            : "No notes for this session yet."}
         </p>
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
-          <button type="button" onClick={() => setDialog({ kind: "new" })} className="text-sm font-medium text-primary underline underline-offset-4">
-            New note <ShortcutKbd id="workspace.newNote" className="text-xs text-muted-foreground" />
+          <button
+            type="button"
+            onClick={() => setDialog({ kind: "new" })}
+            className="text-sm font-medium text-primary underline underline-offset-4"
+          >
+            New note{" "}
+            <ShortcutKbd
+              id="workspace.newNote"
+              className="text-xs text-muted-foreground"
+            />
           </button>
-          <button type="button" onClick={noteImporter.pick} className="text-sm font-medium text-primary underline underline-offset-4">
-            Import note <ShortcutKbd id="workspace.importNote" className="text-xs text-muted-foreground" />
+          <button
+            type="button"
+            onClick={noteImporter.pick}
+            className="text-sm font-medium text-primary underline underline-offset-4"
+          >
+            Import note{" "}
+            <ShortcutKbd
+              id="workspace.importNote"
+              className="text-xs text-muted-foreground"
+            />
           </button>
         </div>
       </div>
@@ -524,10 +765,19 @@ export function WorkspacePage() {
         id={paneId(side)}
         role="tabpanel"
         aria-labelledby={known ? tabDomId(known) : undefined}
-        aria-label={known ? undefined : side === "left" ? "Left pane" : "Right pane"}
-        onFocusCapture={() => view.split && !focused && act({ type: "focusPane", side })}
-        onPointerDownCapture={() => view.split && !focused && act({ type: "focusPane", side })}
-        className={cn("relative h-full min-h-0 min-w-0 bg-editor-surface", view.split && focused && "shadow-[inset_0_2px_0_var(--accent)]")}
+        aria-label={
+          known ? undefined : side === "left" ? "Left pane" : "Right pane"
+        }
+        onFocusCapture={() =>
+          view.split && !focused && act({ type: "focusPane", side })
+        }
+        onPointerDownCapture={() =>
+          view.split && !focused && act({ type: "focusPane", side })
+        }
+        className={cn(
+          "relative h-full min-h-0 min-w-0 bg-editor-surface",
+          view.split && focused && "shadow-[inset_0_2px_0_var(--accent)]",
+        )}
       >
         {noteId && (
           <NotePane
@@ -538,9 +788,20 @@ export function WorkspacePage() {
             editorRef={editors[side]}
           />
         )}
-        {known?.kind === "document" && <DocSlot host={hostFor(known.id)} parking={parking} />}
-        {known?.kind === "chat" && <ChatTab key={known.id} sessionKey={sessionKey} tabId={known.id} />}
-        {!known && (side === "left" || !view.split ? emptyPane : <p className="grid h-full place-items-center p-8 text-sm text-muted-foreground">Select a tab to show it here.</p>)}
+        {known?.kind === "document" && (
+          <DocSlot host={hostFor(known.id)} parking={parking} />
+        )}
+        {known?.kind === "chat" && (
+          <ChatTab key={known.id} sessionKey={sessionKey} tabId={known.id} />
+        )}
+        {!known &&
+          (side === "left" || !view.split ? (
+            emptyPane
+          ) : (
+            <p className="grid h-full place-items-center p-8 text-sm text-muted-foreground">
+              Select a tab to show it here.
+            </p>
+          ))}
       </section>
     );
   };
@@ -563,16 +824,14 @@ export function WorkspacePage() {
             notes={noteList}
             documents={docList}
             openIds={new Set(ws.tabs.map((t) => t.id))}
-            onOpen={(kind, id) => (kind === "note" ? openNote(id) : openDocument(id))}
+            onOpen={(kind, id) =>
+              kind === "note" ? openNote(id) : openDocument(id)
+            }
             onNewNote={() => setDialog({ kind: "new" })}
             onImportNote={noteImporter.pick}
           />
         }
-        actions={
-          <>
-            {session.data && <SessionChip session={session.data} />}
-          </>
-        }
+        actions={<>{session.data && <SessionChip session={session.data} />}</>}
         end={
           <>
             <FocusModeButton />
@@ -582,7 +841,14 @@ export function WorkspacePage() {
       <div
         ref={panesRef}
         className="grid min-h-0 flex-1"
-        style={{ "--split-l": `${ratio * 100}%`, gridTemplateColumns: view.split ? "minmax(0,var(--split-l)) minmax(0,1fr)" : "minmax(0,1fr)" } as CSSProperties}
+        style={
+          {
+            "--split-l": `${ratio * 100}%`,
+            gridTemplateColumns: view.split
+              ? "minmax(0,var(--split-l)) minmax(0,1fr)"
+              : "minmax(0,1fr)",
+          } as CSSProperties
+        }
       >
         {pane("left")}
         {view.split && (
@@ -595,7 +861,9 @@ export function WorkspacePage() {
               step={2}
               unitsPerPx={() => 100 / (panesRef.current?.clientWidth || 1)}
               onResize={(v) => act({ type: "setRatio", ratio: v / 100 })}
-              onDrag={(v) => panesRef.current?.style.setProperty("--split-l", `${v}%`)}
+              onDrag={(v) =>
+                panesRef.current?.style.setProperty("--split-l", `${v}%`)
+              }
               grow="right"
               label="Resize split view"
               controls={paneId("left")}
@@ -610,8 +878,15 @@ export function WorkspacePage() {
         createPortal(
           <DocumentTabView
             documentId={id}
-            visible={same(view.left, { kind: "document", id }) || same(view.right, { kind: "document", id })}
-            onEscape={() => document.getElementById(tabDomId({ kind: "document", id }))?.focus()}
+            visible={
+              same(view.left, { kind: "document", id }) ||
+              same(view.right, { kind: "document", id })
+            }
+            onEscape={() =>
+              document
+                .getElementById(tabDomId({ kind: "document", id }))
+                ?.focus()
+            }
           />,
           hostFor(id),
           id,
@@ -626,12 +901,14 @@ export function WorkspacePage() {
       {/* the page's title for assistive tech; the session chip shows it visually (008 FR-015) */}
       {session.data && (
         <h1 className="sr-only">
-          {formatDay(session.data.date, "EEE d MMM yyyy")} · {wallTime(session.data.start)}–{wallTime(session.data.end)}
+          {formatDay(session.data.date, "EEE d MMM yyyy")} ·{" "}
+          {wallTime(session.data.start)}–{wallTime(session.data.end)}
           {session.data.kind === "event" ? (
             <> — Event: {session.data.title}</>
           ) : (
             <>
-              {session.data.title && ` · ${session.data.title}`} — {session.data.courseName}
+              {session.data.title && ` · ${session.data.title}`} —{" "}
+              {session.data.courseName}
             </>
           )}
         </h1>
@@ -643,10 +920,16 @@ export function WorkspacePage() {
             <div className="flex-1" />
             <FocusModeButton />
           </div>
-          <p role="alert" className="p-8 text-sm text-danger">This session doesn't exist.</p>
+          <p role="alert" className="p-8 text-sm text-danger">
+            This session doesn't exist.
+          </p>
         </>
       ) : (
-        <section ref={mainRef} className="flex min-h-0 min-w-0 flex-1 flex-col" aria-label="Notes and documents">
+        <section
+          ref={mainRef}
+          className="flex min-h-0 min-w-0 flex-1 flex-col"
+          aria-label="Notes and documents"
+        >
           {editorArea}
         </section>
       )}
@@ -665,10 +948,16 @@ export function WorkspacePage() {
           onClose={() => setDialog(null)}
           onSubmit={async (name) => {
             const note = await createNote.mutateAsync({ name });
-            ensureSaver(note.id, { content: note.content, version: note.version, hash: note.hash }, saveFn);
+            ensureSaver(
+              note.id,
+              { content: note.content, version: note.version, hash: note.hash },
+              saveFn,
+            );
             setDialog(null);
             openNote(note.id);
-            requestAnimationFrame(() => requestAnimationFrame(() => editorOf(note.id)?.focus()));
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => editorOf(note.id)?.focus()),
+            );
           }}
         />
       )}
@@ -683,7 +972,11 @@ export function WorkspacePage() {
           onSubmit={async (name) => {
             const saver = getSaver(dialog.note.id);
             await saver?.flush();
-            const res = await renameNote.mutateAsync({ id: dialog.note.id, name, version: saver?.version ?? dialog.note.version });
+            const res = await renameNote.mutateAsync({
+              id: dialog.note.id,
+              name,
+              version: saver?.version ?? dialog.note.version,
+            });
             if (saver) saver.version = res.version;
             setDialog(null);
           }}
@@ -701,9 +994,16 @@ export function WorkspacePage() {
             const saver = getSaver(note.id);
             await saver?.flush();
             try {
-              await deleteNote.mutateAsync({ id: note.id, version: saver?.version ?? note.version });
+              await deleteNote.mutateAsync({
+                id: note.id,
+                version: saver?.version ?? note.version,
+              });
             } catch (err) {
-              setDeleteError(isApiError(err, "version_conflict") ? "The note changed meanwhile. Reload and try again." : "Couldn't delete the note.");
+              setDeleteError(
+                isApiError(err, "version_conflict")
+                  ? "The note changed meanwhile. Reload and try again."
+                  : "Couldn't delete the note.",
+              );
               await qc.invalidateQueries({ queryKey: notesKey(sessionKey) });
               return;
             }
@@ -714,16 +1014,19 @@ export function WorkspacePage() {
           }}
         />
       )}
-      {activeSaver && activeSnap?.status === "conflict" && activeSnap.conflict && activeMeta && (
-        <ConflictDialog
-          noteName={activeMeta.name}
-          conflict={activeSnap.conflict}
-          mine={activeSaver.content}
-          onKeepBoth={keepBoth}
-          onUseMine={() => activeSaver.useMine()}
-          onUseTheirs={useTheirs}
-        />
-      )}
+      {activeSaver &&
+        activeSnap?.status === "conflict" &&
+        activeSnap.conflict &&
+        activeMeta && (
+          <ConflictDialog
+            noteName={activeMeta.name}
+            conflict={activeSnap.conflict}
+            mine={activeSaver.content}
+            onKeepBoth={keepBoth}
+            onUseMine={() => activeSaver.useMine()}
+            onUseTheirs={useTheirs}
+          />
+        )}
     </div>
   );
 }

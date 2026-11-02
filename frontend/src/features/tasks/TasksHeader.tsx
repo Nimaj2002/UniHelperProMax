@@ -53,7 +53,7 @@ export function TasksHeader({
     if (!filters.search && searching) setSearching(false);
   }
   return (
-    <div data-panel-header className="relative flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-divider px-1.5">
+    <div data-panel-header className="relative flex h-10 min-w-0 shrink-0 items-center gap-1 px-1.5">
       {leading}
       <h2 className="min-w-0 truncate px-1 text-sm font-semibold tracking-tight">Tasks</h2>
       <ToggleGroup

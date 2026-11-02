@@ -29,6 +29,8 @@ export interface RightCard {
   /** Fixed header of the card (title, actions, close button); omitted when the body has its own. */
   header?: ReactNode;
   body: ReactNode;
+  /** false: no card border or background; the body lays out its own cards (the session panel). */
+  chrome?: boolean;
   /** Remembered open state on wide windows (the page owns where it is stored). */
   open: boolean;
   setOpen: (open: boolean) => void;

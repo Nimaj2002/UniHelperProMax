@@ -1,52 +1,22 @@
 /**
- * The home page's right column (018): Tasks above General notes, like the session panel's
- * Recordings above Chat. Each section collapses to its header and the closed panel's rail has an
- * item per section. Tasks' collapsed state and the split are a per-browser convenience
- * (localStorage, as the session panel); General notes' collapsed state is the account preference.
+ * The home page's right column (018): Tasks or General notes, one at a time, picked from the
+ * switch in its header card. The choice is a per-browser convenience (localStorage) and the closed
+ * panel's rail has an item per section.
  */
-import { useCallback, useEffect, useState } from "react";
-import { usePreferences, useUpdatePreferences } from "@/features/sessions/api";
+import { useEffect, useState } from "react";
 import { readLocal, writeLocal } from "@/lib/storage";
 
 export type ColumnSection = "tasks" | "notes";
 
-export const COLUMN_SECTION_ID: Record<ColumnSection, string> = { tasks: "home-tasks", notes: "home-general-notes" };
+/** The header switch's button for each section (focus target when the rail opens one). */
+export const SECTION_SWITCH_ID: Record<ColumnSection, string> = { tasks: "home-switch-tasks", notes: "home-switch-notes" };
 
-const KEY = "uh.home.tasksColumn";
-/** Tasks' share of the column's height (percent) while both sections are expanded. */
-export const DEFAULT_SHARE = 65;
-
-interface Stored {
-  tasksCollapsed: boolean;
-  share: number;
-}
-
-function readStored(): Stored {
-  const raw = readLocal<Partial<Stored> | null>(KEY, null);
-  const share = raw?.share;
-  return {
-    tasksCollapsed: raw?.tasksCollapsed === true,
-    share: typeof share === "number" && share >= 10 && share <= 90 ? share : DEFAULT_SHARE,
-  };
-}
+const KEY = "uh.home.tasksSection";
 
 export function useTasksColumn() {
-  const [own, setOwn] = useState(readStored);
-  useEffect(() => writeLocal(KEY, own), [own]);
-  const prefs = usePreferences();
-  const { mutate } = useUpdatePreferences();
-  const collapsed: Record<ColumnSection, boolean> = {
-    tasks: own.tasksCollapsed,
-    notes: prefs.data?.generalNotesCollapsed ?? false,
-  };
-  const setCollapsed = useCallback(
-    (section: ColumnSection, value: boolean) =>
-      section === "tasks" ? setOwn((o) => ({ ...o, tasksCollapsed: value })) : mutate({ generalNotesCollapsed: value }),
-    [mutate],
-  );
-  const setShare = useCallback((share: number) => setOwn((o) => ({ ...o, share })), []);
-  return { collapsed, share: own.share, setCollapsed, setShare };
+  const [section, setSection] = useState<ColumnSection>(() => (readLocal<unknown>(KEY, "tasks") === "notes" ? "notes" : "tasks"));
+  useEffect(() => writeLocal(KEY, section), [section]);
+  return { section, setSection };
 }
 
 export type TasksColumn = ReturnType<typeof useTasksColumn>;
-

@@ -53,7 +53,7 @@ function focusWhenMounted(id: string, frames = 12) {
 
 function RightCardView({ card, className }: { card: RightCard; className?: string }) {
   return (
-    <Card as="aside" id={RIGHT_CARD_ID} label={card.label} header={card.header} body={card.header ? "scroll" : "fill"} className={cn("h-full", className)}>
+    <Card as="aside" id={RIGHT_CARD_ID} label={card.label} header={card.header} body={card.header ? "scroll" : "fill"} chrome={card.chrome} className={cn("h-full", className)}>
       {card.body}
     </Card>
   );

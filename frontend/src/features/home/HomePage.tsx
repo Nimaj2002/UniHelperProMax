@@ -18,7 +18,7 @@ import { requestTaskDetails } from "./openTask";
 import { LAST_OPEN_MESSAGE, PanelCloseButton } from "./PanelCloseButton";
 import { PANEL_ID, PANEL_NAME, PanelRail, SHOW_PANEL_ID } from "./PanelRail";
 import { TasksPanel } from "./TasksPanel";
-import { COLUMN_SECTION_ID, useTasksColumn, type ColumnSection } from "./tasksColumn";
+import { SECTION_SWITCH_ID, useTasksColumn, type ColumnSection } from "./tasksColumn";
 import { PanelsProvider, usePanels } from "./usePanels";
 
 const OTHER: Record<Panel, Panel> = { calendar: "tasks", tasks: "calendar" };
@@ -107,16 +107,15 @@ export function HomePage() {
     [openPanel, announce],
   );
 
-  // (018) the Tasks column: Tasks above General notes; a rail item opens the panel on its section
+  // (018) the Tasks column: Tasks or General notes; a rail item opens the panel on its section
   const column = useTasksColumn();
-  const { setCollapsed: setSectionCollapsed } = column;
+  const { setSection } = column;
   const openSection = useCallback(
     (section: ColumnSection) => {
-      setSectionCollapsed(section, false);
-      const toggle = section === "tasks" ? "#home-tasks-toggle" : `#panel-section-${COLUMN_SECTION_ID.notes}-title button`;
-      openOne("tasks", () => document.querySelector<HTMLElement>(toggle));
+      setSection(section);
+      openOne("tasks", () => document.getElementById(SECTION_SWITCH_ID[section]));
     },
-    [setSectionCollapsed, openOne],
+    [setSection, openOne],
   );
 
   // `/?task=<id>` (a course page's task, FR-052): open the Tasks panel once the column is measured
