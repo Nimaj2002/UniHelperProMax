@@ -76,7 +76,7 @@ export default function PdfReader({ document: doc }: Props) {
     void viewer.registry.then((registry: PluginRegistry) => {
       if (!live) return;
       stopSync = syncViewerAnnotations(registry, doc.id);
-      stopPosition = syncViewerPosition(registry, doc.id);
+      stopPosition = syncViewerPosition(registry, doc.id, target.closest("[data-doc-host]"));
     });
     return () => {
       live = false;
