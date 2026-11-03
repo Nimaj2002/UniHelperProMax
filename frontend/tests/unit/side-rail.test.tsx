@@ -42,7 +42,7 @@ function fakeSignal(id: string, kind: ActivitySignal["kind"], description: strin
 }
 
 function SessionRail({ expand }: { expand: (s: "recordings" | "chat") => void }) {
-  const { rail: spec, watchers } = useSessionRail(expand);
+  const { rail: spec, watchers } = useSessionRail(expand, () => {});
   return (
     <>
       {watchers}

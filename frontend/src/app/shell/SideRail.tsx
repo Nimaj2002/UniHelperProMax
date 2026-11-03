@@ -16,6 +16,8 @@ export interface SideRailItem {
   /** Appended to the name while the indicator shows, e.g. "recording in progress". */
   status?: string;
   onActivate: () => void;
+  /** The shell doesn't reopen the card after `onActivate` (e.g. the item opens a dialog). */
+  keepClosed?: boolean;
   /** Shown under the item's button, e.g. the home Tasks item's open count (018). */
   content?: ReactNode;
 }

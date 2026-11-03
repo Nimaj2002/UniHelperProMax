@@ -83,6 +83,7 @@ import {
   useSessionPanelLayout,
   useSessionRail,
 } from "./SessionPanel";
+import { SessionTimeDialog } from "@/features/time/SessionTime";
 import { SessionTimeline, type TimelineItem } from "./SessionTimeline";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import { SessionChip } from "./SessionChip";
@@ -435,7 +436,9 @@ export function WorkspacePage() {
   } = useSessionPanelLayout(
     prefs.isSuccess ? !!prefs.data.workspaceRightCollapsed : undefined,
   );
-  const { rail, watchers: railWatchers } = useSessionRail(setSection);
+  const [timeOpen, setTimeOpen] = useState(false);
+  const openTime = useCallback(() => setTimeOpen(true), [setTimeOpen]);
+  const { rail, watchers: railWatchers } = useSessionRail(setSection, openTime);
   const sessionPanel = useMemo<RightCard>(
     () => ({
       label: "Session panel",
@@ -445,6 +448,7 @@ export function WorkspacePage() {
           sessionKey={sessionKey}
           layout={panelLayout}
           setSection={setSection}
+          openTime={openTime}
         />
       ),
       chrome: false,
@@ -454,7 +458,7 @@ export function WorkspacePage() {
       setWidth: setPanelWidth,
       rail,
     }),
-    [sessionKey, panelLayout, setSection, setPanelOpen, setPanelWidth, rail],
+    [sessionKey, panelLayout, setSection, openTime, setPanelOpen, setPanelWidth, rail],
   );
   useRightCard(session.isError ? null : sessionPanel);
 
@@ -898,6 +902,12 @@ export function WorkspacePage() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {railWatchers}
+      <SessionTimeDialog
+        sessionKey={sessionKey}
+        courseName={session.data?.kind === "event" ? null : session.data?.courseName}
+        open={timeOpen}
+        onOpenChange={setTimeOpen}
+      />
       {/* the page's title for assistive tech; the session chip shows it visually (008 FR-015) */}
       {session.data && (
         <h1 className="sr-only">

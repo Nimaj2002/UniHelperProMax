@@ -16,7 +16,7 @@ export interface RailSpec {
   label: string;
   /** The reopen button's name, e.g. "Show session panel". */
   reopenLabel: string;
-  /** Each item reopens the card (the shell opens it after `onActivate`). */
+  /** Each item reopens the card (the shell opens it after `onActivate`, unless `keepClosed`). */
   items: SideRailItem[];
 }
 

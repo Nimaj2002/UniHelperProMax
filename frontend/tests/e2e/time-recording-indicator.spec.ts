@@ -34,7 +34,9 @@ test("each indicator option keeps the recording visible and independent", async 
   const session = workspaceUrl(courseId, lineageId, "2026-10-05");
   await page.goto(session);
   const panel = page.getByRole("complementary", { name: "Session panel" });
-  await panel.getByRole("button", { name: "Start timer" }).click();
+  await panel.getByRole("button", { name: "Time", exact: true }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Start timer" }).click();
+  await page.keyboard.press("Escape");
   await panel.getByRole("button", { name: "Record", exact: true }).click();
   await expect(panel.getByText("Recording", { exact: true })).toBeVisible();
 

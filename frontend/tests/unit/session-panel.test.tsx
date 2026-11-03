@@ -22,7 +22,7 @@ function Harness({ seed }: { seed?: boolean }) {
       <button type="button" onClick={() => setOpen(!layout.open)}>
         toggle open
       </button>
-      <SessionPanel sessionKey="s1" layout={layout} setSection={setSection} />
+      <SessionPanel sessionKey="s1" layout={layout} setSection={setSection} openTime={() => {}} />
     </div>
   );
 }

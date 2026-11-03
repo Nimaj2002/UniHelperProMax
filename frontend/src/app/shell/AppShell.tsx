@@ -81,7 +81,7 @@ function RightRail({ card, onOpen }: { card: RightCard; onOpen: () => void }) {
         ...item,
         onActivate: () => {
           item.onActivate();
-          onOpen();
+          if (!item.keepClosed) onOpen();
         },
       }))}
     />

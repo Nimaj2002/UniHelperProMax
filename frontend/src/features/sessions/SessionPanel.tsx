@@ -4,7 +4,7 @@
  * the closed panel leaves a rail with an item per section. Its layout is a per-browser
  * convenience in localStorage (FR-009).
  */
-import { ChatCircleText, SidebarSimple, Waveform } from "@phosphor-icons/react";
+import { ChatCircleText, Clock, SidebarSimple, Waveform } from "@phosphor-icons/react";
 import {
   useCallback,
   useEffect,
@@ -167,7 +167,10 @@ function itemState(
  * progress, Chat an answer being generated or a new one. Activating an item shows its section.
  * Render `watchers` anywhere in the page: they run the registered activity hooks.
  */
-export function useSessionRail(expand: (section: SessionSection) => void): {
+export function useSessionRail(
+  expand: (section: SessionSection) => void,
+  openTime: () => void,
+): {
   rail: RailSpec;
   watchers: ReactNode;
 } {
@@ -207,9 +210,10 @@ export function useSessionRail(expand: (section: SessionSection) => void): {
       items: [
         item("recordings", Waveform, rec),
         item("chat", ChatCircleText, ch),
+        { id: "time", icon: Clock, name: "Time", onActivate: openTime, keepClosed: true },
       ],
     };
-  }, [key, expand]);
+  }, [key, expand, openTime]);
   const watchers = signals.map((s) => (
     <SignalWatch key={s.id} signal={s} onChange={onChange} />
   ));
@@ -267,10 +271,11 @@ interface Props {
   sessionKey: string;
   layout: SessionPanelLayout;
   setSection: (section: SessionSection) => void;
+  openTime: () => void;
 }
 
 /** The panel's body: the header card with the switch, then Recordings or Chat (FR-001–FR-004). */
-export function SessionPanel({ sessionKey, layout, setSection }: Props) {
+export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props) {
   const panels = useWorkspacePanels();
   const chat = useChatSection();
   const { section } = layout;
@@ -290,7 +295,9 @@ export function SessionPanel({ sessionKey, layout, setSection }: Props) {
             variant="outline"
             size="sm"
             value={section}
-            onValueChange={(v) => v && setSection(v as SessionSection)}
+            onValueChange={(v) =>
+              v === "time" ? openTime() : v && setSection(v as SessionSection)
+            }
             aria-label="Recordings or chat"
             className="h-7 shrink-0"
           >
@@ -311,6 +318,15 @@ export function SessionPanel({ sessionKey, layout, setSection }: Props) {
               className="h-7 px-2"
             >
               <ChatCircleText size={14} aria-hidden />
+            </ToggleGroupItem>
+            {/* opens the time dialog; never becomes the selected section */}
+            <ToggleGroupItem
+              value="time"
+              aria-label="Time"
+              title="Time"
+              className="h-7 px-2"
+            >
+              <Clock size={14} aria-hidden />
             </ToggleGroupItem>
           </ToggleGroup>
           <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-semibold tracking-tight">
