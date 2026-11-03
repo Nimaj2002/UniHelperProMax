@@ -56,6 +56,9 @@ export function DiagramActions({ nodeKey, source, hash, flags, result, allowed, 
     );
   };
 
+  // undoable with Ctrl+Z (editor history), so no confirmation
+  const remove = () => editor.update(() => $getNodeByKey(nodeKey)?.remove());
+
   const exportLight = async () => {
     const paper = exportWhite();
     const { promise } = renderDiagram({
@@ -108,6 +111,14 @@ export function DiagramActions({ nodeKey, source, hash, flags, result, allowed, 
           <DropdownMenuItem onSelect={copySource}>Copy source</DropdownMenuItem>
           {noteId && decision && (flags.unsafe.length > 0 || flags.theme.length > 0) && (
             <DropdownMenuItem onSelect={() => resetDecision(noteId, hash)}>Reset decision</DropdownMenuItem>
+          )}
+          {editable && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onSelect={remove}>
+                Delete
+              </DropdownMenuItem>
+            </>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
