@@ -4989,11 +4989,8 @@ export interface components {
         TagCreate: {
             /** Name */
             name: string;
-            /**
-             * Color
-             * @enum {string}
-             */
-            color: "tag-1" | "tag-2" | "tag-3" | "tag-4" | "tag-5" | "tag-6" | "tag-7" | "tag-8" | "tag-9" | "tag-10" | "tag-11" | "tag-12";
+            /** Color */
+            color: string;
         };
         /** TagOut */
         TagOut: {
@@ -5001,11 +4998,8 @@ export interface components {
             id: string;
             /** Name */
             name: string;
-            /**
-             * Color
-             * @enum {string}
-             */
-            color: "tag-1" | "tag-2" | "tag-3" | "tag-4" | "tag-5" | "tag-6" | "tag-7" | "tag-8" | "tag-9" | "tag-10" | "tag-11" | "tag-12";
+            /** Color */
+            color: string;
             /** Entrycount */
             entryCount: number;
             /** Version */
@@ -5016,7 +5010,7 @@ export interface components {
             /** Name */
             name?: string | null;
             /** Color */
-            color?: ("tag-1" | "tag-2" | "tag-3" | "tag-4" | "tag-5" | "tag-6" | "tag-7" | "tag-8" | "tag-9" | "tag-10" | "tag-11" | "tag-12") | null;
+            color?: string | null;
         };
         /** TaskColumnCreate */
         TaskColumnCreate: {

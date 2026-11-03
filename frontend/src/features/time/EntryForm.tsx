@@ -1,6 +1,6 @@
 /**
- * Add time / edit an entry (020 FR-016–FR-018): start plus an end or a duration, description, tag
- * and (P2) a course. Overlapping other entries is allowed and said (FR-017).
+ * Add time / edit an entry (020 FR-016–FR-018): start plus an end or a duration, description and
+ * tag (course tags stand in for picking a course). Overlapping other entries is allowed and said (FR-017).
  */
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,10 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useMe } from "@/features/auth/api";
-import { useCourseOptions } from "@/features/tasks/useCourseOptions";
 import { ApiError } from "@/lib/api";
 import { serverNow, useCreateEntry, useEntries, usePatchEntry, type Entry } from "./api";
 import { fromLocalInput, timeOfDay, toLocalInput } from "./days";
@@ -22,20 +20,16 @@ interface Props {
   onClose: () => void;
 }
 
-const NO_COURSE = "__none";
-
 export function EntryForm({ entry, onClose }: Props) {
   const tz = useMe().data?.timezone ?? "UTC";
   const create = useCreateEntry();
   const patch = usePatchEntry();
-  const courses = useCourseOptions();
   const [startValue, setStartValue] = useState(() => toLocalInput(entry ? Date.parse(entry.startedAt) : serverNow() - 3_600_000, tz));
   const [mode, setMode] = useState<"end" | "duration">("end");
   const [endValue, setEndValue] = useState(() => toLocalInput(entry ? Date.parse(entry.endedAt) : serverNow(), tz));
   const [minutes, setMinutes] = useState("60");
   const [description, setDescription] = useState(entry?.description ?? "");
   const [tagId, setTagId] = useState<string | null>(entry?.tagId ?? null);
-  const [courseId, setCourseId] = useState<string | null>(entry?.courseId ?? null);
   const [serverError, setServerError] = useState<string | null>(null);
 
   const start = fromLocalInput(startValue, tz);
@@ -61,8 +55,6 @@ export function EntryForm({ entry, onClose }: Props) {
       endedAt: new Date(end).toISOString(),
       description,
       tagId,
-      // linking a task or session sets the course on the server; otherwise this one
-      ...(entry?.taskId || entry?.sessionKey ? {} : { courseId }),
     };
     const done = {
       onSuccess: () => {
@@ -110,26 +102,7 @@ export function EntryForm({ entry, onClose }: Props) {
             <span className="text-sm font-medium">Tag</span>
             <TagPicker value={tagId} onChange={setTagId} className="self-start" />
           </div>
-          {entry?.linkTitle ? (
-            <p className="text-xs text-text-muted">Linked to {entry.linkTitle}</p>
-          ) : (
-            <div className="flex flex-col gap-1">
-              <Label htmlFor="entry-course">Course</Label>
-              <Select value={courseId ?? NO_COURSE} onValueChange={(v) => setCourseId(v === NO_COURSE ? null : v)}>
-                <SelectTrigger id="entry-course" className="h-8">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_COURSE}>No course</SelectItem>
-                  {courses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} · {c.where}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
+          {entry?.linkTitle && <p className="text-xs text-text-muted">Linked to {entry.linkTitle}</p>}
           {error && <p className="text-xs text-danger">{error}</p>}
           {overlaps.length > 0 && (
             <p role="status" className="text-xs text-warning">

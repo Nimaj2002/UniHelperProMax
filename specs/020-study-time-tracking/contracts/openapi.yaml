@@ -272,6 +272,6 @@ components:
       properties:
         id: { type: string }
         name: { type: string, minLength: 1, maxLength: 30 }
-        color: { type: string, pattern: "^tag-([1-9]|1[0-2])$" }
+        color: { type: string, pattern: "^(tag-([1-9]|1[0-2])|#[0-9a-f]{6})$" }
         entryCount: { type: integer, minimum: 0 }
         version: { type: integer }

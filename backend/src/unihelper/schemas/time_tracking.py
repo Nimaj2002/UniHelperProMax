@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import AwareDatetime, ConfigDict, Field
 
@@ -11,10 +11,8 @@ from unihelper.schemas.common import ApiModel
 Style = Literal["track", "pomodoro", "focus"]
 Source = Literal["track", "pomodoro", "focus", "manual"]
 Phase = Literal["work", "short_break", "long_break"]
-Color = Literal[
-    "tag-1", "tag-2", "tag-3", "tag-4", "tag-5", "tag-6",
-    "tag-7", "tag-8", "tag-9", "tag-10", "tag-11", "tag-12",
-]  # fmt: skip
+# a palette slot (`tag-N`, the N-th class colour) or a custom colour from the picker
+Color = Annotated[str, Field(pattern=r"^(tag-([1-9]|1[0-2])|#[0-9a-f]{6})$")]
 Description = Field(default="", max_length=500)
 
 

@@ -7,15 +7,16 @@ settled on the next read or write (research R3), with no background job.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from unihelper.api.errors import ApiError, not_found, validation_error
-from unihelper.models import Course, Task, TimeEntry, TimeTag, TimeTimer, User
+from unihelper.models import Course, Semester, Task, TimeEntry, TimeTag, TimeTimer, User
 from unihelper.models.base import name_key
+from unihelper.models.course import COLOR_KEYS
 from unihelper.schemas.time_tracking import TimerSnapshot
 from unihelper.services import workspace_service
 
@@ -636,7 +637,32 @@ def _check_unique(db: Session, user: User, key: str, except_id: str | None = Non
         raise ApiError(409, "tag_name_taken", "A tag with this name already exists.")
 
 
+def _ensure_course_tags(db: Session, user: User) -> None:
+    """Every course of a semester running today gets a tag of its name and colour (users add more
+    tags and recolour freely)."""
+    today = date.today()
+    courses = db.execute(
+        select(Course.name, Course.default_color)
+        .join(Semester, Course.semester_id == Semester.id)
+        .where(
+            Course.user_id == user.id,
+            Semester.start_date <= today,
+            or_(Semester.end_date.is_(None), Semester.end_date >= today),
+        )
+    )
+    taken = set(db.scalars(select(TimeTag.name_key).where(TimeTag.user_id == user.id)))
+    for raw, color in courses:
+        name = raw.strip()[:30].strip()
+        key = name_key(name)[:30]
+        if name and key not in taken:
+            taken.add(key)
+            slot = COLOR_KEYS.index(color) + 1 if color in COLOR_KEYS else 1
+            db.add(TimeTag(user_id=user.id, name=name, name_key=key, color=f"tag-{slot}"))
+    db.flush()
+
+
 def list_tags(db: Session, user: User) -> list[dict[str, Any]]:
+    _ensure_course_tags(db, user)
     counts = dict(
         db.execute(
             select(TimeEntry.tag_id, func.count())

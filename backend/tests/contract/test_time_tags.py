@@ -69,3 +69,31 @@ def test_delete_untags_entries_and_running_timer(owner_client: TestClient, clock
     assert [e["tagId"] for e in entries(c, T0)] == [None, None]
     assert timer_call(c, "GET")["timer"]["tagId"] is None
     assert_problem(c.delete(f"{API}/tags/{h['id']}"), 404, "not_found")
+
+
+def test_current_semester_courses_become_tags(owner_client: TestClient) -> None:
+    from datetime import date, timedelta
+
+    from tests.contract.calendar_io_helpers import seed_semester
+
+    c = owner_client
+    ids = seed_semester(c, courses=("Linear Algebra", "Physics"))
+    assert tags(c) == []  # undated semester: not running today
+    today = date.today()
+    r = c.patch(f"/api/v1/semesters/{ids['semester']}", headers=v(1), json={
+        "startDate": (today - timedelta(days=1)).isoformat(),
+        "endDate": (today + timedelta(days=1)).isoformat()})  # fmt: skip
+    assert r.status_code == 200, r.text
+    tag(c, "Homework")
+    assert [t["name"] for t in tags(c)] == ["Homework", "Linear Algebra", "Physics"]
+    assert len(tags(c)) == 3  # not duplicated on the next read
+    la = next(t for t in tags(c) if t["name"] == "Linear Algebra")
+    course = c.get(f"/api/v1/courses/{ids['courses']['Linear Algebra']}").json()
+    keys = ["slate", "red", "orange", "amber", "lime", "green",
+            "teal", "cyan", "blue", "indigo", "violet", "pink"]  # fmt: skip
+    assert la["color"] == f"tag-{keys.index(course['defaultColor']) + 1}"
+    r = c.patch(f"{API}/tags/{la['id']}", headers=v(la["version"]), json={"color": "#12ab9f"})
+    assert r.status_code == 200, r.text
+    assert r.json()["color"] == "#12ab9f"
+    assert_problem(c.patch(f"{API}/tags/{la['id']}", headers=v(r.json()["version"]),
+                           json={"color": "red"}), 422, "validation_failed")  # fmt: skip

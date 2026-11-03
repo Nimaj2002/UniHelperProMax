@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useDeleteTag, usePatchTag, useTags, type Tag } from "./api";
-import { colorLabel, TAG_COLORS, tagDot } from "./tagColors";
+import { colorLabel, isHex, TAG_COLORS, tagDot } from "./tagColors";
 
 export function TagManager({ onClose }: { onClose: () => void }) {
   const tags = useTags().data ?? [];
@@ -115,8 +115,41 @@ function TagRow({ tag, onDelete }: { tag: Tag; onDelete: () => void }) {
             style={tagDot(c)}
           />
         ))}
+        <CustomColor tag={tag} onPick={(hex) => hex !== tag.color && save({ color: hex })} />
       </div>
       {error && <p role="alert" className="text-xs text-danger">{error}</p>}
     </li>
+  );
+}
+
+const RAINBOW = `conic-gradient(${["red", "amber", "lime", "teal", "blue", "violet", "pink", "red"].map((k) => `var(--event-${k}-border)`).join(", ")})`;
+
+/** The system colour picker (as in the theme editor) behind a rainbow swatch; checked when the tag holds a custom colour. */
+function CustomColor({ tag, onPick }: { tag: Tag; onPick: (hex: string) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const shown = draft ?? (isHex(tag.color) ? tag.color : null);
+  return (
+    <label
+      title="Custom colour"
+      className={cn(
+        "relative size-5 cursor-pointer rounded-full outline-offset-2 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring",
+        isHex(tag.color) && "ring-2 ring-text-primary ring-offset-1 ring-offset-surface-elevated",
+      )}
+      style={shown ? tagDot(shown) : { background: RAINBOW }}
+    >
+      <input
+        // React's onChange fires on every drag step; the native `change` fires once when the picker closes.
+        ref={(el) => {
+          if (el) el.onchange = () => onPick(el.value.toLowerCase());
+        }}
+        type="color"
+        role="radio"
+        aria-checked={isHex(tag.color)}
+        aria-label={`Custom colour for tag ${tag.name}`}
+        defaultValue={isHex(tag.color) ? tag.color : undefined}
+        onChange={(e) => setDraft(e.target.value)}
+        className="absolute inset-0 size-full cursor-pointer opacity-0"
+      />
+    </label>
   );
 }
