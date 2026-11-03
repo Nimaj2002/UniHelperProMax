@@ -67,4 +67,4 @@ button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px
 #error h1 { color: var(--danger); }
 
 /* desktop title bar is hidden: keep the strip under the caption buttons draggable */
-body::before { content: ""; position: fixed; inset: 0 auto auto 0; width: env(titlebar-area-width, 0px); height: env(titlebar-area-height, 0px); app-region: drag; }
+body::before { content: ""; position: fixed; inset: 0 auto auto 0; width: 100%; height: var(--titlebar-h, 0px); app-region: drag; }

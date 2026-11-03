@@ -107,13 +107,13 @@
   html[data-shell] body {
     overflow: hidden;
   }
-  /* desktop app (Windows/Linux): the native caption buttons sit in this strip (the shell's top padding clears it); 0 in a browser */
+  /* desktop app (Windows/Linux): the native caption buttons sit in this strip (the shell's top padding clears it); --titlebar-h is set by the desktop app, 0 in a browser */
   html[data-shell] #root::before {
     content: "";
     position: fixed;
     inset: 0 auto auto 0;
-    width: env(titlebar-area-width, 0px);
-    height: env(titlebar-area-height, 0px);
+    width: 100%;
+    height: var(--titlebar-h, 0px);
     app-region: drag;
   }
   body {

@@ -27,7 +27,7 @@ export function createWindow(): BrowserWindow {
     // macOS takes the icon from the app bundle; Windows and Linux use the window's own
     ...(process.platform === "darwin" ? {} : { icon: path.join(__dirname, "icon.png") }),
     // Windows/Linux: no title or menu bar, only the native min/max/close buttons over the page;
-    // the page leaves env(titlebar-area-height) free at the top and makes it draggable
+    // the page leaves var(--titlebar-h) free at the top and makes it draggable
     ...(process.platform === "darwin"
       ? {}
       : { titleBarStyle: "hidden" as const, titleBarOverlay: titleBarColors(nativeTheme.shouldUseDarkColors ? "dark" : "light") }),
@@ -43,12 +43,17 @@ export function createWindow(): BrowserWindow {
     },
   });
   if (app.isPackaged && !devToolsAllowed()) Menu.setApplicationMenu(appMenu());
+  // env(titlebar-area-*) is 0 on some platforms (e.g. Linux), so tell every page the strip height directly
+  if (process.platform !== "darwin")
+    win.webContents.on("dom-ready", () => void win.webContents.insertCSS(`:root { --titlebar-h: ${TITLEBAR_HEIGHT}px; }`));
   win.once("ready-to-show", () => win.show());
   return win;
 }
 
+const TITLEBAR_HEIGHT = 28;
+
 export function titleBarColors(theme: "light" | "dark"): Electron.TitleBarOverlay {
-  return { color: "#00000000", symbolColor: theme === "dark" ? "#e5e5e5" : "#262626", height: 36 };
+  return { color: "#00000000", symbolColor: theme === "dark" ? "#e5e5e5" : "#262626", height: TITLEBAR_HEIGHT };
 }
 
 /** A menu without developer tools (FR-039); keeps the standard edit and window roles. */

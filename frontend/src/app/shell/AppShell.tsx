@@ -174,7 +174,7 @@ function Shell() {
       <div
         ref={grid}
         data-resizing="false"
-        className="grid h-dvh overflow-hidden bg-surface p-2 pt-[max(0.5rem,env(titlebar-area-height,0px))] transition-[grid-template-columns] duration-200 ease-out data-[resizing=true]:transition-none"
+        className="grid h-dvh overflow-hidden bg-surface p-2 pt-[max(0.5rem,var(--titlebar-h,0px))] transition-[grid-template-columns] duration-200 ease-out data-[resizing=true]:transition-none"
         style={
           {
             "--left-eff": `${widths.leftEff}px`,
