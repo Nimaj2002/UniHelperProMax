@@ -82,6 +82,7 @@ let appliedVars: string[] = [];
 export function applyTheme(theme: ResolvedTheme, vars: Record<string, string> = {}): void {
   const root = document.documentElement;
   root.dataset.theme = theme;
+  window.uhDesktop?.setTitleBarTheme?.(theme);
   const all = { ...derivedCalendarVars(vars), ...vars };
   for (const name of appliedVars) if (!(name in all)) root.style.removeProperty(name);
   for (const [name, value] of Object.entries(all)) root.style.setProperty(name, value);

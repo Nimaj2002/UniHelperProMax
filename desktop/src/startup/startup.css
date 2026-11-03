@@ -65,3 +65,6 @@ button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px
 @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
 @media (prefers-reduced-motion: reduce) { .progress span { animation: none; width: 100%; opacity: 0.5; } }
 #error h1 { color: var(--danger); }
+
+/* desktop title bar is hidden: keep the strip under the caption buttons draggable */
+body::before { content: ""; position: fixed; inset: 0 auto auto 0; width: env(titlebar-area-width, 0px); height: env(titlebar-area-height, 0px); app-region: drag; }

@@ -47,6 +47,7 @@ interface DesktopApi {
   openLogsFolder(): Promise<void>;
   /** 016: show a safety backup in the file manager (only paths under backups/safety). */
   revealPath(path: string): Promise<void>;
+  setTitleBarTheme(theme: "light" | "dark"): void;
   microphone: {
     status(): Promise<MicStatus>;
     request(): Promise<"granted" | "denied" | "unknown">;

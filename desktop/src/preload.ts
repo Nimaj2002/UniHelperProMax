@@ -33,6 +33,7 @@ if (location.protocol === "file:") {
       openDataFolder: () => ipcRenderer.invoke("uh:open.dataFolder"),
       openLogsFolder: () => ipcRenderer.invoke("uh:open.logs"),
       revealPath: (target: string) => ipcRenderer.invoke("uh:reveal.path", target),
+      setTitleBarTheme: (theme: "light" | "dark") => ipcRenderer.send("uh:titlebar.theme", theme),
       microphone: Object.freeze({
         status: () => ipcRenderer.invoke("uh:microphone.status"),
         request: () => ipcRenderer.invoke("uh:microphone.request"),

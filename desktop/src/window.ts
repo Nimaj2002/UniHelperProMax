@@ -1,7 +1,7 @@
 // The app window: one persistent session partition (IndexedDB and localStorage survive restarts,
 // research R7), hardened web preferences (research R14), and the client-secret header added to
 // every request to the app's own address (research R8).
-import { BrowserWindow, Menu, app, session, type Session } from "electron";
+import { BrowserWindow, Menu, app, nativeTheme, session, type Session } from "electron";
 import path from "node:path";
 import { appOrigin } from "./backend";
 
@@ -26,6 +26,11 @@ export function createWindow(): BrowserWindow {
     backgroundColor: "#00000000",
     // macOS takes the icon from the app bundle; Windows and Linux use the window's own
     ...(process.platform === "darwin" ? {} : { icon: path.join(__dirname, "icon.png") }),
+    // Windows/Linux: no title or menu bar, only the native min/max/close buttons over the page;
+    // the page leaves env(titlebar-area-height) free at the top and makes it draggable
+    ...(process.platform === "darwin"
+      ? {}
+      : { titleBarStyle: "hidden" as const, titleBarOverlay: titleBarColors(nativeTheme.shouldUseDarkColors ? "dark" : "light") }),
     webPreferences: {
       partition: PARTITION,
       preload: path.join(__dirname, "preload.js"),
@@ -40,6 +45,10 @@ export function createWindow(): BrowserWindow {
   if (app.isPackaged && !devToolsAllowed()) Menu.setApplicationMenu(appMenu());
   win.once("ready-to-show", () => win.show());
   return win;
+}
+
+export function titleBarColors(theme: "light" | "dark"): Electron.TitleBarOverlay {
+  return { color: "#00000000", symbolColor: theme === "dark" ? "#e5e5e5" : "#262626", height: 36 };
 }
 
 /** A menu without developer tools (FR-039); keeps the standard edit and window roles. */

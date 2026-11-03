@@ -10,7 +10,7 @@ import { registerMicrophoneIpc, registerPermissions } from "./permissions";
 import { SettingsStore } from "./settingsStore";
 import { checkForUpdates } from "./updates";
 
-import { appSession, createWindow, injectClientSecret, startupPage } from "./window";
+import { appSession, createWindow, injectClientSecret, startupPage, titleBarColors } from "./window";
 
 applyProfileOverride();
 
@@ -226,6 +226,11 @@ function run(): void {
       if (!resolved.startsWith(safety + path.sep) || !fs.existsSync(resolved)) return undefined;
       shell.showItemInFolder(resolved);
       return undefined;
+    });
+    // the caption buttons follow the app's own theme, which may differ from the OS one
+    ipcMain.on("uh:titlebar.theme", (e, theme: unknown) => {
+      if (!isMain(e.sender.id) || (theme !== "light" && theme !== "dark") || process.platform === "darwin") return;
+      win?.setTitleBarOverlay(titleBarColors(theme));
     });
     registerMicrophoneIpc(isMain, () => store.update({ micExplained: true }));
   }
