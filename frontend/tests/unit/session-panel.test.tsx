@@ -49,17 +49,17 @@ describe("SessionPanel (014 US2)", () => {
       "aria-checked",
       "true",
     );
-    expect(section("recordings").className).not.toContain("hidden");
-    expect(section("chat").className).toContain("hidden");
+    expect(section("recordings").classList.contains("hidden")).toBe(false);
+    expect(section("chat").classList.contains("hidden")).toBe(true);
 
     switchTo("Chat");
     expect(screen.getByRole("radio", { name: "Chat" })).toHaveAttribute(
       "aria-checked",
       "true",
     );
-    expect(section("chat").className).not.toContain("hidden");
+    expect(section("chat").classList.contains("hidden")).toBe(false);
     // the other section stays mounted (a recording or a draft survives), only hidden
-    expect(section("recordings").className).toContain("hidden");
+    expect(section("recordings").classList.contains("hidden")).toBe(true);
     expect(latest?.section).toBe("chat");
   });
 
@@ -116,11 +116,11 @@ describe("SessionPanel (014 US2)", () => {
     expect(stored()).toMatchObject({ open: false });
   });
 
-  it("puts the close button in the header bar, beside the switch", () => {
+  it("puts the close button in the top card, beside the switch", () => {
     renderWithProviders(<Harness />);
     const close = screen.getByRole("button", { name: "Close session panel" });
     expect(close).toHaveAttribute("aria-keyshortcuts", "Alt+BracketRight");
-    expect(close.closest("[data-panel-header]")).toContainElement(
+    expect(close.parentElement).toContainElement(
       screen.getByRole("radio", { name: "Chat" }),
     );
   });

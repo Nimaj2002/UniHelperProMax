@@ -1,6 +1,7 @@
 /**
  * The session panel (014 US2): the right card of session and event workspaces. Like the home
- * page's columns, a header card with a Recordings / Chat switch above one body card at a time;
+ * page's columns, a header card with the Recordings / Chat / Time switch and the close button
+ * above one body card at a time, each with its own title row;
  * the closed panel leaves a rail with an item per section. Its layout is a per-browser
  * convenience in localStorage (FR-009).
  */
@@ -274,22 +275,30 @@ interface Props {
   openTime: () => void;
 }
 
-/** The panel's body: the header card with the switch, then Recordings or Chat (FR-001–FR-004). */
+/** The panel's body: the switch card, then Recordings or Chat with their own headers (FR-001–FR-004). */
 export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props) {
   const panels = useWorkspacePanels();
   const chat = useChatSection();
   const { section } = layout;
-  const shown = (s: SessionSection) => (section === s ? "contents" : "hidden");
   const ChatBody = chat?.component;
   const ChatActions = chat?.headerActions;
+  // each section's own title row: its title and its actions
+  const header = (s: SessionSection, actions: ReactNode) => (
+    <div
+      data-panel-header
+      className="flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-strong-border px-1.5"
+    >
+      <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-semibold tracking-tight">
+        {SECTIONS[s].title}
+      </h2>
+      {actions}
+    </div>
+  );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <Card className="shrink-0" body="fill">
-        <div
-          data-panel-header
-          className="flex h-10 min-w-0 shrink-0 items-center gap-1 px-1.5"
-        >
+        <div className="flex h-10 min-w-0 shrink-0 items-center px-1.5">
           <ToggleGroup
             type="single"
             variant="outline"
@@ -329,19 +338,7 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
               <Clock size={14} aria-hidden />
             </ToggleGroupItem>
           </ToggleGroup>
-          <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-semibold tracking-tight">
-            {SECTIONS[section].title}
-          </h2>
-          {/* both sections' actions stay mounted, like their bodies */}
-          <div className={shown("recordings")}>
-            {panels.map(
-              ({ id, headerActions: Actions }) =>
-                Actions && <Actions key={id} sessionKey={sessionKey} />,
-            )}
-          </div>
-          <div className={shown("chat")}>
-            {ChatActions && <ChatActions sessionKey={sessionKey} />}
-          </div>
+          <div className="flex-1" />
           <CloseButton />
         </div>
       </Card>
@@ -350,6 +347,13 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
         id={SECTIONS.recordings.id}
         label={SECTIONS.recordings.title}
         className={cn("flex-1", section !== "recordings" && "hidden")}
+        header={header(
+          "recordings",
+          panels.map(
+            ({ id, headerActions: Actions }) =>
+              Actions && <Actions key={id} sessionKey={sessionKey} />,
+          ),
+        )}
         bodyClassName="overflow-x-hidden"
       >
         <RecordingsBody sessionKey={sessionKey} />
@@ -359,6 +363,10 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
         id={SECTIONS.chat.id}
         label={SECTIONS.chat.title}
         className={cn("flex-1", section !== "chat" && "hidden")}
+        header={header(
+          "chat",
+          ChatActions && <ChatActions sessionKey={sessionKey} />,
+        )}
         body="fill"
         bodyClassName="overflow-hidden"
       >
