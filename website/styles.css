@@ -2,11 +2,11 @@
 :root {
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  --border: rgba(255, 255, 255, 0.1);
-  --glow: 0 0 40px rgba(64, 91, 255, 0.25);
-  --glow-soft: 0 0 60px rgba(112, 132, 255, 0.19);
+  --border: rgba(53, 57, 64, 0.1);
+  --glow: 0 0 40px rgba(220, 84, 139, 0.25);
+  --glow-soft: 0 0 60px rgba(240, 122, 171, 0.19);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -47,14 +47,14 @@ code, kbd, pre { font-family: var(--font-mono); }
   display: flex; align-items: center; gap: var(--spacing-24);
   width: 100%; max-width: var(--page-max-width);
   padding: 8px 8px 8px 24px;
-  background: rgba(25, 25, 25, 0.82);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(53, 57, 64, 0.08);
   border-radius: var(--radius-navpill);
   box-shadow: var(--shadow-lg);
 }
 .brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; font-weight: var(--font-weight-medium); }
-.brand-mark { filter: invert(1); }
+.brand-mark { border-radius: 6px; }
 .nav-links { display: flex; gap: var(--spacing-24); list-style: none; margin: 0 0 0 auto; padding: 0; }
 .nav-links a, .nav-gh { color: var(--color-ash); text-decoration: none; font-size: var(--text-body-sm); transition: color .2s; }
 .nav-links a:hover, .nav-gh:hover { color: var(--color-paper); }
@@ -71,10 +71,10 @@ code, kbd, pre { font-family: var(--font-mono); }
 }
 .btn:active { transform: scale(0.97); }
 .btn-sm { padding: 10px 18px; font-size: var(--text-body-sm); }
-.btn-primary { background: var(--color-voltage-blue); color: var(--color-paper); }
+.btn-primary { background: var(--color-voltage-blue); color: #fff; }
 .btn-primary:hover { box-shadow: var(--glow); }
 .btn-ghost { background: transparent; color: var(--color-signal-violet); box-shadow: inset 0 0 0 1px var(--color-signal-violet); }
-.btn-ghost:hover { background: rgba(112, 132, 255, 0.08); }
+.btn-ghost:hover { background: rgba(240, 122, 171, 0.08); }
 
 /* Hero */
 .hero {
@@ -86,9 +86,10 @@ code, kbd, pre { font-family: var(--font-mono); }
 .glow { position: absolute; pointer-events: none; z-index: -1; filter: blur(80px); }
 .glow-hero {
   top: 60px; inset-inline: 0; margin-inline: auto; width: min(900px, 90vw); height: 520px;
-  background: radial-gradient(closest-side, rgba(64, 91, 255, 0.35), rgba(112, 132, 255, 0.12) 55%, transparent),
-              radial-gradient(closest-side at 80% 40%, rgba(61, 214, 245, 0.10), transparent);
+  background: radial-gradient(closest-side, rgba(220, 84, 139, 0.35), rgba(240, 122, 171, 0.12) 55%, transparent),
+              radial-gradient(closest-side at 80% 40%, rgba(255, 196, 221, 0.25), transparent);
 }
+.hero-mascot { width: clamp(140px, 22vw, 200px); height: auto; margin: -48px 0 var(--spacing-16); }
 .eyebrow {
   margin: 0 0 var(--spacing-24);
   font-size: var(--text-caption); font-weight: var(--font-weight-medium);
@@ -128,7 +129,7 @@ code, kbd, pre { font-family: var(--font-mono); }
 
 .shot {
   margin: 0;
-  background: var(--color-paper);
+  background: #fff;
   padding: 8px;
   border-radius: var(--radius-2xl);
   box-shadow: 0 0 0 1px var(--border), var(--glow-soft);
@@ -171,7 +172,7 @@ h3 { margin: 0 0 8px; font-size: var(--text-subheading); font-weight: var(--font
   border-radius: var(--radius-cards);
   transition: border-color .3s, box-shadow .3s;
 }
-.card:hover { border-color: rgba(112, 132, 255, 0.35); box-shadow: var(--glow-soft); }
+.card:hover { border-color: rgba(240, 122, 171, 0.35); box-shadow: var(--glow-soft); }
 .card p { margin: 0; color: var(--color-fog); font-size: 15px; }
 .card-icon { display: block; font-size: 26px; margin-bottom: var(--spacing-16); }
 .card-link { text-decoration: none; display: block; }
@@ -209,7 +210,7 @@ h3 { margin: 0 0 8px; font-size: var(--text-subheading); font-weight: var(--font
   position: absolute; z-index: 0; top: 6px; bottom: 6px; left: 0;
   border-radius: var(--radius-buttons);
   background: var(--color-smoke);
-  box-shadow: inset 0 0 0 1px rgba(112, 132, 255, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(240, 122, 171, 0.25);
 }
 
 /* Split layout */
@@ -232,16 +233,16 @@ h3 { margin: 0 0 8px; font-size: var(--text-subheading); font-weight: var(--font
 /* Install */
 .glow-install {
   top: 120px; inset-inline: 0; margin-inline: auto; width: min(1000px, 90vw); height: 400px;
-  background: radial-gradient(closest-side, rgba(64, 91, 255, 0.22), transparent);
+  background: radial-gradient(closest-side, rgba(220, 84, 139, 0.22), transparent);
 }
 .install-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-24); }
 .install-card { display: flex; flex-direction: column; gap: var(--spacing-16); min-width: 0; }
 .install-card h3 { margin: 0; font-size: var(--text-heading-sm); }
-.install-card-feature { border-color: rgba(112, 132, 255, 0.4); box-shadow: var(--glow-soft); }
+.install-card-feature { border-color: rgba(240, 122, 171, 0.4); box-shadow: var(--glow-soft); }
 .tag {
   align-self: flex-start;
   padding: 6px 12px; border-radius: var(--radius-tags);
-  border: 1px solid rgba(64, 91, 255, 0.6);
+  border: 1px solid rgba(220, 84, 139, 0.6);
   font-size: var(--text-caption) !important; letter-spacing: 0.129em; text-transform: uppercase;
   color: var(--color-signal-violet) !important;
 }
@@ -251,7 +252,7 @@ h3 { margin: 0 0 8px; font-size: var(--text-subheading); font-weight: var(--font
 .asset {
   display: flex; justify-content: space-between; align-items: center; gap: 12px;
   padding: 14px 18px;
-  background: var(--color-voltage-blue);
+  background: var(--color-voltage-blue); color: #fff;
   border-radius: var(--radius-buttons);
   text-decoration: none; font-size: var(--text-body-sm);
   transition: box-shadow .2s, transform .2s var(--ease-out);
@@ -273,8 +274,9 @@ h3 { margin: 0 0 8px; font-size: var(--text-subheading); font-weight: var(--font
   border: 1px solid var(--color-smoke);
   border-radius: 14px;
   font-size: 13.5px; line-height: 1.65; color: var(--color-ash);
-  overflow-x: auto;
 }
+/* The code scrolls, not the <pre>, so the absolutely placed Copy button stays put. */
+.code > code { display: block; overflow-x: auto; padding-bottom: 14px; } /* room for the overlay scrollbar */
 .code .copy {
   position: absolute; top: 8px; right: 8px;
   padding: 6px 12px; border-radius: var(--radius-buttons);

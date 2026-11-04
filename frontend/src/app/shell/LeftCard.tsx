@@ -1,4 +1,4 @@
-import { SidebarSimple } from "@phosphor-icons/react";
+import { CalendarBlank, SidebarSimple } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { PanelResizeHandle } from "@/components/PanelResizeHandle";
@@ -20,19 +20,9 @@ const PAIR_MIN = 10;
 const PAIR_MAX = 90;
 const COURSES = { id: "courses", title: "Courses" };
 
-/** The app mark: the small-size logo (icons/svg/mark-small.svg) on the accent colour, like the app icon. */
+/** The app mark: the app icon (icons/png/app-icon-192.png). */
 export function AppMark() {
-  return (
-    <span aria-hidden className="grid size-6 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
-      <svg viewBox="0 0 100 100" className="size-5">
-        <path
-          fill="currentColor"
-          fillRule="evenodd"
-          d="M16 29H20A8 8 0 0 1 28 37V63A8 8 0 0 1 20 71H16A8 8 0 0 1 8 63V37A8 8 0 0 1 16 29ZM16 35H20A2 2 0 0 1 22 37V63A2 2 0 0 1 20 65H16A2 2 0 0 1 14 63V37A2 2 0 0 1 16 35ZM44 16H56A11 11 0 0 1 67 27V73A11 11 0 0 1 56 84H44A11 11 0 0 1 33 73V27A11 11 0 0 1 44 16ZM43 35.5H57A3.5 3.5 0 0 1 60.5 39V39A3.5 3.5 0 0 1 57 42.5H43A3.5 3.5 0 0 1 39.5 39V39A3.5 3.5 0 0 1 43 35.5ZM43 50.5H51A3.5 3.5 0 0 1 54.5 54V54A3.5 3.5 0 0 1 51 57.5H43A3.5 3.5 0 0 1 39.5 54V54A3.5 3.5 0 0 1 43 50.5ZM78 35H84A6 6 0 0 1 90 41V59A6 6 0 0 1 84 65H78A6 6 0 0 1 72 59V41A6 6 0 0 1 78 35ZM76 50a5 5 0 1 0 10 0a5 5 0 1 0 -10 0Z"
-        />
-      </svg>
-    </span>
-  );
+  return <img src="/app-icon-192.png" alt="" aria-hidden width={24} height={24} className="size-6 shrink-0" />;
 }
 
 function PanelActions({ slot, variant }: { slot: "courses-heading" | "footer"; variant: "full" | "icon" }) {
@@ -144,7 +134,7 @@ export function LeftCard({ className, onNavigate }: { className?: string; onNavi
       header={
         <div className="flex shrink-0 items-center gap-2 px-3 pt-3 pb-2">
           <Link to="/" title="Go to home" className="flex min-w-0 items-center gap-2 rounded-md text-[15px] font-semibold tracking-tight" onClick={onNavigate}>
-            <AppMark />
+            <CalendarBlank size={18} className="shrink-0" aria-hidden />
             <span className="truncate">UniHelperProMax</span>
           </Link>
           <Tooltip>

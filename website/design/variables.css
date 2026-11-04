@@ -1,18 +1,19 @@
 :root {
-  /* Colors */
-  --color-signal-violet: #7084ff;
-  --gradient-signal-violet: linear-gradient(179deg, #405bff 1.06%, #7084ff 123.42%);
-  --color-voltage-blue: #405bff;
-  --color-midnight-ink: #0e0e0e;
-  --color-carbon: #191919;
-  --color-graphite: #414042;
-  --color-steel: #58595b;
-  --color-slate: #6d6e71;
-  --color-fog: #a7a9ac;
-  --color-ash: #d1d3d4;
-  --color-paper: #ffffff;
-  --color-smoke: #2c2c2c;
-  --color-plasma-cyan: #3dd6f5;
+  /* Colors. Names kept from the old dark theme; roles: midnight-ink = page, carbon = panels, smoke = subtle fill/lines,
+     paper = main text, ash/fog/slate = secondary text, voltage-blue = primary pink, signal-violet = pink text. */
+  --color-signal-violet: #b8336c;
+  --gradient-signal-violet: linear-gradient(179deg, #c93f78 1.06%, #f07aab 123.42%);
+  --color-voltage-blue: #c93f78;
+  --color-midnight-ink: #ffffff;
+  --color-carbon: #fff5f9;
+  --color-graphite: #e9ebf5;
+  --color-steel: #8a8f99;
+  --color-slate: #6f7480;
+  --color-fog: #62676f;
+  --color-ash: #4b5059;
+  --color-paper: #353940;
+  --color-smoke: #fbe3ee;
+  --color-plasma-cyan: #f07aab;
 
   /* Typography — Font Families */
   --font-bodyfont: 'bodyFont', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -86,11 +87,11 @@
   --radius-navpill: 60px;
 
   /* Shadows */
-  --shadow-lg: rgba(0, 0, 0, 0.45) 0px 4px 20px 0px;
+  --shadow-lg: rgba(53, 57, 64, 0.10) 0px 4px 20px 0px;
 
   /* Surfaces */
-  --surface-midnight-canvas: #0e0e0;
-  --surface-carbon-panel: #191919;
-  --surface-graphite-edge: #414042;
+  --surface-midnight-canvas: #ffffff;
+  --surface-carbon-panel: #fff5f9;
+  --surface-graphite-edge: #e9ebf5;
   --surface-product-white: #ffffff;
 }

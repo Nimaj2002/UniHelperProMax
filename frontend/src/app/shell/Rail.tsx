@@ -1,11 +1,10 @@
-import { SidebarSimple } from "@phosphor-icons/react";
+import { CalendarBlank, SidebarSimple } from "@phosphor-icons/react";
 import { Link } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ShortcutKbd, useShortcut } from "@/lib/keymap";
 import { AccountMenu } from "./AccountMenu";
 import { Card } from "./Card";
-import { AppMark } from "./LeftCard";
 import { LEFT_CARD_ID, SHOW_LEFT_ID, useLayout } from "./layout";
 import { MadeBy } from "./MadeBy";
 import { usePanelActions } from "./registry";
@@ -39,7 +38,7 @@ export function Rail() {
           </TooltipContent>
         </Tooltip>
         <Link to="/" aria-label="Go to home" className="rounded-md">
-          <AppMark />
+          <CalendarBlank size={18} aria-hidden />
         </Link>
         <div className="mt-auto flex flex-col items-center gap-1">
           <AccountMenu variant="icon" />

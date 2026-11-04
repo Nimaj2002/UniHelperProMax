@@ -1,65 +1,56 @@
-# UniHelperProMax logo files
+# UniHelperProMax logo files (mascot edition)
 
-The UniHelperProMax logo is the **Three Cards / Record** mark: an outlined side card, the main workspace card with three note lines cut out, and the audio card with a record dot cut out. It mirrors the app's planned layout of a side card, the main workspace and an audio card.
+Same file names and folders as the previous set (`../old`), so they can be dropped in as a replacement. The artwork is new:
 
-All paths below are relative to this `final/` folder. Every PNG has a transparent background. App icon PNGs are transparent outside their rounded corners.
+- **Mark**: the UniHelperProMax mascot (pink-haired student with tablet, satchel and two chicks).
+- **App icon**: the uniform icon (sailor collar, red scarf, satchel with chick pins).
+- **Wordmark**: "UniHelper" + "ProMax" in a bold condensed sans.
+
+The file names still say "plum" so existing references keep working. The brand colour is now pink.
 
 ## Colors and type
 
 | Use | Color |
 |---|---|
-| Plum, on light backgrounds | `#7A3DB8` |
-| Plum, on dark backgrounds | `#C49BFF` |
-| Ink (text on light backgrounds) | `#161A2E` |
-| Light text (on dark backgrounds) | `#E9EBF5` |
+| Pink "ProMax", on light backgrounds | `#DC548B` |
+| Pink "ProMax", on dark backgrounds | `#F07AAB` |
+| Ink "UniHelper", on light backgrounds | `#353940` |
+| Light "UniHelper", on dark backgrounds | `#E9EBF5` |
+| Dark app-icon background | `#1C1F2E` |
 
-Wordmark: Bricolage Grotesque, weight 500 for "UniHelper" and 700 for "ProMax". The letters are converted to shapes, so the font doesn't need to be installed.
+Wordmark: Bahnschrift (weight 700, width 80), converted to shapes, so no font is needed.
 
 ## Vector files (`svg/`)
 
-SVG files scale to any size without losing quality. The size listed is the default size; the viewBox is the drawing grid.
+| File | Description |
+|---|---|
+| `mark.svg` | One-colour mascot (true vector, `currentColor`). Follows the surrounding text colour. |
+| `mark-white.svg` | Same, in white, for pink, dark or photo backgrounds. |
+| `mark-small.svg` | One-colour head-and-shoulders mascot (`currentColor`) for small sizes, down to about 48 px. Use the app icon below that. |
+| `mark-plum.svg` | Full-colour mascot, for light backgrounds. The PNG is embedded inside the SVG. |
+| `mark-plum-dark.svg` | Full-colour mascot with a white sticker outline, for dark backgrounds. The PNG is embedded inside the SVG. |
+| `app-icon.svg` | Uniform app icon, light version. The PNG is embedded inside the SVG. |
+| `app-icon-dark.svg` | Uniform app icon on dark navy. The PNG is embedded inside the SVG. |
+| `lockup.svg` | Mascot + wordmark, for light backgrounds. The wordmark is vector; the mascot is an embedded PNG. |
+| `lockup-dark.svg` | Mascot (sticker outline) + wordmark, for dark backgrounds. |
 
-| File | Location | Size | Description |
-|---|---|---|---|
-| `mark.svg` | `svg/mark.svg` | 100 × 100, viewBox `0 0 100 100` | The logo with no fixed color. It uses `currentColor`, so it takes the text color around it and follows light, dark and custom themes. Use this one inside the app. |
-| `mark-plum.svg` | `svg/mark-plum.svg` | 100 × 100, viewBox `0 0 100 100` | The logo in plum `#7A3DB8`, for light backgrounds. |
-| `mark-plum-dark.svg` | `svg/mark-plum-dark.svg` | 100 × 100, viewBox `0 0 100 100` | The logo in light plum `#C49BFF`, for dark backgrounds. |
-| `mark-white.svg` | `svg/mark-white.svg` | 100 × 100, viewBox `0 0 100 100` | The logo in white, for plum or photo backgrounds. |
-| `mark-small.svg` | `svg/mark-small.svg` | 100 × 100, viewBox `0 0 100 100` | Version for small sizes, 48 px and below: thicker lines, two note lines instead of three, bigger record dot. Uses `currentColor`. |
-| `app-icon.svg` | `svg/app-icon.svg` | 100 × 100, viewBox `0 0 100 100` | App icon: plum `#7A3DB8` rounded square with the white logo. |
-| `app-icon-dark.svg` | `svg/app-icon-dark.svg` | 100 × 100, viewBox `0 0 100 100` | Dark-mode app icon: light plum `#C49BFF` rounded square with the logo in ink `#161A2E`. |
-| `lockup.svg` | `svg/lockup.svg` | 549 × 100, viewBox `0 0 549 100` | Logo with the name "UniHelperProMax", for light backgrounds: plum logo and "ProMax", ink "UniHelper". |
-| `lockup-dark.svg` | `svg/lockup-dark.svg` | 549 × 100, viewBox `0 0 549 100` | Logo with the name, for dark backgrounds: light plum logo and "ProMax", light "UniHelper". |
+The mascot and icon are illustrations, so the full-colour SVGs hold a PNG inside the SVG wrapper. Only `mark.svg`, `mark-white.svg` and `mark-small.svg`, plus the lockup wordmark, are true vectors.
 
-## Image files (`png/`)
+## Image files (`png/`) — all with transparent backgrounds
 
-| File | Location | Size | Description |
-|---|---|---|---|
-| `mark-plum-1024.png` | `png/mark-plum-1024.png` | 1024 × 1024 px | The logo in plum `#7A3DB8`, transparent background. |
-| `mark-white-1024.png` | `png/mark-white-1024.png` | 1024 × 1024 px | The logo in white, transparent background. For plum or dark backgrounds. |
-| `app-icon-1024.png` | `png/app-icon-1024.png` | 1024 × 1024 px | App icon, full size. For app stores and presentations. |
-| `app-icon-512.png` | `png/app-icon-512.png` | 512 × 512 px | App icon. For the 512 px icon in a web app manifest (PWA). |
-| `app-icon-192.png` | `png/app-icon-192.png` | 192 × 192 px | App icon. For the 192 px icon in a web app manifest (PWA). |
-| `app-icon-dark-1024.png` | `png/app-icon-dark-1024.png` | 1024 × 1024 px | Dark-mode app icon, full size. |
-| `lockup-2000w.png` | `png/lockup-2000w.png` | 2000 × 364 px | Logo with the name, for light backgrounds. For documents, slides and README headers. |
-| `lockup-dark-2000w.png` | `png/lockup-dark-2000w.png` | 2000 × 364 px | Logo with the name, for dark backgrounds. |
+| File | Size | Description |
+|---|---|---|
+| `mark-plum-1024.png` | 1024 × 1024 | Full-colour mascot. |
+| `mark-white-1024.png` | 1024 × 1024 | One-colour white mascot. |
+| `mascot-512.png` | 512 × 512 | Full-colour mascot, downscaled for the web (sign-in page, website hero). |
+| `app-icon-1024.png` / `-512` / `-192` | 1024 / 512 / 192 | App icon (store, PWA manifest). |
+| `app-icon-dark-1024.png` | 1024 × 1024 | Dark-mode app icon. |
+| `lockup-2000w.png` | 2000 px wide | Mascot + name, light backgrounds. |
+| `lockup-dark-2000w.png` | 2000 px wide | Mascot + name, dark backgrounds. |
 
 ## Browser icons (`favicon/`)
 
-These use the small-size version on the plum app icon background, so the details stay visible at 16 px.
-
-| File | Location | Size | Description |
-|---|---|---|---|
-| `favicon.ico` | `favicon/favicon.ico` | 16 × 16, 32 × 32 and 48 × 48 px in one file | Classic browser-tab icon. Works in every browser. |
-| `favicon.svg` | `favicon/favicon.svg` | 100 × 100, viewBox `0 0 100 100` | Vector browser-tab icon for modern browsers. Stays sharp on high-resolution screens. |
-| `favicon-16.png` | `favicon/favicon-16.png` | 16 × 16 px | Browser-tab icon as a PNG. |
-| `favicon-32.png` | `favicon/favicon-32.png` | 32 × 32 px | Browser-tab icon as a PNG, for high-resolution screens. |
-| `favicon-48.png` | `favicon/favicon-48.png` | 48 × 48 px | Icon for Windows taskbar shortcuts and bookmarks. |
-| `apple-touch-icon.png` | `favicon/apple-touch-icon.png` | 180 × 180 px | Home-screen icon on iPhone and iPad. Uses the regular logo, not the small-size version. |
-
-### Adding the favicons to the web app
-
-Copy the files in `favicon/` to the frontend's `public/` folder, then add these lines to the page `<head>`:
+`favicon.ico` (16/32/48), `favicon.svg`, `favicon-16/32/48.png`, `apple-touch-icon.png` (180 × 180). All use the uniform app icon.
 
 ```html
 <link rel="icon" href="/favicon.ico" sizes="48x48">
@@ -67,12 +58,8 @@ Copy the files in `favicon/` to the frontend's `public/` folder, then add these 
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 ```
 
-## Rebuilding the files
+## Rebuilding
 
-All files are generated by `../build_final.py`. To change the logo, edit that script and run it with the Bricolage Grotesque variable font file:
+Run `python ../build_new.py`. It reads the images in `../new` and needs `pillow numpy scipy fonttools potracer`.
 
-```
-python build_final.py path/to/BricolageGrotesque[opsz,wdth,wght].ttf
-```
-
-It needs the Python packages `cairosvg`, `pillow`, `fonttools` and `uharfbuzz`.
+The mascot source is 768 px tall, so the 1024 px mascot PNG is slightly upscaled. For sharper results, put a larger mascot render in `new/` and rebuild.

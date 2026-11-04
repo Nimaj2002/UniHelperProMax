@@ -5,6 +5,7 @@ export function AuthLayout({ title, subtitle, children }: { title: string; subti
   return (
     <main className="grid min-h-[100dvh] place-items-center bg-surface px-4 py-10">
       <div className="w-full max-w-sm">
+        <img src="/mascot-512.png" alt="" aria-hidden width={128} height={128} className="mb-4 size-32" />
         <p className="mb-8 flex items-center gap-2 text-[15px] font-semibold tracking-tight">
           <AppMark />
           UniHelperProMax
