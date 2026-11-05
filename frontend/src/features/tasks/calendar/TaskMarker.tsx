@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { CSSProperties } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOpenTaskDetails } from "@/features/home/openTask";
+import { eventStyle } from "@/lib/palette";
 import { cn } from "@/lib/utils";
 import { columnKeys, taskKeys, useMoveTask, type Task, type TaskColumn } from "../api";
 import { columnTasks } from "../model/order";
@@ -20,6 +21,8 @@ export function markerTarget(task: Pick<Task, "columnId" | "previousColumnId">, 
 
 interface Props {
   entry: CalendarTask;
+  /** Drawn like a calendar entry (the week/day grid) instead of a one-line pill. */
+  block?: boolean;
   className?: string;
   style?: CSSProperties;
 }
@@ -29,7 +32,7 @@ interface Props {
  * the title, which opens the task's details in the Tasks panel. Done tasks are struck through and
  * dimmed; overdue ones carry a "!" with the text "overdue" (never colour alone).
  */
-export function TaskMarker({ entry: { task, done, overdue }, className, style }: Props) {
+export function TaskMarker({ entry: { task, done, overdue }, block, className, style }: Props) {
   const qc = useQueryClient();
   const move = useMoveTask();
   const openDetails = useOpenTaskDetails();
@@ -64,10 +67,12 @@ export function TaskMarker({ entry: { task, done, overdue }, className, style }:
     <div
       data-task-marker={task.id}
       className={cn(
-        "flex h-5 min-w-0 items-center gap-0.5 rounded-[6px] border border-divider bg-surface-elevated pr-1 pl-0.5 text-xs leading-none text-foreground shadow-xs",
+        block
+          ? "flex min-w-0 items-start gap-0.5 overflow-hidden rounded-[6px] border border-l-[3px] px-1 py-1 text-xs leading-tight"
+          : "flex h-5 min-w-0 items-center gap-0.5 rounded-[6px] border border-divider bg-surface-elevated pr-1 pl-0.5 text-xs leading-none text-foreground shadow-xs",
         className,
       )}
-      style={style}
+      style={block ? { ...eventStyle("slate"), ...style } : style}
     >
       {blocked ? (
         <Tooltip>

@@ -1,24 +1,21 @@
 /**
- * Tracked time on the calendar (020 US7): thin blocks in a narrow lane at the right edge of each
- * day column, coloured by tag (neutral when untagged), overlapping entries side by side, a running
+ * Tracked time on the calendar (020 US7): blocks drawn like calendar entries and laid out with them
+ * (overlaps side by side), coloured by tag (neutral when untagged), a running
  * timer's block growing live. Entries crossing midnight show on each day for their part (FR-048).
- * Pressing in the lane never starts a new class or event (FR-049).
+ * Pressing a block never starts a new class or event (FR-049).
  */
-import { useMemo } from "react";
+import { Timer } from "@phosphor-icons/react";
+import { useMemo, type CSSProperties } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { layoutOverlaps } from "@/features/calendar/layoutOverlaps";
+import { cn } from "@/lib/utils";
 import { useLocation, useNavigate } from "react-router";
 import { clockOffset, useEntries, useTags, useTimer, type Entry, type Tag } from "../api";
 import { elapsedMs, formatDuration } from "../clock";
-import { clippedSeconds, minutesInDay, rangeOf, splitByDay, timeOfDay } from "../days";
+import { clippedSeconds, rangeOf, splitByDay, timeOfDay } from "../days";
 import { requestEntryEdit, requestTimePanel, TIME_HREF } from "../openTime";
 import { tagBlock } from "../tagColors";
 import { useTick } from "../useTick";
 import { useShowTime } from "./showTime";
-
-/** Width the lane takes from each day column (the rest is for classes, events and tasks). */
-export const LANE_PX = 10;
-const MIN_BLOCK_PX = 4;
 
 export interface LaneBlock {
   key: string;
@@ -68,57 +65,53 @@ export function useCalendarTime(days: string[], tz: string): { on: boolean; byDa
 }
 
 interface Props {
-  day: string;
-  blocks: LaneBlock[];
+  block: LaneBlock;
   tz: string;
-  hourPx: number;
+  compact?: boolean;
+  className?: string;
+  style?: CSSProperties;
 }
 
-export function TimeLane({ day, blocks, tz, hourPx }: Props) {
+/** One tracked-time block, drawn like a calendar entry and laid out with them. */
+export function TimeBlock({ block: b, tz, compact, className, style }: Props) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const layout = useMemo(() => layoutOverlaps(blocks.map((b) => ({ key: b.key, start: minutesInDay(b.start, day, tz), end: minutesInDay(b.end, day, tz) }))), [blocks, day, tz]);
-  const open = (b: LaneBlock) => {
+  const open = () => {
     if (b.entry) requestEntryEdit(b.entry);
     requestTimePanel();
     if (pathname !== "/") navigate(TIME_HREF);
   };
+  const range = `${timeOfDay(b.start, tz)}–${b.entry ? timeOfDay(b.end, tz) : "now"}`;
+  const label = `${b.title}, ${b.tag?.name ?? "No tag"}, ${range}, ${formatDuration((b.end - b.start) / 1000)}`;
   return (
-    // pointer presses stay in the lane: they never start a class or event draft
-    <div
-      className="absolute inset-y-0 right-0 z-[16]"
-      style={{ width: LANE_PX }}
-      data-time-lane={day}
-      role="group"
-      aria-label={`Tracked time, ${day}`}
-      onPointerDown={(e) => e.stopPropagation()}
-    >
-      {blocks.map((b) => {
-        const top = (minutesInDay(b.start, day, tz) / 60) * hourPx;
-        const height = Math.max(((b.end - b.start) / 3_600_000) * hourPx, MIN_BLOCK_PX);
-        const p = layout.get(b.key) ?? { column: 0, columns: 1 };
-        const width = 100 / p.columns;
-        const range = `${timeOfDay(b.start, tz)}–${b.entry ? timeOfDay(b.end, tz) : "now"}`;
-        const label = `${b.title}, ${b.tag?.name ?? "No tag"}, ${range}, ${formatDuration((b.end - b.start) / 1000)}`;
-        return (
-          <Tooltip key={b.key}>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                aria-label={label}
-                onClick={() => open(b)}
-                className="absolute rounded-[3px] border outline-none focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring"
-                style={{ ...tagBlock(b.tag?.color), top, height, left: `${p.column * width}%`, width: `${width}%` }}
-                data-time-entry={b.entry?.id ?? "running"}
-              />
-            </TooltipTrigger>
-            <TooltipContent side="left" className="max-w-xs">
-              <p className="font-medium">{b.title}</p>
-              <p>{b.tag?.name ?? "No tag"} · {range}</p>
-            </TooltipContent>
-          </Tooltip>
-        );
-      })}
-    </div>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          onClick={open}
+          // pointer presses here never start a class or event draft
+          onPointerDown={(e) => e.stopPropagation()}
+          data-no-drag
+          data-time-entry={b.entry?.id ?? "running"}
+          className={cn(
+            "flex flex-col overflow-hidden rounded-[6px] border border-l-[3px] px-1.5 py-1 text-left text-xs leading-tight",
+            "transition-[filter] hover:brightness-[0.97] focus-visible:z-20 active:scale-[0.99]",
+            className,
+          )}
+          style={{ ...tagBlock(b.tag?.color), ...style }}
+        >
+          <span className="flex min-w-0 items-center gap-1 truncate font-semibold">
+            <Timer size={12} weight="bold" aria-hidden className="shrink-0" />
+            <span className="truncate">{b.title}</span>
+          </span>
+          {!compact && <span className="truncate tabular-nums opacity-90">{range}</span>}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs">
+        <p className="font-medium">{b.title}</p>
+        <p>{b.tag?.name ?? "No tag"} · {range}</p>
+      </TooltipContent>
+    </Tooltip>
   );
 }

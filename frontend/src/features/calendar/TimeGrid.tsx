@@ -6,12 +6,13 @@ import { matchFirst } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import { DueStrip } from "@/features/tasks/calendar/DueStrip";
 import { TaskMarker } from "@/features/tasks/calendar/TaskMarker";
-import { LANE_PX, TimeLane, useCalendarTime } from "@/features/time/calendar/TimeLane";
+import { TimeBlock, useCalendarTime, type LaneBlock } from "@/features/time/calendar/TimeLane";
+import { minutesInDay } from "@/features/time/days";
 import type { CalendarTask, CalendarTasks } from "@/features/tasks/calendar/useCalendarTasks";
 import { clickDraft, keyRangeMinutes, moveRange, rangeLabel, SNAP_MIN, type KeyRange, type RangeKey } from "./draft";
 import { EventBlock } from "./EventBlock";
 import { useGuardedNavigate } from "./entryGuard";
-import { layoutOverlaps } from "./layoutOverlaps";
+import { layoutOverlaps, type Interval } from "./layoutOverlaps";
 import { calendarPath } from "./state";
 import type { DraftControls } from "./useDraft";
 import { useGridDrag } from "./useGridDrag";
@@ -26,6 +27,16 @@ const DRAFT_KEY = "__draft__";
 
 type Placement = { column: number; columns: number };
 const NO_SESSIONS: Session[] = [];
+const NO_TASKS: CalendarTask[] = [];
+const NO_BLOCKS: LaneBlock[] = [];
+/** shortcut: tasks have only a due time, so they take a fixed 30-minute slot; use a real duration if tasks get one. */
+const TASK_MIN = 30;
+const taskKey = (e: CalendarTask) => `task:${e.task.id}`;
+const timeKey = (b: LaneBlock) => `time:${b.key}`;
+const taskStart = (e: CalendarTask) => {
+  const [h, m] = (e.task.dueTime ?? "00:00").split(":").map(Number);
+  return Math.min(h * 60 + m, 24 * 60 - TASK_MIN);
+};
 
 interface Props {
   days: string[];
@@ -52,7 +63,10 @@ export function slotSelector(date: string, min: number): string {
 
 /** Shared time grid for day and week views (FR-008, FR-010, FR-012; 009 US5/US7: drafts by
  * press-and-drag, click, tap and keyboard ranges). */
-export function TimeGrid({ days, sessions, tz, drafts, tasks }: Props) {
+export function TimeGrid({ days: daysProp, sessions, tz, drafts, tasks }: Props) {
+  const daysKey = daysProp.join(",");
+  // a stable list, so the per-day layouts below stay memoized across renders
+  const days = useMemo(() => daysKey.split(","), [daysKey]);
   const navigate = useGuardedNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
@@ -64,8 +78,7 @@ export function TimeGrid({ days, sessions, tz, drafts, tasks }: Props) {
     day: Math.max(0, days.indexOf(today)),
     slot: (9 * 60) / SLOT_MIN,
   }));
-  const daysKey = days.join(",");
-  // 020: tracked time in a lane at each column's right edge ("Show time")
+  // 020: tracked time ("Show time"), laid out with the entries
   const time = useCalendarTime(days, tz);
 
   useEffect(() => {
@@ -83,28 +96,29 @@ export function TimeGrid({ days, sessions, tz, drafts, tasks }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [daysKey]);
 
-  // the draft takes part in the overlap layout, so overlapping entries stay visible beside it
-  // (FR-028). Only the draft's day is laid out again while it moves; the other days keep their
+  // classes, events, timed tasks, tracked time and the draft share one overlap layout, so anything
+  // that collides sits side by side (FR-028). Only the draft's day is laid out again while it moves; the other days keep their
   // layout (and their memoized entries), so a drag stays light in a full week (SC-003).
   const byDay = useMemo(() => {
     const out = new Map<string, Session[]>();
     for (const s of sessions) out.set(s.date, [...(out.get(s.date) ?? []), s]);
     return out;
   }, [sessions]);
-  const baseLayout = useMemo(() => {
-    const out = new Map<string, Map<string, Placement>>();
-    for (const [d, list] of byDay) out.set(d, layoutOverlaps(list.map((s) => ({ key: s.key, start: minutesOf(s.start), end: minutesOf(s.end) }))));
-    return out;
-  }, [byDay]);
+  const timedTasks = tasks?.timed;
+  const timeByDay = time.byDay;
+  const itemsOf = useCallback((d: string): Interval[] => [
+    ...(byDay.get(d) ?? []).map((s) => ({ key: s.key, start: minutesOf(s.start), end: minutesOf(s.end) })),
+    ...(timedTasks?.get(d) ?? []).map((e) => ({ key: taskKey(e), start: taskStart(e), end: taskStart(e) + TASK_MIN })),
+    ...(timeByDay.get(d) ?? []).map((b) => ({ key: timeKey(b), start: minutesInDay(b.start, d, tz), end: minutesInDay(b.end, d, tz) })),
+  ], [byDay, timedTasks, timeByDay, tz]);
+  const baseLayout = useMemo(() => new Map(days.map((d) => [d, layoutOverlaps(itemsOf(d))])), [days, itemsOf]);
   const draftDate = draft?.date;
   const draftStart = draft?.startMin;
   const draftEnd = draft?.endMin;
   const draftLayout = useMemo(() => {
     if (draftDate === undefined || draftStart === undefined || draftEnd === undefined) return null;
-    const items = (byDay.get(draftDate) ?? []).map((s) => ({ key: s.key, start: minutesOf(s.start), end: minutesOf(s.end) }));
-    items.push({ key: DRAFT_KEY, start: draftStart, end: draftEnd });
-    return layoutOverlaps(items);
-  }, [byDay, draftDate, draftStart, draftEnd]);
+    return layoutOverlaps([...itemsOf(draftDate), { key: DRAFT_KEY, start: draftStart, end: draftEnd }]);
+  }, [itemsOf, draftDate, draftStart, draftEnd]);
   const layoutOf = (d: string) => (d === draftDate && draftLayout ? draftLayout : baseLayout.get(d));
 
   const activeDay = Math.min(active.day, days.length - 1);
@@ -269,10 +283,16 @@ export function TimeGrid({ days, sessions, tz, drafts, tasks }: Props) {
                   style={{ top: (now / 60) * HOUR_PX }}
                 />
               )}
-              {/* entries, tasks and the draft keep clear of the time lane, so it never covers them */}
-              <div className="pointer-events-none absolute inset-y-0 left-0" style={{ right: time.on ? LANE_PX : 0 }}>
-                <ColumnEntries sessions={byDay.get(d) ?? NO_SESSIONS} layout={layoutOf(d)} onOpen={onOpenEntry} />
-                {tasks?.timed.has(d) && <TimedTasks entries={tasks.timed.get(d)!} />}
+              <div className="pointer-events-none absolute inset-0">
+                <ColumnEntries
+                  sessions={byDay.get(d) ?? NO_SESSIONS}
+                  tasks={timedTasks?.get(d) ?? NO_TASKS}
+                  blocks={timeByDay.get(d) ?? NO_BLOCKS}
+                  day={d}
+                  tz={tz}
+                  layout={layoutOf(d)}
+                  onOpen={onOpenEntry}
+                />
                 {draft && draft.date === d && (
                   <DraftBlock
                     label={rangeLabel(draft)}
@@ -283,7 +303,6 @@ export function TimeGrid({ days, sessions, tz, drafts, tasks }: Props) {
                   />
                 )}
               </div>
-              {time.on && <TimeLane day={d} blocks={time.byDay.get(d) ?? []} tz={tz} hourPx={HOUR_PX} />}
             </div>
           ))}
         </div>
@@ -326,65 +345,64 @@ const ColumnSlots = memo(function ColumnSlots({ day, dayIndex, activeSlot, onSlo
   );
 });
 
-/** One day's entries, side by side where they overlap; memoized per day (see `layoutOf`). */
-const ColumnEntries = memo(function ColumnEntries({ sessions, layout, onOpen }: {
+/** Where a placed block goes in its day column. */
+function blockBox(start: number, end: number, p: Placement = { column: 0, columns: 1 }) {
+  const width = 100 / p.columns;
+  return {
+    top: (start / 60) * HOUR_PX + 1,
+    height: Math.max(((end - start) / 60) * HOUR_PX - 2, MIN_EVENT_PX),
+    left: `calc(${p.column * width}% + 2px)`,
+    width: `calc(${width}% - 4px)`,
+  };
+}
+
+/** One day's classes, events, timed tasks and tracked time, side by side where they overlap;
+ * memoized per day (see `layoutOf`). */
+const ColumnEntries = memo(function ColumnEntries({ sessions, tasks, blocks, day, tz, layout, onOpen }: {
   sessions: Session[];
+  tasks: CalendarTask[];
+  blocks: LaneBlock[];
+  day: string;
+  tz: string;
   layout: Map<string, Placement> | undefined;
   onOpen: (key: string) => void;
 }) {
-  return sessions.map((s) => {
-    const top = (minutesOf(s.start) / 60) * HOUR_PX;
-    const height = Math.max(((minutesOf(s.end) - minutesOf(s.start)) / 60) * HOUR_PX - 2, MIN_EVENT_PX);
-    const p = layout?.get(s.key) ?? { column: 0, columns: 1 };
-    const width = 100 / p.columns;
-    return (
-      <EventBlock
-        key={s.key}
-        session={s}
-        kind={s.kind}
-        compact={height < 40}
-        className="pointer-events-auto absolute z-10"
-        style={{
-          top: top + 1,
-          height,
-          left: `calc(${p.column * width}% + 2px)`,
-          width: `calc(${width}% - 4px)`,
-        }}
-        onClick={() => onOpen(s.key)}
-      />
-    );
-  });
-});
-
-const MARKER_PX = 20;
-
-/**
- * 012 FR-047/FR-051: a day's timed tasks in their own layer, outside the overlap layout, so entries
- * never shrink for them. Compact markers on the right at their due time; tasks due at the same
- * time stack downwards.
- */
-function TimedTasks({ entries }: { entries: CalendarTask[] }) {
-  const taken = new Map<number, number>();
   return (
-    <div className="pointer-events-none absolute inset-0 z-[15]">
-      {entries.map((e) => {
-        const [h, m] = (e.task.dueTime ?? "00:00").split(":").map(Number);
-        const top = Math.min(((h * 60 + m) / 60) * HOUR_PX, 24 * HOUR_PX - MARKER_PX);
-        const row = Math.round(top);
-        const n = taken.get(row) ?? 0;
-        taken.set(row, n + 1);
+    <>
+      {sessions.map((s) => {
+        const box = blockBox(minutesOf(s.start), minutesOf(s.end), layout?.get(s.key));
+        return (
+          <EventBlock
+            key={s.key}
+            session={s}
+            kind={s.kind}
+            compact={box.height < 40}
+            className="pointer-events-auto absolute z-10"
+            style={box}
+            onClick={() => onOpen(s.key)}
+          />
+        );
+      })}
+      {tasks.map((e) => {
+        const start = taskStart(e);
         return (
           <TaskMarker
             key={e.task.id}
             entry={e}
-            className="pointer-events-auto absolute right-0.5 max-w-[60%]"
-            style={{ top: top + n * MARKER_PX }}
+            block
+            className="pointer-events-auto absolute z-10"
+            style={blockBox(start, start + TASK_MIN, layout?.get(taskKey(e)))}
           />
         );
       })}
-    </div>
+      {blocks.map((b) => {
+        const start = minutesInDay(b.start, day, tz);
+        const box = blockBox(start, minutesInDay(b.end, day, tz), layout?.get(timeKey(b)));
+        return <TimeBlock key={b.key} block={b} tz={tz} compact={box.height < 40} className="pointer-events-auto absolute z-10" style={box} />;
+      })}
+    </>
   );
-}
+});
 
 /** The new-entry draft: draft tokens, dashed edge (never colour alone), its time range as text.
  * Hidden from assistive technology; the live region announces it instead (FR-043). */

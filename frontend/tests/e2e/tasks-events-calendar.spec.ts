@@ -210,7 +210,7 @@ test("US6: Show tasks puts timed and date-only tasks on the week and month; tick
   await seedTasks(page, "In progress", [timed], { dueDate: s.days[1], dueTime: "06:00" });
   // Sunday: no weekly event of the other tests shares its month cell
   await seedTasks(page, "To do", [dateOnly], { dueDate: s.days[6] });
-  // an event at the same time as the timed task: its width must not change
+  // an event at the same time as the timed task: they collide, so they sit side by side
   await seedEvent(page, { title: blocker, semester: { id: s.semesterId }, startDate: s.days[1], startTime: "06:00", endTime: "07:00" });
 
   await page.goto(`/calendar/week/${s.days[0]}`);
@@ -223,13 +223,15 @@ test("US6: Show tasks puts timed and date-only tasks on the week and month; tick
 
   await sw.click();
   await expect(sw).toHaveAttribute("aria-checked", "true");
-  // the timed marker sits at its time in its day, outside the entries' layout
+  // the timed task is a block at its time in its day, laid out with the entries like an event
   const marker = page.locator(`[data-day="${s.days[1]}"] [data-task-marker]`).filter({ hasText: timed });
   await expect(marker).toBeVisible();
   const day = await box(page.locator(`[data-day="${s.days[1]}"]`));
-  expect(Math.round((await box(marker)).y - day.y)).toBe(6 * 48);
+  expect(Math.round((await box(marker)).y - day.y)).toBe(6 * 48 + 1);
   const after = await box(event);
-  expect([after.x, after.width]).toEqual([before.x, before.width]);
+  expect(after.width).toBeLessThan(before.width);
+  const m = await box(marker);
+  expect(m.x >= after.x + after.width || m.x + m.width <= after.x).toBe(true);
   // the date-only task is in the due strip
   const strip = page.getByTestId("due-strip");
   await expect(strip.locator(`[data-due-day="${s.days[6]}"] [data-task-marker]`)).toHaveText(new RegExp(dateOnly));
