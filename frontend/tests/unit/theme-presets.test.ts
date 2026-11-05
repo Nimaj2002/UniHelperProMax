@@ -4,16 +4,16 @@ import { contrastIssues, contrast, cssVars, derive } from "@/features/settings/t
 import { meetAA, PRESETS, presetById } from "@/features/settings/themes/presets";
 
 describe("preset themes", () => {
-  it("has the 9 light and 9 dark palettes with stable ids", () => {
+  it("has the 10 light and 10 dark palettes with stable ids", () => {
     expect(PRESETS.filter((p) => p.base === "light").map((p) => p.name)).toEqual([
-      "GitHub Light", "Catppuccin Latte", "One Light", "Solarized Light", "Rosé Pine Dawn", "Nord Light", "Gruvbox Light",
+      "Yuii", "GitHub Light", "Catppuccin Latte", "One Light", "Solarized Light", "Rosé Pine Dawn", "Nord Light", "Gruvbox Light",
       "Tokyo Night Light", "Linear",
     ]);
     expect(PRESETS.filter((p) => p.base === "dark").map((p) => p.name)).toEqual([
-      "Dracula", "Tokyo Night", "Catppuccin Mocha", "Nord", "Gruvbox Dark", "One Dark Pro", "Rosé Pine", "Night Owl", "Midnight Blue",
+      "Yuii Night", "Dracula", "Tokyo Night", "Catppuccin Mocha", "Nord", "Gruvbox Dark", "One Dark Pro", "Rosé Pine", "Night Owl", "Midnight Blue",
     ]);
     expect(presetById("preset:rose-pine-dawn")?.name).toBe("Rosé Pine Dawn");
-    expect(new Set(PRESETS.map((p) => p.id)).size).toBe(18);
+    expect(new Set(PRESETS.map((p) => p.id)).size).toBe(20);
     for (const p of PRESETS) expect(p.id).toMatch(/^preset:[a-z0-9-]+$/);
   });
 

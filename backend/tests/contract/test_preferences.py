@@ -18,7 +18,7 @@ def test_preferences(owner_client: TestClient) -> None:
         "workspaceRightCollapsed": False,
         "playerVolume": 1.0,
         "playerMuted": False,
-        "theme": "system",
+        "theme": "preset:yuii",
         "readerDarkPages": False,  # 007
         "lastSemesterId": None,  # 009
         "quickCreateType": "class",  # 009

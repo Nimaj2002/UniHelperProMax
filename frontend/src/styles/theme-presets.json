@@ -2,6 +2,22 @@
   "_note": "Built-in preset themes (spec 005 FR-014a): each palette's published key colours. Colours that miss WCAG AA are adjusted at load time in features/settings/themes/presets.ts.",
   "presets": [
     {
+      "name": "Yuii",
+      "base": "light",
+      "background": "#FFF7F9",
+      "surface": "#FCE8EE",
+      "text": "#4A2B3A",
+      "accent": "#C2185B"
+    },
+    {
+      "name": "Yuii Night",
+      "base": "dark",
+      "background": "#1E1820",
+      "surface": "#2A2230",
+      "text": "#F5E6EC",
+      "accent": "#F48FB1"
+    },
+    {
       "name": "GitHub Light",
       "base": "light",
       "background": "#FFFFFF",

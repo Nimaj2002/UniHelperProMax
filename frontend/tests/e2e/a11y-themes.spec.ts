@@ -150,7 +150,7 @@ test("Accessibility: every built-in preset theme passes WCAG AA on the main scre
   const setTheme = (theme: string) => page.request.patch("/api/v1/preferences", { data: { theme }, headers: { "X-CSRF-Token": csrf } });
 
   await page.goto("/settings/appearance");
-  await expect(page.locator("[role=radio][value^='preset:']")).toHaveCount(18);
+  await expect(page.locator("[role=radio][value^='preset:']")).toHaveCount(20);
   const ids = await page.locator("[role=radio][value^='preset:']").evaluateAll((els) => els.map((e) => e.getAttribute("value")!));
   expect(ids).toHaveLength(18);
   try {

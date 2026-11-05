@@ -29,7 +29,7 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
     "workspace_right_collapsed": False,
     "player_volume": 1.0,
     "player_muted": False,
-    "theme": "system",
+    "theme": "preset:yuii",  # the mascot's theme is the default for new accounts
     "reader_dark_pages": False,  # 007 FR-022a
     "last_semester_id": None,  # 009 research R9: preselected semester in the forms
     "quick_create_type": "class",  # 009: type the quick form opens with
