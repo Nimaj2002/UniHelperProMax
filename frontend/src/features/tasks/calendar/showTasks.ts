@@ -1,5 +1,5 @@
 /**
- * The calendar's "Show tasks" switch (FR-046, research R16): off by default, remembered per
+ * The calendar's "Show tasks" switch (FR-046, research R16): on by default (the home "Both" setting), remembered per
  * browser in `uh.calendar.showTasks`. A tiny external store so the header switch and the views
  * share one value.
  */
@@ -12,7 +12,7 @@ const listeners = new Set<() => void>();
 let value: boolean | null = null;
 
 function read(): boolean {
-  value ??= readLocal<unknown>(SHOW_TASKS_KEY, false) === true;
+  value ??= readLocal<unknown>(SHOW_TASKS_KEY, true) !== false;
   return value;
 }
 
@@ -28,6 +28,6 @@ function subscribe(listener: () => void) {
 }
 
 export function useShowTasks(): [boolean, (on: boolean) => void] {
-  const on = useSyncExternalStore(subscribe, read, () => false);
+  const on = useSyncExternalStore(subscribe, read, () => true);
   return [on, setShowTasks];
 }

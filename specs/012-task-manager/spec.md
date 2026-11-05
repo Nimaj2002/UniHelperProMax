@@ -603,7 +603,9 @@ from the home page and back; confirm the exact prior state is restored.
 **Calendar (Priority 2)**
 
 - **FR-046**: The calendar header MUST have a "Show tasks" switch, off by default and remembered
-  per browser; when off, no task appears on the calendar.
+  per browser; when off, no task appears on the calendar. *(Amended 2026-11-05)*: on the home
+  calendar this and 020 FR-044's "Show time" switch are one three-way switch — Tasks only / Both /
+  Time only — defaulting to Both (tasks on), remembered per browser.
 - **FR-047**: When on, tasks with a due date MUST appear in the day, week and month views, clearly
   different from classes and events (a checkbox marker, never a block in the timeline): a timed
   task as a small marker at its time, a date-only task in a compact strip of due items under the
@@ -662,7 +664,7 @@ from the home page and back; confirm the exact prior state is restored.
 
 - **FR-063**: The Calendar panel MUST hold the calendar with all of its views and controls inside
   the card and MUST have exactly one header row of about 40 px containing the date navigation,
-  the view switcher, Today, the "Show tasks" switch (FR-046) and a close button; it MUST NOT add
+  the view switcher, Today, the Tasks / Both / Time switch (FR-046) and a close button; it MUST NOT add
   any other fixed bar.
 - **FR-064**: Every calendar control and shortcut available today (including New class, New event
   and the calendar's own keyboard shortcuts) MUST stay reachable from the Calendar panel; controls

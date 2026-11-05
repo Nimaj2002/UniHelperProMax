@@ -1,4 +1,4 @@
-import { CalendarStar, CaretLeft, CaretRight, DotsThree, Plus } from "@phosphor-icons/react";
+import { CalendarStar, CaretLeft, CaretRight, DotsThree, Kanban, Plus, Timer } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -86,8 +86,7 @@ export function CalendarToolbar({ view, date, tz, compact = false, leading, trai
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
-        <ShowTasksSwitch />
-        <ShowTimeSwitch />
+        <ShowOnCalendarSwitch />
         {trailing}
       </div>
     );
@@ -157,21 +156,47 @@ function SemesterWeekBadge({ date }: { date: string }) {
   );
 }
 
-/** 012 FR-046: tasks on the calendar, off by default (remembered per browser). */
-function ShowTasksSwitch() {
-  const [on, setOn] = useShowTasks();
+type ShowMode = "tasks" | "both" | "time";
+const SHOW_LABELS: Record<ShowMode, string> = { tasks: "Tasks only", both: "Tasks and time", time: "Time only" };
+
+/**
+ * Home calendar: one three-way switch for what the calendar overlays (FR-046 + 020 FR-044):
+ * tasks only, both (the default), or time only. Stored as the two per-browser flags the views read.
+ */
+function ShowOnCalendarSwitch() {
+  const [tasks, setTasks] = useShowTasks();
+  const [time, setTime] = useShowTime();
+  // a legacy "both off" from the old switches shows no segment pressed until one is picked
+  const value = tasks && time ? "both" : tasks ? "tasks" : time ? "time" : "";
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <div className="flex shrink-0 items-center gap-1 px-1">
-          <Switch id="show-tasks-on-calendar" size="sm" checked={on} onCheckedChange={setOn} aria-label="Show tasks" />
-          <label htmlFor="show-tasks-on-calendar" aria-hidden className="hidden text-xs text-text-muted @[44rem]/calendar:inline">
-            Tasks
-          </label>
-        </div>
-      </TooltipTrigger>
-      <TooltipContent>Show tasks on the calendar</TooltipContent>
-    </Tooltip>
+    <ToggleGroup
+      type="single"
+      variant="outline"
+      size="sm"
+      value={value}
+      onValueChange={(v) => {
+        if (!v) return;
+        setTasks(v !== "time");
+        setTime(v !== "tasks");
+      }}
+      aria-label="Show on calendar"
+      className="h-7 shrink-0"
+    >
+      {(["tasks", "both", "time"] as const).map((m) => (
+        // a title, not a Tooltip: the Tooltip trigger's data-state would override the item's "on" styling
+        <ToggleGroupItem
+          key={m}
+          id={`show-on-calendar-${m}`}
+          value={m}
+          aria-label={`${SHOW_LABELS[m]} on the calendar`}
+          title={`${SHOW_LABELS[m]} on the calendar`}
+          className="h-7 gap-1 px-2"
+        >
+          {m !== "time" && <Kanban size={14} aria-hidden />}
+          {m !== "tasks" && <Timer size={14} aria-hidden />}
+        </ToggleGroupItem>
+      ))}
+    </ToggleGroup>
   );
 }
 

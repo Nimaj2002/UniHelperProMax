@@ -214,15 +214,17 @@ test("US6: Show tasks puts timed and date-only tasks on the week and month; tick
   await seedEvent(page, { title: blocker, semester: { id: s.semesterId }, startDate: s.days[1], startTime: "06:00", endTime: "07:00" });
 
   await page.goto(`/calendar/week/${s.days[0]}`);
-  const sw = page.locator("#show-tasks-on-calendar");
-  await expect(sw).toHaveAttribute("aria-checked", "false");
+  // the three-way switch starts on Both; Time only hides the tasks
+  const both = page.locator("#show-on-calendar-both");
+  await expect(both).toHaveAttribute("aria-checked", "true");
+  await page.locator("#show-on-calendar-time").click();
   await expect(page.locator("[data-task-marker]")).toHaveCount(0);
   await expect(page.getByTestId("due-strip")).toHaveCount(0);
   const event = page.locator(`[data-day="${s.days[1]}"] [data-session-key]`).filter({ hasText: blocker });
   const before = await box(event);
 
-  await sw.click();
-  await expect(sw).toHaveAttribute("aria-checked", "true");
+  await both.click();
+  await expect(both).toHaveAttribute("aria-checked", "true");
   // the timed task is a block at its time in its day, laid out with the entries like an event
   const marker = page.locator(`[data-day="${s.days[1]}"] [data-task-marker]`).filter({ hasText: timed });
   await expect(marker).toBeVisible();
@@ -260,10 +262,11 @@ test("US6: Show tasks puts timed and date-only tasks on the week and month; tick
   await expect(page.locator(`[data-month-cell="${s.days[1]}"] [data-task-marker]`)).toHaveText(new RegExp(timed));
   await expect(page.locator(`[data-month-cell="${s.days[6]}"] [data-task-marker]`)).toHaveText(new RegExp(dateOnly));
 
-  // the choice is remembered; off removes the markers
+  // the choice is remembered; Time only removes the markers
+  await page.locator("#show-on-calendar-tasks").click();
   await page.reload();
-  await expect(page.locator("#show-tasks-on-calendar")).toHaveAttribute("aria-checked", "true");
-  await page.locator("#show-tasks-on-calendar").click();
+  await expect(page.locator("#show-on-calendar-tasks")).toHaveAttribute("aria-checked", "true");
+  await page.locator("#show-on-calendar-time").click();
   await expect(page.locator("[data-task-marker]")).toHaveCount(0);
 });
 

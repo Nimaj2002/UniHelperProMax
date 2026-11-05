@@ -522,7 +522,9 @@ and use the shortcut from any page.
 **Calendar**
 
 - **FR-044**: The calendar header MUST have a "Show time" switch, on by default, remembered per
-  browser; turning it off MUST hide time entries from the calendar and change nothing else.
+  browser; turning it off MUST hide time entries from the calendar and change nothing else. *(Amended
+  2026-11-05)*: on the home calendar it is merged with 012's "Show tasks" into one Tasks only /
+  Both / Time only switch (default Both); "Tasks only" is the off state.
 - **FR-045**: In day and week views, entries MUST appear as thin blocks in a narrow lane at the
   right edge of each day column, colored by tag (neutral when untagged), never covering classes,
   events or tasks; overlapping entries MUST sit side by side in the lane; a running timer's block

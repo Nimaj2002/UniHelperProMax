@@ -84,10 +84,10 @@ test("the calendar shows tracked time in its lane; pressing the lane creates not
   await block.dispatchEvent("pointerdown");
   await expect(page.locator("[data-draft]")).toHaveCount(0);
 
-  // "Show time" off hides the lane and changes nothing else
-  await page.getByRole("switch", { name: "Show time" }).click();
+  // "Tasks only" hides the lane and changes nothing else
+  await page.locator("#show-on-calendar-tasks").click();
   await expect(block).toHaveCount(0);
-  await page.getByRole("switch", { name: "Show time" }).click();
+  await page.locator("#show-on-calendar-both").click();
   await expect(block).toBeVisible();
 
   await page.request.delete(`/api/v1/time/entries/${entryId}`, { headers: { "X-CSRF-Token": decodeURIComponent(csrf) } });
