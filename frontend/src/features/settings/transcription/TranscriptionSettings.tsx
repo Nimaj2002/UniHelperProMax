@@ -15,6 +15,7 @@ import {
 } from "../api";
 import { KeyField, initialKeyDraft, keyPayload as draftPayload, type KeyDraft } from "../KeyField";
 import { KeyProtectionNotice } from "../KeyProtectionNotice";
+import { UseProxySwitch } from "../UseProxySwitch";
 
 const STATUS_TEXT: Record<ProviderSettings["status"], string> = {
   not_configured: "Not configured",
@@ -46,6 +47,7 @@ function TranscriptionForm({ specs, saved }: { specs: ProviderSpec[]; saved: Tra
     Object.fromEntries(specs.map((s) => [s.id, initialKeyDraft(savedOf(s.id)?.secret)])),
   );
   const [language, setLanguage] = useState(saved.defaultLanguage);
+  const [useProxy, setUseProxy] = useState(saved.useProxy ?? false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [result, setResult] = useState<ConnectionTestResult | null>(null);
   const [testing, setTesting] = useState(false);
@@ -115,6 +117,7 @@ function TranscriptionForm({ specs, saved }: { specs: ProviderSpec[]; saved: Tra
         activeProviderId: spec.id,
         defaultLanguage: language,
         provider: { providerId: spec.id, values: vals, ...keyPayload() },
+        useProxy,
       });
       qc.setQueryData(transcriptionSettingsKey, next);
       void qc.invalidateQueries({ queryKey: ["transcription", "status"] });
@@ -231,6 +234,13 @@ function TranscriptionForm({ specs, saved }: { specs: ProviderSpec[]; saved: Tra
           </SelectContent>
         </Select>
       </div>
+
+      <UseProxySwitch
+        id="transcription-use-proxy"
+        checked={useProxy}
+        onCheckedChange={(v) => { edited(); setUseProxy(v); }}
+        what="transcription requests (after you save)"
+      />
 
       {errors.form && <p role="alert" className="text-sm text-danger">{errors.form}</p>}
       <div>

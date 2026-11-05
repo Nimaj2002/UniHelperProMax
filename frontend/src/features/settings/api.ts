@@ -24,6 +24,8 @@ export interface SettingsSave {
   activeProviderId: string;
   defaultLanguage: string;
   provider: { providerId: string; values: Record<string, string>; apiKey?: string | null };
+  /** 021: absent = keep */
+  useProxy?: boolean;
 }
 
 export const saveTranscriptionSettings = (body: SettingsSave) =>

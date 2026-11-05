@@ -177,6 +177,7 @@ paths:
         "200":
           description: Saved
           content: { application/json: { schema: { $ref: "#/components/schemas/AiSettings" } } }
+        "409": { $ref: "#/components/responses/Problem" }   # 021: proxy_not_configured
         "412": { $ref: "#/components/responses/Problem" }
         "422": { $ref: "#/components/responses/Problem" }
 
@@ -633,7 +634,7 @@ components:
       type: object
       required: [outcome, message]
       properties:
-        outcome: { type: string, enum: [working, key_rejected, model_not_found, unreachable, timeout, not_this_style, https_required, provider] }
+        outcome: { type: string, enum: [working, key_rejected, model_not_found, unreachable, timeout, not_this_style, https_required, provider, proxy] }
         message: { type: string }
         hint: { type: [string, "null"] }
         looksLike: { oneOf: [{ $ref: "#/components/schemas/Style" }, { type: "null" }] }
@@ -643,22 +644,25 @@ components:
       type: object
       required: [outcome, models]
       properties:
-        outcome: { type: string, enum: [working, key_rejected, unreachable, timeout, not_this_style, no_model_list, provider] }
+        outcome: { type: string, enum: [working, key_rejected, unreachable, timeout, not_this_style, no_model_list, provider, proxy] }
         message: { type: [string, "null"] }
         models: { type: array, items: { $ref: "#/components/schemas/AiModelInput" } }
 
     AiSettings:
       type: object
-      required: [customInstructions, version]
+      required: [customInstructions, version, useProxy]
       properties:
         customInstructions: { type: string, maxLength: 8000 }
         lastModel: { oneOf: [{ $ref: "#/components/schemas/ModelRef" }, { type: "null" }] }
         version: { type: integer }
+        useProxy: { type: boolean, description: "021: send AI requests to non-local endpoints through the user's proxy" }
 
     AiSettingsUpdate:
       type: object
       required: [customInstructions]
-      properties: { customInstructions: { type: string, maxLength: 8000 } }
+      properties:
+        customInstructions: { type: string, maxLength: 8000 }
+        useProxy: { type: boolean, description: "021: absent = keep; true needs a saved proxy (409 proxy_not_configured)" }
 
     ModelRef:
       type: object
@@ -727,7 +731,7 @@ components:
       type: object
       required: [category, message]
       properties:
-        category: { type: string, enum: [network, timeout, key_rejected, key_unreadable, rate_limited, model_not_found, too_large, context_exceeded, provider, not_this_style] }
+        category: { type: string, enum: [network, timeout, key_rejected, key_unreadable, rate_limited, model_not_found, too_large, context_exceeded, provider, not_this_style, proxy] }
         message: { type: string }
         retryAfterSeconds: { type: [integer, "null"] }
 

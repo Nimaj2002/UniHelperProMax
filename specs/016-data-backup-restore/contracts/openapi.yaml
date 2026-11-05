@@ -179,7 +179,7 @@ components:
             type: object
             required: [kind, id, name]
             properties:
-              kind: { enum: [transcription_provider, ai_endpoint] }
+              kind: { enum: [transcription_provider, ai_endpoint, proxy] }
               id: { type: string }
               name: { type: string }
         excluded:

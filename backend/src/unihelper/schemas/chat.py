@@ -22,6 +22,7 @@ ErrorCategory = Literal[
     "context_exceeded",
     "provider",
     "not_this_style",
+    "proxy",
 ]
 MAX_ATTACHMENTS = 10
 

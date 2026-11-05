@@ -13,6 +13,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from tests.conftest import register_test_key
 from tests.contract import backup_helpers as bh
 from tests.contract.notes_helpers import create_note, make_session
 from tests.contract.recording_helpers import put_chunk, start
@@ -34,6 +35,12 @@ def test_backup_holds_everything_but_keys(
     c = owner_client
     files_root = tmp_data_dir / "files"
     seeded = bh.seed_everything(c, files_root)
+    proxy_password = register_test_key("proxy-backup-pass-1234")  # 021
+    r = c.put(
+        "/api/v1/settings/proxy",
+        json={"scheme": "socks5", "host": "p.example", "port": 1080, "password": proxy_password},
+    )
+    assert r.status_code == 200, r.text
     other = make_member()
     create_note(other, make_session(other), "Member note", "not the owner's")
     owner_root = files_root / "owner"
@@ -68,11 +75,14 @@ def test_backup_holds_everything_but_keys(
     assert providers and all(p["secret"] is None and p["secret_id"] is None for p in providers)
     endpoints = [json.loads(x) for x in files["data/ai_endpoints.jsonl"].splitlines()]
     assert endpoints and all(e["secret_id"] is None for e in endpoints)
-    assert {k["kind"] for k in manifest["keysLeftOut"]} == {"transcription_provider", "ai_endpoint"}
+    assert {k["kind"] for k in manifest["keysLeftOut"]} == {
+        "transcription_provider", "ai_endpoint", "proxy"
+    }
+    assert "data/proxy_settings.jsonl" in files
     assert "Member note" not in data.decode("latin-1")
 
     # no key, in plaintext or encrypted, anywhere in the backup bytes (SC-006)
-    for key in (bh.TRANSCRIPTION_KEY, bh.AI_KEY):
+    for key in (bh.TRANSCRIPTION_KEY, bh.AI_KEY, proxy_password):
         assert key.encode() not in data
     for (ciphertext,) in db.execute("SELECT ciphertext FROM secrets"):
         assert bytes(ciphertext) not in data

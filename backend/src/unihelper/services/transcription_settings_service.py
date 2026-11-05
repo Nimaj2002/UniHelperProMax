@@ -19,6 +19,7 @@ from unihelper.models import ProviderConfig, TranscriptionSettings, User
 from unihelper.models.base import now_iso
 from unihelper.schemas.settings import ConnectionTest, TranscriptionSettingsSave
 from unihelper.secrets import store as secret_store
+from unihelper.services import proxy_service
 from unihelper.transcription.base import ProviderError, ProviderSpec
 from unihelper.transcription.config import OWNER_KIND, JobConfig, saved_key
 from unihelper.transcription.openai_client import test_reason
@@ -91,6 +92,7 @@ def view(db: Session, user: User) -> dict[str, Any]:
         "active_provider_id": settings.active_provider_id if settings else None,
         "default_language": settings.default_language if settings else "auto",
         "providers": providers,
+        "use_proxy": bool(settings and settings.use_proxy),
     }
 
 
@@ -153,6 +155,10 @@ def save(
     settings = db.get(TranscriptionSettings, user.id) or TranscriptionSettings(user_id=user.id)
     settings.active_provider_id = body.active_provider_id
     settings.default_language = body.default_language
+    if body.use_proxy is not None:
+        if body.use_proxy:
+            proxy_service.require_configured(db, user.id)
+        settings.use_proxy = body.use_proxy
     db.add(settings)
     db.flush()
     return view(db, user)
@@ -187,16 +193,18 @@ async def test(
     if key is None and body.use_saved_key and row is not None:
         key = saved_key(db, row)
     _check_address(values, bool(key), "/values")
+    proxy = proxy_service.route(db, user.id, "transcription", values.get("address", ""))
     try:
-        async with httpx.AsyncClient(transport=transport) as http:
-            provider = build(spec.id, http)
+        async with proxy_service.client(proxy, transport) as http:
+            provider = build(spec.id, http, proxied=proxy is not None)
             await asyncio.wait_for(provider.test(JobConfig(values, lambda: key)), TEST_BUDGET)
         result: dict[str, Any] = {"ok": True, "category": None, "message": None}
     except TimeoutError:
         result = {"ok": False, "category": "timeout", "message": TEST_MESSAGES["timeout"]}
     except ProviderError as err:
         reason = test_reason(err)
-        result = {"ok": False, "category": reason, "message": TEST_MESSAGES[reason]}
+        message = err.message if reason == "proxy" else TEST_MESSAGES[reason]
+        result = {"ok": False, "category": reason, "message": message}
         if reason == "unreachable" and is_loopback(values.get("address", "")):
             result["message"] += " " + LOCALHOST_HINT
     # remember the result when exactly the saved settings were tested

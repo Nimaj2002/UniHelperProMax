@@ -26,6 +26,7 @@ Category = Literal[
     "provider",
     "not_this_style",
     "https_required",
+    "proxy",  # 021: the proxy failed (never retried without it)
 ]
 Style = Literal["openai", "anthropic", "gemini"]
 
@@ -58,6 +59,12 @@ class EndpointConfig:
     base_url: str
     locality: Literal["local", "remote"]
     api_key: str | None = field(default=None, repr=False)
+    # 021: the user's proxy URL (with credentials) for this endpoint, None = direct
+    proxy: str | None = field(default=None, repr=False)
+
+    @property
+    def proxied(self) -> bool:
+        return self.proxy is not None
 
 
 # ───────────────────────────── neutral request parts ─────────────────────────────

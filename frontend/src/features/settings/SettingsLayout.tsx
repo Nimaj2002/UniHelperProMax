@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 const SECTIONS = [
   { to: "/settings/transcription", label: "Transcription" },
   { to: "/settings/ai", label: "AI" },
+  { to: "/settings/proxy", label: "Proxy" },
   { to: "/settings/appearance", label: "Appearance" },
   { to: "/settings/time", label: "Time" },
   { to: "/settings/shortcuts", label: "Keyboard shortcuts" },

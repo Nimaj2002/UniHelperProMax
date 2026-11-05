@@ -250,4 +250,26 @@ describe("Settings → AI", () => {
     expect(screen.getByRole("textbox", { name: "Base URL" })).toHaveValue("http://localhost:11434/v1");
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("Ollama");
   }, 20_000);
+  it("021: turns the proxy on for AI with the settings' version, and is disabled without a proxy", async () => {
+    const user = userEvent.setup();
+    const proxy = { scheme: "http", host: "p.example", port: 8080, username: null, password: { configured: false, last4: null, readable: true }, version: 1, updatedAt: "x" };
+    const { calls } = api([], [
+      ["GET", "/api/v1/settings/proxy", () => json({ proxy, usedBy: [] })],
+      ["PUT", "/api/v1/ai/settings", () => json({ ...SETTINGS, version: 2, useProxy: true })],
+    ]);
+    renderWithProviders(<AiSettingsPage />);
+    const toggle = await screen.findByRole("switch", { name: "Use proxy" });
+    await waitFor(() => expect(toggle).toBeEnabled());
+    await user.click(toggle);
+    await waitFor(() => expect(bodyOf(calls, "/api/v1/ai/settings", "PUT")).toEqual({ customInstructions: "", useProxy: true }));
+    expect(new Headers(last(calls, "/api/v1/ai/settings", "PUT")!.init.headers).get("If-Match")).toBe('"1"');
+    await waitFor(() => expect(screen.getByRole("switch", { name: "Use proxy" })).toBeChecked());
+  });
+
+  it("021: the proxy switch links to Settings → Proxy when none is saved", async () => {
+    api([], [["GET", "/api/v1/settings/proxy", () => json({ proxy: null, usedBy: [] })]]);
+    renderWithProviders(<AiSettingsPage />);
+    expect(await screen.findByRole("link", { name: "Add a proxy first" })).toHaveAttribute("href", "/settings/proxy");
+    expect(screen.getByRole("switch", { name: "Use proxy" })).toBeDisabled();
+  });
 });

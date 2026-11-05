@@ -18,8 +18,13 @@ services:
     restart: unless-stopped
     # Run as your user so notes, PDFs and recordings in ./backend/data stay yours.
     user: "${UNIHELPER_UID:-1000}:${UNIHELPER_GID:-1000}"
-    ports:
-      - "${UNIHELPER_BIND:-127.0.0.1}:${UNIHELPER_PORT:-8000}:8000"
+    # Share this computer's network (feature 021) so a proxy app listening on this computer's
+    # 127.0.0.1, e.g. socks5://127.0.0.1:10808, is reachable from Settings → Proxy. With host
+    # networking Docker ignores `ports:`, so the server binds UNIHELPER_BIND:UNIHELPER_PORT itself.
+    network_mode: host
+    command: ["uvicorn", "unihelper.main:app", "--host", "${UNIHELPER_BIND:-127.0.0.1}", "--port", "${UNIHELPER_PORT:-8000}"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(urllib.request.urlopen('http://127.0.0.1:${UNIHELPER_PORT:-8000}/api/v1/health', timeout=4).status != 200)"]
     environment:
       UNIHELPER_SECURE_COOKIES: "${UNIHELPER_SECURE_COOKIES:-false}"
       # The container has no OS key store, so the key that encrypts your API keys is a file in

@@ -1,0 +1,184 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 021 additions
+  version: 1.0.0
+  description: |
+    Additive. New `/settings/proxy*` operations. Changes to existing operations (additive,
+    applied to the 005 and 014 contracts during implementation):
+    - `GET/PUT /settings/transcription`: `TranscriptionSettings` and `TranscriptionSettingsSave`
+      gain `useProxy: boolean` (save: optional, default keeps current value).
+    - `POST /settings/transcription/test`: `ConnectionTestResult.category` gains `proxy`.
+    - `GET/PUT /ai/settings`: `AiSettingsOut` gains `useProxy`; `AiSettingsUpdate` gains
+      optional `useProxy`.
+    - `POST /ai/endpoints/test` and model discovery: outcome gains `proxy`.
+    - Saving `useProxy: true` with no proxy saved → 409 `proxy_not_configured`.
+    - Backup manifest `keysLeftOut[].kind` gains `proxy`.
+    - Chat `AnswerError.category` gains `proxy`; `PUT /ai/settings` may answer 409
+      `proxy_not_configured`.
+    No response ever contains the proxy password — only `password.configured/last4/readable`
+    (Constitution IV). Writes need the CSRF header; PUT (when a proxy exists) and DELETE need
+    `If-Match: <version>` (428 when missing, 412 `version_conflict` when stale).
+servers:
+  - url: /api/v1
+
+paths:
+  /settings/proxy:
+    get:
+      tags: [settings]
+      summary: The user's proxy (password masked); `proxy` is null when none is saved
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProxySettings" }
+    put:
+      tags: [settings]
+      summary: Create or replace the user's proxy
+      parameters:
+        - { $ref: "#/components/parameters/IfMatchOptional" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProxySave" }
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProxySettings" }
+        "412": { $ref: "#/components/responses/Problem" }   # version_conflict
+        "422": { $ref: "#/components/responses/Problem" }   # invalid_host | invalid_port | invalid_scheme
+        "409": { $ref: "#/components/responses/Problem" }   # key_store_unreadable (password given)
+    delete:
+      tags: [settings]
+      summary: Delete the proxy and its password; turns off every section that used it (FR-006)
+      parameters:
+        - { $ref: "#/components/parameters/IfMatch" }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProxyDeleted" }
+        "404": { $ref: "#/components/responses/Problem" }   # no proxy saved
+        "412": { $ref: "#/components/responses/Problem" }
+        "428": { $ref: "#/components/responses/Problem" }
+
+  /settings/proxy/test:
+    post:
+      tags: [settings]
+      summary: Test the entered (or saved) proxy within 15 s (FR-003)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProxyTest" }
+      responses:
+        "200":
+          description: Test finished (success or a classified failure)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProxyTestResult" }
+        "422": { $ref: "#/components/responses/Problem" }   # invalid_host | invalid_port | invalid_scheme
+
+components:
+  parameters:
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: { type: string }
+    IfMatchOptional:
+      name: If-Match
+      in: header
+      required: false
+      description: Required when a proxy already exists (428 otherwise)
+      schema: { type: string }
+  responses:
+    Problem:
+      description: RFC 9457 problem document
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        code: { type: string }
+    SecretState:
+      type: object
+      required: [configured, last4]
+      properties:
+        configured: { type: boolean }
+        last4: { type: [string, "null"] }
+        readable: { type: boolean }
+    ProxyScheme:
+      type: string
+      enum: [http, https, socks5]
+    Proxy:
+      type: object
+      required: [scheme, host, port, username, password, version, updatedAt]
+      properties:
+        scheme: { $ref: "#/components/schemas/ProxyScheme" }
+        host: { type: string }
+        port: { type: integer, minimum: 1, maximum: 65535 }
+        username: { type: [string, "null"] }
+        password: { $ref: "#/components/schemas/SecretState" }
+        version: { type: integer }
+        updatedAt: { type: string }
+    ProxySettings:
+      type: object
+      required: [proxy, usedBy]
+      properties:
+        proxy:
+          oneOf:
+            - { $ref: "#/components/schemas/Proxy" }
+            - { type: "null" }
+        usedBy:
+          description: Sections whose "Use proxy" switch is on
+          type: array
+          items: { type: string, enum: [transcription, ai] }
+    ProxySave:
+      type: object
+      required: [scheme, host, port]
+      properties:
+        scheme: { $ref: "#/components/schemas/ProxyScheme" }
+        host: { type: string, minLength: 1, maxLength: 253 }
+        port: { type: integer, minimum: 1, maximum: 65535 }
+        username: { type: [string, "null"], maxLength: 255 }
+        password:
+          description: absent = keep the saved password, string = replace, null = remove
+          type: [string, "null"]
+          maxLength: 1024
+    ProxyTest:
+      type: object
+      required: [scheme, host, port]
+      properties:
+        scheme: { $ref: "#/components/schemas/ProxyScheme" }
+        host: { type: string, minLength: 1, maxLength: 253 }
+        port: { type: integer, minimum: 1, maximum: 65535 }
+        username: { type: [string, "null"], maxLength: 255 }
+        password: { type: [string, "null"], maxLength: 1024 }
+        useSavedPassword: { type: boolean, default: false }
+    ProxyDeleted:
+      type: object
+      required: [disabledSections]
+      properties:
+        disabledSections:
+          type: array
+          items: { type: string, enum: [transcription, ai] }
+    ProxyTestResult:
+      type: object
+      required: [outcome, message]
+      properties:
+        outcome:
+          type: string
+          enum: [working, unreachable, credentials_rejected, no_onward_connection, timeout]
+        message: { type: string }

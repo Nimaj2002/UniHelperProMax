@@ -14,7 +14,7 @@ dependencies = [
     "argon2-cffi>=23.1",
     "uuid-utils>=0.9",
     "tzdata>=2024.2",
-    "httpx>=0.28",
+    "httpx[socks]>=0.28",
     "icalendar>=6.1,<8",
     # 014: secret store (AES-256-GCM, OS key store, per-user key file) and PDF text fallback
     "cryptography>=50.0.2,<51",
@@ -29,7 +29,7 @@ unihelper = "unihelper.cli:main"
 [dependency-groups]
 dev = [
     "pytest>=8.3",
-    "httpx>=0.28",
+    "httpx[socks]>=0.28",
     "ruff>=0.8",
     "mypy>=1.13",
     "types-python-dateutil",

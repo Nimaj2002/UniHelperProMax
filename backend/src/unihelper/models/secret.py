@@ -5,7 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from unihelper.models.base import Base, IdMixin, TimestampMixin
 
-OWNER_KINDS = ("ai_endpoint", "transcription_provider")
+OWNER_KINDS = ("ai_endpoint", "transcription_provider", "proxy")
 
 
 class SecretStoreMeta(Base):

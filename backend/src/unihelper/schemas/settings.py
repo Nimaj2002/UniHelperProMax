@@ -27,6 +27,7 @@ class TranscriptionSettings(ApiModel):
     active_provider_id: str | None
     default_language: str
     providers: list[ProviderSettings]
+    use_proxy: bool = False  # 021
 
 
 class ProviderSave(ApiModel):
@@ -40,6 +41,7 @@ class TranscriptionSettingsSave(ApiModel):
     active_provider_id: str
     default_language: str = Field(pattern=LANGUAGE.pattern)
     provider: ProviderSave
+    use_proxy: bool | None = None  # 021: absent = keep
 
 
 class ConnectionTest(ApiModel):
@@ -58,6 +60,7 @@ class ConnectionTestResult(ApiModel):
             "invalid_credentials",
             "model_not_found",
             "not_a_transcription_service",
+            "proxy",  # 021
             "unknown",
         ]
         | None

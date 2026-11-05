@@ -130,5 +130,5 @@ def put_ai_settings(
     body: AiSettingsUpdate, version: IfMatch, user: CurrentUser, db: DbSession
 ) -> Any:
     check_version(version, ai_settings_service.row(db, user).version)
-    ai_settings_service.put(db, user, body.custom_instructions)
+    ai_settings_service.put(db, user, body.custom_instructions, body.use_proxy)
     return ai_settings_service.view(db, user)

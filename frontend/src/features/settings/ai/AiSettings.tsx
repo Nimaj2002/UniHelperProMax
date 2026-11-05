@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { isApiError } from "@/lib/api";
 import { KeyProtectionNotice } from "../KeyProtectionNotice";
+import { UseProxySwitch } from "../UseProxySwitch";
 import {
   aiEndpointsKey, aiSettingsKey, useAiEndpoints, useAiSettings, useAiStyles, useDeleteEndpoint, useSaveAiSettings, useUpdateEndpoint,
   type AiEndpoint, type AiStyle,
@@ -65,6 +66,8 @@ export function AiSettingsPage() {
           <EndpointForm key={editing} styles={styles.data} endpoint={editingEndpoint} onDone={() => setEditing(null)} />
         )}
       </section>
+
+      <AiProxy />
 
       <CustomInstructions />
     </div>
@@ -127,6 +130,38 @@ function EndpointRow({ endpoint: ep, styles, disabled, onEdit }: { endpoint: AiE
         </AlertDialogContent>
       </AlertDialog>
     </li>
+  );
+}
+
+/** 021 US3: route AI requests to non-local endpoints through the saved proxy; saved on toggle. */
+function AiProxy() {
+  const qc = useQueryClient();
+  const settings = useAiSettings();
+  const save = useSaveAiSettings();
+  const toggle = (useProxy: boolean) => {
+    if (!settings.data) return;
+    save.mutate(
+      { version: settings.data.version, customInstructions: settings.data.customInstructions, useProxy },
+      {
+        onSuccess: () => toast.success(useProxy ? "AI requests now use the proxy." : "AI requests now connect directly."),
+        onError: (err) => {
+          void qc.invalidateQueries({ queryKey: aiSettingsKey });
+          toast.error(isApiError(err) ? (err.detail ?? err.title) : "Couldn't save. Try again.");
+        },
+      },
+    );
+  };
+  return (
+    <section aria-labelledby="ai-proxy-heading" className="grid gap-2">
+      <h3 id="ai-proxy-heading" className="text-base font-semibold">Proxy</h3>
+      <UseProxySwitch
+        id="ai-use-proxy"
+        checked={settings.data?.useProxy ?? false}
+        onCheckedChange={toggle}
+        busy={!settings.data || save.isPending}
+        what="model lists, connection tests and chats"
+      />
+    </section>
   );
 }
 

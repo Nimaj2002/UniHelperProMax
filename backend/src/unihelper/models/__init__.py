@@ -14,6 +14,7 @@ from unihelper.models.course import Course
 from unihelper.models.document import AnnotationOp, Document, DocumentHide, DocumentPosition
 from unihelper.models.event_series import EventLink, EventSeries
 from unihelper.models.note import Note
+from unihelper.models.proxy import ProxySettings
 from unihelper.models.recording import Recording
 from unihelper.models.secret import Secret, SecretStoreMeta
 from unihelper.models.semester import Semester
@@ -54,6 +55,7 @@ __all__ = [
     "EventSeries",
     "Note",
     "ProviderConfig",
+    "ProxySettings",
     "Recording",
     "Secret",
     "SecretStoreMeta",

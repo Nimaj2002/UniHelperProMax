@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from unihelper.models import AiModel, AiSettings, User
+from unihelper.services import proxy_service
 
 
 def row(db: Session, user: User) -> AiSettings:
@@ -25,12 +26,17 @@ def view(db: Session, user: User) -> dict[str, Any]:
         "custom_instructions": settings.custom_instructions,
         "last_model": {"endpoint_id": model.endpoint_id, "model_id": model.id} if model else None,
         "version": settings.version,
+        "use_proxy": settings.use_proxy,
     }
 
 
-def put(db: Session, user: User, instructions: str) -> AiSettings:
+def put(db: Session, user: User, instructions: str, use_proxy: bool | None = None) -> AiSettings:
     settings = row(db, user)
     settings.custom_instructions = instructions.strip()
+    if use_proxy is not None:
+        if use_proxy:
+            proxy_service.require_configured(db, user.id)
+        settings.use_proxy = use_proxy
     db.flush()
     return settings
 

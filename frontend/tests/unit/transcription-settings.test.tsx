@@ -64,7 +64,7 @@ describe("Settings → Transcription", () => {
     expect(screen.queryByText("Connection works.")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(bodyOf(calls, "/api/v1/settings/transcription")).toEqual({
-      activeProviderId: "voice-studio", defaultLanguage: "auto", provider: { providerId: "voice-studio", values: { address: "http://localhost:8020/" } },
+      activeProviderId: "voice-studio", defaultLanguage: "auto", provider: { providerId: "voice-studio", values: { address: "http://localhost:8020/" } }, useProxy: false,
     }));
   });
 
@@ -130,5 +130,20 @@ describe("Settings → Transcription", () => {
     const group = screen.getByRole("radiogroup", { name: "Provider" });
     await user.click(within(group).getByRole("radio", { name: /Voice Studio/ }));
     expect(screen.getByRole("textbox", { name: "Server address" })).toHaveValue("http://studio.lan:7000");
+  });
+  it("021: saves the Use proxy switch with the form", async () => {
+    const user = userEvent.setup();
+    const proxy = { scheme: "socks5", host: "p.example", port: 1080, username: null, password: { configured: false, last4: null, readable: true }, version: 1, updatedAt: "x" };
+    const { calls } = api({ activeProviderId: "voice-studio", providers: [provider("voice-studio", { status: "not_tested", values: { address: "https://stt.example.com" } }), provider("openai-compatible")] }, [
+      ["GET", "/api/v1/settings/proxy", () => json({ proxy, usedBy: [] })],
+      ["PUT", "/api/v1/settings/transcription", () => json({ activeProviderId: "voice-studio", defaultLanguage: "auto", useProxy: true, providers: [provider("voice-studio", { status: "not_tested", values: { address: "https://stt.example.com" } }), provider("openai-compatible")] })],
+    ]);
+    renderWithProviders(<TranscriptionSettingsPage />);
+    const toggle = await screen.findByRole("switch", { name: "Use proxy" });
+    await waitFor(() => expect(toggle).toBeEnabled());
+    expect(toggle).not.toBeChecked();
+    await user.click(toggle);
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(bodyOf(calls, "/api/v1/settings/transcription").useProxy).toBe(true));
   });
 });

@@ -14,6 +14,7 @@ from typing import Any
 import httpx
 
 from unihelper.ai.base import AiError, EndpointConfig, Style
+from unihelper.domain import proxy as proxy_domain
 from unihelper.domain.addresses import localhost_hint
 
 log = logging.getLogger("unihelper.ai")
@@ -174,7 +175,10 @@ def classify_response(
 def classify_exception(exc: BaseException, cfg: EndpointConfig) -> AiError:
     if isinstance(exc, AiError):
         return exc
-    if isinstance(exc, httpx.TimeoutException):
+    proxy_failure = proxy_domain.failure(exc) if cfg.proxied else None
+    if proxy_failure is not None:
+        error = AiError("proxy", proxy_domain.MESSAGES[proxy_failure])
+    elif isinstance(exc, httpx.TimeoutException):
         error = AiError("timeout", MESSAGES["timeout"])
     elif isinstance(exc, httpx.TransportError):
         message = MESSAGES["network"]

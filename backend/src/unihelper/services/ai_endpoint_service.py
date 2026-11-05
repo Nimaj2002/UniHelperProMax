@@ -24,6 +24,7 @@ from unihelper.models import AiEndpoint, AiModel, Chat, User
 from unihelper.models.base import name_key, now_iso
 from unihelper.schemas.ai import AiEndpointCreate, AiEndpointTest, AiEndpointUpdate, AiModelInput
 from unihelper.secrets.store import KeyUnreadable, SecretStore
+from unihelper.services import proxy_service
 
 OWNER_KIND = "ai_endpoint"
 TEST_BUDGET = 15.0
@@ -256,11 +257,14 @@ def _draft_config(
             key = store.reveal(db, user.id, OWNER_KIND, saved.id)
         except KeyUnreadable:
             key = None
-    return EndpointConfig(body.style, n.base_url, n.locality, key)
+    proxy = proxy_service.route(db, user.id, "ai", n.base_url)
+    return EndpointConfig(body.style, n.base_url, n.locality, key, proxy)
 
 
 def _outcome(error: AiError, cfg: EndpointConfig) -> dict[str, Any]:
     category = {"network": "unreachable"}.get(error.category, error.category)
+    if category == "proxy":  # 021: the specific proxy failure
+        return {"outcome": "proxy", "message": error.message}
     if category not in OUTCOME_MESSAGES:
         return {"outcome": "provider", "message": error.message}
     message = OUTCOME_MESSAGES[category]
@@ -292,7 +296,7 @@ async def test(
     typed = (body.model_id or "").strip() or None
 
     async def run() -> dict[str, Any]:
-        async with httpx.AsyncClient(transport=transport) as http:
+        async with proxy_service.client(cfg.proxy, transport) as http:
             try:
                 models = await chat.list_models(http, cfg)
             except NoModelList:
@@ -352,7 +356,7 @@ async def discover(
         saved = {m.model_id: m for m in get(db, user, body.use_saved_key_of).models}
 
     async def run() -> list[DiscoveredModel]:
-        async with httpx.AsyncClient(transport=transport) as http:
+        async with proxy_service.client(cfg.proxy, transport) as http:
             return await adapter(cfg.style).list_models(http, cfg)
 
     try:
@@ -368,7 +372,7 @@ async def discover(
     except AiError as err:
         result = _outcome(err, cfg)
         outcome = result["outcome"]
-        if outcome not in ("key_rejected", "unreachable", "timeout", "not_this_style"):
+        if outcome not in ("key_rejected", "unreachable", "timeout", "not_this_style", "proxy"):
             outcome = "provider"
         return {"outcome": outcome, "message": result["message"], "models": []}
     return {
@@ -381,4 +385,5 @@ async def discover(
 def config_for(db: Session, store: SecretStore, ep: AiEndpoint) -> EndpointConfig:
     """The endpoint's live configuration with its key, decrypted at the moment of use."""
     key = store.reveal(db, ep.user_id, OWNER_KIND, ep.id) if ep.secret_id else None
-    return EndpointConfig(ep.style, ep.base_url, ep.locality, key)  # type: ignore[arg-type]
+    proxy = proxy_service.route(db, ep.user_id, "ai", ep.base_url)
+    return EndpointConfig(ep.style, ep.base_url, ep.locality, key, proxy)  # type: ignore[arg-type]

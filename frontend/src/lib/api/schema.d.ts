@@ -1247,6 +1247,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/settings/proxy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Proxy */
+        get: operations["get_proxy_api_v1_settings_proxy_get"];
+        /** Put Proxy */
+        put: operations["put_proxy_api_v1_settings_proxy_put"];
+        post?: never;
+        /** Delete Proxy */
+        delete: operations["delete_proxy_api_v1_settings_proxy_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/settings/proxy/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Proxy */
+        post: operations["test_proxy_api_v1_settings_proxy_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/themes": {
         parameters: {
             query?: never;
@@ -2609,7 +2645,7 @@ export interface components {
              * Outcome
              * @enum {string}
              */
-            outcome: "working" | "key_rejected" | "unreachable" | "timeout" | "not_this_style" | "no_model_list" | "provider";
+            outcome: "working" | "key_rejected" | "unreachable" | "timeout" | "not_this_style" | "no_model_list" | "provider" | "proxy";
             /** Message */
             message: string | null;
             /** Models */
@@ -2748,11 +2784,18 @@ export interface components {
             lastModel: components["schemas"]["ModelRef"] | null;
             /** Version */
             version: number;
+            /**
+             * Useproxy
+             * @default false
+             */
+            useProxy: boolean;
         };
         /** AiSettingsUpdate */
         AiSettingsUpdate: {
             /** Custominstructions */
             customInstructions: string;
+            /** Useproxy */
+            useProxy?: boolean | null;
         };
         /** AiStyle */
         AiStyle: {
@@ -2780,7 +2823,7 @@ export interface components {
              * Outcome
              * @enum {string}
              */
-            outcome: "working" | "key_rejected" | "model_not_found" | "unreachable" | "timeout" | "not_this_style" | "https_required" | "provider";
+            outcome: "working" | "key_rejected" | "model_not_found" | "unreachable" | "timeout" | "not_this_style" | "https_required" | "provider" | "proxy";
             /** Message */
             message: string;
             /** Hint */
@@ -2879,7 +2922,7 @@ export interface components {
              * Category
              * @enum {string}
              */
-            category: "network" | "timeout" | "key_rejected" | "key_unreadable" | "rate_limited" | "model_not_found" | "too_large" | "context_exceeded" | "provider" | "not_this_style";
+            category: "network" | "timeout" | "key_rejected" | "key_unreadable" | "rate_limited" | "model_not_found" | "too_large" | "context_exceeded" | "provider" | "not_this_style" | "proxy";
             /** Message */
             message: string;
             /** Retryafterseconds */
@@ -3003,7 +3046,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "transcription_provider" | "ai_endpoint";
+            kind: "transcription_provider" | "ai_endpoint" | "proxy";
             /** Id */
             id: string;
             /** Name */
@@ -3323,7 +3366,7 @@ export interface components {
             /** Ok */
             ok: boolean;
             /** Category */
-            category: ("unreachable" | "timeout" | "invalid_credentials" | "model_not_found" | "not_a_transcription_service" | "unknown") | null;
+            category: ("unreachable" | "timeout" | "invalid_credentials" | "model_not_found" | "not_a_transcription_service" | "proxy" | "unknown") | null;
             /** Message */
             message: string | null;
         };
@@ -4393,6 +4436,83 @@ export interface components {
             fields: components["schemas"]["ProviderField"][];
             /** Maxuploadbytes */
             maxUploadBytes: number | null;
+        };
+        /** ProxyDeleted */
+        ProxyDeleted: {
+            /** Disabledsections */
+            disabledSections: ("transcription" | "ai")[];
+        };
+        /** ProxyOut */
+        ProxyOut: {
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "http" | "https" | "socks5";
+            /** Host */
+            host: string;
+            /** Port */
+            port: number;
+            /** Username */
+            username: string | null;
+            password: components["schemas"]["SecretState"];
+            /** Version */
+            version: number;
+            /** Updatedat */
+            updatedAt: string;
+        };
+        /** ProxySave */
+        ProxySave: {
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "http" | "https" | "socks5";
+            /** Host */
+            host: string;
+            /** Port */
+            port: number;
+            /** Username */
+            username?: string | null;
+            /** Password */
+            password?: string | null;
+        };
+        /** ProxySettingsOut */
+        ProxySettingsOut: {
+            proxy: components["schemas"]["ProxyOut"] | null;
+            /** Usedby */
+            usedBy: ("transcription" | "ai")[];
+        };
+        /** ProxyTest */
+        ProxyTest: {
+            /**
+             * Scheme
+             * @enum {string}
+             */
+            scheme: "http" | "https" | "socks5";
+            /** Host */
+            host: string;
+            /** Port */
+            port: number;
+            /** Username */
+            username?: string | null;
+            /** Password */
+            password?: string | null;
+            /**
+             * Usesavedpassword
+             * @default false
+             */
+            useSavedPassword: boolean;
+        };
+        /** ProxyTestResult */
+        ProxyTestResult: {
+            /**
+             * Outcome
+             * @enum {string}
+             */
+            outcome: "working" | "unreachable" | "credentials_rejected" | "no_onward_connection" | "timeout";
+            /** Message */
+            message: string;
         };
         /** QuickNoteOut */
         QuickNoteOut: {
@@ -5579,6 +5699,11 @@ export interface components {
             defaultLanguage: string;
             /** Providers */
             providers: components["schemas"]["ProviderSettings"][];
+            /**
+             * Useproxy
+             * @default false
+             */
+            useProxy: boolean;
         };
         /** TranscriptionSettingsSave */
         TranscriptionSettingsSave: {
@@ -5587,6 +5712,8 @@ export interface components {
             /** Defaultlanguage */
             defaultLanguage: string;
             provider: components["schemas"]["ProviderSave"];
+            /** Useproxy */
+            useProxy?: boolean | null;
         };
         /** TranscriptionStart */
         TranscriptionStart: {
@@ -8781,6 +8908,125 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConnectionTestResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_proxy_api_v1_settings_proxy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProxySettingsOut"];
+                };
+            };
+        };
+    };
+    put_proxy_api_v1_settings_proxy_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProxySave"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProxySettingsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_proxy_api_v1_settings_proxy_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProxyDeleted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_proxy_api_v1_settings_proxy_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProxyTest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProxyTestResult"];
                 };
             };
             /** @description Validation Error */

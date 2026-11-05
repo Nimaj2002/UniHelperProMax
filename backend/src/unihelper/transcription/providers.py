@@ -38,9 +38,11 @@ OPENAI_COMPATIBLE = ProviderSpec(
 class OpenAIStyleProvider:
     """An OpenAI transcription API endpoint, with or without a key."""
 
-    def __init__(self, spec: ProviderSpec, http: httpx.AsyncClient, uses_key: bool) -> None:
+    def __init__(
+        self, spec: ProviderSpec, http: httpx.AsyncClient, uses_key: bool, proxied: bool = False
+    ) -> None:
         self.spec = spec
-        self.client = OpenAITranscriptionClient(http)
+        self.client = OpenAITranscriptionClient(http, proxied)
         self.uses_key = uses_key
 
     def _key(self, config: ProviderConfig) -> str | None:
@@ -83,9 +85,11 @@ def all_specs() -> list[ProviderSpec]:
     return list(SPECS.values())
 
 
-def build(provider_id: str, http: httpx.AsyncClient) -> TranscriptionProvider:
+def build(
+    provider_id: str, http: httpx.AsyncClient, proxied: bool = False
+) -> TranscriptionProvider:
     if provider_id == VOICE_STUDIO.id:
-        return OpenAIStyleProvider(VOICE_STUDIO, http, uses_key=False)
+        return OpenAIStyleProvider(VOICE_STUDIO, http, uses_key=False, proxied=proxied)
     if provider_id == OPENAI_COMPATIBLE.id:
-        return OpenAIStyleProvider(OPENAI_COMPATIBLE, http, uses_key=True)
+        return OpenAIStyleProvider(OPENAI_COMPATIBLE, http, uses_key=True, proxied=proxied)
     raise ProviderError("not_configured", settings_related=True)

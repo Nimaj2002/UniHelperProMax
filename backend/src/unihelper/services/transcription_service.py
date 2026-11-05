@@ -28,7 +28,7 @@ from unihelper.models import Note, Recording, SessionFolder, TranscriptionJob, U
 from unihelper.models.base import now_iso
 from unihelper.models.transcription import ACTIVE_STATUSES
 from unihelper.schemas.transcription import TranscriptionStart
-from unihelper.services import note_service
+from unihelper.services import note_service, proxy_service
 from unihelper.services import recording_service as recs
 from unihelper.storage.storage_service import StorageService
 from unihelper.transcription import config as provider_config
@@ -330,6 +330,16 @@ def claim(maker: Maker, job_id: str) -> bool:
         )
         db.commit()
         return int(getattr(result, "rowcount", 0)) == 1
+
+
+def proxy_for_job(maker: Maker, job_id: str) -> str | None:
+    """021: the proxy for this job's provider, read when the job starts (an edit applies to
+    the next job)."""
+    with maker() as db:
+        job = db.get(TranscriptionJob, job_id)
+        assert job is not None
+        address = str(json.loads(job.provider_values_json or "{}").get("address", ""))
+        return proxy_service.route(db, job.user_id, "transcription", address)
 
 
 def prepare(maker: Maker, storage: StorageService, job_id: str) -> Plan:

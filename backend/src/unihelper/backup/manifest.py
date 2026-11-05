@@ -62,7 +62,7 @@ class Entry(ApiModel):
 
 
 class KeyLeftOut(ApiModel):
-    kind: Literal["transcription_provider", "ai_endpoint"]
+    kind: Literal["transcription_provider", "ai_endpoint", "proxy"]
     id: str
     name: str
 

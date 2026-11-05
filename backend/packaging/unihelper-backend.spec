@@ -27,6 +27,7 @@ hiddenimports = [
     "alembic.ddl.sqlite",
     *collect_submodules("keyring.backends"),
     *collect_submodules("unihelper"),
+    *collect_submodules("socksio"),  # 021: SOCKS5 proxies (httpx[socks])
 ]
 if sys.platform.startswith("linux"):
     hiddenimports += collect_submodules("jeepney")  # Secret Service (keyring) over D-Bus

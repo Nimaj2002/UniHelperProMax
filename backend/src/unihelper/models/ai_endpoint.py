@@ -70,6 +70,7 @@ class AiSettings(VersionMixin, Base):
         String, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
     )
     custom_instructions: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    use_proxy: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)  # 021
     last_model_id: Mapped[str | None] = mapped_column(
         String, ForeignKey("ai_models.id", ondelete="SET NULL"), nullable=True
     )

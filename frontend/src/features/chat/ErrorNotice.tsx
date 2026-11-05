@@ -25,6 +25,8 @@ export function errorSentence(error: AnswerError, host?: string, local?: boolean
       return "This conversation is larger than the model can take. Start a new chat or choose a model with a larger context.";
     case "not_this_style":
       return "This endpoint doesn't answer in the style set for it. Check the style in Settings → AI.";
+    case "proxy":
+      return error.message || "The proxy failed.";
     case "provider":
     default:
       return error.message || "The provider returned an error.";
@@ -50,6 +52,14 @@ export function ErrorNotice({ error, host, local, onRetry, retryDisabled }: Prop
             {" "}
             <Link to="/settings/ai" className="font-medium text-primary underline underline-offset-2">
               Open AI settings
+            </Link>
+          </>
+        )}
+        {error.category === "proxy" && (
+          <>
+            {" "}
+            <Link to="/settings/proxy" className="font-medium text-primary underline underline-offset-2">
+              Open proxy settings
             </Link>
           </>
         )}

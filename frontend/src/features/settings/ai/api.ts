@@ -46,7 +46,7 @@ export const discoverModels = (body: AiEndpointTest) =>
 export const checkBaseUrl = (body: { style: AiStyleId; baseUrl: string }, signal?: AbortSignal) =>
   apiFetch<BaseUrlResult>("/ai/base-url/check", { method: "POST", body, signal });
 export const ackPrivacy = (id: string) => apiFetch<AiEndpoint>(`${endpointPath(id)}/privacy-ack`, { method: "POST" });
-export const saveAiSettings = (version: number, body: { customInstructions: string }) =>
+export const saveAiSettings = (version: number, body: { customInstructions: string; useProxy?: boolean }) =>
   apiFetch<AiSettings>("/ai/settings", { method: "PUT", body, version });
 
 /** Replace one endpoint in the cached list (or append a new one). */
@@ -99,8 +99,8 @@ export function useCheckBaseUrl() {
 export function useSaveAiSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ version, customInstructions }: { version: number; customInstructions: string }) =>
-      saveAiSettings(version, { customInstructions }),
+    mutationFn: ({ version, ...body }: { version: number; customInstructions: string; useProxy?: boolean }) =>
+      saveAiSettings(version, body),
     onSuccess: (next) => qc.setQueryData(aiSettingsKey, next),
   });
 }

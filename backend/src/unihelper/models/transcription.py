@@ -41,6 +41,7 @@ class TranscriptionSettings(Base):
     )
     active_provider_id: Mapped[str | None] = mapped_column(String, nullable=True)
     default_language: Mapped[str] = mapped_column(String(8), nullable=False, default="auto")
+    use_proxy: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)  # 021
     updated_at: Mapped[str] = mapped_column(
         String, nullable=False, default=now_iso, onupdate=now_iso
     )

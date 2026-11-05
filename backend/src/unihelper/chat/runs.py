@@ -30,6 +30,7 @@ from unihelper.chat import files
 from unihelper.models import Chat, ChatRun, SessionFolder, User
 from unihelper.models.base import now_iso
 from unihelper.models.chat import ACTIVE_RUN_STATUSES
+from unihelper.services import proxy_service
 from unihelper.storage.storage_service import StorageService
 
 log = logging.getLogger("unihelper.chat")
@@ -298,7 +299,7 @@ class RunRegistry:
         try:
             await asyncio.to_thread(self._mark, state, "streaming")
             last_checkpoint = time.monotonic()
-            async with httpx.AsyncClient(transport=self._transport()) as http:
+            async with proxy_service.client(cfg.proxy, self._transport()) as http:
                 async for event in adapter(cfg.style).stream(http, cfg, request):
                     if isinstance(event, Delta):
                         self._queue_delta(state, event.text)

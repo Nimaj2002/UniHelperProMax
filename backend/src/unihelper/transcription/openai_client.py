@@ -15,6 +15,7 @@ from collections.abc import AsyncIterator
 
 import httpx
 
+from unihelper.domain import proxy as proxy_domain
 from unihelper.transcription.base import AudioPart, Progress, ProviderError
 
 log = logging.getLogger("unihelper.transcription")
@@ -84,7 +85,15 @@ def classify(response: httpx.Response) -> ProviderError:
     return ProviderError("unknown", status=status)
 
 
-def _transport_error(exc: httpx.HTTPError) -> ProviderError:
+def _transport_error(exc: httpx.HTTPError, proxied: bool = False) -> ProviderError:
+    failure = proxy_domain.failure(exc) if proxied else None
+    if failure is not None:  # 021: name the proxy; the job is never retried without it
+        return ProviderError(
+            "unavailable",
+            proxy_domain.MESSAGES[failure],
+            settings_related=True,
+            retryable=failure != "credentials_rejected",
+        )
     if isinstance(exc, httpx.ConnectTimeout | httpx.ConnectError):
         return ProviderError("unavailable", MSG_UNREACHABLE, settings_related=True, retryable=True)
     if isinstance(exc, httpx.TimeoutException):
@@ -131,8 +140,9 @@ class _Multipart:
 
 
 class OpenAITranscriptionClient:
-    def __init__(self, http: httpx.AsyncClient) -> None:
+    def __init__(self, http: httpx.AsyncClient, proxied: bool = False) -> None:
         self.http = http
+        self.proxied = proxied
 
     async def transcribe(
         self,
@@ -162,7 +172,7 @@ class OpenAITranscriptionClient:
                 timeout=timeout,
             )
         except httpx.HTTPError as exc:
-            err = _transport_error(exc)
+            err = _transport_error(exc, self.proxied)
             log.warning(
                 "transcription transport error provider=%s kind=%s", provider_id, type(exc).__name__
             )
@@ -193,7 +203,7 @@ class OpenAITranscriptionClient:
         try:
             response = await self.http.get(endpoint(base, "models"), headers=headers, timeout=15)
         except httpx.HTTPError as exc:
-            raise _transport_error(exc) from None
+            raise _transport_error(exc, self.proxied) from None
         if response.status_code in (404, 405, 501):
             await self._probe_transcriptions(base, headers)
             return
@@ -223,7 +233,7 @@ class OpenAITranscriptionClient:
                 timeout=15,
             )
         except httpx.HTTPError as exc:
-            raise _transport_error(exc) from None
+            raise _transport_error(exc, self.proxied) from None
         status = response.status_code
         if status in (401, 403, 502, 503, 504):
             raise classify(response)  # wrong key / temporarily unavailable
@@ -236,6 +246,8 @@ def test_reason(err: ProviderError) -> str:
     """Failure category shown by Settings → Transcription (005 C2)."""
     if err.category == "invalid_credentials":
         return "invalid_credentials"
+    if err.message in proxy_domain.MESSAGES.values():
+        return "proxy"
     return {
         MSG_UNREACHABLE: "unreachable",
         MSG_TIMEOUT: "timeout",

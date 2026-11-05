@@ -150,6 +150,7 @@ TestOutcome = Literal[
     "not_this_style",
     "https_required",
     "provider",
+    "proxy",  # 021
 ]
 
 
@@ -170,6 +171,7 @@ class AiDiscoverResult(ApiModel):
         "not_this_style",
         "no_model_list",
         "provider",
+        "proxy",  # 021
     ]
     message: str | None
     models: list[AiModelInput]
@@ -184,7 +186,9 @@ class AiSettingsOut(ApiModel):
     custom_instructions: str
     last_model: ModelRef | None
     version: int
+    use_proxy: bool = False  # 021
 
 
 class AiSettingsUpdate(ApiModel):
     custom_instructions: str = Field(max_length=8000)
+    use_proxy: bool | None = None  # 021: absent = keep; true needs a saved proxy

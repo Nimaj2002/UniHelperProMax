@@ -29,6 +29,7 @@ const OUTCOME: Record<AiTestResult["outcome"], { title: string; icon: Icon; tone
   not_this_style: { title: "Doesn't look like this style", icon: Question, tone: "text-warning" },
   https_required: { title: "https required", icon: LockSimpleOpen, tone: "text-danger" },
   provider: { title: "Provider error", icon: WarningCircle, tone: "text-danger" },
+  proxy: { title: "Proxy problem", icon: PlugsConnected, tone: "text-danger" },
 };
 
 const FIELDS = new Set(["name", "style", "baseUrl", "apiKey", "models"]);

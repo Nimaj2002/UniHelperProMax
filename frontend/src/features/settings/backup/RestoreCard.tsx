@@ -42,22 +42,24 @@ function countsText(c: RestoreSummary["counts"]): string {
 
 export function KeysToReenter({ keys }: { keys: { kind: string; name: string }[] }) {
   if (keys.length === 0) return null;
-  const transcription = keys.some((k) => k.kind === "transcription_provider");
-  const ai = keys.some((k) => k.kind === "ai_endpoint");
+  const places = (
+    [
+      ["transcription_provider", "/settings/transcription", "Settings → Transcription"],
+      ["ai_endpoint", "/settings/ai", "Settings → AI"],
+      ["proxy", "/settings/proxy", "Settings → Proxy"], // 021: the proxy password
+    ] as const
+  ).filter(([kind]) => keys.some((k) => k.kind === kind));
   return (
     <p className="text-sm">
-      Enter your API keys again in{" "}
-      {transcription && (
-        <Link className="underline underline-offset-2" to="/settings/transcription">
-          Settings → Transcription
-        </Link>
-      )}
-      {transcription && ai && " and "}
-      {ai && (
-        <Link className="underline underline-offset-2" to="/settings/ai">
-          Settings → AI
-        </Link>
-      )}
+      Enter your {places.some(([kind]) => kind === "proxy") ? "keys and passwords" : "API keys"} again in{" "}
+      {places.map(([kind, to, label], i) => (
+        <span key={kind}>
+          {i > 0 && (i === places.length - 1 ? " and " : ", ")}
+          <Link className="underline underline-offset-2" to={to}>
+            {label}
+          </Link>
+        </span>
+      ))}
       : {keys.map((k) => k.name).join(", ")}.
     </p>
   );

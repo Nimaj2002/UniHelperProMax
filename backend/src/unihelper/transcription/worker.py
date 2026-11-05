@@ -16,6 +16,7 @@ from collections.abc import Awaitable, Callable, Sequence
 import httpx
 from sqlalchemy.orm import Session, sessionmaker
 
+from unihelper.services import proxy_service
 from unihelper.services import transcription_service as svc
 from unihelper.storage.storage_service import StorageService
 from unihelper.transcription.base import Progress, ProviderError
@@ -139,8 +140,9 @@ class TranscriptionWorker:
         if not await asyncio.to_thread(svc.claim, self.maker, job_id):
             return
         try:
-            async with httpx.AsyncClient(transport=self.transport) as http:
-                await self._transcribe(job_id, http)
+            proxy = await asyncio.to_thread(svc.proxy_for_job, self.maker, job_id)
+            async with proxy_service.client(proxy, self.transport) as http:
+                await self._transcribe(job_id, http, proxied=proxy is not None)
             await asyncio.to_thread(svc.append_result, self.maker, self.storage, job_id)
         except ProviderError as err:
             await asyncio.to_thread(svc.fail, self.maker, job_id, err)
@@ -156,9 +158,9 @@ class TranscriptionWorker:
             log.exception("transcription job %s crashed", job_id)
             await asyncio.to_thread(svc.fail, self.maker, job_id, ProviderError("unknown"))
 
-    async def _transcribe(self, job_id: str, http: httpx.AsyncClient) -> None:
+    async def _transcribe(self, job_id: str, http: httpx.AsyncClient, proxied: bool) -> None:
         plan = await asyncio.to_thread(svc.prepare, self.maker, self.storage, job_id)
-        provider = build(plan.provider_id, http)
+        provider = build(plan.provider_id, http, proxied=proxied)
         config = JobConfig(
             plan.values, lambda: read_secret(self.maker, plan.user_id, plan.provider_id)
         )

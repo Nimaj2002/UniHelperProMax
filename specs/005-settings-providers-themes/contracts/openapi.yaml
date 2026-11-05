@@ -36,6 +36,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/TranscriptionSettings" }
         "422": { $ref: "#/components/responses/Problem" }   # invalid_address | https_required | field_required | unknown_provider | bad language
+        "409": { $ref: "#/components/responses/Problem" }   # 021: proxy_not_configured
 
   /settings/transcription/test:
     post:
@@ -167,11 +168,12 @@ components:
 
     TranscriptionSettings:
       type: object
-      required: [activeProviderId, defaultLanguage, providers]
+      required: [activeProviderId, defaultLanguage, providers, useProxy]
       properties:
         activeProviderId: { type: [string, "null"] }
         defaultLanguage: { type: string }
         providers: { type: array, items: { $ref: "#/components/schemas/ProviderSettings" } }
+        useProxy: { type: boolean, description: "021: send transcription requests to non-local addresses through the user's proxy" }
 
     TranscriptionSettingsSave:
       type: object
@@ -186,6 +188,7 @@ components:
             providerId: { type: string }
             values: { type: object, additionalProperties: { type: string } }
             apiKey: { type: [string, "null"], description: "absent = keep the saved key, string = replace, null = remove" }
+        useProxy: { type: boolean, description: "021: absent = keep; true needs a saved proxy (409 proxy_not_configured)" }
 
     ConnectionTest:
       type: object
@@ -203,7 +206,7 @@ components:
         ok: { type: boolean }
         category:
           type: [string, "null"]
-          enum: [unreachable, timeout, invalid_credentials, model_not_found, not_a_transcription_service, unknown, null]
+          enum: [unreachable, timeout, invalid_credentials, model_not_found, not_a_transcription_service, proxy, unknown, null]
         message: { type: [string, "null"] }
 
     ColorSet:

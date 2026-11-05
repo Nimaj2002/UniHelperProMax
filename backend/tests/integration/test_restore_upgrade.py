@@ -18,10 +18,22 @@ pytestmark = pytest.mark.integration
 FIXTURE = Path(__file__).parents[1] / "fixtures" / "backups" / "rev0014-minimal.zip"
 
 
-def _relabel(data: bytes, *, drop: tuple[str, ...] = (), **over: object) -> bytes:
-    """`data` relabelled with `over`, without the data files of the tables in `drop`."""
+def _relabel(
+    data: bytes,
+    *,
+    drop: tuple[str, ...] = (),
+    drop_columns: dict[str, tuple[str, ...]] | None = None,
+    **over: object,
+) -> bytes:
+    """`data` relabelled with `over`, without the data files of the tables in `drop` and
+    without the `drop_columns` of the rows of other tables."""
     paths = {f"data/{t}.jsonl" for t in drop}
     files = {n: b for n, b in bh.zip_files(data).items() if n not in paths}
+    for table, columns in (drop_columns or {}).items():
+        name = f"data/{table}.jsonl"
+        rows = [json.loads(line) for line in files[name].splitlines() if line.strip()]
+        kept = [{k: v for k, v in r.items() if k not in columns} for r in rows]
+        files[name] = b"".join(json.dumps(r).encode() + b"\n" for r in kept)
     manifest = json.loads(files["manifest.json"]) | over
     manifest["entries"] = [e for e in manifest["entries"] if e["path"] not in paths]
     return bh.rebuild(files, manifest)
@@ -30,16 +42,20 @@ def _relabel(data: bytes, *, drop: tuple[str, ...] = (), **over: object) -> byte
 def test_a_backup_from_an_older_revision_is_upgraded(
     app: FastAPI, owner_client: TestClient, tmp_data_dir: Path
 ) -> None:
-    """0014 only added users.data_epoch, which isn't in a backup, 0015 only added document_hides
-    and 0017 only added the time tracking tables, so a head backup without those tables' data,
-    labelled 0013, is a genuine 0013 backup: restoring it runs the 0013 → head migrations."""
+    """0014 only added users.data_epoch, which isn't in a backup, 0015 only added document_hides,
+    0017 only added the time tracking tables and 0018 added proxy_settings and two `use_proxy`
+    columns, so a head backup without those tables' data and columns, labelled 0013, is a
+    genuine 0013 backup: restoring it runs the 0013 → head migrations."""
     bh.inline_jobs(app)
     c = owner_client
     key = make_session(c)
     note = create_note(c, key, "Lecture 1", "upgrade me")
     _job, data = bh.make_backup(c)
-    dropped = ("document_hides", "time_tags", "time_timers", "time_entries")
-    older = _relabel(data, drop=dropped, schemaRevision="0013", appVersion="1.0.0")
+    dropped = ("document_hides", "time_tags", "time_timers", "time_entries", "proxy_settings")
+    columns = {"ai_settings": ("use_proxy",), "transcription_settings": ("use_proxy",)}
+    older = _relabel(
+        data, drop=dropped, drop_columns=columns, schemaRevision="0013", appVersion="1.0.0"
+    )
     job = bh.upload(c, older)
     assert job["summary"]["willUpgrade"] is True and job["summary"]["appVersion"] == "1.0.0"
     assert bh.restore(c, older)["phase"] == "done"

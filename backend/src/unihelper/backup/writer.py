@@ -164,6 +164,13 @@ def _keys_left_out(conn: sqlite3.Connection, uid: str) -> list[mf.KeyLeftOut]:
             {"uid": uid},
         )
     ]
+    # 021: the proxy password (secrets are never in a backup)
+    out += [
+        mf.KeyLeftOut(kind="proxy", id=uid, name="Proxy")
+        for _ in conn.execute(
+            "SELECT 1 FROM secrets WHERE user_id = :uid AND owner_kind = 'proxy'", {"uid": uid}
+        )
+    ]
     return out
 
 

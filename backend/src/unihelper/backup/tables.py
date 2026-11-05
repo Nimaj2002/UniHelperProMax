@@ -48,6 +48,7 @@ _INCLUDED = frozenset(
         "transcription_settings",
         "provider_configs",
         "ai_settings",
+        "proxy_settings",
         "ai_endpoints",
         "ai_models",
         "calendar_import_sources",
