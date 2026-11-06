@@ -13,7 +13,8 @@ import { useActivities } from "./registry";
 export function ActivityPills() {
   const activities = useActivities();
   const stack = useRef<HTMLDivElement>(null);
-  const onSession = !!matchPath("/courses/:courseId/sessions/:sessionKey/*", useLocation().pathname);
+  const path = useLocation().pathname;
+  const onSession = ["/courses/:courseId/sessions/:sessionKey/*", "/semesters/:semesterId/events/:sessionKey/*"].some((p) => matchPath(p, path));
   useLayoutEffect(() => {
     const el = stack.current;
     const host = el?.parentElement;

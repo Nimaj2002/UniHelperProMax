@@ -12,6 +12,7 @@ import { UploadAudioButton } from "@/features/imports/UploadAudioButton";
 import { UploadList } from "@/features/imports/UploadList";
 import { workspacePath } from "@/features/sessions/SessionTimeline";
 import type { WorkspacePanelProps } from "@/features/sessions/workspace-panels";
+import { unlockSound } from "@/features/time/alerts";
 import { formatDay } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { useRecordingExtensions } from "./extensions";
@@ -52,6 +53,7 @@ function useRecordControl(sessionKey: string) {
   const start = async () => {
     const s = session.data;
     if (!s) return;
+    unlockSound(); // this click lets the class-end chime play later
     const label = `${s.kind === "event" ? s.title : s.courseName} · ${formatDay(s.date, "EEE d MMM")}`;
     if (await rec.start({ sessionKey, courseId: s.courseId, label })) refresh();
   };

@@ -8,7 +8,10 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { useSession } from "@/features/classes/api";
 import { registerWorkspacePanel } from "@/features/sessions/workspace-panels";
+import { alertUser } from "@/features/time/alerts";
+import { useTimePrefs } from "@/features/time/prefs";
 import { recordingsKey } from "./api";
 import { recorder, useRecorderState } from "./recorder";
 import { RecordingBar } from "./RecordingBar";
@@ -74,6 +77,27 @@ function RecordingLifecycle() {
   return null;
 }
 
+/** Reminds the user to stop a recording that is still running when its class ends. */
+function RecordingEndAlert() {
+  const { status, sessionKey } = useRecorderState();
+  const recording = status === "recording";
+  const end = useSession(recording ? (sessionKey ?? undefined) : undefined).data?.end;
+  const { sound, systemNotifications } = useTimePrefs();
+  useEffect(() => {
+    if (!recording || !end) return;
+    const delay = Date.parse(end) - Date.now();
+    if (delay <= 0) return; // started after the class ended: nothing to remind about
+    // shortcut: page timer, may fire up to ~1 min late in a throttled background tab
+    const id = window.setTimeout(() => {
+      alertUser("Class has ended", "You're still recording. Stop the recording if you're done.", {
+        sound, system: systemNotifications, onClick: () => {},
+      });
+    }, delay);
+    return () => window.clearTimeout(id);
+  }, [recording, end, sound, systemNotifications]);
+  return null;
+}
+
 registerWorkspacePanel({ id: "audio", title: "Audio", component: RecordingPanel, headerActions: RecordingHeaderActions });
 registerActivity({ id: "recording-bar", component: RecordingBar, priority: 0 });
 registerActivitySignal({
@@ -87,6 +111,7 @@ registerActivitySignal({
   },
 });
 registerGlobalHost({ id: "recording-lifecycle", component: RecordingLifecycle });
+registerGlobalHost({ id: "recording-end-alert", component: RecordingEndAlert });
 registerGlobalHost({ id: "recording-signout", component: SignOutWhileRecording });
 registerSignOutGuard((proceed) => {
   if (!recorder().active) return true;
