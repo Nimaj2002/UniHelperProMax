@@ -370,6 +370,12 @@ def apply_scope_edit(
         cs = plan_edit(segments, exceptions, day, scope, _changes_from(body))
     except ScopeError as err:
         raise _scope_api_error(err) from err
+    if body.date is not None:  # move this one session to another day
+        if scope != "this":
+            raise _scope_api_error(
+                ScopeError("/date", "field_not_allowed", "Only a single session can move.")
+            )
+        cs.exception_upserts[day]["moved_date"] = None if body.date == day else body.date
     affected = apply_changeset(
         db, cs, CLASS_REPO, user=user, lineage_id=lineage_id, rows=rows, exc_rows=exc_rows
     )

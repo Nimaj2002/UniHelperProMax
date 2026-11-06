@@ -795,9 +795,14 @@ components:
 
     SessionEdit:
       description: |
-        Fields to change. With scope=this only startTime, endTime and location are allowed
-        (single-session overrides keep the date). With following/all any ClassFields may change.
-      $ref: "#/components/schemas/ClassFields"
+        Fields to change. With scope=this only date, startTime, endTime and location are allowed
+        (`date` moves that session to another day; its key keeps the original date). With
+        following/all any ClassFields may change, but not `date`.
+      allOf:
+        - $ref: "#/components/schemas/ClassFields"
+        - type: object
+          properties:
+            date: { type: string, format: date }
 
     ScopeResult:
       type: object

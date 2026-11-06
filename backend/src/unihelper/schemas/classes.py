@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, time
+from datetime import date as _Date  # `SessionEdit.date` shadows the name
 from typing import Annotated, Literal
 from urllib.parse import urlparse
 
@@ -180,10 +181,13 @@ class SessionOut(ApiModel):
 
 
 class SessionEdit(ClassFields):
-    """Fields to change. With scope=this only startTime, endTime and location are allowed.
+    """Fields to change. With scope=this only startTime, endTime, location and `date` (moves the
+    session to another day; its key keeps the original date) are allowed.
     009: unknown fields are refused, so `PATCH /sessions/{key}` can tell it from `EventEdit`."""
 
     model_config = ConfigDict(extra="forbid")
+
+    date: _Date | None = None
 
 
 class ClassCreated(ClassSeriesOut):

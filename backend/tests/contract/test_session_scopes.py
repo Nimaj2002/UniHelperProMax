@@ -165,3 +165,33 @@ def test_delete_scopes(owner_client: TestClient) -> None:
     )
     assert sessions(c, b="2026-12-31") == []
     assert_problem(c.get(f"{API}/classes/{lin}"), 404, "not_found")
+
+
+def test_patch_this_moves_to_another_day(owner_client: TestClient) -> None:
+    c = owner_client
+    cls = setup(c)
+    k = key(cls["lineageId"], "2026-09-30")
+    r = c.patch(
+        f"{API}/sessions/{k}",
+        params={"scope": "this"},
+        json={"date": "2026-10-02"},
+        headers=im(cls["version"]),
+    )
+    assert r.status_code == 200, r.text
+    s = c.get(f"{API}/sessions/{k}").json()
+    assert s["date"] == "2026-10-02" and s["isException"] is True
+    days = {x["key"]: x["date"] for x in sessions(c)}
+    assert days[k] == "2026-10-02"
+    # a later time edit keeps the move
+    c.patch(f"{API}/sessions/{k}", params={"scope": "this"}, json={"location": "B"}, headers=im(1))
+    assert c.get(f"{API}/sessions/{k}").json()["date"] == "2026-10-02"
+    assert_problem(
+        c.patch(
+            f"{API}/sessions/{k}",
+            params={"scope": "all"},
+            json={"date": "2026-10-03"},
+            headers=im(cls["version"]),
+        ),
+        422,
+        "field_not_allowed",
+    )

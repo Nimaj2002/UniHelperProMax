@@ -129,7 +129,7 @@ delete a class and confirm its sessions disappear after confirmation.
    the calendar reflects the change immediately.
 2. **Given** a session of a recurring class, **When** the user edits or deletes it, **Then**
    they choose the scope: "This session", "This and following sessions", or "All sessions".
-3. **Given** the scope "This session", **When** the user changes its time or location or
+3. **Given** the scope "This session", **When** the user changes its date, time or location or
    deletes (cancels) it, **Then** only that date changes; all other sessions are unchanged.
 4. **Given** the scope "This and following sessions", **When** the user saves a change,
    **Then** sessions before the chosen date keep the old details and sessions from that date on
@@ -267,8 +267,11 @@ classes are shown; a second user sees none of them.
   sessions unchanged; "All sessions" applies to every session except individually changed
   ones. Cancelled single sessions MUST disappear from the calendar.
 - **FR-018b**: Notes and recordings attached to a session MUST stay attached when that session
-  is moved to another time on the same date, and MUST NOT be deleted when a session is
-  cancelled (see Feature 002 "No longer scheduled").
+  is moved to another time or (via "This session") to another date, and MUST NOT be deleted
+  when a session is cancelled (see Feature 002 "No longer scheduled").
+- **FR-018c**: With the scope "This session" the user MUST be able to move the session to
+  another date (e.g. the lecturer postpones Monday's class to Friday). The moved session keeps
+  its identity, notes, recordings and folder; only the date it is shown on changes.
 - **FR-019**: Deleting a class, course, semester, or year MUST NOT delete note or audio files
   already stored for it; the user is told the files remain in their storage folders.
 - **FR-020**: Users MUST be able to rename and delete years, semesters, and courses. Every

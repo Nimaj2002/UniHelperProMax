@@ -185,21 +185,24 @@ def find_session(db: Session, user: User, key: str) -> tuple[dict[str, Any], Cla
     lineage_id, day = parsed
     rows = _rows(db, user, lineage_id=lineage_id)
     exceptions = load_exceptions(db, [lineage_id]).get(lineage_id, [])
+    # a moved session is shown on its moved date but keeps its key
+    shown = next((e.moved_date for e in exceptions if e.original_date == day), None) or day
     for s, course, sem in rows:
         views = expand(
             series_rule(s),
             lineage_id=lineage_id,
             series_id=s.id,
             semester_end=sem.end_date,
-            range_from=day,
-            range_to=day,
+            range_from=shown,
+            range_to=shown,
             tz=user.timezone,
             now=datetime.now(UTC),
             exceptions=exceptions,
             location=s.location,
         )
-        if views:
-            return _session_dict(views[0], s, course), s
+        view = next((v for v in views if v.key == key), None)
+        if view is not None:
+            return _session_dict(view, s, course), s
     raise not_found("Session")
 
 

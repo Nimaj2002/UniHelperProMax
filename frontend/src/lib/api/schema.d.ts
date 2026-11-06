@@ -5485,7 +5485,8 @@ export interface components {
         };
         /**
          * SessionEdit
-         * @description Fields to change. With scope=this only startTime, endTime and location are allowed.
+         * @description Fields to change. With scope=this only startTime, endTime, location and `date` (moves the
+         *     session to another day; its key keeps the original date) are allowed.
          *     009: unknown fields are refused, so `PATCH /sessions/{key}` can tell it from `EventEdit`.
          */
         SessionEdit: {
@@ -5502,6 +5503,8 @@ export interface components {
             /** Links */
             links?: components["schemas"]["Link"][] | null;
             recurrence?: components["schemas"]["Recurrence"] | null;
+            /** Date */
+            date?: string | null;
         };
         /**
          * SessionOut

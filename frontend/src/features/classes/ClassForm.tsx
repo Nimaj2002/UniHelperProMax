@@ -40,7 +40,7 @@ export function initialClassForm(prefill: { date?: string; start?: string; end?:
 
 type Errors = Record<string, string>;
 
-/** create: new class · edit-this: one session (time + location) · edit-series: following/all */
+/** create: new class · edit-this: one session (date + time + location) · edit-series: following/all */
 export type ClassFormMode = "create" | "edit-this" | "edit-series";
 
 export function validateClassForm(
@@ -50,6 +50,7 @@ export function validateClassForm(
 ): Errors {
   const e: Errors = {};
   if (mode === "edit-this") {
+    if (!v.startDate) e.startDate = "Choose the date.";
     if (!v.startTime) e.startTime = "Choose a start time.";
     if (!v.endTime) e.endTime = "Choose an end time.";
     else if (v.startTime && parseTimeHHmm(v.endTime) <= parseTimeHHmm(v.startTime))
@@ -98,7 +99,7 @@ export function validateClassForm(
 export function sessionEditPayload(v: ClassFormValue, mode: ClassFormMode, initial?: ClassFormValue) {
   const all: Record<string, unknown> =
     mode === "edit-this"
-      ? { startTime: v.startTime, endTime: v.endTime, location: v.location.trim() || null }
+      ? { date: v.startDate, startTime: v.startTime, endTime: v.endTime, location: v.location.trim() || null }
       : {
           title: v.title.trim() || null,
           startTime: v.startTime,
@@ -128,7 +129,7 @@ export function classPayload(v: ClassFormValue) {
 }
 
 const SERVER_FIELDS: [string, string][] = [
-  ["/endTime", "endTime"], ["/startTime", "startTime"], ["/startDate", "startDate"],
+  ["/endTime", "endTime"], ["/startTime", "startTime"], ["/startDate", "startDate"], ["/date", "startDate"],
   ["/title", "title"], ["/location", "location"],
   ["/recurrence/byWeekday", "byWeekday"], ["/recurrence/end/untilDate", "untilDate"],
   ["/recurrence/end/count", "count"], ["/recurrence/end/kind", "endKind"], ["/recurrence", "byWeekday"],
@@ -220,9 +221,9 @@ export function ClassForm({ initial, mode = "create", fixedSemesterEnd, submitLa
           <Input maxLength={60} value={value.title} onChange={(e) => set({ title: e.target.value })} />
         </Field>
       )}
-      <div className={mode === "create" ? "grid gap-4 sm:grid-cols-3" : "grid gap-4 sm:grid-cols-2"}>
-        {mode === "create" && (
-          <Field label="First session" error={errors.startDate}>
+      <div className={mode !== "edit-series" ? "grid gap-4 sm:grid-cols-3" : "grid gap-4 sm:grid-cols-2"}>
+        {mode !== "edit-series" && (
+          <Field label={mode === "create" ? "First session" : "Date"} error={errors.startDate}>
             <Input type="date" value={value.startDate} onChange={(e) => set({ startDate: e.target.value })} />
           </Field>
         )}

@@ -70,7 +70,7 @@ function EditClassFlow({ session: s }: { session: Session }) {
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
             {s.courseName}
-            {chosen === "this" && " — only this date changes; the rest of the class stays as it is."}
+            {chosen === "this" && " — only this session changes (you can move it to another day); the rest of the class stays as it is."}
             {chosen === "following" && ` — changes apply from ${formatDay(s.date)} onwards.`}
           </DialogDescription>
         </DialogHeader>

@@ -2,7 +2,7 @@ import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { axe } from "vitest-axe";
-import { ClassForm, classPayload, initialClassForm, validateClassForm } from "@/features/classes/ClassForm";
+import { ClassForm, classPayload, initialClassForm, sessionEditPayload, validateClassForm } from "@/features/classes/ClassForm";
 import { ApiError } from "@/lib/api";
 import { json, mockFetch, on, renderWithProviders } from "./test-utils";
 
@@ -42,6 +42,13 @@ describe("ClassForm", () => {
       startDate: "2026-09-28",
       recurrence: { freq: "weekly", byWeekday: ["MO", "WE"], end: { kind: "semester_end" } },
     });
+  });
+
+  it("sends only the new date when a single session moves to another day", () => {
+    const initial = initialClassForm({ date: "2026-09-28", start: "10:00", end: "11:30" });
+    const moved = { ...initial, startDate: "2026-10-02" };
+    expect(sessionEditPayload(moved, "edit-this", initial)).toEqual({ date: "2026-10-02" });
+    expect(validateClassForm({ ...initial, startDate: "" }, { known: true, endDate: null }, "edit-this").startDate).toBeTruthy();
   });
 
   it("blocks end time before start and semester-end without an end date", () => {
