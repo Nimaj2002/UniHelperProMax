@@ -7,8 +7,9 @@
 
 ### Your whole semester in one calm place.
 
-Timetable, lecture notes, slides, recordings, transcripts, AI chat and tasks, organised by class
-and stored as plain files you own.
+**Record the lecture, get the transcript in your notes, then learn it with an AI tutor that
+makes you think.** Plus your timetable, notes, slides, AI chat and tasks, organised by class and
+stored as plain files you own.
 
 [![Latest release](https://img.shields.io/github/v/release/Nimaj2002/UniHelperProMax?color=7A3DB8&label=download)](https://github.com/Nimaj2002/UniHelperProMax/releases/latest)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-7A3DB8)](LICENSE)
@@ -27,11 +28,12 @@ and stored as plain files you own.
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)
 
 **[Features](#why-youll-love-it)** ·
+**[Transcription](#transcription)** ·
+**[AI Teacher](#ai-teacher)** ·
 **[Tour](#a-quick-tour)** ·
 **[Download](#desktop-app)** ·
 **[Self-host](#self-host-it)** ·
 **[AI chat](#ai-chat)** ·
-**[AI Teacher](#ai-teacher)** ·
 **[Your data](#your-data)** ·
 **[License](#license)**
 
@@ -62,14 +64,14 @@ and stored as plain files you own.
 <td valign="top" width="33%">
 
 **Using the app**
+- [Transcription](#transcription)
+- [AI Teacher](#ai-teacher)
 - [Events and the calendar](#events-and-creating-entries-on-the-calendar)
 - [Tasks and the home page](#tasks-and-the-home-page)
 - [Calendar import and export](#importing-and-exporting-the-calendar-ics)
 - [Importing audio and notes](#importing-audio-and-notes)
 - [Documents and the PDF reader](#documents-and-the-pdf-reader)
-- [Transcription](#transcription)
 - [AI chat](#ai-chat)
-- [AI Teacher](#ai-teacher)
 - [Themes](#themes)
 
 </td>
@@ -100,13 +102,17 @@ UniHelperProMax gives every class session its own space. Open Monday's Data Stru
 its notes, slides, recording and transcript are already there. Two clicks from the calendar. And
 every assignment, reading and exam you have to prepare for sits on a task board right next to it.
 
+Two things it does best:
+
+- 🎙️ **Never miss what the professor said.** Record the lecture (it keeps going if the tab closes or the Wi-Fi drops), then transcribe it straight into your note. The transcript is added to the end and nothing you wrote changes.
+- 🎓 **An AI tutor that makes you think.** The AI Teacher checks what you already know, then teaches one step at a time with a graded question after each step, so you understand it instead of copying an answer.
+
+And everything around them:
+
 - 🗓️ **A calendar built for university.** Weekly classes, exams, office hours and seminars, with years and semesters.
 - 📝 **Notes that belong to a class.** A Markdown editor with tables, code blocks, checklists, Mermaid diagrams and LaTeX math.
 - 📑 **Slides next to your notes.** A built-in PDF reader with highlights, drawings and comments, in split view.
-- 🎙️ **Record the lecture.** Recording keeps going if the tab closes or the Wi-Fi drops.
-- ✨ **Transcribe it into your notes.** The transcript is added to the end of your note and nothing you wrote changes.
 - 🤖 **Ask AI about the lecture.** Chat with OpenAI, Anthropic, Gemini or a local model (Ollama, LM Studio) and attach your notes, slides, pictures and recordings.
-- 🎓 **An AI tutor that makes you think.** The AI Teacher checks what you already know, then teaches one step at a time with a graded question after each step.
 - 🕸️ **See how ideas connect.** Everything the tutor teaches grows into a knowledge graph on your home page.
 - ✅ **A task board next to your calendar.** Assignments, readings and exam prep on a board or a list, with checklists, quick notes and due dates you can show on the calendar.
 - 🎨 **Make it yours.** 18 built-in themes (Catppuccin, Dracula, Tokyo Night, Nord…) or design your own.
@@ -116,6 +122,41 @@ every assignment, reading and exam you have to prepare for sits on a task board 
 - 🆓 **Free and open source.** Self-host it for yourself or your friends. No account with us, no tracking.
 
 ## A quick tour
+
+### 🎙️ Record now, read later
+
+Hit **Record** during the lecture or upload an audio file you already have. The recording is saved
+in small pieces as it goes, so it survives a closed tab or a dropped Wi-Fi.
+Afterwards click **Transcribe**, choose a note (or name a new one) and the spoken language, and
+the transcript is added to the end of that note. Nothing you wrote ever changes.
+
+- **Keep working while it runs.** Transcription happens on the server with progress, Cancel and
+  Retry, so you can switch pages or close the laptop and come back later.
+- **Long lectures just work.** Recordings are split automatically for providers with a file-size
+  limit.
+- **Your choice of speech engine.** Any OpenAI-compatible speech API, including one you host
+  yourself (Voice Studio needs only its address). ([More](#transcription))
+
+<img src="docs/screenshots/transcribe.png" alt="Transcribe dialog: choose the note and the spoken language" width="100%">
+
+### 🎓 An AI tutor that makes you think
+
+Ask "why is searching a BST O(h) and not O(log n)?" and the **AI Teacher** doesn't just hand you
+the answer. It first asks what you already know, plans the shortest path to the goal, then
+teaches one reasoning step at a time and checks each step with a question. You answer, say how
+sure you are, and it fixes a gap before building on it. Switch to **Practice** for fresh problems
+with hints. ([More](#ai-teacher))
+
+<img src="docs/screenshots/teacher.png" alt="AI Teacher lesson in three columns: your questions, the teacher's explanation, and the current question with an answer box and a How sure are you slider" width="100%">
+
+### 🕸️ See how your ideas connect
+
+Every idea the tutor teaches you lands in one **knowledge graph**, shown beside your calendar on
+the home page. Search it, see what each idea follows from and leads to, and jump back to the
+lesson where you learned it. New lessons in the same course start from what you've already
+covered.
+
+<img src="docs/screenshots/knowledge-graph.png" alt="Week calendar with the knowledge graph of taught ideas open in the right panel" width="100%">
 
 ### 🗓️ See your whole week at a glance
 
@@ -152,15 +193,6 @@ other editor.
 
 <img src="docs/screenshots/notes.png" alt="Markdown note with LaTeX math, a Mermaid diagram, a table and a code block" width="100%">
 
-### 🎙️ Record now, read later
-
-Hit **Record** during the lecture or upload an audio file you already have. Afterwards click
-**Transcribe**, choose a note, and the transcript is added to the end of it. It runs on the
-server, so you can close the laptop and come back later. Works with any OpenAI-compatible speech
-API, including one you host yourself.
-
-<img src="docs/screenshots/transcribe.png" alt="Transcribe dialog: choose the note and the spoken language" width="100%">
-
 ### 🤖 Ask the AI, with the lecture in hand
 
 Every class session has its own chat. Attach today's notes, the slides, a photo of the whiteboard
@@ -169,25 +201,6 @@ your own key for OpenAI, Anthropic or Gemini, or run a model on your own compute
 LM Studio. Each chat is saved next to your notes as a readable `.md` file.
 
 <img src="docs/screenshots/ai-chat.png" alt="AI chat opened as a tab beside the lecture slides, with the note and PDF attached and a formatted answer with code" width="100%">
-
-### 🎓 An AI tutor that makes you think
-
-Ask "why is searching a BST O(h) and not O(log n)?" and the **AI Teacher** doesn't just hand you
-the answer. It first asks what you already know, plans the shortest path to the goal, then
-teaches one reasoning step at a time and checks each step with a question. You answer, say how
-sure you are, and it fixes a gap before building on it. Switch to **Practice** for fresh problems
-with hints. ([More](#ai-teacher))
-
-<img src="docs/screenshots/teacher.png" alt="AI Teacher lesson in three columns: your questions, the teacher's explanation, and the current question with an answer box and a How sure are you slider" width="100%">
-
-### 🕸️ See how your ideas connect
-
-Every idea the tutor teaches you lands in one **knowledge graph**, shown beside your calendar on
-the home page. Search it, see what each idea follows from and leads to, and jump back to the
-lesson where you learned it. New lessons in the same course start from what you've already
-covered.
-
-<img src="docs/screenshots/knowledge-graph.png" alt="Week calendar with the knowledge graph of taught ideas open in the right panel" width="100%">
 
 ### 🎨 Light, dark, or something with more personality
 
