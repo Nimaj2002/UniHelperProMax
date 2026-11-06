@@ -1,167 +1,240 @@
-(() => {
-  const REPO = 'Nimaj2002/UniHelperProMax';
-  const M = window.Motion; // undefined if the CDN failed: the page still works, just without motion
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const motionOn = !!M && !reduced;
-  const spring = { type: 'spring', stiffness: 380, damping: 34 };
+import Amber from 'amber-scroll';
+import parallax from 'amber-scroll/parallax';
+import Motion, { bindScroll } from 'amber-motion';
 
-  const OS_NAMES = { windows: 'Windows', macos: 'macOS', linux: 'Linux', docker: 'Docker' };
-  const HERO_CMD = {
-    windows: 'irm https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.ps1 | iex',
-    macos: 'curl -fsSL https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.sh | bash',
-    linux: 'curl -fsSL https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.sh | bash',
-    docker: 'git clone https://github.com/Nimaj2002/UniHelperProMax.git && cd UniHelperProMax && mkdir -p backend/data keys && docker compose up -d --build',
+const REPO = 'Nimaj2002/UniHelperProMax';
+
+/* ---------- Smooth scroll, Yuii parallax, story progress bar ---------- */
+const amber = new Amber({ plugins: [parallax] });
+
+bindScroll(amber, new Motion({
+  targets: '.progress-bar',
+  properties: { s: { v: [0, 1], name: 'scaleX' } },
+  respectReducedMotion: false, // a progress bar is information, not decoration
+}), { source: 'progress' });
+
+const nav = document.querySelector('.nav-wrap');
+// Scroll position that puts an element's top right under the sticky nav.
+const pageTop = (el) => Math.round(el.getBoundingClientRect().top + scrollY - nav.offsetHeight);
+
+// Amber's own scrollTo eases out exponentially (fast start), which reads as a snap over a whole
+// screen. Glide with ease-in-out instead, feeding each frame to Amber so its state stays in sync.
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
+let glideId = 0;
+function glideTo(y, onDone) {
+  const id = ++glideId;
+  const from = scrollY;
+  const dist = y - from;
+  if (reduceMotion.matches || Math.abs(dist) < 2) { amber.scrollTo(y, { immediate: true }); onDone?.(); return; }
+  const duration = Math.min(1100, 500 + Math.abs(dist) * 0.3);
+  const start = performance.now();
+  const frame = (now) => {
+    if (id !== glideId) return; // a newer glide (or the user) took over
+    const t = Math.min(1, (now - start) / duration);
+    amber.scrollTo(from + dist * easeInOut(t), { immediate: true });
+    if (t < 1) requestAnimationFrame(frame);
+    else onDone?.();
   };
-  const ASSET_MATCH = { windows: [/\.exe$/i], macos: [/\.dmg$/i], linux: [/\.AppImage$/i, /\.deb$/i] };
+  requestAnimationFrame(frame);
+}
+// Touch or keyboard scrolling stops a glide instead of fighting it.
+addEventListener('touchstart', () => { glideId++; }, { passive: true });
+addEventListener('keydown', () => { glideId++; });
 
-  function detectOS() {
-    const ua = navigator.userAgent;
-    const p = ((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || '').toLowerCase();
-    if (p.includes('win') || /Windows/.test(ua)) return 'windows';
-    if (p.includes('mac') || /Mac OS X|iPhone|iPad/.test(ua)) return 'macos';
-    return 'linux';
-  }
-
-  /* ---------- Tabs (segmented control with a sliding pill) ---------- */
-  const tabSets = {};
-  document.querySelectorAll('[data-tabs]').forEach((list) => {
-    const tabs = [...list.querySelectorAll('[role="tab"]')];
-    const pill = document.createElement('span');
-    pill.className = 'pill';
-    pill.setAttribute('aria-hidden', 'true');
-    list.prepend(pill);
-
-    const placePill = (tab, animate) => {
-      const to = { x: tab.offsetLeft, width: tab.offsetWidth };
-      // Motion tracks its own transform values, so once it's on, every placement goes through it.
-      if (motionOn) M.animate(pill, to, animate ? spring : { duration: 0 });
-      else Object.assign(pill.style, { transform: `translateX(${to.x}px)`, width: `${to.width}px` });
-    };
-
-    const select = (tab, { focus = false, animate = true } = {}) => {
-      const current = tabs.find((t) => t.getAttribute('aria-selected') === 'true');
-      tabs.forEach((t) => {
-        const on = t === tab;
-        t.setAttribute('aria-selected', on);
-        t.tabIndex = on ? 0 : -1;
-        document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
-      });
-      placePill(tab, animate);
-      if (focus) tab.focus();
-      if (animate && motionOn && current !== tab) {
-        const panel = document.getElementById(tab.getAttribute('aria-controls'));
-        const dir = tabs.indexOf(tab) > tabs.indexOf(current) ? 1 : -1;
-        M.animate(panel, { opacity: [0, 1], x: [24 * dir, 0] }, { duration: 0.45, ease: [0.22, 1, 0.36, 1] });
-        const kids = panel.querySelectorAll('.checks li, .install-card');
-        if (kids.length) M.animate(kids, { opacity: [0, 1], y: [12, 0] }, { delay: M.stagger(0.04, { startDelay: 0.08 }), duration: 0.4 });
-      }
-    };
-
-    tabs.forEach((tab, i) => {
-      tab.addEventListener('click', () => select(tab));
-      tab.addEventListener('keydown', (e) => {
-        const next = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 }[e.key];
-        if (next === undefined) return;
-        e.preventDefault();
-        select(tabs[(next + tabs.length) % tabs.length], { focus: true });
-      });
-    });
-
-    const reflow = () => placePill(tabs.find((t) => t.getAttribute('aria-selected') === 'true'), false);
-    addEventListener('resize', reflow);
-    document.fonts && document.fonts.ready.then(reflow);
-    reflow();
-    tabSets[list.dataset.tabs] = { tabs, select };
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('a[href^="#"]');
+  const target = link && link.hash.length > 1 && document.querySelector(link.hash);
+  if (!target) return;
+  e.preventDefault();
+  history.replaceState(null, '', link.hash);
+  // Move keyboard focus along (skip link, nav links) only once there: focusing earlier
+  // makes Amber jump straight to the target, which is the snap we're avoiding.
+  glideTo(Math.max(0, pageTop(target)), () => {
+    target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
   });
+});
 
-  /* ---------- OS-aware defaults ---------- */
-  const os = detectOS();
-  const osTab = tabSets.os && tabSets.os.tabs.find((t) => t.dataset.os === os);
-  if (osTab) tabSets.os.select(osTab, { animate: false });
-  document.getElementById('hero-cmd').textContent = HERO_CMD[os];
-  document.getElementById('hero-download-label').textContent = `Download for ${OS_NAMES[os]}`;
-  document.getElementById('os-hint').textContent = `Looks like you're on ${OS_NAMES[os]}, so that's selected. Every option is one tab away.`;
+/* ---------- Wheel pager: one wheel gesture = one chapter ---------- */
+const chapters = [...document.querySelectorAll('.chapter')];
 
-  /* ---------- Copy buttons ---------- */
-  const copy = async (text, btn) => {
+// Every resting point: each chapter's top, extra screens inside a chapter taller than the
+// viewport (so nothing is skipped), and the page bottom (footer). Measured fresh each time
+// because layout changes with tabs, the <details> block and resizes.
+function stops() {
+  const view = innerHeight - nav.offsetHeight;
+  const max = document.documentElement.scrollHeight - innerHeight;
+  const out = [max];
+  chapters.forEach((c) => {
+    const top = pageTop(c);
+    const end = top + c.offsetHeight - view;
+    out.push(top);
+    if (end - top > 24) { // taller than the screen (ignoring a few pixels): page through it
+      for (let y = top + Math.round(view * 0.85); y < end; y += Math.round(view * 0.85)) out.push(y);
+      out.push(end);
+    }
+  });
+  return [...new Set(out.map((y) => Math.min(max, Math.max(0, y))))].sort((a, b) => a - b);
+}
+
+// A gesture is a burst of wheel events with no pause over 200 ms: one mouse-wheel spin, or one
+// trackpad swipe including its long inertia tail. Each gesture moves exactly one stop.
+const GESTURE_GAP = 200;
+let lastWheel = 0;
+let target = null;
+let targetAt = 0;
+addEventListener('wheel', (e) => {
+  // Leave pinch-zoom and sideways scrolling (the carousel tab strip, code blocks) alone.
+  if (e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+  e.preventDefault(); // Amber skips prevented events, so it won't add its own smooth scroll
+  const now = performance.now();
+  const sameGesture = now - lastWheel < GESTURE_GAP;
+  lastWheel = now;
+  if (sameGesture) return;
+  // While the previous step is still gliding, count from where it is heading, not where it is.
+  const y = target !== null && now - targetAt < 1200 ? target : scrollY;
+  const list = stops();
+  const to = e.deltaY > 0 ? list.find((s) => s > y + 2) : list.findLast((s) => s < y - 2);
+  if (to === undefined) return;
+  target = to;
+  targetAt = now;
+  glideTo(to);
+}, { passive: false, capture: true });
+
+/* ---------- Reveal each chapter as it scrolls in ---------- */
+const POSES = {
+  pop: { y: { v: [48, 0], unit: 'px' }, s: [0.86, 1], o: [0, 1] },
+  wobble: { r: [-12, 0], s: [0.8, 1], o: [0, 1] },
+};
+const chapterAnimations = new Map();
+document.querySelectorAll('.chapter').forEach((chapter) => {
+  const anims = [];
+  const text = chapter.querySelectorAll('[data-reveal=""]');
+  if (text.length) {
+    anims.push(new Motion({
+      targets: text, duration: 650, stagger: 90, easing: 'o4',
+      properties: { y: { v: [28, 0], unit: 'px' }, o: [0, 1] },
+    }));
+  }
+  chapter.querySelectorAll('[data-reveal="pop"], [data-reveal="wobble"]').forEach((el) => {
+    anims.push(new Motion({ targets: el, duration: 900, easing: 'ob', properties: POSES[el.dataset.reveal] }));
+  });
+  const notes = chapter.querySelectorAll('.sticky');
+  if (notes.length) {
+    anims.push(new Motion({
+      targets: notes, duration: 600, delay: 350, stagger: 140, easing: 'ob',
+      properties: { s: [0.4, 1], o: [0, 1] },
+    }));
+  }
+  chapterAnimations.set(chapter, anims);
+});
+const revealer = new IntersectionObserver((entries) => {
+  entries.forEach(({ isIntersecting, target }) => {
+    if (!isIntersecting) return;
+    chapterAnimations.get(target).forEach((a) => a.play());
+    revealer.unobserve(target);
+  });
+}, { threshold: 0.18 });
+chapterAnimations.forEach((_, chapter) => revealer.observe(chapter));
+
+/* ---------- Tabs (feature carousel + install OS picker) ---------- */
+function makeTabs(list, onChange) {
+  const tabs = [...list.querySelectorAll('[role="tab"]')];
+  let current = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true');
+  let anim; // one animation owns the panel transition at a time
+  const select = (i, { focus = false, animate = true } = {}) => {
+    const next = (i + tabs.length) % tabs.length;
+    const dir = next > current ? 1 : -1;
+    tabs.forEach((t, j) => {
+      t.setAttribute('aria-selected', j === next);
+      t.tabIndex = j === next ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = j !== next;
+    });
+    if (focus) tabs[next].focus({ preventScroll: true });
+    // Keep the chosen tab visible in a horizontally scrolling strip without moving the page.
+    list.scrollTo({ left: tabs[next].offsetLeft - (list.clientWidth - tabs[next].offsetWidth) / 2, behavior: 'smooth' });
+    const panel = document.getElementById(tabs[next].getAttribute('aria-controls'));
+    if (animate && next !== current) {
+      anim?.destroy();
+      anim = new Motion({
+        targets: panel, duration: 450, easing: 'o4',
+        properties: { x: { v: [40 * dir, 0], unit: 'px' }, o: [0, 1] },
+      }).play();
+    }
+    current = next;
+    onChange?.(next, tabs[next]);
+  };
+  tabs.forEach((tab, i) => {
+    tab.addEventListener('click', () => select(i));
+    tab.addEventListener('keydown', (e) => {
+      const to = { ArrowRight: current + 1, ArrowLeft: current - 1, Home: 0, End: tabs.length - 1 }[e.key];
+      if (to === undefined) return;
+      e.preventDefault();
+      select(to, { focus: true });
+    });
+  });
+  return { tabs, select, get current() { return current; } };
+}
+
+const carousel = document.querySelector('[data-carousel]');
+const counter = carousel.querySelector('[data-current]');
+const slides = makeTabs(carousel.querySelector('[role="tablist"]'), (i) => { counter.textContent = i + 1; });
+carousel.querySelector('[data-prev]').addEventListener('click', () => slides.select(slides.current - 1));
+carousel.querySelector('[data-next]').addEventListener('click', () => slides.select(slides.current + 1));
+
+const osTabs = makeTabs(document.querySelector('[data-tabs]'));
+
+/* ---------- OS detection + latest release links ---------- */
+const OS_NAMES = { windows: 'Windows', macos: 'macOS', linux: 'Linux' };
+const ASSET_MATCH = { windows: [/\.exe$/i], macos: [/\.dmg$/i], linux: [/\.AppImage$/i, /\.deb$/i] };
+
+function detectOS() {
+  const ua = navigator.userAgent;
+  const p = (navigator.userAgentData?.platform || navigator.platform || '').toLowerCase();
+  if (p.includes('win') || /Windows/.test(ua)) return 'windows';
+  if (p.includes('mac') || /Mac OS X|iPhone|iPad/.test(ua)) return 'macos';
+  return 'linux';
+}
+const os = detectOS();
+osTabs.select(osTabs.tabs.findIndex((t) => t.dataset.os === os), { animate: false });
+
+const mb = (bytes) => `${(bytes / 1048576).toFixed(0)} MB`;
+fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' } })
+  .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+  .then((rel) => {
+    document.getElementById('dl-version').textContent = `Latest: ${rel.tag_name}`;
+    Object.entries(ASSET_MATCH).forEach(([key, patterns]) => {
+      const files = patterns.map((re) => rel.assets.find((a) => re.test(a.name))).filter(Boolean);
+      const box = document.querySelector(`[data-assets="${key}"]`);
+      if (!files.length || !box) return;
+      box.replaceChildren(...files.map((a) => {
+        const link = document.createElement('a');
+        link.className = 'asset';
+        link.href = a.browser_download_url;
+        const name = Object.assign(document.createElement('span'), { className: 'mono', textContent: a.name });
+        const size = Object.assign(document.createElement('span'), { className: 'size', textContent: mb(a.size) });
+        link.append(name, size);
+        return link;
+      }));
+      if (key === os) {
+        const main = document.getElementById('dl-main');
+        main.href = files[0].browser_download_url;
+        main.textContent = `Download for ${OS_NAMES[os]}`;
+      }
+    });
+  })
+  .catch(() => { /* offline or rate-limited: the static links to the releases page still work */ });
+
+/* ---------- Copy buttons ---------- */
+document.querySelectorAll('[data-copy]').forEach((btn) => {
+  btn.addEventListener('click', async () => {
     try {
-      await navigator.clipboard.writeText(text);
-      const label = btn.textContent;
-      btn.textContent = 'Copied';
-      btn.classList.add('done');
-      setTimeout(() => { btn.textContent = label; btn.classList.remove('done'); }, 1600);
+      await navigator.clipboard.writeText(document.getElementById(btn.dataset.copy).textContent);
+      btn.textContent = 'Copied!';
     } catch {
       btn.textContent = 'Select & copy';
     }
-  };
-  document.querySelectorAll('pre.code:not(.code-tree)').forEach((pre) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'copy';
-    btn.textContent = 'Copy';
-    btn.setAttribute('aria-label', 'Copy command');
-    btn.addEventListener('click', () => copy(pre.querySelector('code').textContent, btn));
-    pre.append(btn);
+    setTimeout(() => { btn.textContent = 'Copy'; }, 1600);
   });
-  document.querySelectorAll('[data-copy-target]').forEach((btn) =>
-    btn.addEventListener('click', () => copy(document.getElementById(btn.dataset.copyTarget).textContent, btn)));
-
-  /* ---------- Latest release files from GitHub ---------- */
-  const mb = (bytes) => `${Math.round(bytes / 1048576)} MB`;
-  fetch(`https://api.github.com/repos/${REPO}/releases/latest`, { headers: { Accept: 'application/vnd.github+json' } })
-    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-    .then((rel) => {
-      const version = rel.tag_name;
-      document.getElementById('hero-version').textContent = `Latest: ${version}`;
-      document.getElementById('res-version').textContent = version;
-      Object.entries(ASSET_MATCH).forEach(([key, patterns]) => {
-        const files = patterns.map((re) => rel.assets.find((a) => re.test(a.name))).filter(Boolean);
-        const box = document.querySelector(`[data-assets="${key}"]`);
-        if (!files.length || !box) return;
-        box.replaceChildren(...files.map((a) => {
-          const link = document.createElement('a');
-          link.className = 'asset';
-          link.href = a.browser_download_url;
-          const name = document.createElement('span');
-          name.className = 'mono';
-          name.textContent = a.name;
-          const size = document.createElement('span');
-          size.className = 'size';
-          size.textContent = mb(a.size);
-          link.append(name, size);
-          return link;
-        }));
-        if (key === os) {
-          document.getElementById('hero-download').href = files[0].browser_download_url;
-          document.getElementById('hero-download-label').textContent = `Download for ${OS_NAMES[os]} · ${version}`;
-        }
-      });
-    })
-    .catch(() => { /* keep the releases/latest links already in the HTML */ });
-
-  /* ---------- Motion ---------- */
-  if (!motionOn) return;
-  const { animate, inView, scroll, stagger } = M;
-  const ease = [0.22, 1, 0.36, 1];
-
-  document.querySelectorAll('[data-reveal]').forEach((el) => {
-    el.style.opacity = 0;
-    inView(el, () => { animate(el, { opacity: 1, y: [28, 0] }, { duration: 0.8, ease }); }, { margin: '0px 0px -10% 0px' });
-  });
-  document.querySelectorAll('[data-stagger]').forEach((group) => {
-    const kids = [...group.children];
-    kids.forEach((k) => { k.style.opacity = 0; });
-    inView(group, () => { animate(kids, { opacity: 1, y: [32, 0] }, { duration: 0.7, ease, delay: stagger(0.06) }); }, { margin: '0px 0px -10% 0px' });
-  });
-
-  // Hero screenshot tilts up into place as the page scrolls.
-  const shot = document.querySelector('[data-hero-shot]');
-  shot.parentElement.style.perspective = '1600px';
-  animate(shot, { opacity: [0, 1] }, { duration: 1, delay: 0.4 });
-  scroll(animate(shot, { rotateX: [18, 0], scale: [0.92, 1], y: [40, 0] }, { ease: 'linear' }),
-    { target: shot, offset: ['start end', 'start 0.35'] });
-
-  // Ambient glow drifts slower than the page.
-  scroll(animate('.glow-hero', { y: [0, 200], opacity: [1, 0.3] }, { ease: 'linear' }),
-    { target: document.querySelector('.hero'), offset: ['start start', 'end start'] });
-})();
+});

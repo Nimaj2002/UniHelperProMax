@@ -3,453 +3,432 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>UniHelperProMax: your whole semester in one calm place</title>
-  <meta name="description" content="Timetable, lecture notes, slides, recordings, transcripts, AI chat and tasks, organised by class and stored as plain files you own. Free, open source, desktop or self-hosted.">
+  <title>UniHelperProMax · Yuii's semester, sorted</title>
+  <meta name="description" content="Meet Yuii. She used to lose her semester across five apps. Now her timetable, notes, slides, recordings, transcripts, AI tutor and tasks live in one free, open-source app.">
   <meta name="theme-color" content="#ffffff">
-  <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml">
-  <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
-  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="icon" href="/assets/icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/assets/icons/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap">
-  <link rel="stylesheet" href="design/variables.css">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Nunito+Sans:opsz,wght@6..12,500;6..12,700;6..12,800&family=JetBrains+Mono:wght@400&display=swap">
+  <link rel="stylesheet" href="/design/variables.css">
+  <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
+  <div class="progress" aria-hidden="true"><span class="progress-bar"></span></div>
 
   <header class="nav-wrap">
     <nav class="nav" aria-label="Main">
-      <a class="brand" href="#top" aria-label="UniHelperProMax home">
-        <img src="assets/icons/app-icon-192.png" alt="" width="28" height="28" class="brand-mark">
+      <a class="brand" href="#hello" aria-label="UniHelperProMax home">
+        <img src="/assets/icons/app-icon-192.png" alt="" width="32" height="32">
         <span>UniHelperProMax</span>
       </a>
       <ul class="nav-links">
+        <li><a href="#story">Story</a></li>
         <li><a href="#features">Features</a></li>
-        <li><a href="#tour">Tour</a></li>
+        <li><a href="#free">Free</a></li>
         <li><a href="#install">Install</a></li>
-        <li><a href="#data">Your data</a></li>
       </ul>
-      <a class="nav-gh" href="https://github.com/Nimaj2002/UniHelperProMax" aria-label="GitHub repository">
-        <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-        <span>GitHub</span>
-      </a>
-      <a class="btn btn-primary btn-sm" href="#install">Download</a>
+      <a class="btn btn-ghost btn-sm nav-gh" href="https://github.com/Nimaj2002/UniHelperProMax">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="#download">Download</a>
     </nav>
   </header>
 
-  <main id="main">
-    <!-- Hero -->
-    <section class="hero" id="top">
-      <div class="glow glow-hero" aria-hidden="true"></div>
-      <img class="hero-mascot" src="assets/icons/mascot-512.png" alt="The UniHelperProMax mascot, a student hugging a tablet" width="200" height="200" data-reveal>
-      <p class="eyebrow" data-reveal>Free &amp; open source · Desktop or self-hosted</p>
-      <h1 class="hero-title" data-reveal>
-        <span>Your whole semester.</span>
-        <span class="accent">In one calm place.</span>
-      </h1>
-      <p class="hero-sub" data-reveal>Timetable, lecture notes, slides, recordings, transcripts, AI chat and tasks, organised by class and stored as plain files you own.</p>
-
-      <div class="console" data-reveal>
-        <code class="console-cmd" id="hero-cmd">irm https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.ps1 | iex</code>
-        <button class="btn btn-primary console-copy" type="button" data-copy-target="hero-cmd">Copy</button>
+  <main id="main" data-amber>
+    <!-- 1 · Greeting -->
+    <section class="chapter chapter-hero" id="hello" aria-labelledby="hello-title">
+      <div class="chapter-art">
+        <img class="yuii" data-amber-speed="0.9" data-reveal="pop" src="/assets/yuii/greeting.webp" alt="Yuii, a pink-haired student in a sailor uniform, waving hello" width="814" height="900" fetchpriority="high">
       </div>
-
-      <div class="hero-actions" data-reveal>
-        <a class="btn btn-primary" id="hero-download" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest">
-          <span id="hero-download-label">Download the desktop app</span>
-        </a>
-        <a class="btn btn-ghost" href="#install">Other platforms &amp; Docker</a>
-      </div>
-      <p class="hero-meta" data-reveal><span id="hero-version">Latest release</span> · Windows · macOS · Linux · Docker · AGPL-3.0</p>
-
-      <figure class="shot shot-hero" data-hero-shot>
-        <img src="assets/screenshots/workspace-split.png" alt="Lecture notes next to the lecture slides in split view, with the recording and an AI chat in the side panel" width="1600" height="1000">
-      </figure>
-    </section>
-
-    <!-- Stack strip -->
-    <section class="strip" aria-label="Built with">
-      <ul>
-        <li>Python 3.12</li><li>FastAPI</li><li>React 19</li><li>TypeScript</li>
-        <li>Tailwind 4</li><li>SQLite</li><li>Electron</li><li>Docker</li>
-      </ul>
-    </section>
-
-    <!-- Features -->
-    <section class="section" id="features">
-      <div class="section-head" data-reveal>
-        <p class="eyebrow">Why you'll love it</p>
-        <h2>Every class session gets <span class="accent">its own space.</span></h2>
-        <p class="lead">Open Monday's Data Structures lecture and its notes, slides, recording and transcript are already there. Two clicks from the calendar, with every deadline on a board right next to it.</p>
-      </div>
-      <div class="grid grid-3" data-stagger>
-        <article class="card"><span class="card-icon" aria-hidden="true">🗓️</span><h3>A calendar built for university</h3><p>Weekly classes, exams, office hours and seminars, with years and semesters.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">📝</span><h3>Notes that belong to a class</h3><p>Markdown editor with tables, code blocks, checklists, Mermaid diagrams and LaTeX math.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">📑</span><h3>Slides next to your notes</h3><p>Built-in PDF reader with highlights, drawings and comments, in split view.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">🎙️</span><h3>Record the lecture</h3><p>Recording keeps going if the tab closes or the Wi-Fi drops. Or upload audio you already have.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">✨</span><h3>Transcribe into your notes</h3><p>The transcript is added to the end of your note. Nothing you wrote changes.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">🤖</span><h3>Ask AI about the lecture</h3><p>OpenAI, Anthropic, Gemini or a local model (Ollama, LM Studio), with your notes, slides, pictures and recordings attached.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">✅</span><h3>A task board next to your calendar</h3><p>Assignments, readings and exam prep on a board or a list, with checklists, quick notes and due dates.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">🎨</span><h3>Make it yours</h3><p>18 built-in themes (Catppuccin, Dracula, Tokyo Night, Nord…) or design your own from four colours.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">🔒</span><h3>Your files stay yours</h3><p>A normal folder of <code>.md</code>, <code>.pdf</code> and audio files on your own disk.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">💾</span><h3>Your semester in one zip</h3><p>Back up everything in one click and restore it on any computer.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">💻</span><h3>A real desktop app</h3><p>Installers for Windows, macOS and Linux. No Python, no Node, no login, works offline.</p></article>
-        <article class="card"><span class="card-icon" aria-hidden="true">🆓</span><h3>Free and open source</h3><p>Self-host it for yourself or your friends. No account with us, no tracking.</p></article>
-      </div>
-    </section>
-
-    <!-- Tour -->
-    <section class="section" id="tour">
-      <div class="section-head" data-reveal>
-        <p class="eyebrow">A quick tour</p>
-        <h2>From timetable to exam prep, <span class="accent">without switching apps.</span></h2>
-      </div>
-
-      <div class="segmented" role="tablist" aria-label="Tour" data-tabs="tour" data-reveal>
-        <button role="tab" aria-selected="true" aria-controls="tour-calendar" id="tab-calendar">Calendar</button>
-        <button role="tab" aria-selected="false" aria-controls="tour-tasks" id="tab-tasks" tabindex="-1">Tasks</button>
-        <button role="tab" aria-selected="false" aria-controls="tour-notes" id="tab-notes" tabindex="-1">Notes</button>
-        <button role="tab" aria-selected="false" aria-controls="tour-record" id="tab-record" tabindex="-1">Record</button>
-        <button role="tab" aria-selected="false" aria-controls="tour-ai" id="tab-ai" tabindex="-1">AI chat</button>
-        <button role="tab" aria-selected="false" aria-controls="tour-themes" id="tab-themes" tabindex="-1">Themes</button>
-      </div>
-
-      <div class="tour-panels" data-panels="tour">
-        <div class="split" role="tabpanel" id="tour-calendar" aria-labelledby="tab-calendar">
-          <div class="split-text">
-            <h3>See your whole week at a glance</h3>
-            <p>Every course gets its own colour, a red line marks the current time, and exams or events stand out with their own marker.</p>
-            <ul class="checks">
-              <li>Day, week and month views</li>
-              <li>Press and drag an empty slot to draw a class or event, with Undo</li>
-              <li>Import and export <code>.ics</code> from Google, Apple Calendar or Outlook</li>
-              <li>Fully keyboard operable, arrows and Shift to extend</li>
-            </ul>
-          </div>
-          <figure class="shot"><img src="assets/screenshots/calendar-week.png" alt="Week view with colour-coded classes and events next to the task board" loading="lazy"></figure>
+      <div class="chapter-text">
+        <h1 id="hello-title" class="display" data-reveal>Helllooo<br>I'm Yuii.</h1>
+        <div class="bubble" data-reveal>
+          <p>I'm a university student, just like you. Lectures, slides, labs, deadlines… it used to be a lot. Want to hear what changed?</p>
         </div>
-        <div class="split" role="tabpanel" id="tour-tasks" aria-labelledby="tab-tasks" hidden>
-          <div class="split-text">
-            <h3>Every deadline on one board</h3>
-            <p>The home page shows your calendar and your tasks side by side. Drag "Problem set 3" from To do to In progress to Done.</p>
-            <ul class="checks">
-              <li>Board or list grouped into Overdue, Today, This week and Later</li>
-              <li>Checklists, descriptions and quick notes on every task</li>
-              <li>Turn an exam or seminar into a task with Add to kanban</li>
-              <li>Show tasks with due dates right on the calendar</li>
-              <li>Export to <code>.csv</code> for any spreadsheet</li>
-            </ul>
-          </div>
-          <figure class="shot"><img src="assets/screenshots/kanban.png" alt="Task board with To do, In progress and Done columns" loading="lazy"></figure>
-        </div>
-        <div class="split" role="tabpanel" id="tour-notes" aria-labelledby="tab-notes" hidden>
-          <div class="split-text">
-            <h3>Notes that look as good as they read</h3>
-            <p>A live Markdown editor. Each note is a plain <code>.md</code> file in that class's folder, so VS Code or Obsidian open it too.</p>
-            <ul class="checks">
-              <li>Headings, tables, syntax-highlighted code and to-do lists</li>
-              <li>LaTeX math and Mermaid diagrams</li>
-              <li>Split view: slides on one side, notes on the other (<kbd>Alt+\</kbd>)</li>
-              <li>PDF highlights, drawings, text boxes and comments, saved beside the PDF</li>
-            </ul>
-          </div>
-          <figure class="shot"><img src="assets/screenshots/notes.png" alt="Markdown note with LaTeX math, a Mermaid diagram, a table and a code block" loading="lazy"></figure>
-        </div>
-        <div class="split" role="tabpanel" id="tour-record" aria-labelledby="tab-record" hidden>
-          <div class="split-text">
-            <h3>Record now, read later</h3>
-            <p>Hit Record during the lecture or upload an audio file. Click Transcribe, choose a note, and the transcript is added to the end of it.</p>
-            <ul class="checks">
-              <li>Audio saved every few seconds, even if the tab closes</li>
-              <li>Transcription runs on the server: close the laptop and come back</li>
-              <li>Any OpenAI-compatible speech API, including one you host</li>
-              <li>MP3, M4A, WAV, OGG, Opus, WebM and FLAC uploads up to 1 GB</li>
-            </ul>
-          </div>
-          <figure class="shot"><img src="assets/screenshots/transcribe.png" alt="Transcribe dialog: choose the note and the spoken language" loading="lazy"></figure>
-        </div>
-        <div class="split" role="tabpanel" id="tour-ai" aria-labelledby="tab-ai" hidden>
-          <div class="split-text">
-            <h3>Ask the AI, with the lecture in hand</h3>
-            <p>Every class session has its own chat. Attach today's notes, the slides, a photo of the whiteboard or the recording, and ask "make me 10 exam questions from this".</p>
-            <ul class="checks">
-              <li>Bring your own key: OpenAI, Anthropic or Gemini</li>
-              <li>Or run locally with Ollama, LM Studio, llama.cpp or vLLM</li>
-              <li>Each chat saved next to your notes as a readable <code>.md</code></li>
-              <li>The assistant has no tools: it never changes your files</li>
-            </ul>
-          </div>
-          <figure class="shot"><img src="assets/screenshots/ai-chat.png" alt="AI chat beside the lecture slides with the note and PDF attached" loading="lazy"></figure>
-        </div>
-        <div class="split" role="tabpanel" id="tour-themes" aria-labelledby="tab-themes" hidden>
-          <div class="split-text">
-            <h3>Light, dark, or more personality</h3>
-            <p>Pick from 18 built-in themes, or make your own from four colours. The editor flags any colour pair that's hard to read.</p>
-            <ul class="checks">
-              <li>GitHub, Catppuccin, Dracula, Tokyo Night, Nord, Gruvbox, Rosé Pine…</li>
-              <li>Every built-in theme meets WCAG AA</li>
-              <li>Export and share themes as <code>.uhtheme.json</code></li>
-              <li>Your theme follows you to every device</li>
-            </ul>
-          </div>
-          <figure class="shot"><img src="assets/screenshots/themes.png" alt="The app in Catppuccin Mocha, Rosé Pine Dawn and Tokyo Night" loading="lazy"></figure>
+        <div class="actions" data-reveal>
+          <a class="btn btn-primary" href="#story">Tell me, Yuii!</a>
+          <a class="btn btn-ghost" href="#download">Skip to download</a>
         </div>
       </div>
     </section>
 
-    <!-- Small things -->
-    <section class="section" id="more">
-      <div class="split split-wide">
-        <div class="section-head section-head-left" data-reveal>
-          <p class="eyebrow">And a lot of small things</p>
-          <h2>Details that <span class="accent">add up.</span></h2>
+    <!-- 2 · Dizzy -->
+    <section class="chapter chapter-flip" id="story" aria-labelledby="story-title">
+      <div class="chapter-art">
+        <div class="mess" aria-hidden="true">
+          <span class="sticky s1">slides_final_v3.pdf<br>is somewhere?</span>
+          <span class="sticky s2">Notes in 3 different apps</span>
+          <span class="sticky s3">Recording on my phone… 2 hours long</span>
+          <span class="sticky s4">What did the prof say about slide 14?</span>
+          <span class="sticky s5">Homework due… today?!</span>
         </div>
-        <ul class="checks checks-lg" data-stagger>
-          <li><strong>Keyboard only:</strong> every screen, including the calendar, PDF reader and audio player</li>
-          <li><strong>Split view</strong> for slides and notes side by side</li>
-          <li><strong>Close what you don't need:</strong> hide the calendar or tasks with <kbd>Shift+C</kbd> / <kbd>Shift+T</kbd></li>
-          <li><strong>Trash with restore:</strong> deleted classes come back with all their files</li>
-          <li><strong>Multiple accounts</strong> on one install, with no public sign-up</li>
-          <li><strong>Backup and restore</strong> in one zip, with a safety backup before every restore</li>
-          <li><strong>Encrypted API keys</strong> (AES-256-GCM), kept in your OS key store</li>
-          <li><strong>Calendar export</strong> to <code>.ics</code> and <strong>task export</strong> to <code>.csv</code></li>
+        <img class="yuii" data-amber-speed="0.9" data-reveal="wobble" src="/assets/yuii/dizzy.webp" alt="Yuii with swirly, dizzy eyes and question marks floating around her" width="868" height="900" loading="lazy">
+      </div>
+      <div class="chapter-text">
+        <p class="chip" data-reveal>Chapter 1 · The mess</p>
+        <h2 id="story-title" class="display" data-reveal>Classes used to make my head spin.</h2>
+        <div class="bubble" data-reveal>
+          <p>My timetable lived in one app, my notes in another, the slides in my Downloads folder and the lecture recordings on my phone. When exams came, nothing was where I needed it.</p>
+        </div>
+        <ul class="pain" data-reveal>
+          <li>I couldn't type fast enough to catch everything the professor said.</li>
+          <li>I'd re-listen to a 2-hour recording to find one explanation.</li>
+          <li>Searching the web gave me answers, but I still didn't <em>understand</em>.</li>
+          <li>Deadlines hid in emails, chats and my head.</li>
         </ul>
       </div>
     </section>
 
-    <!-- Install -->
-    <section class="section" id="install">
-      <div class="glow glow-install" aria-hidden="true"></div>
-      <div class="section-head" data-reveal>
-        <p class="eyebrow">Get started in 3 minutes</p>
-        <h2>Install it <span class="accent">your way.</span></h2>
-        <p class="lead" id="os-hint">Pick your system. We've selected the one you're on.</p>
+    <!-- 3 · Tablet + carousel -->
+    <section class="chapter" id="features" aria-labelledby="features-title">
+      <div class="chapter-art">
+        <img class="yuii" data-amber-speed="0.9" data-reveal="pop" src="/assets/yuii/tablet.webp" alt="Yuii happily hugging her tablet" width="752" height="900" loading="lazy">
+      </div>
+      <div class="chapter-text">
+        <p class="chip" data-reveal>Chapter 2 · The fix</p>
+        <h2 id="features-title" class="display" data-reveal>Then I found <span class="name-uni">UniHelper</span>ProMax.</h2>
+        <div class="bubble" data-reveal>
+          <p>Now every class session has its own little home: notes, slides, recording, <b>transcript</b> and an <b>AI tutor</b>, all together. Two clicks from my calendar. Here, let me show you my favourite parts!</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3a · Yuii brags about the AI tutor -->
+    <section class="chapter chapter-tutor" id="tutor" aria-labelledby="tutor-title">
+      <div class="chapter-art">
+        <figure class="shot shot-tilt" data-reveal="pop"><img src="/assets/shots/teacher.webp" alt="AI Teacher lesson: the tutor asks a question about binary search trees and waits for the student's answer and how sure they are" width="1600" height="1000" loading="lazy"></figure>
+      </div>
+      <div class="chapter-text">
+        <p class="chip" data-reveal>Okay, I have to brag</p>
+        <h2 id="tutor-title" class="display" data-reveal>My AI tutor makes me <em>think</em>.</h2>
+        <div class="says" data-reveal>
+          <img class="avatar" src="/assets/yuii/avatar.webp" alt="" width="192" height="192" loading="lazy">
+          <div class="bubble">
+            <p>Other chatbots just hand me the answer and I forget it by Friday. Mine asks me questions first, checks how sure I am, and builds the idea up with me. I finally <em>get</em> binary trees!</p>
+          </div>
+        </div>
+        <ul class="ticks" data-reveal>
+          <li>Asks before it tells: you work it out step by step</li>
+          <li>"How sure are you?" so it finds what you don't really know</li>
+          <li>A lesson plan that updates as you learn</li>
+          <li>Runs on a local model too, fully offline and private</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- 3b · Feature carousel -->
+    <section class="chapter chapter-stack" id="tour" aria-labelledby="tour-title">
+      <div class="tour-head">
+        <p class="chip" data-reveal>Yuii's favourite parts</p>
+        <h2 id="tour-title" class="display" data-reveal>Hear it. Learn it. Keep it.</h2>
       </div>
 
-      <div class="segmented" role="tablist" aria-label="Operating system" data-tabs="os" data-reveal>
-        <button role="tab" aria-selected="true" aria-controls="os-windows" id="tab-windows" data-os="windows">Windows</button>
-        <button role="tab" aria-selected="false" aria-controls="os-macos" id="tab-macos" data-os="macos" tabindex="-1">macOS</button>
-        <button role="tab" aria-selected="false" aria-controls="os-linux" id="tab-linux" data-os="linux" tabindex="-1">Linux</button>
-        <button role="tab" aria-selected="false" aria-controls="os-docker" id="tab-docker" data-os="docker" tabindex="-1">Docker</button>
+      <div class="carousel" data-carousel aria-roledescription="carousel" aria-label="UniHelperProMax features" data-reveal>
+        <div class="carousel-tabs" role="tablist" aria-label="Choose a feature">
+          <button role="tab" aria-selected="true" aria-controls="slide-0" id="ctab-0">🎙️ Transcribe</button>
+          <button role="tab" aria-selected="false" aria-controls="slide-1" id="ctab-1" tabindex="-1">🎓 AI Teacher</button>
+          <button role="tab" aria-selected="false" aria-controls="slide-2" id="ctab-2" tabindex="-1">🤖 AI chat</button>
+          <button role="tab" aria-selected="false" aria-controls="slide-3" id="ctab-3" tabindex="-1">🕸️ Knowledge graph</button>
+          <button role="tab" aria-selected="false" aria-controls="slide-4" id="ctab-4" tabindex="-1">📝 Notes</button>
+          <button role="tab" aria-selected="false" aria-controls="slide-5" id="ctab-5" tabindex="-1">📑 Slides</button>
+          <button role="tab" aria-selected="false" aria-controls="slide-6" id="ctab-6" tabindex="-1">🗓️ Calendar</button>
+          <button role="tab" aria-selected="false" aria-controls="slide-7" id="ctab-7" tabindex="-1">✅ Tasks</button>
+          <button role="tab" aria-selected="false" aria-controls="slide-8" id="ctab-8" tabindex="-1">🎨 Themes</button>
+        </div>
+
+        <div class="carousel-stage">
+          <article class="slide" role="tabpanel" id="slide-0" aria-labelledby="ctab-0" aria-roledescription="slide">
+            <div class="slide-text">
+              <p class="tag">Star feature</p>
+              <h3>Record now, read later</h3>
+              <p>Hit <strong>Record</strong> in the lecture, or upload audio you already have. Click <strong>Transcribe</strong>, pick a note, and the transcript is added to the end of it. Nothing you wrote ever changes.</p>
+              <ul class="ticks">
+                <li>Recording survives a closed tab or dropped Wi-Fi</li>
+                <li>Runs on the server: close the laptop, come back later</li>
+                <li>Any OpenAI-compatible speech API, even your own</li>
+              </ul>
+            </div>
+            <figure class="shot"><img src="/assets/shots/transcribe.webp" alt="Transcribe dialog: choose the note and the spoken language" width="1600" height="1000" loading="lazy"></figure>
+          </article>
+
+          <article class="slide" role="tabpanel" id="slide-1" aria-labelledby="ctab-1" aria-roledescription="slide" hidden>
+            <div class="slide-text">
+              <p class="tag">Star feature</p>
+              <h3>An AI tutor that makes you think</h3>
+              <p>Ask "why is searching a BST O(h)?" and the AI Teacher doesn't just answer. It checks what you know, asks you questions, and builds up the idea with you, step by step.</p>
+              <ul class="ticks">
+                <li>Questions with "how sure are you?" so it finds real gaps</li>
+                <li>A lesson plan that updates as you learn</li>
+                <li>Works with a local model, fully offline</li>
+              </ul>
+            </div>
+            <figure class="shot"><img src="/assets/shots/teacher.webp" alt="AI Teacher lesson: the teacher asks a question about binary search trees and waits for the student's answer and confidence" width="1600" height="1000" loading="lazy"></figure>
+          </article>
+
+          <article class="slide" role="tabpanel" id="slide-2" aria-labelledby="ctab-2" aria-roledescription="slide" hidden>
+            <div class="slide-text">
+              <p class="tag">AI</p>
+              <h3>Ask the AI, with the lecture in hand</h3>
+              <p>Attach today's notes, the slides, a whiteboard photo or the recording and ask "explain slide 14 again" or "make me 10 exam questions".</p>
+              <ul class="ticks">
+                <li>OpenAI, Anthropic, Gemini, or Ollama / LM Studio</li>
+                <li>Every chat saved as a readable <code>.md</code> file</li>
+                <li>It can't touch your notes: read-only by design</li>
+              </ul>
+            </div>
+            <figure class="shot"><img src="/assets/shots/ai-chat.webp" alt="AI chat open beside the lecture slides, with a note and PDF attached" width="1600" height="1000" loading="lazy"></figure>
+          </article>
+
+          <article class="slide" role="tabpanel" id="slide-3" aria-labelledby="ctab-3" aria-roledescription="slide" hidden>
+            <div class="slide-text">
+              <p class="tag">AI</p>
+              <h3>See how ideas connect</h3>
+              <p>What you learn with the tutor grows into a knowledge graph, so you can see how "BST property" leads to "balanced trees" right next to your week.</p>
+            </div>
+            <figure class="shot"><img src="/assets/shots/knowledge-graph.webp" alt="Week calendar with a knowledge graph of ideas in the side panel" width="1600" height="1000" loading="lazy"></figure>
+          </article>
+
+          <article class="slide" role="tabpanel" id="slide-4" aria-labelledby="ctab-4" aria-roledescription="slide" hidden>
+            <div class="slide-text">
+              <p class="tag">Notes</p>
+              <h3>Notes that look as good as they read</h3>
+              <p>A live Markdown editor with tables, code, checklists, LaTeX math and Mermaid diagrams. Each note is a plain <code>.md</code> file you can open anywhere.</p>
+            </div>
+            <figure class="shot"><img src="/assets/shots/notes.webp" alt="Markdown note with LaTeX math, a Mermaid diagram, a table and a code block" width="1600" height="1000" loading="lazy"></figure>
+          </article>
+
+          <article class="slide" role="tabpanel" id="slide-5" aria-labelledby="ctab-5" aria-roledescription="slide" hidden>
+            <div class="slide-text">
+              <p class="tag">Reader</p>
+              <h3>Slides right next to your notes</h3>
+              <p>A built-in PDF reader with highlights, drawings and comments, side by side with your note in split view.</p>
+            </div>
+            <figure class="shot"><img src="/assets/shots/workspace-split.webp" alt="Lecture notes next to the lecture slides in split view" width="1600" height="1000" loading="lazy"></figure>
+          </article>
+
+          <article class="slide" role="tabpanel" id="slide-6" aria-labelledby="ctab-6" aria-roledescription="slide" hidden>
+            <div class="slide-text">
+              <p class="tag">Calendar</p>
+              <h3>A calendar built for university</h3>
+              <p>Weekly classes, exams, office hours and seminars, organised by year and semester. Import and export <code>.ics</code>.</p>
+            </div>
+            <figure class="shot"><img src="/assets/shots/calendar-week.webp" alt="Week view with colour-coded classes and events" width="1600" height="1000" loading="lazy"></figure>
+          </article>
+
+          <article class="slide" role="tabpanel" id="slide-7" aria-labelledby="ctab-7" aria-roledescription="slide" hidden>
+            <div class="slide-text">
+              <p class="tag">Tasks</p>
+              <h3>Every deadline on one board</h3>
+              <p>Assignments, readings and exam prep on a board or a list, with checklists, quick notes and due dates on your calendar.</p>
+            </div>
+            <figure class="shot"><img src="/assets/shots/kanban.webp" alt="Task board with columns for to do, in progress and done" width="1600" height="1000" loading="lazy"></figure>
+          </article>
+
+          <article class="slide" role="tabpanel" id="slide-8" aria-labelledby="ctab-8" aria-roledescription="slide" hidden>
+            <div class="slide-text">
+              <p class="tag">Themes</p>
+              <h3>Make it yours</h3>
+              <p>18 built-in themes, including one in my colours, or design your own from four colours.</p>
+            </div>
+            <figure class="shot"><img src="/assets/shots/theme-yuii.webp" alt="The app in the pink Yuii theme" width="1600" height="1000" loading="lazy"></figure>
+          </article>
+        </div>
+
+        <div class="carousel-nav">
+          <button class="btn btn-ghost btn-round" type="button" data-prev aria-label="Previous feature">←</button>
+          <p class="carousel-count" aria-live="polite"><span data-current>1</span> / 9</p>
+          <button class="btn btn-ghost btn-round" type="button" data-next aria-label="Next feature">→</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · Instructional: free & open source -->
+    <section class="chapter chapter-flip" id="free" aria-labelledby="free-title">
+      <div class="chapter-art">
+        <img class="yuii" data-amber-speed="0.9" data-reveal="pop" src="/assets/yuii/instructional.webp" alt="Yuii raising a finger as if sharing a tip" width="666" height="748" loading="lazy">
+      </div>
+      <div class="chapter-text">
+        <p class="chip" data-reveal>Chapter 3 · The best part</p>
+        <h2 id="free-title" class="display" data-reveal>Oh, and it's free. Really free.</h2>
+        <div class="bubble" data-reveal>
+          <p>No subscription, no account with anyone, no tracking. The whole thing is open source, so anyone can read the code, improve it, or host it for their friends.</p>
+        </div>
+        <ul class="facts" data-reveal>
+          <li><strong>Free forever</strong><span>AGPL-3.0, source on GitHub</span></li>
+          <li><strong>Your files</strong><span>Plain <code>.md</code>, <code>.pdf</code> and audio on your disk</span></li>
+          <li><strong>Offline</strong><span>The desktop app needs no login</span></li>
+          <li><strong>One-click backup</strong><span>Your whole semester in one zip</span></li>
+        </ul>
+        <div class="actions" data-reveal>
+          <a class="btn btn-ghost" href="https://github.com/Nimaj2002/UniHelperProMax">Read the code on GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · Shy ask -->
+    <section class="chapter chapter-ask" id="download" aria-labelledby="download-title">
+      <div class="chapter-art">
+        <img class="yuii" data-amber-speed="0.9" data-reveal="pop" src="/assets/yuii/shy.webp" alt="Yuii blushing shyly" width="813" height="900" loading="lazy">
+      </div>
+      <div class="chapter-text">
+        <p class="chip" data-reveal>Chapter 4 · A small favour</p>
+        <h2 id="download-title" class="display" data-reveal>Um… would you like to try it too?</h2>
+        <div class="bubble" data-reveal>
+          <p>It would make me really happy. It takes about three minutes, and your semester will thank you.</p>
+        </div>
+        <div class="actions" data-reveal>
+          <a class="btn btn-primary btn-lg" id="dl-main" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest">Download the app</a>
+          <a class="btn btn-ghost" href="#install">Other ways to install</a>
+        </div>
+        <p class="meta" data-reveal><span id="dl-version">Latest release</span> · Windows · macOS · Linux · Docker</p>
+      </div>
+    </section>
+
+    <!-- 6 · Thinking: install methods -->
+    <section class="chapter chapter-stack" id="install" aria-labelledby="install-title">
+      <div class="chapter-row">
+        <div class="chapter-art">
+          <img class="yuii yuii-sm" data-amber-speed="0.9" data-reveal="pop" src="/assets/yuii/thinking.webp" alt="Yuii thinking, finger on her chin" width="470" height="740" loading="lazy">
+        </div>
+        <div class="chapter-text">
+          <p class="chip" data-reveal>Chapter 5 · Let's set it up</p>
+          <h2 id="install-title" class="display" data-reveal>Hmm, which way suits you best?</h2>
+          <div class="bubble" data-reveal>
+            <p>I picked your system already! The desktop app is easiest: download, open, done. Terminal fans get a one-line script.</p>
+          </div>
+        </div>
       </div>
 
-      <div class="os-panels" data-panels="os">
-        <!-- Windows -->
+      <div class="install" data-reveal>
+        <div class="segmented" role="tablist" aria-label="Operating system" data-tabs>
+          <button role="tab" aria-selected="true" aria-controls="os-windows" id="tab-windows" data-os="windows">Windows</button>
+          <button role="tab" aria-selected="false" aria-controls="os-macos" id="tab-macos" data-os="macos" tabindex="-1">macOS</button>
+          <button role="tab" aria-selected="false" aria-controls="os-linux" id="tab-linux" data-os="linux" tabindex="-1">Linux</button>
+          <button role="tab" aria-selected="false" aria-controls="os-docker" id="tab-docker" data-os="docker" tabindex="-1">Docker</button>
+        </div>
+
         <div role="tabpanel" id="os-windows" aria-labelledby="tab-windows" class="install-grid">
-          <article class="card install-card install-card-feature">
-            <p class="tag">Desktop app · release file</p>
+          <article class="card card-feature">
+            <p class="tag">Easiest · desktop app</p>
             <h3>Download the installer</h3>
-            <p>Windows 10 or newer (x64). Nothing else to install: the app brings its own server, works offline and needs no login.</p>
+            <p>Windows 10 or newer (x64). It brings its own server, works offline and needs no login.</p>
             <div class="assets" data-assets="windows"><a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">UniHelperProMax-Setup-&lt;version&gt;-x64.exe</span></a></div>
-            <p class="note">Not code-signed yet: on "Windows protected your PC" click <strong>More info → Run anyway</strong>. If Smart App Control blocks it, use the self-hosted version.</p>
+            <p class="note">Not code-signed yet: on "Windows protected your PC" click <strong>More info → Run anyway</strong>.</p>
           </article>
-          <article class="card install-card">
-            <p class="tag">Self-host · with script</p>
-            <h3>One-line install (PowerShell)</h3>
-            <pre class="code"><code>irm https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.ps1 | iex
-cd UniHelperProMax; .\start.ps1</code></pre>
-            <p class="note">Checks Node.js 22 LTS, offers to install <code>uv</code>, installs dependencies and builds. Run again to update. Options: <code>-Docker</code> <code>-Dir</code> <code>-Start</code> <code>-Yes</code>. Then open <a href="http://localhost:8000">localhost:8000</a>.</p>
-          </article>
-          <article class="card install-card">
-            <p class="tag">Self-host · without script</p>
-            <h3>Manual install</h3>
-            <pre class="code"><code>git clone https://github.com/Nimaj2002/UniHelperProMax.git
-cd UniHelperProMax\backend; uv sync
-cd ..\frontend; corepack pnpm install; corepack pnpm build
-cd ..\backend
-$env:UNIHELPER_DATA_DIR="./data"; $env:UNIHELPER_STATIC_DIR="../frontend/dist"
-uv run uvicorn unihelper.main:app --port 8000</code></pre>
-            <p class="note">Needs Python 3.12+ with <code>uv</code> and Node.js 22 LTS (only to build the frontend once).</p>
-          </article>
-          <article class="card install-card">
-            <p class="tag">Development</p>
-            <h3>Hot reload, two terminals</h3>
-            <pre class="code"><code>cd backend; $env:UNIHELPER_DATA_DIR="./data"
-uv run uvicorn unihelper.main:app --reload --port 8000
-cd frontend; corepack pnpm dev   # http://localhost:5173</code></pre>
-            <p class="note">Build the Windows installer yourself from the repo root:</p>
-            <pre class="code"><code>.\scripts\build-desktop.ps1          # Setup-&lt;version&gt;-x64.exe
-.\scripts\build-desktop.ps1 -Unpacked</code></pre>
+          <article class="card">
+            <p class="tag">Self-host · one line</p>
+            <h3>PowerShell script</h3>
+            <div class="code"><pre id="cmd-win">irm https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.ps1 | iex
+cd UniHelperProMax; .\start.ps1</pre><button class="copy" type="button" data-copy="cmd-win">Copy</button></div>
+            <p class="note">Checks Node.js 22, offers to install <code>uv</code>, builds everything. Then open <code>localhost:8000</code>.</p>
           </article>
         </div>
 
-        <!-- macOS -->
         <div role="tabpanel" id="os-macos" aria-labelledby="tab-macos" class="install-grid" hidden>
-          <article class="card install-card install-card-feature">
-            <p class="tag">Desktop app · release file</p>
+          <article class="card card-feature">
+            <p class="tag">Easiest · desktop app</p>
             <h3>Download the disk image</h3>
-            <p>macOS 13 or newer (Apple Silicon). Open the <code>.dmg</code> and drag UniHelperProMax to Applications.</p>
+            <p>macOS 13 or newer (Apple Silicon). Open the <code>.dmg</code> and drag the app to Applications.</p>
             <div class="assets" data-assets="macos"><a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">UniHelperProMax-&lt;version&gt;-arm64.dmg</span></a></div>
-            <p class="note">Not notarized yet: if macOS can't verify the app, go to <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>, or run:</p>
-            <pre class="code"><code>xattr -dr com.apple.quarantine /Applications/UniHelperProMax.app</code></pre>
+            <p class="note">Not notarized yet: use <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>, or run <code>xattr -dr com.apple.quarantine /Applications/UniHelperProMax.app</code>.</p>
           </article>
-          <article class="card install-card">
-            <p class="tag">Self-host · with script</p>
-            <h3>One-line install</h3>
-            <pre class="code"><code>curl -fsSL https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.sh | bash
-cd UniHelperProMax &amp;&amp; ./start.sh</code></pre>
-            <p class="note">Checks Node.js 22 LTS, offers to install <code>uv</code>, installs dependencies and builds. Run again to update. Options: <code>--docker</code> <code>--dir</code> <code>--start</code> <code>--yes</code>. Then open <a href="http://localhost:8000">localhost:8000</a>.</p>
-          </article>
-          <article class="card install-card">
-            <p class="tag">Self-host · without script</p>
-            <h3>Manual install</h3>
-            <pre class="code"><code>git clone https://github.com/Nimaj2002/UniHelperProMax.git
-cd UniHelperProMax/backend &amp;&amp; uv sync
-cd ../frontend &amp;&amp; corepack pnpm install &amp;&amp; corepack pnpm build
-cd ../backend &amp;&amp; UNIHELPER_DATA_DIR=./data UNIHELPER_STATIC_DIR=../frontend/dist \
-  uv run uvicorn unihelper.main:app --port 8000</code></pre>
-            <p class="note">Needs Python 3.12+ with <code>uv</code> and Node.js 22 LTS (only to build the frontend once).</p>
-          </article>
-          <article class="card install-card">
-            <p class="tag">Development</p>
-            <h3>Hot reload, two terminals</h3>
-            <pre class="code"><code>cd backend &amp;&amp; UNIHELPER_DATA_DIR=./data uv run uvicorn unihelper.main:app --reload --port 8000
-cd frontend &amp;&amp; corepack pnpm dev   # http://localhost:5173</code></pre>
-            <p class="note">Build the macOS installer yourself from the repo root:</p>
-            <pre class="code"><code>scripts/build-desktop.sh              # .dmg for this Mac's CPU
-scripts/build-desktop.sh --arch x64   # Intel Macs</code></pre>
+          <article class="card">
+            <p class="tag">Self-host · one line</p>
+            <h3>Shell script</h3>
+            <div class="code"><pre id="cmd-mac">curl -fsSL https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.sh | bash
+cd UniHelperProMax &amp;&amp; ./start.sh</pre><button class="copy" type="button" data-copy="cmd-mac">Copy</button></div>
+            <p class="note">Checks Node.js 22, offers to install <code>uv</code>, builds everything. Then open <code>localhost:8000</code>.</p>
           </article>
         </div>
 
-        <!-- Linux -->
         <div role="tabpanel" id="os-linux" aria-labelledby="tab-linux" class="install-grid" hidden>
-          <article class="card install-card install-card-feature">
-            <p class="tag">Desktop app · release files</p>
+          <article class="card card-feature">
+            <p class="tag">Easiest · desktop app</p>
             <h3>AppImage or .deb</h3>
             <p>Linux x64, any distribution. The AppImage needs <code>libfuse2</code> (<code>libfuse2t64</code> on Ubuntu 24.04).</p>
             <div class="assets" data-assets="linux">
               <a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">UniHelperProMax-&lt;version&gt;-x86_64.AppImage</span></a>
               <a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">unihelperpromax_&lt;version&gt;_amd64.deb</span></a>
             </div>
-            <pre class="code"><code>chmod +x UniHelperProMax-*.AppImage &amp;&amp; ./UniHelperProMax-*.AppImage
-# or, on Debian / Ubuntu
-sudo apt install ./unihelperpromax_*_amd64.deb</code></pre>
           </article>
-          <article class="card install-card">
-            <p class="tag">Self-host · with script</p>
-            <h3>One-line install</h3>
-            <pre class="code"><code>curl -fsSL https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.sh | bash
-cd UniHelperProMax &amp;&amp; ./start.sh</code></pre>
-            <p class="note">Checks Node.js 22 LTS, offers to install <code>uv</code>, installs dependencies and builds. Run again to update. Options: <code>--docker</code> <code>--dir</code> <code>--start</code> <code>--yes</code>. Then open <a href="http://localhost:8000">localhost:8000</a>.</p>
+          <article class="card">
+            <p class="tag">Self-host · one line</p>
+            <h3>Shell script</h3>
+            <div class="code"><pre id="cmd-linux">curl -fsSL https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.sh | bash
+cd UniHelperProMax &amp;&amp; ./start.sh</pre><button class="copy" type="button" data-copy="cmd-linux">Copy</button></div>
+            <p class="note">Checks Node.js 22, offers to install <code>uv</code>, builds everything. Then open <code>localhost:8000</code>.</p>
           </article>
-          <article class="card install-card">
-            <p class="tag">Self-host · without script</p>
-            <h3>Manual install</h3>
-            <pre class="code"><code>git clone https://github.com/Nimaj2002/UniHelperProMax.git
+        </div>
+
+        <div role="tabpanel" id="os-docker" aria-labelledby="tab-docker" class="install-grid" hidden>
+          <article class="card card-feature">
+            <p class="tag">For a group · Docker Compose</p>
+            <h3>Run it in a container</h3>
+            <p>The image is about 25 MB. Your files stay in <code>backend/data</code> on your own disk, served on <code>127.0.0.1:8000</code>.</p>
+            <div class="code"><pre id="cmd-docker">git clone https://github.com/Nimaj2002/UniHelperProMax.git &amp;&amp; cd UniHelperProMax
+mkdir -p backend/data keys &amp;&amp; docker compose up -d --build</pre><button class="copy" type="button" data-copy="cmd-docker">Copy</button></div>
+          </article>
+          <article class="card">
+            <p class="tag">Updating</p>
+            <h3>Pull and rebuild</h3>
+            <div class="code"><pre id="cmd-docker-up">git pull &amp;&amp; docker compose up -d --build</pre><button class="copy" type="button" data-copy="cmd-docker-up">Copy</button></div>
+            <p class="note">API keys are encrypted with a key in <code>./keys</code>. Back that folder up separately.</p>
+          </article>
+        </div>
+
+        <details class="manual">
+          <summary>I'd rather build it by hand</summary>
+          <div class="code"><pre id="cmd-manual">git clone https://github.com/Nimaj2002/UniHelperProMax.git
 cd UniHelperProMax/backend &amp;&amp; uv sync
 cd ../frontend &amp;&amp; corepack pnpm install &amp;&amp; corepack pnpm build
 cd ../backend &amp;&amp; UNIHELPER_DATA_DIR=./data UNIHELPER_STATIC_DIR=../frontend/dist \
-  uv run uvicorn unihelper.main:app --port 8000</code></pre>
-            <p class="note">Needs Python 3.12+ with <code>uv</code> and Node.js 22 LTS (only to build the frontend once).</p>
-          </article>
-          <article class="card install-card">
-            <p class="tag">Development</p>
-            <h3>Hot reload, two terminals</h3>
-            <pre class="code"><code>cd backend &amp;&amp; UNIHELPER_DATA_DIR=./data uv run uvicorn unihelper.main:app --reload --port 8000
-cd frontend &amp;&amp; corepack pnpm dev   # http://localhost:5173</code></pre>
-            <p class="note">Build the Linux installers yourself from the repo root:</p>
-            <pre class="code"><code>scripts/build-desktop.sh              # AppImage + .deb
-scripts/build-desktop.sh --unpacked   # quicker, unpacked app</code></pre>
-          </article>
-        </div>
-
-        <!-- Docker -->
-        <div role="tabpanel" id="os-docker" aria-labelledby="tab-docker" class="install-grid" hidden>
-          <article class="card install-card install-card-feature">
-            <p class="tag">Docker · without script</p>
-            <h3>Docker Compose</h3>
-            <p>Nothing else to install; the image is about 25 MB to download. Your files stay in <code>backend/data</code> on your own disk.</p>
-            <pre class="code"><code>git clone https://github.com/Nimaj2002/UniHelperProMax.git &amp;&amp; cd UniHelperProMax
-mkdir -p backend/data keys &amp;&amp; docker compose up -d --build</code></pre>
-            <p class="note">Listens on <code>127.0.0.1:8000</code>. See the comments in <code>docker-compose.yml</code> to change the port or open it to your network.</p>
-          </article>
-          <article class="card install-card">
-            <p class="tag">Docker · with script</p>
-            <h3>Let the installer set it up</h3>
-            <pre class="code"><code># macOS / Linux
-curl -fsSL https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.sh | bash -s -- --docker</code></pre>
-            <pre class="code"><code># Windows (PowerShell)
-$env:UNIHELPER_INSTALL = 'docker'
-irm https://raw.githubusercontent.com/Nimaj2002/UniHelperProMax/main/install.ps1 | iex</code></pre>
-          </article>
-          <article class="card install-card">
-            <p class="tag">Linux user ids</p>
-            <h3>Not user 1000?</h3>
-            <p>Put your ids in a <code>.env</code> file next to <code>docker-compose.yml</code> (<code>--docker</code> does this for you):</p>
-            <pre class="code"><code>echo "UNIHELPER_UID=$(id -u)" &gt;&gt; .env
-echo "UNIHELPER_GID=$(id -g)" &gt;&gt; .env</code></pre>
-          </article>
-          <article class="card install-card">
-            <p class="tag">Updating</p>
-            <h3>Pull and rebuild</h3>
-            <pre class="code"><code>git pull &amp;&amp; docker compose up -d --build</code></pre>
-            <p class="note">API keys are encrypted with a key kept in <code>./keys</code>. Back that folder up separately to move keys along.</p>
-          </article>
-        </div>
-      </div>
-
-      <div class="after-install" data-reveal>
-        <p>Open <strong>http://localhost:8000</strong>, create the owner account and add your first class. 🎉 The desktop app opens straight into the app on <code>127.0.0.1:47813</code>, with no login. Updating the desktop app: install the new version over the old one; your data stays.</p>
+  uv run uvicorn unihelper.main:app --port 8000</pre><button class="copy" type="button" data-copy="cmd-manual">Copy</button></div>
+          <p class="note">Needs Python 3.12+ with <code>uv</code> and Node.js 22 LTS. Full details in the <a href="https://github.com/Nimaj2002/UniHelperProMax#get-started-in-3-minutes">README</a>.</p>
+        </details>
       </div>
     </section>
 
-    <!-- Data -->
-    <section class="section" id="data">
-      <div class="split">
-        <div class="split-text" data-reveal>
-          <p class="eyebrow">Your data</p>
-          <h2>Plain files, <span class="accent">on your disk.</span></h2>
-          <p class="lead">Notes are Markdown, recordings are audio files, slides are untouched PDFs. Open them in any editor; the app picks up changes and never overwrites them silently.</p>
-          <ul class="checks">
-            <li>Transcripts are only ever added at the end of a note</li>
-            <li>API keys never in a backup, never in plain text</li>
-            <li>Uninstalling never deletes your data</li>
-          </ul>
-        </div>
-        <pre class="code code-tree" data-reveal><code>data/
-├── unihelper.sqlite3      <span class="c">metadata only</span>
-└── files/&lt;user&gt;/&lt;Year&gt;/&lt;Semester&gt;/
-    ├── &lt;Course&gt;/&lt;YYYY-MM-DD&gt;/
-    │   ├── notes/       <span class="c">Lecture 9.md</span>
-    │   ├── audios/      <span class="c">Recording 10:02.webm</span>
-    │   ├── documents/   <span class="c">Slides.pdf + .annotations.json</span>
-    │   └── chats/       <span class="c">readable .md + .json</span>
-    └── _Events/&lt;YYYY-MM-DD Title&gt;/</code></pre>
+    <!-- 7 · Excited thanks -->
+    <section class="chapter chapter-flip chapter-thanks" id="thanks" aria-labelledby="thanks-title">
+      <div class="chapter-art">
+        <img class="yuii" data-amber-speed="0.9" data-reveal="pop" src="/assets/yuii/excited.webp" alt="Yuii looking up, excited and smiling" width="778" height="755" loading="lazy">
       </div>
-    </section>
-
-    <!-- Resources -->
-    <section class="section" id="resources">
-      <div class="grid grid-3" data-stagger>
-        <a class="card card-link" href="https://github.com/Nimaj2002/UniHelperProMax">
-          <h3>GitHub repository <span class="arrow" aria-hidden="true">→</span></h3>
-          <p class="mono-sm">Nimaj2002/UniHelperProMax</p>
-          <p>Source code, specs, issues and the full README.</p>
-        </a>
-        <a class="card card-link" href="https://github.com/Nimaj2002/UniHelperProMax/releases">
-          <h3>All releases <span class="arrow" aria-hidden="true">→</span></h3>
-          <p class="mono-sm" id="res-version">releases/latest</p>
-          <p>Installers for every version, with release notes.</p>
-        </a>
-        <a class="card card-link" href="https://github.com/Nimaj2002/UniHelperProMax/blob/main/LICENSE">
-          <h3>AGPL-3.0 license <span class="arrow" aria-hidden="true">→</span></h3>
-          <p class="mono-sm">free · open source</p>
-          <p>Free to use, modify and share. A commercial license is also available.</p>
-        </a>
+      <div class="chapter-text">
+        <p class="chip" data-reveal>The end… and your beginning</p>
+        <h2 id="thanks-title" class="display" data-reveal>Thank you for installing! ✨</h2>
+        <div class="bubble" data-reveal>
+          <p>Yay, we're study buddies now! Open the app, add your first class, and hit Record in your next lecture. I can't wait to hear how your semester goes.</p>
+        </div>
+        <ol class="steps" data-reveal>
+          <li>Open the app (or <code>localhost:8000</code>)</li>
+          <li>Add your first class to the calendar</li>
+          <li>Record, transcribe, and ask your AI tutor</li>
+        </ol>
+        <div class="actions" data-reveal>
+          <a class="btn btn-primary" href="https://github.com/Nimaj2002/UniHelperProMax">⭐ Star us on GitHub</a>
+          <a class="btn btn-ghost" href="https://github.com/Nimaj2002/UniHelperProMax/issues">Share an idea</a>
+        </div>
       </div>
     </section>
   </main>
 
   <footer class="footer">
     <div class="footer-inner">
-      <a class="brand" href="#top"><img src="assets/icons/app-icon-192.png" alt="" width="24" height="24" class="brand-mark"><span>UniHelperProMax</span></a>
-      <p>Your whole semester in one calm place.</p>
-      <a href="https://github.com/Nimaj2002/UniHelperProMax">github.com/Nimaj2002/UniHelperProMax</a>
+      <div class="footer-brand">
+        <img src="/assets/icons/app-icon-192.png" alt="" width="40" height="40">
+        <p><strong>UniHelperProMax</strong><br>Your whole semester in one calm place.</p>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/Nimaj2002/UniHelperProMax">GitHub</a></li>
+        <li><a href="https://github.com/Nimaj2002/UniHelperProMax/releases">Releases</a></li>
+        <li><a href="https://github.com/Nimaj2002/UniHelperProMax#readme">Docs</a></li>
+        <li><a href="https://github.com/Nimaj2002/UniHelperProMax/blob/main/LICENSE">AGPL-3.0</a></li>
+      </ul>
     </div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/motion@11.11.13/dist/motion.js"></script>
-  <script src="main.js"></script>
+  <script type="module" src="/main.js"></script>
 </body>
 </html>
