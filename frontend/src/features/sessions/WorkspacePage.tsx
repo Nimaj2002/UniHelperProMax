@@ -13,7 +13,8 @@ import {
 import { createPortal } from "react-dom";
 import { useParams, useSearchParams } from "react-router";
 import { toast } from "sonner";
-import { useLayout, useRightCard, type RightCard } from "@/app/shell/layout";
+import { Card } from "@/app/shell/Card";
+import { useBareMain, useLayout, useRightCard, type RightCard } from "@/app/shell/layout";
 import {
   FocusModeButton,
   ShowSidePanelButton,
@@ -253,6 +254,7 @@ export function WorkspacePage() {
   const [searchParams] = useSearchParams();
   const linkedNote = searchParams.get("note");
   const qc = useQueryClient();
+  useBareMain();
   const layout = useLayout();
   const session = useSession(sessionKey);
   const timeline = useTimeline(courseId || undefined);
@@ -872,71 +874,76 @@ export function WorkspacePage() {
 
   const ratio = ws.split?.ratio ?? 0.5;
   const editorArea = (
-    <div className="flex h-full min-h-0 flex-col">
-      <WorkspaceTabs
-        state={ws}
-        titleOf={titleOf}
-        splitAvailable={splitAvailable}
-        onSelect={(tab) => act({ type: "open", tab })}
-        onClose={closeTab}
-        onToggleSplit={() => act({ type: "toggleSplit" })}
-        onMoveToOtherPane={(tab) => act({ type: "moveToOtherPane", tab })}
-        start={<ShowSidePanelButton />}
-        add={
-          <AddTabButton
-            sessionKey={sessionKey}
-            notes={noteList}
-            documents={docList}
-            openIds={new Set(ws.tabs.map((t) => t.id))}
-            onOpen={(kind, id) =>
-              kind === "note" ? openNote(id) : openDocument(id)
-            }
-            onNewNote={() => setDialog({ kind: "new" })}
-            onImportNote={noteImporter.pick}
-          />
-        }
-        actions={<>{session.data && <SessionChip session={session.data} />}</>}
-        end={
-          <>
-            <FocusModeButton />
-          </>
-        }
-      />
-      <div
-        ref={panesRef}
-        className="grid min-h-0 flex-1"
-        style={
-          {
-            "--split-l": `${ratio * 100}%`,
-            gridTemplateColumns: view.split
-              ? "minmax(0,var(--split-l)) minmax(0,1fr)"
-              : "minmax(0,1fr)",
-          } as CSSProperties
-        }
-      >
-        {pane("left")}
-        {view.split && (
-          <div className="relative min-h-0 min-w-0 border-l border-divider">
-            <PanelResizeHandle
-              value={Math.round(ratio * 100)}
-              min={20}
-              max={80}
-              defaultValue={50}
-              step={2}
-              unitsPerPx={() => 100 / (panesRef.current?.clientWidth || 1)}
-              onResize={(v) => act({ type: "setRatio", ratio: v / 100 })}
-              onDrag={(v) =>
-                panesRef.current?.style.setProperty("--split-l", `${v}%`)
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      {/* the tab bar is its own card, like the home page's panel headers */}
+      <Card className="shrink-0" body="fill">
+        <WorkspaceTabs
+          state={ws}
+          titleOf={titleOf}
+          splitAvailable={splitAvailable}
+          onSelect={(tab) => act({ type: "open", tab })}
+          onClose={closeTab}
+          onToggleSplit={() => act({ type: "toggleSplit" })}
+          onMoveToOtherPane={(tab) => act({ type: "moveToOtherPane", tab })}
+          start={<ShowSidePanelButton />}
+          add={
+            <AddTabButton
+              sessionKey={sessionKey}
+              notes={noteList}
+              documents={docList}
+              openIds={new Set(ws.tabs.map((t) => t.id))}
+              onOpen={(kind, id) =>
+                kind === "note" ? openNote(id) : openDocument(id)
               }
-              grow="right"
-              label="Resize split view"
-              controls={paneId("left")}
-              className="left-0"
+              onNewNote={() => setDialog({ kind: "new" })}
+              onImportNote={noteImporter.pick}
             />
-            {pane("right")}
-          </div>
-        )}
-      </div>
+          }
+          actions={<>{session.data && <SessionChip session={session.data} />}</>}
+          end={
+            <>
+              <FocusModeButton />
+            </>
+          }
+        />
+      </Card>
+      <Card className="flex-1" body="fill">
+        <div
+          ref={panesRef}
+          className="grid min-h-0 flex-1"
+          style={
+            {
+              "--split-l": `${ratio * 100}%`,
+              gridTemplateColumns: view.split
+                ? "minmax(0,var(--split-l)) minmax(0,1fr)"
+                : "minmax(0,1fr)",
+            } as CSSProperties
+          }
+        >
+          {pane("left")}
+          {view.split && (
+            <div className="relative min-h-0 min-w-0 border-l border-divider">
+              <PanelResizeHandle
+                value={Math.round(ratio * 100)}
+                min={20}
+                max={80}
+                defaultValue={50}
+                step={2}
+                unitsPerPx={() => 100 / (panesRef.current?.clientWidth || 1)}
+                onResize={(v) => act({ type: "setRatio", ratio: v / 100 })}
+                onDrag={(v) =>
+                  panesRef.current?.style.setProperty("--split-l", `${v}%`)
+                }
+                grow="right"
+                label="Resize split view"
+                controls={paneId("left")}
+                className="left-0"
+              />
+              {pane("right")}
+            </div>
+          )}
+        </div>
+      </Card>
       <div ref={parking} hidden />
       {openDocIds.map((id) =>
         createPortal(
@@ -960,7 +967,7 @@ export function WorkspacePage() {
   );
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
       {railWatchers}
       <SessionTimeDialog
         sessionKey={sessionKey}
@@ -984,16 +991,20 @@ export function WorkspacePage() {
         </h1>
       )}
       {session.isError ? (
-        <>
-          <div className="flex h-10 shrink-0 items-center gap-1 border-b border-divider px-1">
-            <ShowSidePanelButton />
-            <div className="flex-1" />
-            <FocusModeButton />
-          </div>
-          <p role="alert" className="p-8 text-sm text-danger">
-            This session doesn't exist.
-          </p>
-        </>
+        <div className="flex min-h-0 flex-1 flex-col gap-2">
+          <Card className="shrink-0" body="fill">
+            <div className="flex h-10 shrink-0 items-center gap-1 px-1">
+              <ShowSidePanelButton />
+              <div className="flex-1" />
+              <FocusModeButton />
+            </div>
+          </Card>
+          <Card className="flex-1">
+            <p role="alert" className="p-8 text-sm text-danger">
+              This session doesn't exist.
+            </p>
+          </Card>
+        </div>
       ) : (
         <section
           ref={mainRef}

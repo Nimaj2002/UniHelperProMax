@@ -87,9 +87,9 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
     listRef.current?.querySelector<HTMLElement>(`[data-tab="${CSS.escape(activeKey)}"]`)?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   }, [activeKey, tabs.length]);
 
-  // the main card's only fixed bar in the session workspace (008 FR-015): 40 px
+  // the session workspace's tab bar (008 FR-015): 40 px, in its own card above the panes
   return (
-    <div className="flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-divider px-1">
+    <div className="flex h-10 min-w-0 shrink-0 items-center gap-1 px-1">
       {start}
       <div className="flex h-full min-w-0 flex-1 items-center gap-0.5">
       {tabs.length > 0 && (

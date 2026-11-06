@@ -156,7 +156,7 @@ export function TeacherConversation({ chatId, turns, questions, highlight, onSel
           )}
         </div>
       </div>
-      <div className="min-w-0 shrink-0 border-t border-divider p-2">{box}</div>
+      <div className="min-w-0 shrink-0 p-2">{box}</div>
     </div>
   );
 }
