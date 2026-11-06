@@ -31,6 +31,7 @@ and stored as plain files you own.
 **[Download](#desktop-app)** ·
 **[Self-host](#self-host-it)** ·
 **[AI chat](#ai-chat)** ·
+**[AI Teacher](#ai-teacher)** ·
 **[Your data](#your-data)** ·
 **[License](#license)**
 
@@ -68,6 +69,7 @@ and stored as plain files you own.
 - [Documents and the PDF reader](#documents-and-the-pdf-reader)
 - [Transcription](#transcription)
 - [AI chat](#ai-chat)
+- [AI Teacher](#ai-teacher)
 - [Themes](#themes)
 
 </td>
@@ -81,6 +83,7 @@ and stored as plain files you own.
 - [Tests and checks](#tests-and-checks)
 - [Operator tasks](#operator-tasks)
 - [Project docs](#project-docs)
+- [Website](#website)
 - [Topics](#topics)
 - [License](#license)
 
@@ -103,6 +106,8 @@ every assignment, reading and exam you have to prepare for sits on a task board 
 - 🎙️ **Record the lecture.** Recording keeps going if the tab closes or the Wi-Fi drops.
 - ✨ **Transcribe it into your notes.** The transcript is added to the end of your note and nothing you wrote changes.
 - 🤖 **Ask AI about the lecture.** Chat with OpenAI, Anthropic, Gemini or a local model (Ollama, LM Studio) and attach your notes, slides, pictures and recordings.
+- 🎓 **An AI tutor that makes you think.** The AI Teacher checks what you already know, then teaches one step at a time with a graded question after each step.
+- 🕸️ **See how ideas connect.** Everything the tutor teaches grows into a knowledge graph on your home page.
 - ✅ **A task board next to your calendar.** Assignments, readings and exam prep on a board or a list, with checklists, quick notes and due dates you can show on the calendar.
 - 🎨 **Make it yours.** 18 built-in themes (Catppuccin, Dracula, Tokyo Night, Nord…) or design your own.
 - 🔒 **Your files stay yours.** Everything is a normal folder of `.md`, `.pdf` and audio files on your own disk.
@@ -164,6 +169,25 @@ your own key for OpenAI, Anthropic or Gemini, or run a model on your own compute
 LM Studio. Each chat is saved next to your notes as a readable `.md` file.
 
 <img src="docs/screenshots/ai-chat.png" alt="AI chat opened as a tab beside the lecture slides, with the note and PDF attached and a formatted answer with code" width="100%">
+
+### 🎓 An AI tutor that makes you think
+
+Ask "why is searching a BST O(h) and not O(log n)?" and the **AI Teacher** doesn't just hand you
+the answer. It first asks what you already know, plans the shortest path to the goal, then
+teaches one reasoning step at a time and checks each step with a question. You answer, say how
+sure you are, and it fixes a gap before building on it. Switch to **Practice** for fresh problems
+with hints. ([More](#ai-teacher))
+
+<img src="docs/screenshots/teacher.png" alt="AI Teacher lesson in three columns: your questions, the teacher's explanation, and the current question with an answer box and a How sure are you slider" width="100%">
+
+### 🕸️ See how your ideas connect
+
+Every idea the tutor teaches you lands in one **knowledge graph**, shown beside your calendar on
+the home page. Search it, see what each idea follows from and leads to, and jump back to the
+lesson where you learned it. New lessons in the same course start from what you've already
+covered.
+
+<img src="docs/screenshots/knowledge-graph.png" alt="Week calendar with the knowledge graph of taught ideas open in the right panel" width="100%">
 
 ### 🎨 Light, dark, or something with more personality
 
@@ -663,6 +687,45 @@ For trying chat without a provider, run the scripted fake
 (`cd backend && uv run uvicorn tests.fake_llm:app --port 8021`) and add
 `http://localhost:8021/v1` with the model `echo` (or `slow`).
 
+## AI Teacher
+
+Every class session and event has an **AI Teacher** section in the right panel, next to
+Recordings and Chat. **New chat** opens a lesson tab with three columns: **Questions** (every
+question asked so far, with filters All, Unanswered and Incorrect), **Teacher** (the conversation
+and the message box) and **Current question** (the answer card). The teacher uses the same AI
+endpoints and models as [AI chat](#ai-chat); set one up in **Settings → AI** first.
+
+How a lesson goes:
+
+1. **Probe.** Tell it what you want to understand. It asks a few questions to find what you
+   already know and to make the goal concrete.
+2. **Plan.** It draws the shortest path of ideas to the goal. Open it any time with **Plan**;
+   the current step is marked.
+3. **Teach and check.** One reasoning step at a time, often with a Mermaid diagram, each ending
+   in a multiple-choice or free-text question.
+4. **Answer.** Give your answer (or tick **I don't know**), set **How sure are you?** (0–100 %)
+   and optionally write your thinking. A wrong or unsure answer gets repaired before the lesson
+   moves on.
+
+A graded question shows Correct, Partly correct or Incorrect. If you think a grade is wrong, use
+**Dispute grade**: the teacher re-grades it and both grades are kept. A **Practice** chat poses
+varied problems without naming the ideas they need, with a **Hint** button, and shows the model
+solution only after you try.
+
+**Knowledge graph.** Ideas taught in a lesson are added to your knowledge graph when the lesson
+has been quiet for 5 minutes, when you close its tab, or when you press **Update graph**. Ideas
+that mean the same thing are merged. Open it from the home page's right panel (the **Knowledge
+graph** switch next to Tasks and the timer). Pan, zoom, search, or use the list view, and click a
+source to open the lesson at that message. A new lesson starts from up to 30 ideas you've already
+covered in the same course; change that set any time from the lesson tab. The graph records what
+was taught, not what you mastered, so the teacher still checks.
+
+The teacher's instructions are visible, read-only, in **Settings → AI**. Like the AI chat, it has
+no tools: it never changes your notes, files, tasks or settings. Each teacher chat is saved in
+the session's `chats/` folder as a source file and a readable `.md` transcript, alongside AI
+chats; deleting a chat removes the ideas that came only from it (the confirmation says how
+many).
+
 ## Themes
 
 **Settings → Appearance** offers Light, Dark, Match system, 18 built-in themes based on popular
@@ -727,6 +790,28 @@ The owner must choose a new password at the next sign-in.
   building and releasing: [desktop/README.md](desktop/README.md)
 - Backup and restore (Feature 016): [spec](specs/016-data-backup-restore/spec.md) ·
   [plan](specs/016-data-backup-restore/plan.md)
+- AI Teacher (Feature 022): [spec](specs/022-ai-teacher/spec.md) ·
+  [plan](specs/022-ai-teacher/plan.md) ·
+  [quickstart & validation](specs/022-ai-teacher/quickstart.md)
+
+## Website
+
+The project website in [`website/`](website/) tells the story of **Yuii**, our mascot: a
+student whose semester was a mess until she found UniHelperProMax. It's a static page built with
+[Vite](https://vite.dev), [`amber-scroll`](https://www.npmjs.com/package/amber-scroll) (smooth
+scrolling, one chapter per mouse-wheel spin) and
+[`amber-motion`](https://www.npmjs.com/package/amber-motion) (animations). Its look follows
+[`website/design/DESIGN.md`](website/design/DESIGN.md), in Yuii's pink.
+
+```bash
+cd website
+npm install
+npm run dev       # http://localhost:5173
+npm run build     # static site in website/dist/, deploy that folder
+```
+
+Yuii's original artwork is in [`Yuii/`](Yuii/); the site uses trimmed WebP copies in
+`website/assets/yuii/`.
 
 ## Contributing
 
