@@ -2393,6 +2393,264 @@ export interface paths {
         patch: operations["patch_tag_api_v1_time_tags__tag_id__patch"];
         trace?: never;
     };
+    "/api/v1/sessions/{session_key}/teacher-chats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Teacher Chats */
+        get: operations["list_teacher_chats_api_v1_sessions__session_key__teacher_chats_get"];
+        put?: never;
+        /** Start Teacher Chat */
+        post: operations["start_teacher_chat_api_v1_sessions__session_key__teacher_chats_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teacher-chats/{chat_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Teacher Chat */
+        get: operations["get_teacher_chat_api_v1_teacher_chats__chat_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename Teacher Chat */
+        patch: operations["rename_teacher_chat_api_v1_teacher_chats__chat_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/teacher-chats/{chat_id}/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Teacher Message */
+        post: operations["send_teacher_message_api_v1_teacher_chats__chat_id__messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teacher-chats/{chat_id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Answers */
+        post: operations["submit_answers_api_v1_teacher_chats__chat_id__answers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teacher-chats/{chat_id}/questions/{question_id}/dispute": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dispute Grade */
+        post: operations["dispute_grade_api_v1_teacher_chats__chat_id__questions__question_id__dispute_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teacher-chats/{chat_id}/questions/{question_id}/hint": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask Hint */
+        post: operations["ask_hint_api_v1_teacher_chats__chat_id__questions__question_id__hint_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teacher-chats/{chat_id}/questions/{question_id}/reveal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reveal Solution */
+        post: operations["reveal_solution_api_v1_teacher_chats__chat_id__questions__question_id__reveal_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teacher-chats/{chat_id}/malformed/{segment_id}/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Question */
+        post: operations["retry_question_api_v1_teacher_chats__chat_id__malformed__segment_id__retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teacher-chats/{chat_id}/idea-set": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Idea Set */
+        put: operations["put_idea_set_api_v1_teacher_chats__chat_id__idea_set_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teacher-chats/{chat_id}/graph-update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Update Graph */
+        post: operations["update_graph_api_v1_teacher_chats__chat_id__graph_update_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teacher-chats/{chat_id}/graph-impact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Graph Impact */
+        get: operations["graph_impact_api_v1_teacher_chats__chat_id__graph_impact_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teacher/instructions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Instructions */
+        get: operations["instructions_api_v1_teacher_instructions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge-graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Graph */
+        get: operations["get_graph_api_v1_knowledge_graph_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge-graph/ideas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Search Ideas */
+        get: operations["search_ideas_api_v1_knowledge_graph_ideas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge-graph/ideas/{idea_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Idea */
+        get: operations["get_idea_api_v1_knowledge_graph_ideas__idea_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Idea */
+        delete: operations["delete_idea_api_v1_knowledge_graph_ideas__idea_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/task-columns": {
         parameters: {
             query?: never;
@@ -2928,6 +3186,18 @@ export interface components {
             /** Retryafterseconds */
             retryAfterSeconds?: number | null;
         };
+        /** AnswerErrorOut */
+        AnswerErrorOut: {
+            /**
+             * Category
+             * @enum {string}
+             */
+            category: "network" | "timeout" | "key_rejected" | "key_unreadable" | "rate_limited" | "model_not_found" | "too_large" | "context_exceeded" | "provider" | "not_this_style" | "proxy";
+            /** Message */
+            message: string;
+            /** Retryafterseconds */
+            retryAfterSeconds?: number | null;
+        };
         /** AnswerOut */
         AnswerOut: {
             /** Id */
@@ -2953,6 +3223,27 @@ export interface components {
             error?: components["schemas"]["AnswerError"] | null;
             /** Runid */
             runId?: string | null;
+        };
+        /** AnswerSubmission */
+        AnswerSubmission: {
+            /** Questionid */
+            questionId: string;
+            /** Choice */
+            choice?: number | null;
+            /** Text */
+            text?: string | null;
+            /** Confidence */
+            confidence: (0 | 25 | 50 | 75 | 100) | null;
+            /**
+             * Thinking
+             * @default
+             */
+            thinking: string;
+            /**
+             * Dontknow
+             * @default false
+             */
+            dontKnow: boolean;
         };
         /** AppendTarget */
         AppendTarget: {
@@ -3105,6 +3396,17 @@ export interface components {
             /** Updatedat */
             updatedAt?: string | null;
         };
+        /** ChatModelOut */
+        ChatModelOut: {
+            /** Endpointid */
+            endpointId: string;
+            /** Modelid */
+            modelId: string;
+            /** Label */
+            label: string;
+            /** Available */
+            available: boolean;
+        };
         /** ChatOut */
         ChatOut: {
             /** Id */
@@ -3150,6 +3452,11 @@ export interface components {
              * @enum {string}
              */
             status: "queued" | "streaming" | "completed" | "stopped" | "interrupted" | "failed";
+            /**
+             * Teacher
+             * @default false
+             */
+            teacher: boolean;
         };
         /** ChatSummary */
         ChatSummary: {
@@ -3582,6 +3889,15 @@ export interface components {
              */
             taskCount: number;
         };
+        /** Dispute */
+        Dispute: {
+            model: components["schemas"]["ModelRef"];
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+        };
         /** Document */
         Document: {
             /** Id */
@@ -3845,6 +4161,58 @@ export interface components {
             /** Documentcount */
             documentCount: number;
         };
+        /** FollowsFrom */
+        FollowsFrom: {
+            /** Linkid */
+            linkId: string;
+            /** Premises */
+            premises: components["schemas"]["IdeaSummary"][];
+        };
+        /** GradeOut */
+        GradeOut: {
+            /**
+             * Grade
+             * @enum {string}
+             */
+            grade: "correct" | "partly" | "incorrect";
+            /**
+             * Feedback
+             * @default
+             */
+            feedback: string;
+            /**
+             * By
+             * @enum {string}
+             */
+            by: "server" | "teacher";
+            /** Disputereason */
+            disputeReason?: string | null;
+            /** At */
+            at: string;
+        };
+        /** GraphImpact */
+        GraphImpact: {
+            /** Ideas */
+            ideas: number;
+        };
+        /** GraphOut */
+        GraphOut: {
+            /** Version */
+            version: string;
+            /** Ideas */
+            ideas: components["schemas"]["IdeaSummary"][];
+            /** Links */
+            links: components["schemas"]["LinkOut"][];
+        };
+        /** GraphStatus */
+        GraphStatus: {
+            /** Status */
+            status: ("pending" | "running" | "ok" | "failed") | null;
+            /** Pendingturns */
+            pendingTurns: number;
+            /** Error */
+            error?: string | null;
+        };
         /** GroupDefaults */
         GroupDefaults: {
             /** Selected */
@@ -3910,6 +4278,63 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HintOut */
+        HintOut: {
+            /** Text */
+            text: string;
+            /** Createdat */
+            createdAt: string;
+        };
+        /** HintRequest */
+        HintRequest: {
+            model: components["schemas"]["ModelRef"];
+            /**
+             * Attempt
+             * @default
+             */
+            attempt: string;
+        };
+        /** IdeaDetail */
+        IdeaDetail: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Statement */
+            statement: string;
+            /** Courseids */
+            courseIds: string[];
+            /** Sourcecount */
+            sourceCount: number;
+            /** Updatedat */
+            updatedAt: string;
+            /** Followsfrom */
+            followsFrom: components["schemas"]["FollowsFrom"][];
+            /** Leadsto */
+            leadsTo: components["schemas"]["LeadsTo"][];
+            /** Sources */
+            sources: components["schemas"]["SourceOut"][];
+        };
+        /** IdeaSetIn */
+        IdeaSetIn: {
+            /** Ideaids */
+            ideaIds: string[];
+        };
+        /** IdeaSummary */
+        IdeaSummary: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Statement */
+            statement: string;
+            /** Courseids */
+            courseIds: string[];
+            /** Sourcecount */
+            sourceCount: number;
+            /** Updatedat */
+            updatedAt: string;
         };
         /** ImportGroup */
         ImportGroup: {
@@ -3999,6 +4424,15 @@ export interface components {
              */
             undoAvailable: boolean;
         };
+        /** Instructions */
+        Instructions: {
+            /** Lesson */
+            lesson: string;
+            /** Practice */
+            practice: string;
+            /** Extraction */
+            extraction: string;
+        };
         /** KeptFolder */
         KeptFolder: {
             /** Keptfolder */
@@ -4022,6 +4456,12 @@ export interface components {
             masked: string | null;
             /** Readable */
             readable: boolean;
+        };
+        /** LeadsTo */
+        LeadsTo: {
+            /** Linkid */
+            linkId: string;
+            conclusion: components["schemas"]["IdeaSummary"];
         };
         /** Limits */
         Limits: {
@@ -4048,6 +4488,15 @@ export interface components {
             label?: string | null;
             /** Url */
             url: string;
+        };
+        /** LinkOut */
+        LinkOut: {
+            /** Id */
+            id: string;
+            /** Premiseids */
+            premiseIds: string[];
+            /** Conclusionid */
+            conclusionId: string;
         };
         /** LinkedEventOut */
         LinkedEventOut: {
@@ -4085,6 +4534,10 @@ export interface components {
             mustChangePassword: boolean;
             /** Timezone */
             timezone: string;
+        };
+        /** ModelOnly */
+        ModelOnly: {
+            model: components["schemas"]["ModelRef"];
         };
         /** ModelRef */
         ModelRef: {
@@ -4257,6 +4710,19 @@ export interface components {
             startTime: string;
             /** Endtime */
             endTime: string;
+        };
+        /** PlanOut */
+        PlanOut: {
+            /** Version */
+            version: number;
+            /** Answerid */
+            answerId?: string | null;
+            /** Mermaid */
+            mermaid: string;
+            /** Current */
+            current: string | null;
+            /** Createdat */
+            createdAt: string;
         };
         /** Position */
         Position: {
@@ -4513,6 +4979,42 @@ export interface components {
             outcome: "working" | "unreachable" | "credentials_rejected" | "no_onward_connection" | "timeout";
             /** Message */
             message: string;
+        };
+        /** QuestionOut */
+        QuestionOut: {
+            /** Id */
+            id: string;
+            /** Answerid */
+            answerId: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "choice" | "text";
+            /** Title */
+            title: string;
+            /** Prompt */
+            prompt: string;
+            /** Options */
+            options?: string[] | null;
+            /** Practice */
+            practice: boolean;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "unanswered" | "submitted" | "correct" | "partly" | "incorrect";
+            /** Revealed */
+            revealed: boolean;
+            /** Key */
+            key?: number | string | null;
+            /** Explanation */
+            explanation?: string | null;
+            submission: components["schemas"]["SubmissionOut"] | null;
+            /** Grades */
+            grades: components["schemas"]["GradeOut"][];
+            /** Hints */
+            hints: components["schemas"]["HintOut"][];
         };
         /** QuickNoteOut */
         QuickNoteOut: {
@@ -4848,6 +5350,22 @@ export interface components {
             /** Migrationmessage */
             migrationMessage: string | null;
         };
+        /** SegmentOut */
+        SegmentOut: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "markdown" | "question" | "malformed";
+            /** Text */
+            text?: string | null;
+            /** Questionid */
+            questionId?: string | null;
+            /** Id */
+            id?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
         /** Selection */
         Selection: {
             /** Version */
@@ -4954,6 +5472,16 @@ export interface components {
              * @default []
              */
             chatTitles: string[];
+            /**
+             * Teacherchats
+             * @default 0
+             */
+            teacherChats: number;
+            /**
+             * Graphideas
+             * @default 0
+             */
+            graphIdeas: number;
         };
         /**
          * SessionEdit
@@ -5077,6 +5605,28 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** SourceOut */
+        SourceOut: {
+            /** Chatid */
+            chatId: string;
+            /** Chattitle */
+            chatTitle: string;
+            /** Sessionkey */
+            sessionKey: string;
+            /**
+             * Sessionlabel
+             * @default
+             */
+            sessionLabel: string;
+            /** Courseid */
+            courseId?: string | null;
+            /** Messageid */
+            messageId?: string | null;
+            /** Createdat */
+            createdAt: string;
+            /** Available */
+            available: boolean;
+        };
         /** SplitState */
         SplitState: {
             /** Enabled */
@@ -5095,13 +5645,57 @@ export interface components {
              */
             ratio: number;
         };
+        /** StartTeacherChat */
+        StartTeacherChat: {
+            /** Text */
+            text: string;
+            model: components["schemas"]["ModelRef"];
+            /** Attachments */
+            attachments?: components["schemas"]["ContextItemRef"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "lesson" | "practice";
+            /** Topic */
+            topic?: string | null;
+            /** Ideaids */
+            ideaIds?: string[] | null;
+        };
+        /** SubmissionOut */
+        SubmissionOut: {
+            /** Choice */
+            choice?: number | null;
+            /** Text */
+            text?: string | null;
+            /** Confidence */
+            confidence?: (0 | 25 | 50 | 75 | 100) | null;
+            /**
+             * Dontknow
+             * @default false
+             */
+            dontKnow: boolean;
+            /**
+             * Thinking
+             * @default
+             */
+            thinking: string;
+            /** Submittedat */
+            submittedAt: string;
+        };
+        /** SubmitAnswers */
+        SubmitAnswers: {
+            model: components["schemas"]["ModelRef"];
+            /** Answers */
+            answers: components["schemas"]["AnswerSubmission"][];
+        };
         /** TabRef */
         TabRef: {
             /**
              * Kind
              * @enum {string}
              */
-            kind: "note" | "document" | "chat";
+            kind: "note" | "document" | "chat" | "teacher";
             /** Id */
             id: string;
         };
@@ -5290,6 +5884,118 @@ export interface components {
             dueTime?: string | null;
             /** Courseid */
             courseId?: string | null;
+        };
+        /** TeacherAnswerOut */
+        TeacherAnswerOut: {
+            /** Id */
+            id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "streaming" | "completed" | "stopped" | "interrupted" | "failed";
+            /** Runid */
+            runId?: string | null;
+            /**
+             * Endpointlabel
+             * @default
+             */
+            endpointLabel: string;
+            /**
+             * Modellabel
+             * @default
+             */
+            modelLabel: string;
+            /**
+             * Locality
+             * @default local
+             * @enum {string}
+             */
+            locality: "local" | "remote";
+            /** Segments */
+            segments: components["schemas"]["SegmentOut"][];
+            error?: components["schemas"]["AnswerErrorOut"] | null;
+        };
+        /** TeacherChatOut */
+        TeacherChatOut: {
+            chat: components["schemas"]["TeacherChatSummary"];
+            /** Topic */
+            topic: string | null;
+            model?: components["schemas"]["ChatModelOut"] | null;
+            /** Turns */
+            turns: components["schemas"]["TeacherTurnOut"][];
+            /** Questions */
+            questions: components["schemas"]["QuestionOut"][];
+            /** Plans */
+            plans: components["schemas"]["PlanOut"][];
+            /** Ideaset */
+            ideaSet: components["schemas"]["IdeaSummary"][];
+            graph: components["schemas"]["GraphStatus"];
+        };
+        /** TeacherChatSummary */
+        TeacherChatSummary: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "lesson" | "practice";
+            /** Title */
+            title: string;
+            /** Createdat */
+            createdAt: string;
+            /** Updatedat */
+            updatedAt: string;
+            /** Generating */
+            generating: boolean;
+            /** Unseenanswer */
+            unseenAnswer: boolean;
+            /** Unansweredcount */
+            unansweredCount: number;
+            /** Modellabel */
+            modelLabel: string;
+            /** Version */
+            version: number;
+        };
+        /** TeacherChatUpdate */
+        TeacherChatUpdate: {
+            /** Title */
+            title: string;
+        };
+        /** TeacherSendResult */
+        TeacherSendResult: {
+            chat: components["schemas"]["TeacherChatSummary"];
+            /** Runid */
+            runId: string;
+            /** Turnid */
+            turnId: string;
+            /** Answerid */
+            answerId: string;
+            /** Graded */
+            graded?: components["schemas"]["QuestionOut"][];
+        };
+        /** TeacherTurnOut */
+        TeacherTurnOut: {
+            /** Id */
+            id: string;
+            user: components["schemas"]["TeacherUserOut"];
+            answer: components["schemas"]["TeacherAnswerOut"];
+        };
+        /** TeacherUserOut */
+        TeacherUserOut: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+            /** Createdat */
+            createdAt: string;
+            /** Action */
+            action: ("answers" | "dispute" | "hint" | "retry") | null;
+            /** Target */
+            target?: string | null;
+            /** Attachments */
+            attachments?: components["schemas"]["ContextItemRef"][];
         };
         /** Theme */
         Theme: {
@@ -11489,6 +12195,581 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["TagOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_teacher_chats_api_v1_sessions__session_key__teacher_chats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherChatSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_teacher_chat_api_v1_sessions__session_key__teacher_chats_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartTeacherChat"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherSendResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_teacher_chat_api_v1_teacher_chats__chat_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherChatOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_teacher_chat_api_v1_teacher_chats__chat_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeacherChatUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherChatSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_teacher_message_api_v1_teacher_chats__chat_id__messages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendMessage"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherSendResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_answers_api_v1_teacher_chats__chat_id__answers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitAnswers"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherSendResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dispute_grade_api_v1_teacher_chats__chat_id__questions__question_id__dispute_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Dispute"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherSendResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ask_hint_api_v1_teacher_chats__chat_id__questions__question_id__hint_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HintRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherSendResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reveal_solution_api_v1_teacher_chats__chat_id__questions__question_id__reveal_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                question_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_question_api_v1_teacher_chats__chat_id__malformed__segment_id__retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelOnly"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeacherSendResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_idea_set_api_v1_teacher_chats__chat_id__idea_set_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdeaSetIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdeaSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_graph_api_v1_teacher_chats__chat_id__graph_update_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    graph_impact_api_v1_teacher_chats__chat_id__graph_impact_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                chat_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphImpact"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    instructions_api_v1_teacher_instructions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Instructions"];
+                };
+            };
+        };
+    };
+    get_graph_api_v1_knowledge_graph_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphOut"];
+                };
+            };
+        };
+    };
+    search_ideas_api_v1_knowledge_graph_ideas_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                courseId?: string | null;
+                sort?: "relevance" | "recent";
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdeaSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_idea_api_v1_knowledge_graph_ideas__idea_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idea_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdeaDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_idea_api_v1_knowledge_graph_ideas__idea_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                idea_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

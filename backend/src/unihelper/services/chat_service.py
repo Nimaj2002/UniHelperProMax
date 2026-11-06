@@ -10,6 +10,7 @@ chat file, and starts a run once the request's transaction has committed.
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
@@ -35,6 +36,7 @@ from unihelper.models import (
     User,
 )
 from unihelper.models.base import new_id, now_iso
+from unihelper.models.chat import CHAT_KINDS
 from unihelper.schemas.chat import MAX_ATTACHMENTS, ContextItemRef, SendMessage
 from unihelper.secrets.store import KeyUnreadable, SecretStore
 from unihelper.services import ai_endpoint_service, ai_settings_service
@@ -42,6 +44,7 @@ from unihelper.services import session_folder_service as sfs
 from unihelper.storage.storage_service import StorageService
 
 log = logging.getLogger("unihelper.chat")
+NEW_TEACHER_DRAFT_KEYS = ("teacher:lesson", "teacher:practice")  # 022: new-teacher-chat drafts
 
 
 @dataclass
@@ -56,9 +59,21 @@ class Deps:
 # ───────────────────────────── lookups and labels ─────────────────────────────
 
 
-def get_chat(db: Session, user: User, chat_id: str, include_deleted: bool = False) -> Chat:
+def get_chat(
+    db: Session,
+    user: User,
+    chat_id: str,
+    include_deleted: bool = False,
+    kinds: tuple[str, ...] = ("chat",),
+) -> Chat:
+    """022: AI chat operations see only `kind = chat`; teacher chats answer 404 there."""
     chat = db.get(Chat, chat_id)
-    if chat is None or chat.user_id != user.id or (chat.deleted_at and not include_deleted):
+    if (
+        chat is None
+        or chat.user_id != user.id
+        or chat.kind not in kinds
+        or (chat.deleted_at and not include_deleted)
+    ):
         raise not_found("Chat")
     folder = db.get(SessionFolder, chat.session_folder_id)
     if folder is None or folder.trash_entry_id is not None:
@@ -213,7 +228,11 @@ def _launch(
     endpoint: AiEndpoint,
     folder: list[str],
     context_parts: list[Part],
+    build_request: Callable[[], ChatRequest] | None = None,
+    configure: Callable[[Any], None] | None = None,
 ) -> dict[str, Any]:
+    """Start a run for `answer`. 022: teacher chats pass their own request builder and a
+    `configure(state)` that installs the block splitter before the run starts."""
     deps.runs.check_capacity(deps.user.id)
     try:
         cfg: EndpointConfig = ai_endpoint_service.config_for(deps.db, deps.store, endpoint)
@@ -224,8 +243,10 @@ def _launch(
             "The saved key of this endpoint can't be read on this computer.",
             "Enter the key again in Settings → AI.",
         ) from exc
-    request: ChatRequest = chat_context.build(
-        deps.db, deps.user, doc, turn_index, model, context_parts
+    request: ChatRequest = (
+        build_request()
+        if build_request is not None
+        else chat_context.build(deps.db, deps.user, doc, turn_index, model, context_parts)
     )
     check_context_limit(model, request)
     turn = doc["turns"][turn_index]
@@ -252,6 +273,8 @@ def _launch(
             "locality": endpoint.locality,
         },
     )
+    if configure is not None:
+        configure(state)
     chat.generating = True
     chat.model_ref_id = model.id
     chat.model_label = f"{endpoint.name} · {model.display_name}"
@@ -450,7 +473,7 @@ def select_versions(
 def mark_seen(db: Session, user: User, chat_id: str) -> None:
     from unihelper.chat.runs import quiet_update
 
-    chat = get_chat(db, user, chat_id)
+    chat = get_chat(db, user, chat_id, kinds=CHAT_KINDS)
     if chat.unseen_answer:
         quiet_update(db, chat.id, unseen_answer=False)
 
@@ -589,7 +612,11 @@ def list_chats(
     rows = list(
         deps.db.scalars(
             select(Chat)
-            .where(Chat.session_folder_id == folder_row.id, Chat.deleted_at.is_(None))
+            .where(
+                Chat.session_folder_id == folder_row.id,
+                Chat.deleted_at.is_(None),
+                Chat.kind == "chat",
+            )
             .order_by(Chat.updated_at.desc(), Chat.id.desc())
         )
     )
@@ -665,7 +692,7 @@ def delete(deps: Deps, chat: Chat) -> None:
 
 
 def restore(deps: Deps, chat_id: str) -> dict[str, Any]:
-    chat = get_chat(deps.db, deps.user, chat_id, include_deleted=True)
+    chat = get_chat(deps.db, deps.user, chat_id, include_deleted=True, kinds=CHAT_KINDS)
     if chat.deleted_at is None:
         return summary(chat)
     age = datetime.now(UTC) - datetime.fromisoformat(chat.deleted_at)
@@ -712,8 +739,8 @@ def put_draft(deps: Deps, session_key: str, body: Any) -> dict[str, Any]:
 
     r = sfs.resolve(deps.db, deps.user, session_key)
     chat_key = body.chat_id or ""
-    if chat_key:
-        get_chat(deps.db, deps.user, chat_key)
+    if chat_key and chat_key not in NEW_TEACHER_DRAFT_KEYS:  # 022: the new-teacher-chat boxes
+        get_chat(deps.db, deps.user, chat_key, kinds=CHAT_KINDS)
     key = {
         "user_id": deps.user.id,
         "lineage_id": r.lineage_id,
@@ -766,7 +793,7 @@ def preflight(deps: Deps, body: Any) -> dict[str, Any]:
     context: list[dict[str, Any]] = []
     history = 0
     if body.chat_id:
-        chat = get_chat(deps.db, deps.user, body.chat_id)
+        chat = get_chat(deps.db, deps.user, body.chat_id, kinds=CHAT_KINDS)
         _folder, doc = _load(deps, chat)
         context = list(doc.get("context", []))
         for turn in doc.get("turns", []):

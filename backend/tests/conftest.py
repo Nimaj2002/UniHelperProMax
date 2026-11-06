@@ -105,6 +105,7 @@ def app(tmp_data_dir: Path, key_file: Path):  # type: ignore[no-untyped-def]
         Settings(
             data_dir=tmp_data_dir,
             transcription_autorun=False,
+            graph_autorun=False,
             key_store="file",
             key_file=key_file,
         )
@@ -236,6 +237,7 @@ def desktop_app(tmp_path: Path, key_file: Path, desktop_handshake):  # type: ign
             data_dir=tmp_path / "backend",
             files_dir=files,
             transcription_autorun=False,
+            graph_autorun=False,
             key_store="file",
             key_file=key_file,
             desktop=True,

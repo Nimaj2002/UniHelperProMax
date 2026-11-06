@@ -36,6 +36,7 @@ class Settings:
     # 004: background transcription worker
     transcription_concurrency: int = 2
     transcription_autorun: bool = True  # tests run jobs explicitly instead
+    graph_autorun: bool = True  # 022: the knowledge-graph worker; tests run it explicitly
     # 014: where the secret store's master key lives (research R7) and chat run limits (R1)
     key_store: KeyStoreMode = "auto"
     key_file: Path | None = None  # default: platformdirs user config dir

@@ -8,7 +8,8 @@ Base URLs (as the student would enter them):
 Behaviour is chosen by the model id: `echo` (streams the last user text back in 3 chunks),
 `slow` (one token every 100 ms, 200 tokens), `fail-401`, `fail-404`, `fail-413`, `fail-429`
 (retry after 7 s), `fail-midstream` (an error after the first delta), `big-usage` (reports
-token usage) — any other id answers like `echo`. Model lists are served in each style's shape;
+token usage), `teacher` (022: pops the next reply of `STATE["script"]`, in 20-char tokens)
+— any other id answers like `echo`. Model lists are served in each style's shape;
 `/wrong/...` paths serve another style's shape (to test "does not look like this style").
 
 `STATE` records the last request (path, headers, JSON body) and whether the client went away
@@ -35,6 +36,7 @@ MODELS = [
     "fail-429",
     "fail-midstream",
     "big-usage",
+    "teacher",
 ]
 
 STATE: dict[str, Any] = {}
@@ -52,6 +54,7 @@ def reset() -> None:
         reject_stream_options=False,  # OpenAI style: 400 on stream_options (old local servers)
         slow_tokens=200,
         slow_delay=0.1,
+        script=[],  # 022: replies of the `teacher` model, popped in order (else echo)
     )
 
 
@@ -156,6 +159,9 @@ def _last_user_text(style: str, body: dict[str, Any]) -> str:
 def _tokens(model: str, text: str) -> list[str]:
     if model == "slow":
         return [f"tok{i} " for i in range(STATE["slow_tokens"])]
+    if model == "teacher" and STATE["script"]:
+        scripted: str = STATE["script"].pop(0)
+        return [scripted[i : i + 20] for i in range(0, len(scripted), 20)] or [""]
     reply = f"You said: {text}" if text else "Hello!"
     third = max(1, len(reply) // 3)
     return [reply[:third], reply[third : 2 * third], reply[2 * third :]]
@@ -188,6 +194,17 @@ def _sse(gen: AsyncIterator[bytes]) -> StreamingResponse:
 USAGE = {"input": 812, "output": 403}
 
 # ───────────────────────────── OpenAI-compatible ─────────────────────────────
+
+
+@app.post("/test/script")
+async def push_script(request: Request) -> Response:
+    """022 e2e: queue replies of the `teacher` model in a standalone fake ({"replies": [...]},
+    {"reset": true} first empties the queue)."""
+    body = await request.json()
+    if body.get("reset"):
+        STATE["script"].clear()
+    STATE["script"].extend(str(r) for r in body.get("replies", []))
+    return JSONResponse({"queued": len(STATE["script"])})
 
 
 @app.get("/v1/models")

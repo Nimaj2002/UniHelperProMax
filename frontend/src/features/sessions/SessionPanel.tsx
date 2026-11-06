@@ -5,7 +5,7 @@
  * the closed panel leaves a rail with an item per section. Its layout is a per-browser
  * convenience in localStorage (FR-009).
  */
-import { ChatCircleText, Clock, SidebarSimple, Waveform } from "@phosphor-icons/react";
+import { ChatCircleText, Clock, GraduationCap, SidebarSimple, Waveform } from "@phosphor-icons/react";
 import {
   useCallback,
   useEffect,
@@ -28,9 +28,9 @@ import {
 import { ShortcutKbd, useShortcut } from "@/lib/keymap";
 import { readLocal, writeLocal } from "@/lib/storage";
 import { cn } from "@/lib/utils";
-import { useChatSection, useWorkspacePanels } from "./workspace-panels";
+import { useChatSection, useTeacherSection, useWorkspacePanels } from "./workspace-panels";
 
-export type SessionSection = "recordings" | "chat";
+export type SessionSection = "recordings" | "chat" | "teacher";
 
 export interface SessionPanelLayout {
   open: boolean;
@@ -49,6 +49,7 @@ export const DEFAULT_SESSION_PANEL: SessionPanelLayout = {
 const SECTIONS: Record<SessionSection, { id: string; title: string }> = {
   recordings: { id: "session-recordings", title: "Recordings" },
   chat: { id: "session-chat", title: "Chat" },
+  teacher: { id: "session-teacher", title: "AI Teacher" }, // 022
 };
 
 const num = (v: unknown, fallback: number) =>
@@ -65,7 +66,7 @@ function readStored(): SessionPanelLayout | null {
   return {
     open: typeof raw.open === "boolean" ? raw.open : d.open,
     width: num(raw.width, d.width),
-    section: raw.section === "chat" ? "chat" : "recordings",
+    section: raw.section === "chat" || raw.section === "teacher" ? raw.section : "recordings",
   };
 }
 
@@ -114,6 +115,7 @@ export function useSessionPanelLayout(seedCollapsed: boolean | undefined) {
 export const SESSION_SWITCH_ID: Record<SessionSection, string> = {
   recordings: "session-switch-recordings",
   chat: "session-switch-chat",
+  teacher: "session-switch-teacher",
 };
 
 /** Focus a section's switch button once the panel shows it (after a rail item reopened it). */
@@ -141,7 +143,7 @@ function SignalWatch({
 }
 
 const isChatSignal = (s: ActivitySignal) =>
-  s.kind === "answer" || s.kind === "unseen" || s.id === "chat";
+  !s.teacher && (s.kind === "answer" || s.kind === "unseen" || s.id === "chat");
 const INDICATOR: Record<ActivitySignal["kind"], RailIndicator> = {
   recording: "recording",
   transcription: "running",
@@ -184,13 +186,14 @@ export function useSessionRail(
   );
   const active = signals.filter((s) => running[s.id]);
   const recordings = itemState(
-    active.filter((s) => !isChatSignal(s)),
+    active.filter((s) => !isChatSignal(s) && !s.teacher),
     ["recording", "transcription"],
   );
   const chat = itemState(active.filter(isChatSignal), ["answer", "unseen"]);
-  const key = JSON.stringify([recordings, chat]);
+  const teacher = itemState(active.filter((s) => s.teacher), ["answer", "unseen"]);
+  const key = JSON.stringify([recordings, chat, teacher]);
   const rail = useMemo<RailSpec>(() => {
-    const [rec, ch] = JSON.parse(key) as [typeof recordings, typeof chat];
+    const [rec, ch, te] = JSON.parse(key) as [typeof recordings, typeof chat, typeof teacher];
     const item = (
       section: SessionSection,
       icon: SideRailItem["icon"],
@@ -211,6 +214,7 @@ export function useSessionRail(
       items: [
         item("recordings", Waveform, rec),
         item("chat", ChatCircleText, ch),
+        item("teacher", GraduationCap, te),
         { id: "time", icon: Clock, name: "Time", onActivate: openTime, keepClosed: true },
       ],
     };
@@ -282,6 +286,9 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
   const { section } = layout;
   const ChatBody = chat?.component;
   const ChatActions = chat?.headerActions;
+  const teacher = useTeacherSection();
+  const TeacherBody = teacher?.component;
+  const TeacherActions = teacher?.headerActions;
   // each section's own title row: its title and its actions
   const header = (s: SessionSection, actions: ReactNode) => (
     <div
@@ -307,7 +314,7 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
             onValueChange={(v) =>
               v === "time" ? openTime() : v && setSection(v as SessionSection)
             }
-            aria-label="Recordings or chat"
+            aria-label="Recordings, chat or AI teacher"
             className="h-7 shrink-0"
           >
             <ToggleGroupItem
@@ -327,6 +334,15 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
               className="h-7 px-2"
             >
               <ChatCircleText size={14} aria-hidden />
+            </ToggleGroupItem>
+            <ToggleGroupItem
+              id={SESSION_SWITCH_ID.teacher}
+              value="teacher"
+              aria-label="AI Teacher"
+              title="AI Teacher"
+              className="h-7 px-2"
+            >
+              <GraduationCap size={14} aria-hidden />
             </ToggleGroupItem>
             {/* opens the time dialog; never becomes the selected section */}
             <ToggleGroupItem
@@ -371,6 +387,20 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
         bodyClassName="overflow-hidden"
       >
         {ChatBody && <ChatBody sessionKey={sessionKey} />}
+      </Card>
+      <Card
+        as="section"
+        id={SECTIONS.teacher.id}
+        label={SECTIONS.teacher.title}
+        className={cn("flex-1", section !== "teacher" && "hidden")}
+        header={header(
+          "teacher",
+          TeacherActions && <TeacherActions sessionKey={sessionKey} />,
+        )}
+        body="fill"
+        bodyClassName="overflow-hidden"
+      >
+        {TeacherBody && <TeacherBody sessionKey={sessionKey} />}
       </Card>
     </div>
   );

@@ -53,6 +53,10 @@ _INCLUDED = frozenset(
         "ai_models",
         "calendar_import_sources",
         "calendar_import_runs",
+        "kg_ideas",  # 022: the knowledge graph
+        "kg_links",
+        "kg_link_premises",
+        "kg_sources",
     }
 )
 
@@ -74,6 +78,7 @@ PARENT: dict[str, tuple[str, str]] = {
     "class_links": ("series_id", "class_series"),
     "event_links": ("series_id", "event_series"),
     "annotation_ops": ("document_id", "documents"),
+    "kg_link_premises": ("link_id", "kg_links"),  # 022
 }
 
 # values written instead of what's stored: never a key, never a "still generating" flag

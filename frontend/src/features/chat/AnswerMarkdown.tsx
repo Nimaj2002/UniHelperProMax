@@ -12,6 +12,7 @@ import remarkGfm from "remark-gfm";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { splitBlocks } from "./markdownBlocks";
+import { MathOut, MermaidBlock, remarkUhMath } from "./richMarkdown";
 
 export async function copyText(text: string, what = "Copied") {
   try {
@@ -34,6 +35,7 @@ function CodeBlock({ children }: ComponentProps<"pre">) {
   const code = isValidElement(children) ? (children as ReactElement<{ className?: string; children?: ReactNode }>) : null;
   const lang = /language-([\w+#.-]+)/.exec(code?.props.className ?? "")?.[1];
   const text = textOf(code?.props.children ?? children).replace(/\n$/, "");
+  if (lang === "mermaid") return <MermaidBlock source={text} />; // 022 FR-015
   return (
     <div className="my-2 overflow-hidden rounded-md border border-divider bg-surface-sunken">
       <div className="flex h-8 items-center justify-between gap-2 border-b border-divider pr-1 pl-3 text-xs text-muted-foreground">
@@ -80,11 +82,24 @@ const components: Components = {
     </span>
   ),
   pre: ({ node: _node, ...props }) => <CodeBlock {...props} />,
+  // 022: `$…$` / `$$…$$` marked by remarkUhMath
+  span: ({ node, children, ...rest }) => {
+    const latex = node?.properties?.dataUhMath;
+    if (typeof latex === "string") return <MathOut latex={latex} display={false} fallback={textOf(children)} />;
+    return <span {...rest}>{children}</span>;
+  },
+  div: ({ node, children, ...rest }) => {
+    const latex = node?.properties?.dataUhMath;
+    if (typeof latex === "string") return <MathOut latex={latex} display fallback={textOf(children)} />;
+    return <div {...rest}>{children}</div>;
+  },
 };
+
+const PLUGINS = [remarkGfm, remarkUhMath];
 
 const Block = memo(function Block({ text }: { text: string }) {
   return (
-    <Markdown remarkPlugins={[remarkGfm]} components={components}>
+    <Markdown remarkPlugins={PLUGINS} components={components}>
       {text}
     </Markdown>
   );

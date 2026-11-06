@@ -40,8 +40,24 @@ PROGRESS_EVERY = 0.25  # seconds
 # already compressed: storing them again with deflate only costs time
 STORED_EXTENSIONS = frozenset(
     {
-        ".webm", ".m4a", ".mp3", ".aac", ".wav", ".ogg", ".oga", ".opus", ".flac", ".mp4",
-        ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp", ".zip", ".gz",
+        ".webm",
+        ".m4a",
+        ".mp3",
+        ".aac",
+        ".wav",
+        ".ogg",
+        ".oga",
+        ".opus",
+        ".flac",
+        ".mp4",
+        ".pdf",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+        ".zip",
+        ".gz",
     }
 )
 
@@ -300,9 +316,7 @@ def write_backup(
                             fh.write(block)
                             ticker.add(len(block))
             counts["files"] = sum(1 for e in w.entries if e.path.startswith(mf.FILES_PREFIX))
-            counts["bytes"] = sum(
-                e.size for e in w.entries if e.path.startswith(mf.FILES_PREFIX)
-            )
+            counts["bytes"] = sum(e.size for e in w.entries if e.path.startswith(mf.FILES_PREFIX))
             manifest = mf.Manifest(
                 kind="unihelper-backup",
                 format_version=mf.FORMAT_VERSION,
@@ -310,9 +324,7 @@ def write_backup(
                 schema_revision=mf.head_revision(),
                 created_at=created,
                 source="desktop" if settings.desktop else "web",
-                account=mf.Account(
-                    timezone=timezone_row[0] if timezone_row else account.timezone
-                ),
+                account=mf.Account(timezone=timezone_row[0] if timezone_row else account.timezone),
                 counts=counts,
                 keys_left_out=keys,
                 excluded=leftovers.excluded,

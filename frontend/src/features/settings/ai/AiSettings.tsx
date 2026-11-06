@@ -1,5 +1,6 @@
 /** 014 US1: Settings → AI — the endpoint list, the add/edit form and custom instructions. */
 import { Plus } from "@phosphor-icons/react";
+import { TeacherInstructions } from "@/features/teacher/TeacherInstructions";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -70,6 +71,8 @@ export function AiSettingsPage() {
       <AiProxy />
 
       <CustomInstructions />
+
+      <TeacherInstructions />
     </div>
   );
 }

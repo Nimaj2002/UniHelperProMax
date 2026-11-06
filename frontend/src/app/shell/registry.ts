@@ -83,6 +83,8 @@ export interface ActivitySignal {
    * "unseen" (a new answer) mark its Chat item (014 FR-006).
    */
   kind: "recording" | "transcription" | "answer" | "unseen";
+  /** 022: mark the AI Teacher item instead (a lesson or practice reply). */
+  teacher?: boolean;
   priority?: number;
 }
 const activitySignals = createRegistry<ActivitySignal>();

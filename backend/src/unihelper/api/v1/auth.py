@@ -59,9 +59,7 @@ def me(auth: CurrentAuth) -> Me:
     return Me.model_validate(auth.user)
 
 
-@router.post(
-    "/password", status_code=status.HTTP_204_NO_CONTENT, dependencies=[NotInDesktop]
-)
+@router.post("/password", status_code=status.HTTP_204_NO_CONTENT, dependencies=[NotInDesktop])
 def change_password(body: PasswordChange, auth: CurrentAuth, db: DbSession) -> Response:
     auth_service.change_password(
         db, auth.user, body.current_password, body.new_password, keep_session_id=auth.session.id

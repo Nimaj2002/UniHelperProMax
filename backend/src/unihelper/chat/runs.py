@@ -40,6 +40,10 @@ CHECKPOINT_SECONDS = 2.0
 KEEPALIVE_SECONDS = 15.0
 BUFFER_SECONDS = 60.0
 TERMINAL = ("done", "stopped", "interrupted", "failed")
+EMPTY_ANSWER = (
+    "The model sent back no answer — it may have used all of its output on thinking. "
+    "Try again, or choose another model."
+)
 
 
 @dataclass
@@ -69,6 +73,13 @@ class RunState:
     ended: float | None = None
     changed: asyncio.Event = field(default_factory=asyncio.Event)
     flush_handle: asyncio.TimerHandle | None = None
+    # 022: teacher runs split `uh-*` blocks out of the text (domain/teacher_blocks.py). Only
+    # prose is sent as `delta`; `on_piece(db, chat, state, piece)` saves a block and returns the
+    # event to emit, or None.
+    splitter: Any | None = None
+    on_piece: Callable[[Session, Chat, RunState, Any], tuple[str, dict[str, Any]] | None] | None = (
+        None
+    )
 
     @property
     def done(self) -> bool:
@@ -162,7 +173,9 @@ class RunRegistry:
     def check_capacity(self, user_id: str) -> None:
         if self.paused(user_id):  # 016: this account's data is being restored
             raise ApiError(
-                423, "restore_in_progress", "Your data is being restored.",
+                423,
+                "restore_in_progress",
+                "Your data is being restored.",
                 "Wait until the restore has finished.",
             )
         if len(self.active(user_id)) >= self.max_per_user or len(self.active()) >= self.max_total:
@@ -254,12 +267,42 @@ class RunRegistry:
             self._emit(state, "delta", {"text": "".join(state.pending)})
             state.pending = []
 
-    def _queue_delta(self, state: RunState, text: str) -> None:
-        state.text.append(text)
+    def _queue_delta(self, state: RunState, text: str, record: bool = True) -> None:
+        if record:  # 022: teacher runs record the raw text (with blocks) themselves
+            state.text.append(text)
         state.pending.append(text)
         if state.flush_handle is None:
             loop = asyncio.get_running_loop()
             state.flush_handle = loop.call_later(FLUSH_SECONDS, self._flush, state)
+
+    async def _pieces(self, state: RunState, pieces: list[Any], announce: bool) -> None:
+        """022: prose goes out as `delta`; a block is saved first, then announced in text order."""
+        from unihelper.domain.teacher_blocks import Prose
+
+        for piece in pieces:
+            if isinstance(piece, Prose):
+                if announce:
+                    self._queue_delta(state, piece.text, record=False)
+                continue
+            if state.flush_handle is not None:
+                state.flush_handle.cancel()
+            self._flush(state)
+            out = await asyncio.to_thread(self._apply_piece, state, piece)
+            if out is not None and announce:
+                self._emit(state, *out)
+
+    def _apply_piece(self, state: RunState, piece: Any) -> tuple[str, dict[str, Any]] | None:
+        assert state.on_piece is not None
+        with self._maker() as db:
+            chat = db.get(Chat, state.chat_id)
+            if chat is None:
+                return None
+            try:
+                out = state.on_piece(db, chat, state, piece)
+            except files.ChatFileUnreadable:
+                return None
+            db.commit()
+            return out
 
     def get(self, run_id: str) -> RunState | None:
         self._prune()
@@ -302,7 +345,11 @@ class RunRegistry:
             async with proxy_service.client(cfg.proxy, self._transport()) as http:
                 async for event in adapter(cfg.style).stream(http, cfg, request):
                     if isinstance(event, Delta):
-                        self._queue_delta(state, event.text)
+                        if state.splitter is None:
+                            self._queue_delta(state, event.text)
+                        else:
+                            state.text.append(event.text)
+                            await self._pieces(state, state.splitter.feed(event.text), True)
                         if time.monotonic() - last_checkpoint >= CHECKPOINT_SECONDS:
                             last_checkpoint = time.monotonic()
                             await asyncio.to_thread(self._checkpoint, state)
@@ -316,6 +363,9 @@ class RunRegistry:
                             )
                             if v is not None
                         }
+            if not "".join(state.text).strip():
+                # seen with reasoning models: the whole output budget went on thinking (022 T076)
+                raise AiError("provider", EMPTY_ANSWER)
         except asyncio.CancelledError:
             status = state.stop_reason or "interrupted"
         except AiError as err:
@@ -327,6 +377,8 @@ class RunRegistry:
             log.exception("chat run failed (%s)", type(exc).__name__)
             status = "failed"
             error = {"category": "provider", "message": "The answer couldn't be generated."}
+        if state.splitter is not None:  # an open block becomes "malformed: unterminated"
+            await asyncio.shield(self._pieces(state, state.splitter.close(), status != "stopped"))
         if state.flush_handle is not None:
             state.flush_handle.cancel()
         if status != "stopped" or not state.pending:

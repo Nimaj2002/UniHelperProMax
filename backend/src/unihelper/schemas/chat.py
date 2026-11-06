@@ -190,6 +190,7 @@ class ChatRunOut(ApiModel):
     session_key: str
     answer_id: str
     status: AnswerStatus
+    teacher: bool = False  # 022: a lesson or practice reply, not a chat answer
 
 
 class AppendTarget(ApiModel):

@@ -55,6 +55,7 @@ NULLABLE_TIME = {"long_running_hours", "daily_goal_min"}  # an explicit null tur
 NULLABLE_PREFERENCES = {"last_semester_id"}  # an explicit null clears these
 MAX_TABS = 50
 NEW_CHAT_ID = re.compile(r"new:[0-9a-f-]{8,64}")
+NEW_TEACHER_ID = re.compile(r"new:(lesson|practice)-[0-9a-f-]{8,50}")  # 022
 
 
 def _session_items(db: Session, user: User, r: sfs.ResolvedSession) -> dict[str, set[str]]:
@@ -62,18 +63,23 @@ def _session_items(db: Session, user: User, r: sfs.ResolvedSession) -> dict[str,
     event series') documents and (014) its chats."""
     docs = set(db.scalars(scope_of(user, r).documents(user).with_only_columns(Document.id)))
     if r.folder is None:
-        return {"note": set(), "document": docs, "chat": set()}
+        return {"note": set(), "document": docs, "chat": set(), "teacher": set()}
     notes = db.scalars(
         select(Note.id).where(Note.session_folder_id == r.folder.id, Note.user_id == user.id)
     )
-    chats = db.scalars(
-        select(Chat.id).where(
+    chats = db.execute(
+        select(Chat.id, Chat.kind).where(
             Chat.session_folder_id == r.folder.id,
             Chat.user_id == user.id,
             Chat.deleted_at.is_(None),
         )
-    )
-    return {"note": set(notes), "document": docs, "chat": set(chats)}
+    ).all()
+    return {
+        "note": set(notes),
+        "document": docs,
+        "chat": {c.id for c in chats if c.kind == "chat"},
+        "teacher": {c.id for c in chats if c.kind != "chat"},  # 022
+    }
 
 
 Tab = dict[str, str]
@@ -85,7 +91,9 @@ def _valid_tabs(tabs: list[Tab], valid: dict[str, set[str]]) -> list[Tab]:
     for t in tabs:
         key = (t.get("kind", ""), t.get("id", ""))
         # 014: a new, still empty chat tab has a client id until its first message is sent
-        new_chat = key[0] == "chat" and NEW_CHAT_ID.fullmatch(key[1]) is not None
+        new_chat = (key[0] == "chat" and NEW_CHAT_ID.fullmatch(key[1]) is not None) or (
+            key[0] == "teacher" and NEW_TEACHER_ID.fullmatch(key[1]) is not None
+        )
         if (new_chat or key[1] in valid.get(key[0], set())) and key not in seen:
             seen.add(key)
             out.append({"kind": key[0], "id": key[1]})

@@ -72,6 +72,32 @@ export function useChatSection(): ChatSection | null {
   );
 }
 
+// ---- the session panel's AI Teacher section (022) ------------------------------------------------
+
+let teacherSection: ChatSection | null = null;
+const teacherListeners = new Set<() => void>();
+
+/** Fill the session panel's AI Teacher section (same shape as the Chat section). */
+export function registerTeacherSection(section: ChatSection) {
+  teacherSection = section;
+  teacherListeners.forEach((l) => l());
+  return () => {
+    if (teacherSection === section) teacherSection = null;
+    teacherListeners.forEach((l) => l());
+  };
+}
+
+export function useTeacherSection(): ChatSection | null {
+  return useSyncExternalStore(
+    (l) => {
+      teacherListeners.add(l);
+      return () => teacherListeners.delete(l);
+    },
+    () => teacherSection,
+    () => teacherSection,
+  );
+}
+
 // ---- left-panel sections between Notes and Sessions (007: Documents) --------------------------------
 
 export interface SidePanelSectionProps {

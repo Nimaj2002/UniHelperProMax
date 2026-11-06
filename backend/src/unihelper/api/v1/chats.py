@@ -12,6 +12,7 @@ from unihelper.ai.limits import MAX_UPLOAD
 from unihelper.api import uploads
 from unihelper.api.deps import CurrentUser, DbSession, IfMatch, Storage, check_version
 from unihelper.chat.runs import RunRegistry
+from unihelper.models.chat import CHAT_KINDS
 from unihelper.schemas.chat import (
     AppendResult,
     AppendTarget,
@@ -80,7 +81,7 @@ def update_chat(chat_id: str, body: ChatUpdate, version: IfMatch, deps: ChatDeps
 
 @router.delete("/chats/{chat_id}", status_code=204)
 async def delete_chat(chat_id: str, version: IfMatch, deps: ChatDeps) -> Response:
-    chat = svc.get_chat(deps.db, deps.user, chat_id)
+    chat = svc.get_chat(deps.db, deps.user, chat_id, kinds=CHAT_KINDS)  # 022: teacher chats too
     check_version(version, chat.version)
     active = deps.runs.active_for_chat(chat.id)
     if active is not None:  # the partial answer is saved first

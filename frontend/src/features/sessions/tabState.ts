@@ -4,7 +4,7 @@
  * functions, so every rule is unit-tested; the page only renders the state.
  */
 
-export type TabKind = "note" | "document" | "chat";
+export type TabKind = "note" | "document" | "chat" | "teacher"; // 022: teacher tabs
 export interface TabRef {
   kind: TabKind;
   id: string;

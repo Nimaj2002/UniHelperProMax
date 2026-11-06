@@ -48,7 +48,11 @@ export function trashSentence(
     linkedTasks === "delete" && impact.linkedTaskCount ? plural(impact.linkedTaskCount, "linked task") : "",
   ].filter(Boolean);
   const it = n === 1 ? "it" : "them";
-  return `This will move ${what}${content.length ? ` with ${list(content)}` : ""} to the Trash. You can restore ${it} from Settings → Trash.`;
+  // 022 FR-035: ideas only these lessons taught leave the knowledge graph once the Trash is emptied
+  const graph = impact.graphIdeas
+    ? ` Emptying it from the Trash also removes ${plural(impact.graphIdeas, "idea")} from your knowledge graph.`
+    : "";
+  return `This will move ${what}${content.length ? ` with ${list(content)}` : ""} to the Trash. You can restore ${it} from Settings → Trash.${graph}`;
 }
 
 /** "Chats: Exam topics, Week 3 and 2 more." — the session's newest chat titles (014 R15). */

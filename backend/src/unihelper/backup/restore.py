@@ -53,9 +53,7 @@ class Context:
 # ---- gate (FR-017) -------------------------------------------------------------------------
 
 
-def check_gate(
-    maker: sessionmaker[Session], uid: str, runs: RunRegistry, other_job: bool
-) -> None:
+def check_gate(maker: sessionmaker[Session], uid: str, runs: RunRegistry, other_job: bool) -> None:
     reasons: list[str] = []
     items: list[dict[str, str]] = []
     with maker() as db:
@@ -186,8 +184,11 @@ def build_scratch_db(
     finally:
         conn.close()
     if manifest.schema_revision != mf.head_revision():
-        log.info("restore: upgrading backup data from %s to %s", manifest.schema_revision,
-                 mf.head_revision())
+        log.info(
+            "restore: upgrading backup data from %s to %s",
+            manifest.schema_revision,
+            mf.head_revision(),
+        )
         upgrade_to(url, "head")
     conn = sqlite3.connect(scratch)
     try:
@@ -270,8 +271,9 @@ def replace_rows(settings: Settings, account: Account, scratch: Path, timezone: 
             conn.execute("PRAGMA defer_foreign_keys=ON")
             present = tables_in(conn, "s")
             for table in reversed(INCLUDED):
-                conn.execute(f"DELETE FROM main.{table} WHERE {account_where(table)}",
-                             {"uid": account.id})
+                conn.execute(
+                    f"DELETE FROM main.{table} WHERE {account_where(table)}", {"uid": account.id}
+                )
             conn.execute("DELETE FROM main.secrets WHERE user_id = ?", (account.id,))
             for table in INCLUDED:
                 if table not in present:
@@ -317,17 +319,20 @@ def run_restore(
             stage_files(ctx, zf, manifest, paths.staging_dir, progress)
             set_phase("swapping")
             epoch = current_epoch(ctx.settings, account.id)
-            _write_journal(paths, {
-                "jobId": job_id,
-                "userId": account.id,
-                "username": account.username,
-                "phase": "swapping",
-                "epochBefore": epoch,
-                "accountDir": str(paths.account_dir),
-                "stagingDir": str(paths.staging_dir),
-                "oldDir": str(paths.old_dir),
-                "scratchDb": str(paths.scratch_db),
-            })
+            _write_journal(
+                paths,
+                {
+                    "jobId": job_id,
+                    "userId": account.id,
+                    "username": account.username,
+                    "phase": "swapping",
+                    "epochBefore": epoch,
+                    "accountDir": str(paths.account_dir),
+                    "stagingDir": str(paths.staging_dir),
+                    "oldDir": str(paths.old_dir),
+                    "scratchDb": str(paths.scratch_db),
+                },
+            )
             swapped = True
             backup_fs.swap_dirs(paths.account_dir, paths.staging_dir, paths.old_dir)
             replace_rows(ctx.settings, account, paths.scratch_db, manifest.account.timezone)
@@ -345,4 +350,3 @@ def run_restore(
     set_phase("cleanup")
     _write_journal(paths, {"jobId": job_id, "userId": account.id, "phase": "cleanup"})
     _discard(paths)
-

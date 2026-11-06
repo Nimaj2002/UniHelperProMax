@@ -88,6 +88,12 @@ def test_not_this_style_names_the_style() -> None:
     assert looks_like({"object": "list", "data": [{"id": "gpt", "object": "model"}]}) == "openai"
 
 
+def test_router_error_with_an_int_code_is_not_a_wrong_style() -> None:
+    body = j({"error": {"message": "Rate limit exceeded: free-models-per-min", "code": 429}})
+    assert looks_like(json.loads(body)) == "openai"
+    assert classify_response("openai", 429, body, None).category == "rate_limited"
+
+
 def test_scrub_removes_keys_and_limits_length() -> None:
     text = (
         "bad key sk-secret-key-123456 and AIzaSyA1234567890abcdefghij and "

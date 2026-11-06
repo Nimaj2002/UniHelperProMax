@@ -27,6 +27,7 @@ def _out(state: RunState) -> dict[str, Any]:
         "session_key": state.session_key,
         "answer_id": state.answer_id,
         "status": state.status,
+        "teacher": state.splitter is not None,
     }
 
 
@@ -75,16 +76,23 @@ async def events(
     if state is None:  # the buffer expired (or the server restarted): one snapshot event
         chat = db.get(Chat, run.chat_id)
         text = ""
+        segments: list[dict[str, Any]] = []
         if chat is not None:
             _user, folder = chat_location(db, chat)
             try:
-                answer = files.find_answer(
-                    files.read(request.app.state.storage, folder, chat.stem), run.answer_id
-                )
+                doc = files.read(request.app.state.storage, folder, chat.stem)
+                answer = files.find_answer(doc, run.answer_id)
                 text = answer.get("text", "") if answer else ""
+                if answer and chat.kind != "chat":  # 022: never raw blocks (answer keys)
+                    from unihelper.teacher.view import segments as teacher_segments
+
+                    segments = teacher_segments(doc, answer)
             except files.ChatFileUnreadable:
                 text = ""
-        snapshot = {"text": text, "status": run.status}
+        if chat is not None and chat.kind != "chat":
+            snapshot = {"segments": segments, "status": run.status}
+        else:
+            snapshot = {"text": text, "status": run.status}
     db.close()  # the stream may last minutes: don't hold a connection
 
     async def body() -> AsyncIterator[bytes]:
@@ -111,7 +119,9 @@ async def stop(run_id: str, request: Request, user: CurrentUser, db: DbSession) 
     if state is not None:
         return _out(state)
     db.refresh(run)
+    chat = db.get(Chat, run.chat_id)
     return {
+        "teacher": chat is not None and chat.kind != "chat",
         "id": run.id,
         "chat_id": run.chat_id,
         "session_key": _session_key(db, run.chat_id),

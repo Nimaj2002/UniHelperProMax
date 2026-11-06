@@ -78,9 +78,7 @@ async def upload_restore(request: Request, user: CurrentUser, storage: Storage) 
 @router.post(
     "/restores/{job_id}/confirm", status_code=status.HTTP_202_ACCEPTED, response_model=BackupJob
 )
-def confirm_restore(
-    job_id: str, body: RestoreConfirm, request: Request, user: CurrentUser
-) -> Any:
+def confirm_restore(job_id: str, body: RestoreConfirm, request: Request, user: CurrentUser) -> Any:
     return _jobs(request).confirm_restore(account_of(user), job_id).view()
 
 

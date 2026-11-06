@@ -49,13 +49,21 @@ def backup_busy(job_id: str) -> ApiError:
 
 
 def backup_capacity() -> ApiError:
-    return ApiError(503, "backup_capacity", "Too many backups are being made right now.",
-                    "Try again in a few minutes.")
+    return ApiError(
+        503,
+        "backup_capacity",
+        "Too many backups are being made right now.",
+        "Try again in a few minutes.",
+    )
 
 
 def restore_capacity() -> ApiError:
-    return ApiError(503, "restore_capacity", "Another restore is running on this server.",
-                    "Try again in a few minutes.")
+    return ApiError(
+        503,
+        "restore_capacity",
+        "Another restore is running on this server.",
+        "Try again in a few minutes.",
+    )
 
 
 def insufficient_storage(needed: int, free: int, where: str | None = None) -> ApiError:
@@ -77,21 +85,26 @@ def not_a_backup() -> ApiError:
 
 def backup_damaged(detail: str | None = None) -> ApiError:
     return ApiError(
-        422, "backup_damaged", "This backup is damaged or was modified.",
+        422,
+        "backup_damaged",
+        "This backup is damaged or was modified.",
         detail or "Use another copy of the backup.",
     )
 
 
 def backup_unsafe(paths: list[str]) -> ApiError:
     return ApiError(
-        422, "backup_unsafe", "This backup contains unsafe file names, so it can't be restored.",
+        422,
+        "backup_unsafe",
+        "This backup contains unsafe file names, so it can't be restored.",
         extra={"paths": paths[:MAX_PATHS]},
     )
 
 
 def backup_names_invalid(paths: list[str]) -> ApiError:
     return ApiError(
-        422, "backup_names_invalid",
+        422,
+        "backup_names_invalid",
         "Some file names in this backup aren't allowed on this computer.",
         extra={"paths": paths[:MAX_PATHS]},
     )
@@ -99,7 +112,8 @@ def backup_names_invalid(paths: list[str]) -> ApiError:
 
 def backup_too_new(app_version: str) -> ApiError:
     return ApiError(
-        422, "backup_too_new",
+        422,
+        "backup_too_new",
         f"This backup was made with a newer version ({app_version}).",
         "Update UniHelperProMax first.",
         extra={"appVersion": app_version},
@@ -108,7 +122,8 @@ def backup_too_new(app_version: str) -> ApiError:
 
 def backup_ids_in_use() -> ApiError:
     return ApiError(
-        409, "backup_ids_in_use",
+        409,
+        "backup_ids_in_use",
         "This backup belongs to another account on this server.",
         "Sign in to that account to restore it.",
     )
@@ -120,24 +135,40 @@ def not_awaiting_confirmation() -> ApiError:
 
 def restore_blocked(reasons: list[str], items: list[dict[str, str]]) -> ApiError:
     return ApiError(
-        409, "restore_blocked", "Your data can't be restored right now.",
+        409,
+        "restore_blocked",
+        "Your data can't be restored right now.",
         extra={"reasons": reasons, "items": items},
     )
 
 
 def restore_running() -> ApiError:
-    return ApiError(409, "restore_running", "The restore is already running and can't be stopped.",
-                    "It finishes, or puts your data back as it was.")
+    return ApiError(
+        409,
+        "restore_running",
+        "The restore is already running and can't be stopped.",
+        "It finishes, or puts your data back as it was.",
+    )
 
 
 def restore_in_progress(job_id: str) -> ApiError:
-    return ApiError(423, "restore_in_progress", "Your data is being restored.",
-                    "Wait until the restore has finished.", extra={"jobId": job_id})
+    return ApiError(
+        423,
+        "restore_in_progress",
+        "Your data is being restored.",
+        "Wait until the restore has finished.",
+        extra={"jobId": job_id},
+    )
 
 
 def files_in_use(path: str) -> ApiError:
-    return ApiError(409, "files_in_use", "A file is open in another program.",
-                    "Close it and try again.", extra={"path": path})
+    return ApiError(
+        409,
+        "files_in_use",
+        "A file is open in another program.",
+        "Close it and try again.",
+        extra={"path": path},
+    )
 
 
 def restore_failed(detail: str | None = None) -> ApiError:

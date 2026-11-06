@@ -229,6 +229,10 @@ def _clock(iso: str | None) -> str:
 
 
 def render_transcript(doc: dict[str, Any], label: str) -> str:
+    if doc.get("teacher"):  # 022: lessons and practice show questions, never raw blocks
+        from unihelper.teacher.view import transcript
+
+        return transcript(doc, label)
     created = doc.get("createdAt", "")
     try:
         started = datetime.fromisoformat(created).strftime("%Y-%m-%d %H:%M")

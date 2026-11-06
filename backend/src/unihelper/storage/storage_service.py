@@ -225,9 +225,7 @@ class StorageService:
         path = self.path_for(parts)
         allowed = {"notes": {".md"}, "audios": AUDIO_EXTENSIONS, "documents": {".pdf"}}
         sidecar = path.parent.name == "documents" and path.name.lower().endswith(SIDECAR_SUFFIX)
-        general = (
-            len(parts) == 3 and parts[1] == GENERAL_NOTES_DIR and path.suffix.lower() == ".md"
-        )
+        general = len(parts) == 3 and parts[1] == GENERAL_NOTES_DIR and path.suffix.lower() == ".md"
         if path.is_dir() or not (
             sidecar or general or path.suffix.lower() in allowed.get(path.parent.name, set())
         ):

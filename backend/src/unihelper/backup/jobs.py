@@ -143,8 +143,13 @@ class BackupJobs:
         job.phase = phase
         job.error = error
         job.ended_at = _now()
-        log.info("backup job %s (%s) ended: %s%s", job.id, job.kind, phase,
-                 f" [{error.code}]" if error else "")
+        log.info(
+            "backup job %s (%s) ended: %s%s",
+            job.id,
+            job.kind,
+            phase,
+            f" [{error.code}]" if error else "",
+        )
 
     def _progress(self, job: BackupJob) -> Callable[[int, int | None], None]:
         def update(done: int, total: int | None) -> None:
@@ -188,9 +193,7 @@ class BackupJobs:
         return job
 
     def busy(self, user_id: str) -> BackupJob | None:
-        return next(
-            (j for j in self._jobs.values() if j.user_id == user_id and j.running), None
-        )
+        return next((j for j in self._jobs.values() if j.user_id == user_id and j.running), None)
 
     def other_running(self, user_id: str, job_id: str) -> bool:
         return any(
@@ -228,8 +231,15 @@ class BackupJobs:
         target = self.settings.exports_dir / account.id / f"{job.id}.zip"
         try:
             job.phase = "writing"
-            write_backup(self.settings, self.maker, self.storage, account, target,
-                         self._progress(job), job.cancel)
+            write_backup(
+                self.settings,
+                self.maker,
+                self.storage,
+                account,
+                target,
+                self._progress(job),
+                job.cancel,
+            )
         except Cancelled:
             self._end(job, "cancelled")
             return
@@ -292,8 +302,9 @@ class BackupJobs:
         with self._mutex:
             if job.kind != "restore" or job.phase != "awaiting_confirmation":
                 raise errors.not_awaiting_confirmation()
-            restore.check_gate(self.maker, account.id, self.runs,
-                               self.other_running(account.id, job.id))
+            restore.check_gate(
+                self.maker, account.id, self.runs, self.other_running(account.id, job.id)
+            )
             if any(j.kind == "restore" and j.phase in CONFIRMED for j in self._jobs.values()):
                 raise errors.restore_capacity()
             # space for the safety backup and for the restored files, before anything changes
@@ -312,8 +323,9 @@ class BackupJobs:
         assert upload is not None
         phase, error = "done", None
         try:
-            restore.run_restore(self.ctx, account, job.id, upload, self._set_phase(job),
-                                self._progress(job))
+            restore.run_restore(
+                self.ctx, account, job.id, upload, self._set_phase(job), self._progress(job)
+            )
         except ApiError as err:
             phase, error = "rolled_back", errors.job_error(err)
         except Exception:
@@ -351,4 +363,3 @@ def file_name(timezone: str, prefix: str = "UniHelperProMax-backup") -> str:
     except Exception:  # an unknown zone: use UTC rather than fail the backup
         local = _now()
     return f"{prefix}-{local:%Y-%m-%d-%H%M}.zip"
-

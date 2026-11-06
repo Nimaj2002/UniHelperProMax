@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     ForeignKey,
     Index,
     Integer,
@@ -16,6 +17,8 @@ from unihelper.models.base import Base, IdMixin, TimestampMixin, VersionMixin, n
 
 RUN_STATUSES = ("queued", "streaming", "completed", "stopped", "interrupted", "failed")
 ACTIVE_RUN_STATUSES = ("queued", "streaming")
+CHAT_KINDS = ("chat", "lesson", "practice")
+TEACHER_KINDS = ("lesson", "practice")  # 022: teacher chats are chats with a kind (research R1)
 
 
 class Chat(IdMixin, TimestampMixin, VersionMixin, Base):
@@ -26,6 +29,8 @@ class Chat(IdMixin, TimestampMixin, VersionMixin, Base):
     __table_args__ = (
         UniqueConstraint("session_folder_id", "stem", name="uq_chats_folder_stem"),
         Index("ix_chats_folder_updated", "session_folder_id", "updated_at"),
+        Index("ix_chats_kind_kg", "user_id", "kind", "kg_status", "updated_at"),
+        CheckConstraint("kind IN ('chat', 'lesson', 'practice')", name="kind"),
     )
 
     user_id: Mapped[str] = mapped_column(
@@ -45,6 +50,19 @@ class Chat(IdMixin, TimestampMixin, VersionMixin, Base):
     unseen_answer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     deleted_at: Mapped[str | None] = mapped_column(String, nullable=True)
+    # 022: teacher chats
+    kind: Mapped[str] = mapped_column(
+        String(10), nullable=False, default="chat", server_default="chat"
+    )
+    unanswered_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    kg_processed_turns: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
+    kg_status: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    kg_error: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    kg_attempted_at: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class ChatRun(IdMixin, Base):

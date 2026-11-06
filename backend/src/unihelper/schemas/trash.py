@@ -21,6 +21,8 @@ class SessionDeletionImpact(ApiModel):
     linked_task_count: int = 0  # 012: live tasks linked to the removed event occurrences
     chats: int = 0  # 014: chats of the removed occurrences, and up to 5 of their titles
     chat_titles: list[str] = []
+    teacher_chats: int = 0  # 022: lessons and practice among `chats`
+    graph_ideas: int = 0  # 022: knowledge-graph ideas left without a source (FR-035)
 
 
 class TrashEntryOut(ApiModel):

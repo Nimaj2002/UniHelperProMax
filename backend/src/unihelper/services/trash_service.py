@@ -253,6 +253,24 @@ def deletion_impact(db: Session, user: User, key: str, scope: str) -> dict[str, 
         "linked_task_count": linked,
         "chats": counts.chats,  # 014 FR-051: the confirmation names the chats
         "chat_titles": chat_titles(db, [f.id for f in p.folders]),
+        **_teacher_impact(db, user, [f.id for f in p.folders]),
+    }
+
+
+def _teacher_impact(db: Session, user: User, folder_ids: list[str]) -> dict[str, int]:
+    """022: lessons among the chats, and the graph ideas only they taught (FR-035)."""
+    from unihelper.services.knowledge_graph_service import impact_of_chats
+
+    if not folder_ids:
+        return {"teacher_chats": 0, "graph_ideas": 0}
+    rows = db.execute(
+        select(Chat.id, Chat.kind).where(
+            Chat.session_folder_id.in_(folder_ids), Chat.deleted_at.is_(None)
+        )
+    ).all()
+    return {
+        "teacher_chats": sum(1 for r in rows if r.kind != "chat"),
+        "graph_ideas": impact_of_chats(db, user, {r.id for r in rows}),
     }
 
 
@@ -890,6 +908,9 @@ def purge(db: Session, storage: StorageService, user: User, entry_id: str, versi
         db.delete(f)
     db.flush()
     task_link_service.purge_for_entry(db, user, entry.id)  # 012: its tasks go for good
+    from unihelper.services.knowledge_graph_service import prune
+
+    prune(db)  # 022: chats cascaded with their folders; ideas only they taught go too
     lineage_id = entry.lineage_id
     db.delete(entry)
     db.flush()

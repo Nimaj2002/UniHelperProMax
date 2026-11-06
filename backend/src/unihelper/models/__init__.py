@@ -13,6 +13,7 @@ from unihelper.models.class_series import ClassLink, ClassSeries
 from unihelper.models.course import Course
 from unihelper.models.document import AnnotationOp, Document, DocumentHide, DocumentPosition
 from unihelper.models.event_series import EventLink, EventSeries
+from unihelper.models.knowledge_graph import KgIdea, KgLink, KgLinkPremise, KgSource
 from unihelper.models.note import Note
 from unihelper.models.proxy import ProxySettings
 from unihelper.models.recording import Recording
@@ -53,6 +54,10 @@ __all__ = [
     "DocumentPosition",
     "EventLink",
     "EventSeries",
+    "KgIdea",
+    "KgLink",
+    "KgLinkPremise",
+    "KgSource",
     "Note",
     "ProviderConfig",
     "ProxySettings",

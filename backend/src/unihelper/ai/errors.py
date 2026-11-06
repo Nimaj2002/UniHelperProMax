@@ -58,7 +58,9 @@ def looks_like(body: Any) -> Style | None:
     if body.get("type") == "error" or "has_more" in body or "first_id" in body:
         return "anthropic"
     error = body.get("error")
-    if isinstance(error, dict) and ("status" in error or isinstance(error.get("code"), int)):
+    # Gemini errors always carry a text `status`; an int `code` alone is also OpenAI-compatible
+    # routers' shape ({"error": {"message", "code": 429}}), so it doesn't decide the style
+    if isinstance(error, dict) and isinstance(error.get("status"), str):
         return "gemini"
     models = body.get("models")
     if isinstance(models, list) and all(

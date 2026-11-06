@@ -132,6 +132,9 @@ export function useActiveRuns() {
 export function invalidateChat(qc: QueryClient, chatId: string, sessionKey?: string) {
   void qc.invalidateQueries({ queryKey: chatKey(chatId) });
   void qc.invalidateQueries({ queryKey: sessionKey ? chatsOfSession(sessionKey) : ["chats"] });
+  // 022: teacher chats share the run machinery
+  void qc.invalidateQueries({ queryKey: ["teacher-chat", chatId] });
+  void qc.invalidateQueries({ queryKey: sessionKey ? ["teacher", sessionKey] : ["teacher"] });
 }
 
 // ---- mutations --------------------------------------------------------------------------------

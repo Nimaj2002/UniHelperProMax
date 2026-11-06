@@ -30,6 +30,7 @@ from unihelper.api.v1 import (
     events,
     health,
     hierarchy,
+    knowledge_graph,
     notes,
     recordings,
     secrets,
@@ -37,6 +38,7 @@ from unihelper.api.v1 import (
     settings,
     setup,
     tasks,
+    teacher,
     themes,
     time,
     timeline,
@@ -63,6 +65,7 @@ from unihelper.services import (
 )
 from unihelper.services.login_throttle import LoginThrottle
 from unihelper.storage.storage_service import StorageService
+from unihelper.teacher.graph_worker import GraphWorker
 from unihelper.transcription.worker import TranscriptionWorker
 
 log = logging.getLogger("unihelper")
@@ -98,6 +101,8 @@ def build_api_router() -> APIRouter:
         desktop_routes,  # 015: always registered; 404 not_desktop in web mode
         backup,  # 016
         time,  # 020
+        teacher,  # 022
+        knowledge_graph,
     ):
         api.include_router(module.router)
     for router in tasks.routers:  # 012: /task-columns, /tasks, /quick-notes
@@ -182,11 +187,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             except SQLAlchemyError:
                 log.exception("could not recover interrupted chat answers")
             sweeper = asyncio.create_task(_sweep_chats(app))
+            graph_worker: GraphWorker = app.state.graph_worker  # 022: lessons → knowledge graph
+            graph_worker.attach(asyncio.get_running_loop())
+            if settings.graph_autorun:
+                await graph_worker.start()
             worker: TranscriptionWorker = app.state.transcription_worker
             if settings.transcription_autorun:
                 await worker.start()
             yield
             sweeper.cancel()
+            await graph_worker.stop()
             await runs.shutdown()
             await worker.stop()
             _finish_recordings(app)  # 015: before the engine closes (FR-009)
@@ -237,6 +247,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         chat_service.label_of,
         max_per_user=settings.chat_max_runs_per_user,
         max_total=settings.chat_max_runs_total,
+    )
+    app.state.graph_worker = GraphWorker(  # 022
+        app.state.sessionmaker,
+        app.state.storage,
+        app.state.secrets,
+        app.state.chat_runs,
+        lambda: app.state.ai_transport,
     )
     # 016: backup and restore jobs, and the accounts whose data is being restored
     app.state.account_locks = AccountLocks()

@@ -1,0 +1,576 @@
+openapi: 3.1.0
+info:
+  title: UniHelperProMax API — feature 022 additions (AI Teacher, knowledge graph)
+  version: 1.12.0
+  description: |
+    Additive to the 001–021 contracts (same conventions: camelCase JSON, RFC 9457 problems, CSRF
+    header on writes, `If-Match: <version>` on updates and deletes of versioned rows → 428 when
+    missing, 412 `version_conflict` when stale). Every operation is scoped to the signed-in user;
+    another user's ids answer 404. Keys never appear in any response (Principle IV).
+
+    Teacher chats are chats (research R1). These existing 014 operations work on them unchanged
+    and are not repeated here: `DELETE /chats/{chatId}`,
+    `POST /chats/{chatId}/restore`, `POST /chats/{chatId}/seen`, `GET|PUT
+    /sessions/{sessionKey}/chat-drafts` (draft keys of teacher chats are their chat ids, the
+    new-teacher-chat box uses `teacher:lesson` / `teacher:practice`), `POST
+    /sessions/{sessionKey}/chat-uploads`, `GET /chat-files/{uploadId}`, `POST /chats/preflight`,
+    `GET /chat-runs/active`, `GET /chat-runs/{runId}/events` (with the added events of
+    `teacher-stream.md`), `POST /chat-runs/{runId}/stop`.
+
+    Amended existing operations (only the additions are listed):
+    - `GET /sessions/{sessionKey}/chats`, `GET /chats/{chatId}`: return only `kind = chat`;
+      a teacher chat id answers 404 on `GET|PATCH /chats/{chatId}`, `POST
+      /chats/{chatId}/messages`, regenerate, edit, selection and append-to-note (their
+      responses carry raw reply text, which holds answer keys). Teacher chats are renamed with
+      `PATCH /teacher-chats/{chatId}`.
+    - `GET|PUT /workspace/{sessionKey}`: `TabRef.kind` enum gains `teacher`; a teacher tab
+      not yet sent has the id `new:lesson-<uuid>` or `new:practice-<uuid>`.
+    - `GET /chat-runs/active`, `POST /chat-runs/{runId}/stop`: + `teacher` (bool: a lesson or
+      practice reply, so the session panel rail marks AI Teacher instead of Chat).
+    - `GET /sessions/{sessionKey}/deletion-impact`: + `teacherChats` (int), + `graphIdeas` (int:
+      ideas that would be left with no source, FR-035).
+servers:
+  - url: /api/v1
+
+paths:
+  # ───────────────────────────── teacher chats ─────────────────────────────
+  /sessions/{sessionKey}/teacher-chats:
+    parameters: [{ $ref: "#/components/parameters/SessionKey" }]
+    get:
+      tags: [teacher]
+      summary: This session's lesson and practice chats, newest activity first (FR-002)
+      responses:
+        "200":
+          description: Teacher chats
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/TeacherChatSummary" } } } }
+        "404": { $ref: "#/components/responses/Problem" }
+    post:
+      tags: [teacher]
+      summary: Start a lesson or practice chat with its first message; starts a run (FR-003)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/StartTeacherChat" } } }
+      responses:
+        "201":
+          description: Chat created and run started
+          content: { application/json: { schema: { $ref: "#/components/schemas/TeacherSendResult" } } }
+        "404": { $ref: "#/components/responses/Problem" }   # session, or an idea id
+        "409": { $ref: "#/components/responses/Problem" }   # privacy_ack_required · context_exceeded · model_unavailable · attachment_not_accepted · key_unreadable
+        "413": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }   # empty_message · too_many_ideas · validation
+        "429": { $ref: "#/components/responses/Problem" }   # too_many_runs
+
+  /teacher-chats/{chatId}:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }]
+    get:
+      tags: [teacher]
+      summary: The whole teacher chat — turns as segments, questions (keys withheld until answered or revealed), plans, idea set, graph status
+      responses:
+        "200":
+          description: Teacher chat
+          content: { application/json: { schema: { $ref: "#/components/schemas/TeacherChatOut" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # chat_file_unreadable (with path in detail)
+    patch:
+      tags: [teacher]
+      summary: Rename a teacher chat (FR-005, FR-006)
+      parameters: [{ name: If-Match, in: header, required: true, schema: { type: integer, minimum: 1 } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [title], properties: { title: { type: string, minLength: 1, maxLength: 200 } } } } }
+      responses:
+        "200":
+          description: Renamed
+          content: { application/json: { schema: { $ref: "#/components/schemas/TeacherChatSummary" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "412": { $ref: "#/components/responses/Problem" }   # version_conflict
+        "422": { $ref: "#/components/responses/Problem" }   # title_required
+        "428": { $ref: "#/components/responses/Problem" }
+
+  /teacher-chats/{chatId}/messages:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }]
+    post:
+      tags: [teacher]
+      summary: Send a normal message; open questions stay unanswered and answerable (US2 scenario 6)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SendMessage" } } }
+      responses:
+        "202":
+          description: Run started
+          content: { application/json: { schema: { $ref: "#/components/schemas/TeacherSendResult" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # run_active · privacy_ack_required · context_exceeded · model_unavailable · key_unreadable
+        "413": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }
+        "429": { $ref: "#/components/responses/Problem" }
+
+  /teacher-chats/{chatId}/answers:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }]
+    post:
+      tags: [teacher]
+      summary: Submit answers to one or more open questions; choice answers are graded at once, then a run starts (FR-020, FR-021, research R4)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SubmitAnswers" } } }
+      responses:
+        "202":
+          description: Answers saved, choice answers graded, run started
+          content: { application/json: { schema: { $ref: "#/components/schemas/TeacherSendResult" } } }
+        "404": { $ref: "#/components/responses/Problem" }   # chat or question
+        "409": { $ref: "#/components/responses/Problem" }   # run_active · already_answered · model_unavailable · privacy_ack_required · key_unreadable
+        "422": { $ref: "#/components/responses/Problem" }   # wrong_answer_kind · option_out_of_range · validation
+        "429": { $ref: "#/components/responses/Problem" }
+
+  /teacher-chats/{chatId}/questions/{questionId}/dispute:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }, { $ref: "#/components/parameters/QuestionId" }]
+    post:
+      tags: [teacher]
+      summary: Dispute a grade (or ask for a missing grade); the teacher re-grades (FR-024a)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/Dispute" } } }
+      responses:
+        "202":
+          description: Run started
+          content: { application/json: { schema: { $ref: "#/components/schemas/TeacherSendResult" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # run_active · not_answered · model_unavailable
+        "429": { $ref: "#/components/responses/Problem" }
+
+  /teacher-chats/{chatId}/questions/{questionId}/hint:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }, { $ref: "#/components/parameters/QuestionId" }]
+    post:
+      tags: [teacher]
+      summary: Ask for one hint on a practice problem (FR-040)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [model], properties: { model: { $ref: "#/components/schemas/ModelRef" }, attempt: { type: string, maxLength: 8000 } } } } }
+      responses:
+        "202":
+          description: Run started
+          content: { application/json: { schema: { $ref: "#/components/schemas/TeacherSendResult" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # run_active · not_practice · already_answered
+        "429": { $ref: "#/components/responses/Problem" }
+
+  /teacher-chats/{chatId}/questions/{questionId}/reveal:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }, { $ref: "#/components/parameters/QuestionId" }]
+    post:
+      tags: [teacher]
+      summary: Reveal a practice problem's model solution before attempting it (FR-041)
+      responses:
+        "200":
+          description: The question with its key
+          content: { application/json: { schema: { $ref: "#/components/schemas/Question" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # not_practice
+
+  /teacher-chats/{chatId}/malformed/{segmentId}/retry:
+    parameters:
+      - { $ref: "#/components/parameters/ChatId" }
+      - { name: segmentId, in: path, required: true, schema: { type: string } }
+    post:
+      tags: [teacher]
+      summary: Ask the teacher to re-ask a question that could not be displayed (FR-025)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [model], properties: { model: { $ref: "#/components/schemas/ModelRef" } } } } }
+      responses:
+        "202":
+          description: Run started
+          content: { application/json: { schema: { $ref: "#/components/schemas/TeacherSendResult" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # run_active
+        "429": { $ref: "#/components/responses/Problem" }
+
+  /teacher-chats/{chatId}/idea-set:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }]
+    put:
+      tags: [teacher]
+      summary: Replace the chat's idea set; applies from the next message (FR-017)
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [ideaIds], properties: { ideaIds: { type: array, maxItems: 30, uniqueItems: true, items: { type: string } } } } } }
+      responses:
+        "200":
+          description: The idea set
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/IdeaSummary" } } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/Problem" }   # too_many_ideas · unknown_idea
+
+  /teacher-chats/{chatId}/graph-update:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }]
+    post:
+      tags: [teacher]
+      summary: Queue graph extraction for this lesson now (tab close, "Update graph", Retry) (FR-029, FR-036)
+      responses:
+        "202":
+          description: Queued (or nothing to do)
+          content: { application/json: { schema: { $ref: "#/components/schemas/GraphStatus" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+        "409": { $ref: "#/components/responses/Problem" }   # not_lesson
+
+  /teacher-chats/{chatId}/graph-impact:
+    parameters: [{ $ref: "#/components/parameters/ChatId" }]
+    get:
+      tags: [teacher]
+      summary: How many ideas deleting this chat would remove, for the confirmation (FR-035)
+      responses:
+        "200":
+          description: Impact
+          content: { application/json: { schema: { type: object, required: [ideas], properties: { ideas: { type: integer, minimum: 0 } } } } }
+        "404": { $ref: "#/components/responses/Problem" }
+
+  /teacher/instructions:
+    get:
+      tags: [teacher]
+      summary: The teacher's instructions, read-only, for Settings (FR-014)
+      responses:
+        "200":
+          description: Instructions
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [lesson, practice, extraction]
+                properties:
+                  lesson: { type: string }
+                  practice: { type: string }
+                  extraction: { type: string }
+
+  # ───────────────────────────── knowledge graph ─────────────────────────────
+  /knowledge-graph:
+    get:
+      tags: [graph]
+      summary: The user's whole graph for drawing (FR-032); sources of soft-deleted chats are hidden
+      responses:
+        "200":
+          description: Graph
+          content: { application/json: { schema: { $ref: "#/components/schemas/Graph" } } }
+
+  /knowledge-graph/ideas:
+    get:
+      tags: [graph]
+      summary: Search ideas by name or statement, or list a course's ideas most recently taught first (default idea set)
+      parameters:
+        - { name: q, in: query, required: false, schema: { type: string, maxLength: 200 } }
+        - { name: courseId, in: query, required: false, schema: { type: string } }
+        - { name: sort, in: query, required: false, schema: { type: string, enum: [relevance, recent], default: relevance } }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 200, default: 50 } }
+      responses:
+        "200":
+          description: Ideas
+          content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/IdeaSummary" } } } }
+
+  /knowledge-graph/ideas/{ideaId}:
+    parameters: [{ name: ideaId, in: path, required: true, schema: { type: string } }]
+    get:
+      tags: [graph]
+      summary: One idea with what it follows from, what it leads to, and its sources (FR-033)
+      responses:
+        "200":
+          description: Idea
+          content: { application/json: { schema: { $ref: "#/components/schemas/IdeaDetail" } } }
+        "404": { $ref: "#/components/responses/Problem" }
+    delete:
+      tags: [graph]
+      summary: Delete an idea and its links; chats are unchanged (FR-034). The UI confirms first.
+      responses:
+        "204": { description: Deleted }
+        "404": { $ref: "#/components/responses/Problem" }
+
+components:
+  parameters:
+    SessionKey: { name: sessionKey, in: path, required: true, schema: { type: string } }
+    ChatId: { name: chatId, in: path, required: true, schema: { type: string } }
+    QuestionId: { name: questionId, in: path, required: true, schema: { type: string, pattern: "^q[0-9]+$" } }
+
+  responses:
+    Problem:
+      description: RFC 9457 problem
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, code]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        code: { type: string }
+        detail: { type: string }
+        retryAfterSeconds: { type: integer }
+        errors: { type: array }
+
+    ModelRef:
+      type: object
+      required: [endpointId, modelId]
+      properties:
+        endpointId: { type: string }
+        modelId: { type: string }
+
+    ContextItemRef:
+      type: object
+      required: [kind, ref]
+      properties:
+        kind: { type: string, enum: [note, document, recording, upload] }
+        ref: { type: string }
+        pdfMode: { type: [string, "null"], enum: [document, text, null] }
+
+    SendMessage:
+      type: object
+      required: [text, model]
+      properties:
+        text: { type: string, maxLength: 100000 }
+        model: { $ref: "#/components/schemas/ModelRef" }
+        attachments: { type: array, maxItems: 10, items: { $ref: "#/components/schemas/ContextItemRef" } }
+
+    StartTeacherChat:
+      allOf:
+        - { $ref: "#/components/schemas/SendMessage" }
+        - type: object
+          required: [kind]
+          properties:
+            kind: { type: string, enum: [lesson, practice] }
+            topic: { type: [string, "null"], maxLength: 200, description: Practice only; null = draw from the idea set }
+            ideaIds:
+              type: [array, "null"]
+              maxItems: 30
+              uniqueItems: true
+              items: { type: string }
+              description: null = the default (same-course ideas, most recent first, up to 30)
+
+    SubmitAnswers:
+      type: object
+      required: [answers, model]
+      properties:
+        model: { $ref: "#/components/schemas/ModelRef" }
+        answers:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { $ref: "#/components/schemas/AnswerSubmission" }
+
+    AnswerSubmission:
+      type: object
+      required: [questionId, confidence]
+      properties:
+        questionId: { type: string }
+        choice: { type: integer, minimum: 0 }
+        text: { type: string, minLength: 1, maxLength: 8000 }
+        confidence:
+          description: Percent from the slider's fixed steps; null = not set (not 0)
+          type: [integer, "null"]
+          enum: [0, 25, 50, 75, 100, null]
+        dontKnow:
+          type: boolean
+          default: false
+          description: The fixed "I don't know" answer — no choice or text; graded incorrect by the app
+        thinking: { type: string, maxLength: 8000, default: "" }
+
+    Dispute:
+      type: object
+      required: [model]
+      properties:
+        model: { $ref: "#/components/schemas/ModelRef" }
+        reason: { type: string, maxLength: 4000, default: "" }
+
+    TeacherSendResult:
+      type: object
+      required: [chat, runId, turnId, answerId]
+      properties:
+        chat: { $ref: "#/components/schemas/TeacherChatSummary" }
+        runId: { type: string }
+        turnId: { type: string }
+        answerId: { type: string }
+        graded:
+          type: array
+          description: Questions graded by the server on submit (choice answers)
+          items: { $ref: "#/components/schemas/Question" }
+
+    TeacherChatSummary:
+      type: object
+      required: [id, kind, title, createdAt, updatedAt, generating, unseenAnswer, unansweredCount, modelLabel, version]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [lesson, practice] }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        generating: { type: boolean }
+        unseenAnswer: { type: boolean }
+        unansweredCount: { type: integer, minimum: 0 }
+        modelLabel: { type: string }
+        version: { type: integer }
+
+    TeacherChatOut:
+      type: object
+      required: [chat, topic, turns, questions, plans, ideaSet, graph]
+      properties:
+        chat: { $ref: "#/components/schemas/TeacherChatSummary" }
+        topic: { type: [string, "null"] }
+        model: { type: [object, "null"], properties: { endpointId: { type: string }, modelId: { type: string }, label: { type: string }, available: { type: boolean } } }
+        turns: { type: array, items: { $ref: "#/components/schemas/TeacherTurn" } }
+        questions: { type: array, items: { $ref: "#/components/schemas/Question" } }
+        plans: { type: array, items: { $ref: "#/components/schemas/Plan" } }
+        ideaSet: { type: array, items: { $ref: "#/components/schemas/IdeaSummary" } }
+        graph: { $ref: "#/components/schemas/GraphStatus" }
+
+    TeacherTurn:
+      type: object
+      required: [id, user, answer]
+      properties:
+        id: { type: string }
+        user:
+          type: object
+          required: [id, text, createdAt, action]
+          properties:
+            id: { type: string }
+            text: { type: string, description: What the student typed, or the server-written text of an action turn }
+            createdAt: { type: string, format: date-time }
+            action: { type: [string, "null"], enum: [answers, dispute, hint, retry, null] }
+            target: { type: [string, "null"] }
+            attachments: { type: array, items: { $ref: "#/components/schemas/ContextItemRef" } }
+        answer:
+          type: object
+          required: [id, status, segments]
+          properties:
+            id: { type: string }
+            status: { type: string, enum: [queued, streaming, completed, stopped, interrupted, failed] }
+            runId: { type: [string, "null"] }
+            endpointLabel: { type: string }
+            modelLabel: { type: string }
+            locality: { type: string, enum: [local, remote] }
+            segments: { type: array, items: { $ref: "#/components/schemas/Segment" } }
+            error: { type: [object, "null"], properties: { category: { type: string }, message: { type: string }, retryAfterSeconds: { type: integer } } }
+
+    Segment:
+      oneOf:
+        - type: object
+          required: [type, text]
+          properties: { type: { const: markdown }, text: { type: string } }
+        - type: object
+          required: [type, questionId]
+          properties: { type: { const: question }, questionId: { type: string } }
+        - type: object
+          required: [type, id, reason]
+          properties: { type: { const: malformed }, id: { type: string }, reason: { type: string } }
+
+    Question:
+      type: object
+      required: [id, answerId, kind, title, prompt, practice, status, hints, grades, revealed]
+      properties:
+        id: { type: string }
+        answerId: { type: string }
+        kind: { type: string, enum: [choice, text] }
+        title: { type: string }
+        prompt: { type: string }
+        options: { type: array, items: { type: string } }
+        practice: { type: boolean }
+        status: { type: string, enum: [unanswered, submitted, correct, partly, incorrect] }
+        revealed: { type: boolean }
+        key:
+          description: Absent while status = unanswered and not revealed (FR-018, FR-041)
+          oneOf: [{ type: integer }, { type: string }]
+        explanation: { type: string, description: Absent while the key is withheld }
+        submission:
+          type: [object, "null"]
+          properties:
+            choice: { type: integer }
+            text: { type: string }
+            confidence: { type: [integer, "null"], enum: [0, 25, 50, 75, 100, null] }
+            dontKnow: { type: boolean }
+            thinking: { type: string }
+            submittedAt: { type: string, format: date-time }
+        grades:
+          type: array
+          items:
+            type: object
+            required: [grade, by, at]
+            properties:
+              grade: { type: string, enum: [correct, partly, incorrect] }
+              feedback: { type: string }
+              by: { type: string, enum: [server, teacher] }
+              disputeReason: { type: string }
+              at: { type: string, format: date-time }
+        hints:
+          type: array
+          items: { type: object, required: [text, createdAt], properties: { text: { type: string }, createdAt: { type: string, format: date-time } } }
+
+    Plan:
+      type: object
+      required: [version, mermaid, createdAt]
+      properties:
+        version: { type: integer, minimum: 1 }
+        answerId: { type: string }
+        mermaid: { type: string, maxLength: 20000 }
+        current: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+
+    GraphStatus:
+      type: object
+      required: [status, pendingTurns]
+      properties:
+        status: { type: [string, "null"], enum: [pending, running, ok, failed, null] }
+        pendingTurns: { type: integer, minimum: 0 }
+        error: { type: [string, "null"] }
+
+    IdeaSummary:
+      type: object
+      required: [id, name, statement, courseIds, sourceCount, updatedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        statement: { type: string }
+        courseIds: { type: array, items: { type: string } }
+        sourceCount: { type: integer, minimum: 1 }
+        updatedAt: { type: string, format: date-time }
+
+    Link:
+      type: object
+      required: [id, premiseIds, conclusionId]
+      properties:
+        id: { type: string }
+        premiseIds: { type: array, minItems: 1, items: { type: string } }
+        conclusionId: { type: string }
+
+    Graph:
+      type: object
+      required: [version, ideas, links]
+      properties:
+        version: { type: string, description: Changes whenever the graph changes (layout cache key) }
+        ideas: { type: array, items: { $ref: "#/components/schemas/IdeaSummary" } }
+        links: { type: array, items: { $ref: "#/components/schemas/Link" } }
+
+    Source:
+      type: object
+      required: [chatId, chatTitle, sessionKey, available]
+      properties:
+        chatId: { type: string }
+        chatTitle: { type: string }
+        sessionKey: { type: string }
+        sessionLabel: { type: string, description: e.g. "Linear Algebra · Tue 14 Oct" }
+        courseId: { type: [string, "null"] }
+        messageId: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        available: { type: boolean }
+
+    IdeaDetail:
+      allOf:
+        - { $ref: "#/components/schemas/IdeaSummary" }
+        - type: object
+          required: [followsFrom, leadsTo, sources]
+          properties:
+            followsFrom:
+              type: array
+              description: Links concluding in this idea, each with its premises
+              items: { type: object, required: [linkId, premises], properties: { linkId: { type: string }, premises: { type: array, items: { $ref: "#/components/schemas/IdeaSummary" } } } }
+            leadsTo:
+              type: array
+              description: Links this idea is a premise of, with their conclusion
+              items: { type: object, required: [linkId, conclusion], properties: { linkId: { type: string }, conclusion: { $ref: "#/components/schemas/IdeaSummary" } } }
+            sources: { type: array, items: { $ref: "#/components/schemas/Source" } }

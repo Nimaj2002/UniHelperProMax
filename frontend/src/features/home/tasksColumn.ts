@@ -6,15 +6,16 @@
 import { useEffect, useState } from "react";
 import { readLocal, writeLocal } from "@/lib/storage";
 
-export type ColumnSection = "tasks" | "notes" | "time";
+export type ColumnSection = "tasks" | "notes" | "time" | "graph"; // 022: the knowledge graph
 
 /** The header switch's button for each section (focus target when the rail opens one). */
 export const SECTION_SWITCH_ID: Record<ColumnSection, string> = {
   tasks: "home-switch-tasks",
   notes: "home-switch-notes",
   time: "home-switch-time",
+  graph: "home-switch-graph",
 };
-const SECTIONS: readonly ColumnSection[] = ["tasks", "notes", "time"];
+const SECTIONS: readonly ColumnSection[] = ["tasks", "notes", "time", "graph"];
 
 const KEY = "uh.home.tasksSection";
 

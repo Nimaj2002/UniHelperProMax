@@ -38,6 +38,11 @@ def purge_deleted(db: Session, storage: StorageService) -> int:
             log.warning("could not remove a deleted chat's files (%s)", type(exc).__name__)
             continue
         db.delete(chat)
+    if rows:  # 022: their graph sources cascaded; ideas they alone taught go too (R10)
+        from unihelper.services.knowledge_graph_service import prune
+
+        db.flush()
+        prune(db)
     db.execute(
         delete(ChatRun).where(ChatRun.ended_at.is_not(None), ChatRun.ended_at < _iso(RUNS_AFTER))
     )

@@ -36,9 +36,9 @@ def _skipped(name: str) -> bool:
     return bool(_TEMP.match(name)) or name.endswith(".part")
 
 
-def walk_account(user_root: Path, skip: frozenset[Path] = frozenset()) -> Iterator[
-    tuple[str, Path, int]
-]:
+def walk_account(
+    user_root: Path, skip: frozenset[Path] = frozenset()
+) -> Iterator[tuple[str, Path, int]]:
     """Every regular file under the account folder as (posix relative path, path, size), sorted.
     Links are neither followed nor included; temp and partial files are skipped."""
     if not user_root.is_dir():

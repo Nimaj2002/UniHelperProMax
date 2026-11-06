@@ -12,6 +12,7 @@ import { routes as eventRoutes } from "@/features/events/routes";
 import { routes as homeRoutes } from "@/features/home/routes";
 import "@/features/imports/routes";
 import "@/features/recordings/routes";
+import "@/features/teacher/routes"; // 022
 import { routes as sessionRoutes } from "@/features/sessions/routes";
 import { routes as settingsRoutes } from "@/features/settings/routes";
 import "@/features/time/routes";

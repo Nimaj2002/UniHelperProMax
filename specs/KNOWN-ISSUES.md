@@ -113,3 +113,26 @@ inside its file operation while `append_result` runs.
 - **Typed `$x$` becomes a formula when the caret moves on**, not at the moment the closing `$` is
   typed. This is deliberate (so `$x$5` never flickers into a formula). It is listed here because
   it differs from editors that convert immediately.
+
+## Found while building 022 (AI teacher)
+
+### Reasoning models with a small output budget often answer nothing (found 2026-11-06, 022 T076)
+
+Tested with `nvidia/nemotron-3.5-lightning:free` on an OpenAI-compatible server whose free tier
+caps a reply at 2,000 output tokens. The model sometimes spends the whole budget on reasoning
+and stops (`finish_reason: length`) before writing any answer.
+
+- **Lessons**: in a 4-lesson run, 3 of 13 teacher replies had no answer. The run now ends as
+  failed with "The model sent back no answer — it may have used all of its output on thinking"
+  (`chat/runs.py`, `EMPTY_ANSWER`); the student sends again or picks another model. When replies
+  did arrive, the method held: probing questions first in 4/4 lessons, and every reply after a
+  wrong answer repaired the specific confusion in the student's thinking and ended with a new
+  check question.
+- **Knowledge graph**: every extraction with this model came back empty (`empty_reply`), so the
+  graph stayed empty. The lesson is unaffected and the chat shows "Graph not updated — Retry".
+- **Plans**: the model never wrote a `uh-plan` block, so the Plan button didn't appear.
+
+**Fix (needs a spec decision)**: send a provider-specific "low reasoning effort" setting (for
+example OpenRouter's `reasoning: {effort: "low"}`), or let Settings choose a separate model for
+graph extraction. Both are beyond 022's spec. Until then, models without long hidden reasoning,
+or with a larger output budget, work best for the teacher.

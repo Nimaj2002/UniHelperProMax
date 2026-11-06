@@ -499,6 +499,8 @@ def test_session_deletion_impact(owner_client: TestClient) -> None:
         "linkedTaskCount": 0,  # 012
         "chats": 0,  # 014
         "chatTitles": [],
+        "teacherChats": 0,  # 022
+        "graphIdeas": 0,
     }
     this = c.get(f"{API}/sessions/{lin}:2026-10-29/deletion-impact", params={"scope": "this"})
     assert this.json() == {
@@ -510,6 +512,8 @@ def test_session_deletion_impact(owner_client: TestClient) -> None:
         "linkedTaskCount": 0,  # 012
         "chats": 0,  # 014
         "chatTitles": [],
+        "teacherChats": 0,  # 022
+        "graphIdeas": 0,
     }
     body = new_class_body()
     body["course"]["new"]["semester"]["new"]["name"] = "Fall 2026 classes"  # has an end date

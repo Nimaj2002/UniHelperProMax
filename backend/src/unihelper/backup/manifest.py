@@ -103,4 +103,3 @@ def known_revisions() -> tuple[str, ...]:
 
 def head_revision() -> str:
     return known_revisions()[-1]
-

@@ -67,9 +67,7 @@ def open_backup(path: Path) -> tuple[zipfile.ZipFile, mf.Manifest]:
     return zf, manifest
 
 
-def check_names(
-    zf: zipfile.ZipFile, manifest: mf.Manifest, windows: bool | None = None
-) -> None:
+def check_names(zf: zipfile.ZipFile, manifest: mf.Manifest, windows: bool | None = None) -> None:
     infos = zf.infolist()
     names = [i.filename for i in infos]
     unsafe: list[str] = []
@@ -198,7 +196,8 @@ def summarize(
         conn.close()
     root = storage.user_root(account.username)
     in_backup = {
-        e.path[len(mf.FILES_PREFIX):] for e in manifest.entries
+        e.path[len(mf.FILES_PREFIX) :]
+        for e in manifest.entries
         if e.path.startswith(mf.FILES_PREFIX)
     }
     current_files = list(backup_fs.walk_account(root))

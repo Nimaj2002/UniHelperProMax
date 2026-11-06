@@ -29,6 +29,9 @@ import {
   useChatPlacement,
 } from "@/features/chat/chatPlacement";
 import { ChatTab } from "@/features/chat/ChatTab";
+import { isNewTeacherId, kindOfNew, requestGraphUpdate, useTeacherChats } from "@/features/teacher/api";
+import { TeacherTab } from "@/features/teacher/TeacherTab";
+import { setTeacherTabsHost } from "@/features/teacher/teacherTabs";
 import { useSession } from "@/features/classes/api";
 import { useDocuments } from "@/features/documents/api";
 import { useEventDetail, useEventTimeline } from "@/features/events/api";
@@ -409,6 +412,12 @@ export function WorkspacePage() {
       }
       // 014 FR-045: the chat goes back to the history list; an answer in progress goes on
       if (tab.kind === "chat") return act({ type: "close", tab });
+      // 022 FR-029: closing a lesson's tab adds what it taught to the knowledge graph; a reply
+      // in progress goes on
+      if (tab.kind === "teacher") {
+        if (!isNewTeacherId(tab.id)) void requestGraphUpdate(tab.id).catch(() => {});
+        return act({ type: "close", tab });
+      }
       // unsent annotation changes: try now, else ask (007 FR-029)
       void confirmCloseDocument(tab.id).then(
         (go) => go && act({ type: "close", tab }),
@@ -526,6 +535,11 @@ export function WorkspacePage() {
     () => new Map((chats.data ?? []).map((c) => [c.id, c.title])),
     [chats.data],
   );
+  const teacherChats = useTeacherChats(sessionKey);
+  const teacherById = useMemo(
+    () => new Map((teacherChats.data ?? []).map((c) => [c.id, c.title])),
+    [teacherChats.data],
+  );
   const titleOf = useCallback(
     (t: TabRef) =>
       t.kind === "note"
@@ -534,8 +548,14 @@ export function WorkspacePage() {
           ? isNewChatId(t.id)
             ? "New chat"
             : (chatById.get(t.id) ?? "Chat")
-          : docById.get(t.id)?.name,
-    [noteById, docById, chatById],
+          : t.kind === "teacher"
+            ? isNewTeacherId(t.id)
+              ? kindOfNew(t.id) === "lesson"
+                ? "New lesson"
+                : "New practice"
+              : (teacherById.get(t.id) ?? "Lesson")
+            : docById.get(t.id)?.name,
+    [noteById, docById, chatById, teacherById],
   );
 
   // ---- chat tabs (014 US5): the chat feature moves chats between the panel and tabs ------------
@@ -563,6 +583,43 @@ export function WorkspacePage() {
     });
   }, [sessionKey, tabState.sessionKey, chatTabIds, act, openNoteId]);
   useEffect(() => () => setChatTabsHost(null), []);
+  // 022: the AI Teacher section opens its chats as tabs
+  useEffect(() => {
+    if (tabState.sessionKey !== sessionKey) return;
+    const tab = (id: string): TabRef => ({ kind: "teacher", id });
+    setTeacherTabsHost({
+      sessionKey,
+      open: (id) => act({ type: "open", tab: tab(id) }),
+      replace: (from, to) => act({ type: "replace", from: tab(from), to: tab(to) }),
+      close: (id) => act({ type: "close", tab: tab(id) }),
+    });
+  }, [sessionKey, tabState.sessionKey, act]);
+  useEffect(() => () => setTeacherTabsHost(null), []);
+  // 022 FR-033: a knowledge-graph source link opens its lesson (`?teacher=<chatId>`)
+  const [search, setSearch] = useSearchParams();
+  const teacherParam = search.get("teacher");
+  useEffect(() => {
+    if (!teacherParam || tabState.sessionKey !== sessionKey) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- opens the tab the URL names, once
+    act({ type: "open", tab: { kind: "teacher", id: teacherParam } });
+    setSearch(
+      (p) => {
+        p.delete("teacher");
+        return p;
+      },
+      { replace: true },
+    );
+  }, [teacherParam, sessionKey, tabState.sessionKey, act, setSearch]);
+  const teachersUpdated = teacherChats.isSuccess ? teacherChats.dataUpdatedAt : 0;
+  useEffect(() => {
+    if (!teachersUpdated) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncs the tabs with the server's list
+    act({
+      type: "retain",
+      valid: (t) => t.kind !== "teacher" || isNewTeacherId(t.id) || teacherById.has(t.id),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the list (or the session's tabs) load
+  }, [teachersUpdated, tabState.sessionKey]);
   // a deleted chat's tab closes (`retain`), once the session's chat list has been refreshed
   const chatsUpdated = chats.isSuccess ? chats.dataUpdatedAt : 0;
   useEffect(() => {
@@ -797,6 +854,9 @@ export function WorkspacePage() {
         )}
         {known?.kind === "chat" && (
           <ChatTab key={known.id} sessionKey={sessionKey} tabId={known.id} />
+        )}
+        {known?.kind === "teacher" && (
+          <TeacherTab key={known.id} sessionKey={sessionKey} tabId={known.id} />
         )}
         {!known &&
           (side === "left" || !view.split ? (

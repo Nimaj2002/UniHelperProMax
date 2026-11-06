@@ -1,4 +1,4 @@
-import { ChatCircleText, CheckCircle, CircleNotch, Columns, FilePdf, WarningCircle, X } from "@phosphor-icons/react";
+import { ChatCircleText, CheckCircle, GraduationCap, CircleNotch, Columns, FilePdf, WarningCircle, X } from "@phosphor-icons/react";
 import { useEffect, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -137,6 +137,7 @@ export function WorkspaceTabs({ state, titleOf, splitAvailable, onSelect, onClos
               >
                 {t.kind === "document" && <FilePdf size={15} aria-hidden className="shrink-0" />}
                 {t.kind === "chat" && <ChatCircleText size={15} aria-hidden className="shrink-0" />}
+                {t.kind === "teacher" && <GraduationCap size={15} aria-hidden className="shrink-0" />}
                 <span className="flex min-w-0 max-w-48 items-baseline gap-1">
                   <span className={cn("truncate", selected && "font-medium")}>{name}</span>
                   {side && (

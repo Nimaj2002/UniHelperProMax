@@ -43,16 +43,39 @@ def test_a_backup_from_an_older_revision_is_upgraded(
     app: FastAPI, owner_client: TestClient, tmp_data_dir: Path
 ) -> None:
     """0014 only added users.data_epoch, which isn't in a backup, 0015 only added document_hides,
-    0017 only added the time tracking tables and 0018 added proxy_settings and two `use_proxy`
-    columns, so a head backup without those tables' data and columns, labelled 0013, is a
+    0017 only added the time tracking tables, 0018 added proxy_settings and two `use_proxy`
+    columns and 0019 added the kg_* tables and six chats columns, so a head backup without
+    those tables' data and columns, labelled 0013, is a
     genuine 0013 backup: restoring it runs the 0013 → head migrations."""
     bh.inline_jobs(app)
     c = owner_client
     key = make_session(c)
     note = create_note(c, key, "Lecture 1", "upgrade me")
     _job, data = bh.make_backup(c)
-    dropped = ("document_hides", "time_tags", "time_timers", "time_entries", "proxy_settings")
-    columns = {"ai_settings": ("use_proxy",), "transcription_settings": ("use_proxy",)}
+    dropped = (
+        "document_hides",
+        "time_tags",
+        "time_timers",
+        "time_entries",
+        "proxy_settings",
+        "kg_ideas",
+        "kg_links",
+        "kg_link_premises",
+        "kg_sources",
+    )
+    teacher = (
+        "kind",
+        "unanswered_count",
+        "kg_processed_turns",
+        "kg_status",
+        "kg_error",
+        "kg_attempted_at",
+    )
+    columns = {
+        "ai_settings": ("use_proxy",),
+        "transcription_settings": ("use_proxy",),
+        "chats": teacher,
+    }
     older = _relabel(
         data, drop=dropped, drop_columns=columns, schemaRevision="0013", appVersion="1.0.0"
     )

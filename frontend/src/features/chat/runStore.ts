@@ -24,6 +24,24 @@ export interface RunView {
   endpointLabel?: string;
   modelLabel?: string;
   locality?: "local" | "remote" | null;
+  /** 022: a teacher reply as it streams — prose, question cards and malformed blocks in order. */
+  segments: LiveSegment[];
+  /** 022: a lesson or practice reply (the rail marks AI Teacher, not Chat). */
+  teacher: boolean;
+}
+
+export type LiveSegment =
+  | { type: "markdown"; text: string }
+  | { type: "question"; questionId: string }
+  | { type: "malformed"; id: string; reason: string };
+
+/** 022: the text marker a plan block leaves in a teacher reply (as the server's segments do). */
+export const PLAN_MARKER = "\n\n*Plan updated.*\n\n";
+
+function appendText(segments: LiveSegment[], text: string): LiveSegment[] {
+  const last = segments[segments.length - 1];
+  if (last?.type === "markdown") return [...segments.slice(0, -1), { type: "markdown", text: last.text + text }];
+  return [...segments, { type: "markdown", text }];
 }
 
 export interface TrackRun {
@@ -32,6 +50,7 @@ export interface TrackRun {
   sessionKey: string;
   answerId: string;
   status?: RunStatus;
+  teacher?: boolean;
 }
 
 export const isActiveStatus = (s: RunStatus | undefined) => s === "queued" || s === "streaming";
@@ -86,16 +105,17 @@ class RunStore {
     return [...this.runs.values()].filter((r) => isActiveStatus(r.status)).map((r) => r.chatId);
   }
 
-  isGenerating(sessionKey?: string): boolean {
-    for (const r of this.runs.values()) if (isActiveStatus(r.status) && (!sessionKey || r.sessionKey === sessionKey)) return true;
+  isGenerating(sessionKey?: string, teacher = false): boolean {
+    for (const r of this.runs.values())
+      if (isActiveStatus(r.status) && r.teacher === teacher && (!sessionKey || r.sessionKey === sessionKey)) return true;
     return false;
   }
 
   /** A run ended here while no view showed its chat (cleared when a view shows it). */
-  hasUnseen(sessionKey?: string): boolean {
+  hasUnseen(sessionKey?: string, teacher = false): boolean {
     for (const chatId of this.unseen) {
       const r = this.ofChat(chatId);
-      if (!sessionKey || r?.sessionKey === sessionKey) return true;
+      if ((r?.teacher ?? false) === teacher && (!sessionKey || r?.sessionKey === sessionKey)) return true;
     }
     return false;
   }
@@ -130,6 +150,8 @@ class RunStore {
       started: false,
       usage: null,
       error: null,
+      segments: known?.segments ?? [],
+      teacher: run.teacher ?? known?.teacher ?? false,
     });
     this.notify();
     const close = subscribeRun(run.runId, {
@@ -143,7 +165,7 @@ class RunStore {
   attachActive(): Promise<void> {
     this.attached ??= fetchActiveRuns().then(
       (runs) => {
-        for (const r of runs) if (isActiveStatus(r.status)) this.track({ runId: r.id, chatId: r.chatId, sessionKey: r.sessionKey, answerId: r.answerId, status: r.status });
+        for (const r of runs) if (isActiveStatus(r.status)) this.track({ runId: r.id, chatId: r.chatId, sessionKey: r.sessionKey, answerId: r.answerId, status: r.status, teacher: r.teacher });
       },
       () => {
         this.attached = null;
@@ -172,7 +194,13 @@ class RunStore {
     if (!this.pending.size) return;
     for (const [runId, add] of this.pending) {
       const r = this.runs.get(runId);
-      if (r) this.runs.set(runId, { ...r, text: r.text + add, status: r.status === "queued" ? "streaming" : r.status });
+      if (r)
+        this.runs.set(runId, {
+          ...r,
+          text: r.text + add,
+          segments: appendText(r.segments, add),
+          status: r.status === "queued" ? "streaming" : r.status,
+        });
     }
     this.pending.clear();
     this.notify();
@@ -183,7 +211,21 @@ class RunStore {
     if (add === undefined) return;
     this.pending.delete(runId);
     const r = this.runs.get(runId);
-    if (r) this.runs.set(runId, { ...r, text: r.text + add });
+    if (r) this.runs.set(runId, { ...r, text: r.text + add, segments: appendText(r.segments, add) });
+  }
+
+  /** 022: a teacher block arrived — place it after the text so far, refresh the chat's questions. */
+  private onBlock(runId: string, e: RunEvent) {
+    this.flushNow(runId);
+    const r = this.runs.get(runId);
+    if (!r) return;
+    let segments = r.segments;
+    if (e.type === "question") segments = [...segments, { type: "question", questionId: e.data.id }];
+    else if (e.type === "malformed") segments = [...segments, { type: "malformed", id: e.data.id, reason: e.data.reason }];
+    else if (e.type === "plan") segments = appendText(segments, PLAN_MARKER);
+    this.runs.set(runId, { ...r, segments });
+    this.notify();
+    if (this.qc) void this.qc.invalidateQueries({ queryKey: ["teacher-chat", r.chatId] });
   }
 
   private onEvent(runId: string, e: RunEvent) {
@@ -213,9 +255,21 @@ class RunStore {
         if (!r) return;
         // the server no longer buffers this run: its saved answer is the truth
         if (isActiveStatus(e.data.status)) return this.drop(runId);
-        this.finish(runId, { ...r, text: e.data.text, status: e.data.status });
+        this.finish(runId, {
+          ...r,
+          text: e.data.text ?? r.text,
+          segments: (e.data.segments as LiveSegment[] | undefined) ?? r.segments,
+          status: e.data.status,
+        });
         return;
       }
+      case "question":
+      case "malformed":
+      case "grade":
+      case "plan":
+      case "hint":
+        this.onBlock(runId, e);
+        return;
       default: {
         if (!TERMINAL_EVENTS.has(e.type)) return;
         this.flushNow(runId);
@@ -273,11 +327,11 @@ function useStore<T>(read: (s: RunStore) => T): T {
 
 export const useRun = (runId: string | null | undefined) => useStore((s) => s.get(runId));
 export const useChatRun = (chatId: string | null | undefined) => useStore((s) => s.ofChat(chatId));
-/** True while an answer is generated in this session (or anywhere, without a key). */
-export const useGenerating = (sessionKey?: string) => useStore((s) => s.isGenerating(sessionKey));
+/** True while a chat answer (or, with `teacher`, a teacher reply) generates in this session (or anywhere, without a key). */
+export const useGenerating = (sessionKey?: string, teacher = false) => useStore((s) => s.isGenerating(sessionKey, teacher));
 /** True while an answer generates in this chat (re-renders only when that changes). */
 export const useChatGenerating = (chatId: string | null | undefined) => useStore((s) => isActiveStatus(s.ofChat(chatId)?.status));
-export const useUnseenHere = (sessionKey?: string) => useStore((s) => s.hasUnseen(sessionKey));
+export const useUnseenHere = (sessionKey?: string, teacher = false) => useStore((s) => s.hasUnseen(sessionKey, teacher));
 /** The ids of the chats generating now, joined (a stable primitive snapshot). */
 export function useGeneratingChats(): Set<string> {
   const joined = useStore((s) => s.generatingChats().sort().join("\n"));

@@ -1,4 +1,5 @@
-import { Kanban, NotePencil, Timer } from "@phosphor-icons/react";
+import { Graph, Kanban, NotePencil, Timer } from "@phosphor-icons/react";
+import { GraphSection } from "@/features/graph/GraphSection";
 import {
   useCallback,
   useEffect,
@@ -138,7 +139,7 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
       size="sm"
       value={section}
       onValueChange={(v) => v && setSection(v as ColumnSection)}
-      aria-label="Tasks, general notes or time"
+      aria-label="Tasks, general notes, time or knowledge graph"
       className="h-7 shrink-0"
     >
       <ToggleGroupItem
@@ -168,6 +169,15 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
       >
         <Timer size={14} aria-hidden />
       </ToggleGroupItem>
+      <ToggleGroupItem
+        id={SECTION_SWITCH_ID.graph}
+        value="graph"
+        aria-label="Knowledge graph"
+        title="Knowledge graph"
+        className="h-7 px-2"
+      >
+        <Graph size={14} aria-hidden />
+      </ToggleGroupItem>
     </ToggleGroup>
   );
   const start = (
@@ -196,6 +206,8 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
           <GeneralNotesSection leading={start} trailing={trailing} />
         ) : section === "time" ? (
           <TimePanel leading={start} trailing={trailing} />
+        ) : section === "graph" ? (
+          <GraphSection leading={start} trailing={trailing} />
         ) : (
           <>
             <Card className="shrink-0" body="fill">

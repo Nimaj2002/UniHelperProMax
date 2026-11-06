@@ -23,7 +23,7 @@ function rail(onActivate = vi.fn(), indicators: { recordings?: RailIndicator; ch
 }
 
 /** A test-controlled activity (stands in for the recorder, the transcription job or the chat). */
-function fakeSignal(id: string, kind: ActivitySignal["kind"], description: string) {
+function fakeSignal(id: string, kind: ActivitySignal["kind"], description: string, teacher?: boolean) {
   let on = false;
   const listeners = new Set<() => void>();
   const subscribe = (l: () => void) => {
@@ -31,7 +31,7 @@ function fakeSignal(id: string, kind: ActivitySignal["kind"], description: strin
     return () => void listeners.delete(l);
   };
   const get = () => on;
-  const unregister = registerActivitySignal({ id, kind, description, useActive: () => useSyncExternalStore(subscribe, get, get) });
+  const unregister = registerActivitySignal({ id, kind, description, teacher, useActive: () => useSyncExternalStore(subscribe, get, get) });
   return {
     set(v: boolean) {
       on = v;
@@ -41,7 +41,7 @@ function fakeSignal(id: string, kind: ActivitySignal["kind"], description: strin
   };
 }
 
-function SessionRail({ expand }: { expand: (s: "recordings" | "chat") => void }) {
+function SessionRail({ expand }: { expand: (s: "recordings" | "chat" | "teacher") => void }) {
   const { rail: spec, watchers } = useSessionRail(expand, () => {});
   return (
     <>
@@ -143,5 +143,15 @@ describe("useSessionRail (014 FR-006)", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Chat, new answer" }));
     expect(expand).toHaveBeenCalledWith("chat");
+  });
+
+  it("marks AI Teacher, not Chat, while a teacher reply generates (022)", () => {
+    const reply = fakeSignal("teacher", "answer", "teacher reply being generated", true);
+    cleanups.push(() => void reply.unregister());
+    renderWithProviders(<SessionRail expand={vi.fn()} />);
+    act(() => reply.set(true));
+    const teacher = screen.getByRole("button", { name: "AI Teacher, teacher reply being generated" });
+    expect(teacher.querySelector("[data-indicator=running]")).not.toBeNull();
+    expect(screen.getByRole("button", { name: "Chat" }).querySelector("[data-indicator]")).toBeNull();
   });
 });

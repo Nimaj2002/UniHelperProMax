@@ -1,4 +1,4 @@
-import { CalendarBlank, Kanban, NotePencil, SidebarSimple, Timer } from "@phosphor-icons/react";
+import { CalendarBlank, Graph, Kanban, NotePencil, SidebarSimple, Timer } from "@phosphor-icons/react";
 import { SideRail } from "@/app/shell/SideRail";
 import { formatCount } from "@/features/tasks/model/counts";
 import { RailTimeBadge } from "@/features/time/RailTimeBadge";
@@ -79,6 +79,7 @@ export function PanelRail({ panel, onOpen, openCount, overdueCount, onOpenSectio
           { id: "tasks", icon: Kanban, name: "Tasks", onActivate: () => onOpenSection("tasks"), content: counts },
           { id: "notes", icon: NotePencil, name: "General notes", onActivate: () => onOpenSection("notes") },
           { id: "time", icon: Timer, name: "Time", onActivate: () => onOpenSection("time"), content: <RailTimeBadge /> },
+          { id: "graph", icon: Graph, name: "Knowledge graph", onActivate: () => onOpenSection("graph") },
         ]}
       />
     );

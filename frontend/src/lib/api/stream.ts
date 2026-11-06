@@ -18,7 +18,13 @@ export type RunEvent =
     }
   | { type: "delta"; data: { text: string } }
   | { type: "usage"; data: RunUsage }
-  | { type: "snapshot"; data: { text: string; status: RunStatus } }
+  | { type: "snapshot"; data: { text?: string; segments?: Schemas["SegmentOut"][]; status: RunStatus } }
+  // 022: teacher runs (contracts/teacher-stream.md)
+  | { type: "question"; data: Schemas["QuestionOut"] }
+  | { type: "malformed"; data: { id: string; reason: string } }
+  | { type: "grade"; data: { questionId: string; grade: string; feedback?: string; by: string; at: string } }
+  | { type: "plan"; data: Schemas["PlanOut"] }
+  | { type: "hint"; data: { questionId: string; text: string; createdAt: string } }
   | { type: "done"; data: { status: "completed"; usage?: RunUsage | null; endedAt?: string } }
   | { type: "stopped"; data: { status: "stopped"; endedAt?: string } }
   | { type: "interrupted"; data: { status: "interrupted" } }
@@ -26,7 +32,10 @@ export type RunEvent =
 
 export type RunEventType = RunEvent["type"];
 export const TERMINAL_EVENTS: ReadonlySet<RunEventType> = new Set(["done", "stopped", "interrupted", "failed"]);
-const EVENT_TYPES: RunEventType[] = ["start", "delta", "usage", "snapshot", "done", "stopped", "interrupted", "failed"];
+const EVENT_TYPES: RunEventType[] = [
+  "start", "delta", "usage", "snapshot", "done", "stopped", "interrupted", "failed",
+  "question", "malformed", "grade", "plan", "hint",
+];
 
 export interface SubscribeOptions {
   /** Events up to this id were already handled (a resumed subscription). */

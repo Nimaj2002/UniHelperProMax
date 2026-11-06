@@ -106,7 +106,7 @@ describe("Trash page", () => {
 
 describe("deletion and edit messages (009 US3)", () => {
   it("delete confirmation names the content and the Trash", () => {
-    const impact = { kind: "event" as const, occurrences: 1, notes: 2, recordings: 1, documents: 1, linkedTaskCount: 0, chats: 0, chatTitles: [] as string[] };
+    const impact = { kind: "event" as const, occurrences: 1, notes: 2, recordings: 1, documents: 1, linkedTaskCount: 0, chats: 0, chatTitles: [] as string[], teacherChats: 0, graphIdeas: 0 };
     expect(trashSentence({ kind: "event", courseName: null }, impact)).toBe(
       "This will move 1 event with 2 notes, 1 recording and 1 document to the Trash. You can restore it from Settings → Trash.",
     );
@@ -128,7 +128,7 @@ describe("deletion and edit messages (009 US3)", () => {
   });
 
   it("012: linked tasks are named when they go with the event; course tasks become personal", () => {
-    const impact = { kind: "event" as const, occurrences: 1, notes: 1, recordings: 0, documents: 0, linkedTaskCount: 2, chats: 0, chatTitles: [] as string[] };
+    const impact = { kind: "event" as const, occurrences: 1, notes: 1, recordings: 0, documents: 0, linkedTaskCount: 2, chats: 0, chatTitles: [] as string[], teacherChats: 0, graphIdeas: 0 };
     expect(trashSentence({ kind: "event", courseName: null }, impact)).toBe(
       "This will move 1 event with 1 note to the Trash. You can restore it from Settings → Trash.",
     );
@@ -144,9 +144,13 @@ describe("deletion and edit messages (009 US3)", () => {
   });
 
   it("014: deletions and Trash entries name the chats", () => {
-    const impact = { kind: "class" as const, occurrences: 1, notes: 1, recordings: 0, documents: 0, linkedTaskCount: 0, chats: 2, chatTitles: ["Exam topics", "Week 3"] };
+    const impact = { kind: "class" as const, occurrences: 1, notes: 1, recordings: 0, documents: 0, linkedTaskCount: 0, chats: 2, chatTitles: ["Exam topics", "Week 3"], teacherChats: 0, graphIdeas: 0 };
     expect(trashSentence({ kind: "class", courseName: "CS 201" }, impact)).toBe(
       "This will move 1 session of CS 201 with 1 note and 2 chats to the Trash. You can restore it from Settings → Trash.",
+    );
+    // 022 FR-035: ideas only its lessons taught
+    expect(trashSentence({ kind: "class", courseName: "CS 201" }, { ...impact, teacherChats: 1, graphIdeas: 3 })).toContain(
+      "also removes 3 ideas from your knowledge graph",
     );
     expect(chatTitlesSentence(impact)).toBe("Chats: Exam topics and Week 3.");
     expect(chatTitlesSentence({ chats: 7, chatTitles: ["A", "B", "C", "D", "E"] })).toBe("Chats: A, B, C, D, E and 2 more.");
