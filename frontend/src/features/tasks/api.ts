@@ -142,6 +142,27 @@ export function useReplaceChecklist() {
   });
 }
 
+/** Calendar drag and drop: a new due date and time. */
+export function useRescheduleTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, version, dueDate, dueTime }: { id: string; version: number; dueDate: string; dueTime: string | null }) => {
+      // pending detail edits first: they share the task's version (R7)
+      const saver = getSaver(taskSaverKey(id));
+      if (saver) await saver.flush();
+      return apiFetch<TaskDetail>(`/tasks/${enc(id)}`, { method: "PATCH", version: saver?.version ?? version, body: { dueDate, dueTime } });
+    },
+    onSuccess: (task) => {
+      storeTask(qc, task);
+      syncSaverVersion(taskSaverKey(task.id), task.version);
+    },
+    onError: () => {
+      toast.error("The task couldn't be moved. Please try again.");
+      return invalidateBoard(qc);
+    },
+  });
+}
+
 /** Soft delete with a 10 s "Undo" toast that restores position, checklist and quick notes. */
 export function useDeleteTask() {
   const qc = useQueryClient();

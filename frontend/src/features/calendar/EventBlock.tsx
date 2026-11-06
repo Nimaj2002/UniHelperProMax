@@ -3,9 +3,10 @@ import { forwardRef, type ComponentPropsWithoutRef } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Session } from "@/features/classes/api";
 import { useOpenTaskDetails } from "@/features/home/openTask";
-import { formatDay, wallTime } from "@/lib/dates";
+import { formatDay, minutesOf, wallTime } from "@/lib/dates";
 import { eventStyle, type ColorKey } from "@/lib/palette";
 import { cn } from "@/lib/utils";
+import { endDrag, startDrag } from "./dnd";
 
 export type EntryKind = "class" | "event";
 
@@ -32,6 +33,7 @@ interface Props extends ComponentPropsWithoutRef<"button"> {
  * An entry on the calendar (FR-009; 009 FR-007/FR-008): course name, title, time, location in its
  * colour. Events add a calendar-star icon, a dashed marker edge and "Event:" in their name, so the
  * kind never depends on colour. The full title shows in a tooltip on hover and keyboard focus.
+ * It can be dragged to another day or time (`dnd.ts`).
  */
 export const EventBlock = forwardRef<HTMLButtonElement, Props>(function EventBlock(
   { session, kind = session.kind, compact, className, style, ...rest },
@@ -49,9 +51,18 @@ export const EventBlock = forwardRef<HTMLButtonElement, Props>(function EventBlo
           aria-label={sessionLabel({ ...session, kind })}
           data-session-key={session.key}
           data-kind={kind}
+          draggable
+          onDragStart={(e) => {
+            const start = minutesOf(session.start);
+            startDrag(e, {
+              kind: "session", key: session.key, date: session.date, name: full,
+              color: session.color as ColorKey, startMin: start, lengthMin: Math.max(minutesOf(session.end) - start, 15),
+            });
+          }}
+          onDragEnd={endDrag}
           className={cn(
             "flex w-full flex-col overflow-hidden rounded-[6px] border border-l-[3px] px-1.5 py-1 text-left text-xs leading-tight",
-            "transition-[filter] hover:brightness-[0.97] focus-visible:z-20 active:scale-[0.99]",
+            "transition-[filter,opacity] hover:brightness-[0.97] focus-visible:z-20 active:scale-[0.99] data-[dragging]:opacity-40",
             taskId ? cn("h-full pr-6", compact && "py-0.5") : className,
           )}
           style={{

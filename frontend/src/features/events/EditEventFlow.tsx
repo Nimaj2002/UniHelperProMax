@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { applyMove, type MoveTo } from "@/features/calendar/dnd";
 import { lastCalendarPath } from "@/features/calendar/state";
 import { invalidateSchedule, isRecurring, scopeVersion, useEditSession, type Scope, type Session } from "@/features/classes/api";
 import { emptyHierarchy, type HierarchyValue } from "@/features/classes/HierarchyPicker";
@@ -59,6 +60,7 @@ export function EditEventFlow({ session: s }: { session: Session }) {
   const tree = useCourseTree();
   const edit = useEditSession();
   const [scope, setScope] = useState<Scope | null>(null);
+  const moveTo = (useLocation().state as { moveTo?: MoveTo } | null)?.moveTo; // a calendar drop
   const close = () => navigate(lastCalendarPath());
 
   const recurring = isRecurring(s);
@@ -82,7 +84,7 @@ export function EditEventFlow({ session: s }: { session: Session }) {
           </DialogDescription>
         </DialogHeader>
         <EventForm
-          initial={initial}
+          initial={applyMove(initial, moveTo, recurring && chosen !== "this")}
           mode={mode}
           showDate={mode === "edit-this" || !recurring}
           semesterLocked={detail.data.semesterLocked}

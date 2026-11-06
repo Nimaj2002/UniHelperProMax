@@ -5,6 +5,8 @@
 import { formatHHmm } from "@/lib/dates";
 
 export const SNAP_MIN = 15;
+/** Height of one hour in the day/week time grid. */
+export const HOUR_PX = 48;
 export const MIN_DRAFT_MIN = 15;
 export const DAY_MIN = 24 * 60;
 /** A release closer than this to the press is a click, not a drag (FR-029). */

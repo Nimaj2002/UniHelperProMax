@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, type ReactNode } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, type NavigateOptions } from "react-router";
 
 /**
  * While the quick form holds something the user entered, a click on an entry or a day heading is
@@ -13,12 +13,12 @@ export function EntryGuardProvider({ blocked, children }: { blocked: () => boole
 }
 
 /** Navigate to `to` unless a filled quick form is open. */
-export function useGuardedNavigate(): (to: string) => void {
+export function useGuardedNavigate(): (to: string, options?: NavigateOptions) => void {
   const blocked = useContext(EntryGuard);
   const navigate = useNavigate();
   return useCallback(
-    (to: string) => {
-      if (!blocked()) void navigate(to);
+    (to: string, options?: NavigateOptions) => {
+      if (!blocked()) void navigate(to, options);
     },
     [blocked, navigate],
   );

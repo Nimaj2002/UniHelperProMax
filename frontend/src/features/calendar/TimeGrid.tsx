@@ -3,13 +3,15 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, type KeyboardE
 import type { Session } from "@/features/classes/api";
 import { formatDay, formatHHmm, minutesOf, nowMinutes, todayISO } from "@/lib/dates";
 import { matchFirst } from "@/lib/keymap";
+import { eventStyle } from "@/lib/palette";
 import { cn } from "@/lib/utils";
 import { DueStrip } from "@/features/tasks/calendar/DueStrip";
 import { TaskMarker } from "@/features/tasks/calendar/TaskMarker";
 import { TimeBlock, useCalendarTime, type LaneBlock } from "@/features/time/calendar/TimeLane";
 import { minutesInDay } from "@/features/time/days";
 import type { CalendarTask, CalendarTasks } from "@/features/tasks/calendar/useCalendarTasks";
-import { clickDraft, keyRangeMinutes, moveRange, rangeLabel, SNAP_MIN, type KeyRange, type RangeKey } from "./draft";
+import { dragOver, TASK_MIN, useCalendarDrop, useDropPreview, type DragEntry } from "./dnd";
+import { clickDraft, HOUR_PX, keyRangeMinutes, moveRange, rangeLabel, SNAP_MIN, type KeyRange, type RangeKey } from "./draft";
 import { EventBlock } from "./EventBlock";
 import { useGuardedNavigate } from "./entryGuard";
 import { layoutOverlaps, type Interval } from "./layoutOverlaps";
@@ -17,7 +19,7 @@ import { calendarPath } from "./state";
 import type { DraftControls } from "./useDraft";
 import { useGridDrag } from "./useGridDrag";
 
-export const HOUR_PX = 48;
+export { HOUR_PX };
 /** 009: 15-minute slots for clicks, drags and keyboard ranges (research R11). */
 export const SLOT_MIN = SNAP_MIN;
 const SLOTS = (24 * 60) / SLOT_MIN;
@@ -29,8 +31,6 @@ type Placement = { column: number; columns: number };
 const NO_SESSIONS: Session[] = [];
 const NO_TASKS: CalendarTask[] = [];
 const NO_BLOCKS: LaneBlock[] = [];
-/** shortcut: tasks have only a due time, so they take a fixed 30-minute slot; use a real duration if tasks get one. */
-const TASK_MIN = 30;
 const taskKey = (e: CalendarTask) => `task:${e.task.id}`;
 const timeKey = (b: LaneBlock) => `time:${b.key}`;
 const taskStart = (e: CalendarTask) => {
@@ -71,6 +71,8 @@ export function TimeGrid({ days: daysProp, sessions, tz, drafts, tasks }: Props)
   const scrollRef = useRef<HTMLDivElement>(null);
   const reduceMotion = useReducedMotion();
   const pointer = useGridDrag(scrollRef, HOUR_PX, drafts);
+  const drop = useCalendarDrop();
+  const dropAt = useDropPreview();
   const { draft, phase } = drafts.state;
   const today = todayISO(tz);
   const [now, setNow] = useState(() => nowMinutes(tz));
@@ -268,6 +270,9 @@ export function TimeGrid({ days: daysProp, sessions, tz, drafts, tasks }: Props)
               onPointerMove={pointer.onPointerMove}
               onPointerUp={pointer.onPointerUp}
               onPointerCancel={pointer.onPointerCancel}
+              onDragEnter={(e) => dragOver(e, d, e.currentTarget)}
+              onDragOver={(e) => dragOver(e, d, e.currentTarget)}
+              onDrop={(e) => drop(e, d, e.currentTarget)}
             >
               <ColumnSlots
                 day={d}
@@ -281,6 +286,15 @@ export function TimeGrid({ days: daysProp, sessions, tz, drafts, tasks }: Props)
                   aria-hidden
                   className="pointer-events-none absolute inset-x-0 z-20 border-t-2 border-now-line before:absolute before:-left-1 before:-top-[5px] before:size-2 before:rounded-full before:bg-now-line"
                   style={{ top: (now / 60) * HOUR_PX }}
+                />
+              )}
+              {dropAt && (
+                // while dragging: the 15-minute grid the entry snaps to; the day under the pointer is tinted
+                <div
+                  aria-hidden
+                  data-drop-grid={d}
+                  className={cn("pointer-events-none absolute inset-0", dropAt.date === d && "bg-accent/40")}
+                  style={{ backgroundImage: `repeating-linear-gradient(to bottom, var(--grid-line) 0 1px, transparent 1px ${SLOT_PX}px)` }}
                 />
               )}
               <div className="pointer-events-none absolute inset-0">
@@ -301,6 +315,9 @@ export function TimeGrid({ days: daysProp, sessions, tz, drafts, tasks }: Props)
                     placement={draftLayout?.get(DRAFT_KEY) ?? { column: 0, columns: 1 }}
                     animate={!reduceMotion && phase !== "drag"}
                   />
+                )}
+                {dropAt?.date === d && dropAt.startMin !== null && (
+                  <DropGhost entry={dropAt.entry} startMin={dropAt.startMin} animate={!reduceMotion} />
                 )}
               </div>
             </div>
@@ -403,6 +420,27 @@ const ColumnEntries = memo(function ColumnEntries({ sessions, tasks, blocks, day
     </>
   );
 });
+
+/** A dragged entry where it would land: its colours, raised, with the snapped time range. */
+function DropGhost({ entry, startMin, animate }: { entry: DragEntry; startMin: number; animate: boolean }) {
+  const box = blockBox(startMin, startMin + entry.lengthMin);
+  return (
+    <div
+      aria-hidden
+      data-drop-preview
+      className={cn(
+        "absolute z-30 overflow-hidden rounded-[6px] border border-l-[3px] px-1.5 py-1 text-xs leading-tight shadow-lg ring-2 ring-ring",
+        animate && "transition-[top] duration-75 ease-out",
+      )}
+      style={{ ...eventStyle(entry.color), ...box }}
+    >
+      <span className="block truncate font-semibold">{entry.name}</span>
+      <span className="block truncate tabular-nums">
+        {formatHHmm(startMin)} – {formatHHmm(startMin + entry.lengthMin)}
+      </span>
+    </div>
+  );
+}
 
 /** The new-entry draft: draft tokens, dashed edge (never colour alone), its time range as text.
  * Hidden from assistive technology; the live region announces it instead (FR-043). */

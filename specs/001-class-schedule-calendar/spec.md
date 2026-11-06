@@ -272,6 +272,14 @@ classes are shown; a second user sees none of them.
 - **FR-018c**: With the scope "This session" the user MUST be able to move the session to
   another date (e.g. the lecturer postpones Monday's class to Friday). The moved session keeps
   its identity, notes, recordings and folder; only the date it is shown on changes.
+- **FR-018d**: Classes, events and tasks MUST be movable by dragging them on the calendar. Dropping
+  a class or event on another day (month view) or day and time (day/week view) opens its edit flow:
+  the scope dialog for a recurring one, then the form filled with the new date and time, so nothing
+  changes until the user saves. "This session" moves that date; "This and following" / "All"
+  move the weekday in the repetition. A dropped task gets the new due date (and time); a task
+  linked to an event moves with the event. The edit form stays the keyboard alternative.
+  While dragging, the 15-minute grid shows and the entry is previewed where it would land, snapped
+  to that grid (month view: the day is highlighted); the drop uses exactly that date and time.
 - **FR-019**: Deleting a class, course, semester, or year MUST NOT delete note or audio files
   already stored for it; the user is told the files remain in their storage folders.
 - **FR-020**: Users MUST be able to rename and delete years, semesters, and courses. Every

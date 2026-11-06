@@ -2,11 +2,13 @@ import { useLayoutEffect, useRef, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { Session } from "@/features/classes/api";
 import { formatDay, monthGrid, sameMonth, todayISO } from "@/lib/dates";
+import { eventStyle } from "@/lib/palette";
 import { cn } from "@/lib/utils";
 import { TaskMarker } from "@/features/tasks/calendar/TaskMarker";
 import { useCalendarTime } from "@/features/time/calendar/TimeLane";
 import { formatDuration } from "@/features/time/clock";
 import type { CalendarTask, CalendarTasks } from "@/features/tasks/calendar/useCalendarTasks";
+import { dragOver, useCalendarDrop, useDropPreview } from "./dnd";
 import { rangeLabel, type Draft } from "./draft";
 import { EventBlock } from "./EventBlock";
 import { useGuardedNavigate } from "./entryGuard";
@@ -38,6 +40,8 @@ export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft, 
   const days = monthGrid(date);
   const today = todayISO(tz);
   const navigate = useGuardedNavigate();
+  const drop = useCalendarDrop();
+  const dropAt = useDropPreview();
   const gridRef = useRef<HTMLDivElement>(null);
   const [fit, setFit] = useState(maxChips ?? 3);
 
@@ -92,7 +96,14 @@ export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft, 
                   role="gridcell"
                   aria-label={formatDay(d)}
                   data-month-cell={d}
-                  className={cn("min-h-0 overflow-hidden border-b border-l border-grid-line p-1", !inMonth && "bg-surface-sunken")}
+                  onDragEnter={(e) => dragOver(e, d)}
+                  onDragOver={(e) => dragOver(e, d)}
+                  onDrop={(e) => drop(e, d)}
+                  className={cn(
+                    "min-h-0 overflow-hidden border-b border-l border-grid-line p-1",
+                    !inMonth && "bg-surface-sunken",
+                    dropAt?.date === d && "bg-accent/60 ring-2 ring-inset ring-ring",
+                  )}
                   onClick={(e) => {
                     if (!onCreateDraft || (e.target as Element).closest(OWN_ACTION)) return;
                     onCreateDraft(d);
@@ -125,6 +136,16 @@ export function MonthView({ date, sessions, tz, maxChips, draft, onCreateDraft, 
                         className="flex h-5 items-center truncate rounded-[6px] border-2 border-dashed border-draft-border bg-draft-bg px-1 text-xs font-semibold text-draft-fg"
                       >
                         <span className="truncate tabular-nums">{rangeLabel(draft)} New entry</span>
+                      </div>
+                    )}
+                    {dropAt?.date === d && (
+                      <div
+                        aria-hidden
+                        data-drop-preview
+                        className="flex h-5 items-center truncate rounded-[6px] border border-l-[3px] px-1 text-xs font-semibold shadow-md"
+                        style={eventStyle(dropAt.entry.color)}
+                      >
+                        <span className="truncate">{dropAt.entry.name}</span>
                       </div>
                     )}
                     {shown.map((s) => (

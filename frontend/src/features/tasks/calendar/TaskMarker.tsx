@@ -5,6 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useOpenTaskDetails } from "@/features/home/openTask";
 import { eventStyle } from "@/lib/palette";
 import { cn } from "@/lib/utils";
+import { endDrag, startDrag, TASK_MIN } from "@/features/calendar/dnd";
 import { columnKeys, taskKeys, useMoveTask, type Task, type TaskColumn } from "../api";
 import { columnTasks } from "../model/order";
 import type { CalendarTask } from "./useCalendarTasks";
@@ -66,10 +67,21 @@ export function TaskMarker({ entry: { task, done, overdue }, block, className, s
   return (
     <div
       data-task-marker={task.id}
+      // a task linked to an event takes its due from the event, so only the event moves
+      draggable={!task.event}
+      onDragStart={(e) => {
+        const [h, m] = (task.dueTime ?? "09:00").split(":").map(Number);
+        startDrag(e, {
+          kind: "task", id: task.id, version: task.version, dueTime: task.dueTime, name: task.title,
+          color: "slate", startMin: h * 60 + m, lengthMin: TASK_MIN,
+        });
+      }}
+      onDragEnd={endDrag}
       className={cn(
         block
           ? "flex min-w-0 items-start gap-0.5 overflow-hidden rounded-[6px] border border-l-[3px] px-1 py-1 text-xs leading-tight"
           : "flex h-5 min-w-0 items-center gap-0.5 rounded-[6px] border border-divider bg-surface-elevated pr-1 pl-0.5 text-xs leading-none text-foreground shadow-xs",
+        "data-[dragging]:opacity-40",
         className,
       )}
       style={block ? { ...eventStyle("slate"), ...style } : style}

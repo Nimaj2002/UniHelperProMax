@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { applyMove, type MoveTo } from "@/features/calendar/dnd";
 import { lastCalendarPath } from "@/features/calendar/state";
 import { useCourse } from "@/features/courses/api";
 import { EditEventFlow } from "@/features/events/EditEventFlow";
@@ -35,7 +36,8 @@ function successMessage(scope: Scope, preserved: number) {
 }
 
 /** Route /sessions/:sessionKey/edit — scope choice (recurring only) then the class form;
- * (009) an event occurrence gets the event flow. */
+ * (009) an event occurrence gets the event flow. A calendar drop passes `moveTo` (router state):
+ * the form opens with the new date and time. */
 export function EditSessionFlow() {
   const { sessionKey = "" } = useParams();
   const session = useSession(sessionKey);
@@ -51,10 +53,12 @@ function EditClassFlow({ session: s }: { session: Session }) {
   const course = useCourse(s.courseId ?? undefined);
   const edit = useEditSession();
   const [scope, setScope] = useState<Scope | null>(null);
+  const moveTo = (useLocation().state as { moveTo?: MoveTo } | null)?.moveTo;
   const close = () => navigate(lastCalendarPath());
 
   const recurring = isRecurring(s);
-  const chosen: Scope | null = recurring ? scope : "all";
+  // a series edit has no date, so a one-off class dropped on another day changes as "this session"
+  const chosen: Scope | null = recurring ? scope : moveTo && moveTo.date !== s.date ? "this" : "all";
   if (recurring && !chosen) return <ScopeDialog action="edit" onChoose={setScope} onCancel={close} />;
   if (!detail.data) return null;
 
@@ -75,7 +79,7 @@ function EditClassFlow({ session: s }: { session: Session }) {
           </DialogDescription>
         </DialogHeader>
         <ClassForm
-          initial={initial}
+          initial={applyMove(initial, moveTo, chosen !== "this")}
           mode={mode}
           fixedSemesterEnd={course.data?.semester.endDate ?? null}
           submitLabel="Save changes"
