@@ -4,15 +4,16 @@
  * derived like any custom theme.
  * Built-in themes must meet WCAG AA (Constitution V), so a key colour that falls short is moved
  * toward black/white just far enough to pass — the palettes that already pass keep their exact
- * values. A preference stores a preset as `preset:<slug>`.
+ * values. A preset may also pin a few derived tokens (`overrides`). A preference stores a preset as `preset:<slug>`.
  */
 import presetData from "@/styles/theme-presets.json";
-import { BLACK, contrastIssues, derive, mix, WHITE, type Base, type ColorSet, type KeyColors } from "./colors";
+import { BLACK, contrastIssues, derive, mix, resolve, WHITE, type Base, type ColorSet, type KeyColors } from "./colors";
 
 interface PresetSource {
   name: string;
   base: Base;
   key: KeyColors;
+  overrides: Partial<ColorSet>;
 }
 
 const SOURCES: PresetSource[] = presetData.presets.map((p) => ({
@@ -24,6 +25,7 @@ const SOURCES: PresetSource[] = presetData.presets.map((p) => ({
     text: p.text.toLowerCase(),
     accent: p.accent.toLowerCase(),
   },
+  overrides: Object.fromEntries(Object.entries(("overrides" in p && p.overrides) || {}).map(([k, v]) => [k, v.toLowerCase()])),
 }));
 
 const STEP = 0.02;
@@ -61,14 +63,15 @@ export interface Preset {
   original: KeyColors;
   /** What the app uses (equal to `original` unless a colour had to be adjusted for AA). */
   keyColors: KeyColors;
+  overrides: Partial<ColorSet>;
   colors: ColorSet;
 }
 
 export const PRESET_PREFIX = "preset:";
 
-export const PRESETS: Preset[] = SOURCES.map(({ name, base, key }) => {
+export const PRESETS: Preset[] = SOURCES.map(({ name, base, key, overrides }) => {
   const keyColors = meetAA(base, key);
-  return { id: `${PRESET_PREFIX}${slug(name)}`, name, base, original: key, keyColors, colors: derive(base, keyColors) };
+  return { id: `${PRESET_PREFIX}${slug(name)}`, name, base, original: key, keyColors, overrides, colors: resolve(base, keyColors, overrides) };
 });
 
 export function presetById(id: string): Preset | undefined {

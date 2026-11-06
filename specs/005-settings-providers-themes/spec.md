@@ -258,7 +258,7 @@ restored theme is identical; import a corrupt file and confirm a clear error.
   Night Owl, Midnight Blue). Each is defined by its published 4 key colours; where a palette does
   not meet WCAG AA, its text/accent colour is darkened (light) or lightened (dark) just enough to
   pass, so every built-in theme meets AA (Constitution V). Yuii and Yuii Night (added 2026-11-05)
-  are the mascot's sakura-pink palettes and come first in their sections. Presets can be selected, duplicated
+  are the mascot's sakura-pink palettes and come first in their sections; Yuii also pins its border (#96838B), divider (#C0A3AB) and editor background (#FDE8EE) (2026-11-06). Presets can be selected, duplicated
   (as a custom theme), exported, and used as the starting point of a new theme.
 - **FR-015**: The selected theme MUST apply immediately and consistently to every screen,
   component, and dialog in the app. The choice is stored per account (not per device) and

@@ -63,7 +63,7 @@ const presetData = (p: Preset): ThemeData => ({
   name: p.name,
   base: p.base,
   keyColors: p.keyColors,
-  overrides: {},
+  overrides: p.overrides,
   colors: p.colors,
 });
 

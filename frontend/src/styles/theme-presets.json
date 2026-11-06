@@ -7,7 +7,8 @@
       "background": "#FFF7F9",
       "surface": "#FCE8EE",
       "text": "#4A2B3A",
-      "accent": "#C2185B"
+      "accent": "#C2185B",
+      "overrides": { "border": "#96838B", "divider": "#C0A3AB", "editor-surface": "#FDE8EE" }
     },
     {
       "name": "Yuii Night",

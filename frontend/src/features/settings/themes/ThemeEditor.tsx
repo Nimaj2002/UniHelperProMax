@@ -58,7 +58,7 @@ export function ThemeEditor() {
     initial = source
       ? { ...fromTheme(source), name: params.get("name") ?? "" }
       : preset
-        ? { name: params.get("name") ?? "", base, keyColors: preset.keyColors, overrides: {} }
+        ? { name: params.get("name") ?? "", base, keyColors: preset.keyColors, overrides: preset.overrides }
         : { name: params.get("name") ?? "", base, keyColors: keyColorsOf(BUILT_IN[base]), overrides: {} };
   }
   return <Editor key={themeId ?? "new"} initial={initial} existing={editing} />;
