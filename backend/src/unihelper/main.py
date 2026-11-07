@@ -339,6 +339,11 @@ SANDBOX_CSP = {
 }
 
 
+# Unhashed files must revalidate: a cached index.html after an update points at chunk hashes
+# that no longer exist ("Failed to fetch dynamically imported module").
+_REVALIDATE = {"Cache-Control": "no-cache"}
+
+
 def _mount_spa(app: FastAPI, settings: Settings) -> None:
     static_dir = settings.static_dir
     assert static_dir is not None
@@ -353,8 +358,8 @@ def _mount_spa(app: FastAPI, settings: Settings) -> None:
             return problem_response(404, "not_found", "Resource not found")
         candidate = (static_dir / full_path).resolve()
         if full_path and candidate.is_file() and static_dir.resolve() in candidate.parents:
-            return FileResponse(candidate)
-        return FileResponse(index)
+            return FileResponse(candidate, headers=_REVALIDATE)
+        return FileResponse(index, headers=_REVALIDATE)
 
 
 app = create_app()

@@ -22,6 +22,7 @@ def test_spa_fallback_and_api(tmp_path: Path) -> None:
         for path in ("/", "/calendar/week/2026-10-05", "/courses/abc"):
             r = c.get(path)
             assert r.status_code == 200 and "id=root" in r.text, path
+            assert r.headers["cache-control"] == "no-cache", path
         assert c.get("/assets/app.js").text == "console.log(1)"
         health = c.get("/api/v1/health")
         assert health.headers["content-type"].startswith("application/json")
