@@ -1515,7 +1515,7 @@ wheels = [
 
 [[package]]
 name = "unihelper"
-version = "1.1.2"
+version = "1.1.3"
 source = { editable = "." }
 dependencies = [
     { name = "alembic" },
