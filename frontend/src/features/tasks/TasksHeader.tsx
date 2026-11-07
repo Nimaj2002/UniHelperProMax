@@ -1,5 +1,5 @@
 import { Kanban, ListBullets, MagnifyingGlass, Plus, X } from "@phosphor-icons/react";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,17 +17,14 @@ interface Props {
   onFiltersChange?: (change: Partial<TaskFilters> | null) => void;
   /** Called with the new task after "New task" created it (in the first column). */
   onCreated?: (taskId: string) => void;
-  /** Page controls at the start (left-card opener on narrow windows) and end (close button). */
-  leading?: ReactNode;
-  trailing?: ReactNode;
 }
 
 const noChange = () => {};
 
 /**
  * The Tasks panel's single 40 px header row (FR-066, Clarification Q4): title, Board/List, a
- * search button that expands into a field over the row, Filter (with the active-filter badge),
- * New task and the close button — fitting the panel's 320 px minimum (labels show from container
+ * search button that expands into a field over the row, Filter (with the active-filter badge)
+ * and New task — fitting the panel's 320 px minimum (labels show from container
  * widths that fit them).
  */
 export function TasksHeader({
@@ -36,8 +33,6 @@ export function TasksHeader({
   filters = NO_FILTERS,
   onFiltersChange = noChange,
   onCreated,
-  leading,
-  trailing,
 }: Props) {
   const [searching, setSearching] = useState(false);
   const searchButton = useRef<HTMLButtonElement>(null);
@@ -53,8 +48,7 @@ export function TasksHeader({
     if (!filters.search && searching) setSearching(false);
   }
   return (
-    <div data-panel-header className="relative flex h-10 min-w-0 shrink-0 items-center gap-1 px-1.5">
-      {leading}
+    <div className="relative flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-strong-border px-1.5">
       <h2 className="min-w-0 truncate px-1 text-sm font-semibold tracking-tight">Tasks</h2>
       <ToggleGroup
         type="single"
@@ -87,7 +81,6 @@ export function TasksHeader({
       </Button>
       <TaskFiltersButton filters={filters} onChange={onFiltersChange} />
       <NewTaskButton onCreated={onCreated} />
-      {trailing}
       {searching && (
         <div className="absolute inset-0 z-10 flex items-center gap-1 bg-surface-elevated px-1.5">
           <MagnifyingGlass size={14} aria-hidden className="ml-1 shrink-0 text-text-muted" />

@@ -165,12 +165,12 @@ test("US4: list groups, filters, badge, search; reload keeps view and filters; h
   await page.addInitScript(() => localStorage.setItem("uh.home.tasksWidth", "320"));
   await page.goto("/");
   await expect(panel(page)).toBeVisible();
-  // the header row fits in 320 px: nothing overflows the panel
+  // the switch row and the Tasks title row fit in 320 px: nothing overflows the panel
   await expect.poll(async () => Math.round((await panel(page).boundingBox())!.width)).toBe(320);
   const header = panel(page).locator("[data-panel-header]");
   expect(await header.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
   for (const name of ["Search tasks", "Filter", "New task", "Close tasks"]) {
-    const b = (await header.getByRole("button", { name, exact: true }).boundingBox())!;
+    const b = (await panel(page).getByRole("button", { name, exact: true }).boundingBox())!;
     const p = (await panel(page).boundingBox())!;
     expect(b.x + b.width).toBeLessThanOrEqual(p.x + p.width);
   }
@@ -191,7 +191,7 @@ test("US4: list groups, filters, badge, search; reload keeps view and filters; h
   await expect(list.locator("[data-task-id]").filter({ hasText: "Someday" }).getByTestId("task-column")).toHaveText(/To do/);
 
   // filters: course, personal, event-linked, show done; the badge counts them
-  const filterButton = header.getByRole("button", { name: /^Filter/ });
+  const filterButton = panel(page).getByRole("button", { name: /^Filter/ });
   await filterButton.click();
   const pop = page.getByRole("dialog", { name: "Task filters" });
   await pop.getByLabel("Course").click();
@@ -212,34 +212,34 @@ test("US4: list groups, filters, badge, search; reload keeps view and filters; h
   await page.keyboard.press("Escape");
 
   // search expands over the row; Escape collapses and returns focus
-  await header.getByRole("button", { name: "Search tasks" }).click();
-  const search = header.getByRole("searchbox", { name: "Search tasks" });
+  await panel(page).getByRole("button", { name: "Search tasks" }).click();
+  const search = panel(page).getByRole("searchbox", { name: "Search tasks" });
   await expect(search).toBeFocused();
   await search.fill("some");
   await expect(list.locator("[data-task-id]")).toHaveText([/Someday/]);
   await search.press("Escape");
   await expect(search).toBeHidden();
-  await expect(header.getByRole("button", { name: /^Search tasks/ })).toBeFocused();
+  await expect(panel(page).getByRole("button", { name: /^Search tasks/ })).toBeFocused();
   await expect(filterButton).toHaveAccessibleName("Filter, 3 active");
 
   // reload keeps the view and the filters
   await page.reload();
   await expect(page.getByTestId("task-list")).toBeVisible();
   await expect(panel(page).getByRole("radio", { name: "List" })).toHaveAttribute("aria-checked", "true");
-  await expect(header.getByRole("button", { name: /^Filter/ })).toHaveAccessibleName("Filter, 3 active");
+  await expect(panel(page).getByRole("button", { name: /^Filter/ })).toHaveAccessibleName("Filter, 3 active");
   await expect(page.getByTestId("task-list").locator("[data-task-id]")).toHaveText([/Someday/]);
 
   // nothing matches → empty state with Clear filters
-  await header.getByRole("button", { name: /^Search tasks/ }).click();
-  await header.getByRole("searchbox", { name: "Search tasks" }).fill("zzz-nothing");
+  await panel(page).getByRole("button", { name: /^Search tasks/ }).click();
+  await panel(page).getByRole("searchbox", { name: "Search tasks" }).fill("zzz-nothing");
   await expect(page.getByTestId("filter-notice")).toContainText("No tasks match");
   await page.getByTestId("filter-notice").getByRole("button", { name: "Clear filters" }).click();
-  await expect(header.getByRole("button", { name: /^Filter/ })).toHaveAccessibleName("Filter");
+  await expect(panel(page).getByRole("button", { name: /^Filter/ })).toHaveAccessibleName("Filter");
   await expect(page.getByTestId("task-list").getByText("Old report")).toBeVisible();
 
   // the board applies the same filters
   await panel(page).getByRole("radio", { name: "Board" }).click();
-  await header.getByRole("button", { name: /^Filter/ }).click();
+  await panel(page).getByRole("button", { name: /^Filter/ }).click();
   await page.getByRole("dialog", { name: "Task filters" }).getByLabel("Event-linked only").click();
   await page.keyboard.press("Escape");
   await expect(panel(page).locator("[data-task-id]")).toHaveCount(1);
@@ -247,7 +247,7 @@ test("US4: list groups, filters, badge, search; reload keeps view and filters; h
   await panel(page).getByRole("button", { name: `Actions for Linked talk ${t}` }).click();
   await expect(page.getByRole("menuitem", { name: "Open note" })).toBeVisible();
   await page.keyboard.press("Escape");
-  await header.getByRole("button", { name: /^Filter/ }).click();
+  await panel(page).getByRole("button", { name: /^Filter/ }).click();
   await page.getByRole("dialog", { name: "Task filters" }).getByRole("button", { name: "Clear filters" }).click();
 });
 

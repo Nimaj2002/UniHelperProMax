@@ -3,7 +3,7 @@
  * Today / Reports switch and the chosen view. No other fixed bar; works at the panel's 320 px.
  */
 import { Tag as TagIcon } from "@phosphor-icons/react";
-import { lazy, Suspense, useState, type ReactNode } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Card } from "@/app/shell/Card";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -16,12 +16,7 @@ const ReportsView = lazy(() => import("./reports/ReportsView").then((m) => ({ de
 type View = "today" | "reports";
 const VIEW_KEY = "uh.time.view";
 
-interface Props {
-  leading?: ReactNode;
-  trailing?: ReactNode;
-}
-
-export function TimePanel({ leading, trailing }: Props) {
+export function TimePanel() {
   const [view, setViewState] = useState<View>(() => (readLocal<unknown>(VIEW_KEY, "today") === "reports" ? "reports" : "today"));
   const setView = (v: View) => {
     setViewState(v);
@@ -30,17 +25,19 @@ export function TimePanel({ leading, trailing }: Props) {
   const [tags, setTags] = useState(false);
   return (
     <>
-      <Card className="shrink-0" body="fill">
-        <div data-panel-header className="flex h-10 min-w-0 shrink-0 items-center gap-1 px-1.5">
-          {leading}
-          <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-semibold tracking-tight">Time</h2>
-          <Button variant="ghost" size="icon" className="size-7 shrink-0" aria-label="Manage tags" title="Manage tags" onClick={() => setTags(true)}>
-            <TagIcon size={16} aria-hidden />
-          </Button>
-          {trailing}
-        </div>
-      </Card>
-      <Card id="home-time-body" className="flex-1" bodyClassName="flex flex-col gap-3 px-2.5 py-2.5">
+      <Card
+        id="home-time-body"
+        className="flex-1"
+        bodyClassName="flex flex-col gap-3 px-2.5 py-2.5"
+        header={
+          <div className="flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-strong-border px-1.5">
+            <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-semibold tracking-tight">Time</h2>
+            <Button variant="ghost" size="icon" className="size-7 shrink-0" aria-label="Manage tags" title="Manage tags" onClick={() => setTags(true)}>
+              <TagIcon size={16} aria-hidden />
+            </Button>
+          </div>
+        }
+      >
         <TimerCard />
         <ToggleGroup type="single" variant="outline" size="sm" value={view} onValueChange={(v) => v && setView(v as View)} aria-label="Today or reports" className="h-7 self-start">
           <ToggleGroupItem value="today" className="h-7 px-2.5 text-xs">

@@ -180,12 +180,6 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
       </ToggleGroupItem>
     </ToggleGroup>
   );
-  const start = (
-    <>
-      {leading}
-      {sectionSwitch}
-    </>
-  );
 
   return (
     <Card
@@ -202,25 +196,39 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
       className="@container/tasks h-full"
     >
       <div className="contents" inert={details !== null || undefined}>
+        {/* only the switch and the panel controls up top; each section has its own title row */}
+        <Card className="shrink-0" body="fill">
+          <div
+            data-panel-header
+            className="flex h-10 min-w-0 shrink-0 items-center gap-1 px-1.5"
+          >
+            {leading}
+            {sectionSwitch}
+            <div className="flex-1" />
+            {trailing}
+          </div>
+        </Card>
         {section === "notes" ? (
-          <GeneralNotesSection leading={start} trailing={trailing} />
+          <GeneralNotesSection />
         ) : section === "time" ? (
-          <TimePanel leading={start} trailing={trailing} />
+          <TimePanel />
         ) : section === "graph" ? (
-          <GraphSection leading={start} trailing={trailing} />
+          <GraphSection />
         ) : (
           <>
-            <Card className="shrink-0" body="fill">
-              <TasksHeader
-                view={view}
-                onViewChange={setView}
-                filters={filters}
-                onFiltersChange={setFilters}
-                leading={start}
-                trailing={trailing}
-              />
-            </Card>
-            <Card id="home-tasks-body" className="flex-1" body="fill">
+            <Card
+              id="home-tasks-body"
+              className="flex-1"
+              body="fill"
+              header={
+                <TasksHeader
+                  view={view}
+                  onViewChange={setView}
+                  filters={filters}
+                  onFiltersChange={setFilters}
+                />
+              }
+            >
               {hidden > 0 && (
                 <div
                   className="flex shrink-0 items-center gap-2 border-b border-divider px-3 py-1 text-xs text-text-muted"

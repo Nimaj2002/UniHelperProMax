@@ -7,7 +7,7 @@
 import { NotePencil, Plus } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow, parseISO } from "date-fns";
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Card } from "@/app/shell/Card";
 import { Button } from "@/components/ui/button";
@@ -25,13 +25,7 @@ import {
   useGeneralNotes,
 } from "./generalNotesApi";
 
-interface Props {
-  /** The header's start (opener, section switch) and end (focus mode, close). */
-  leading?: ReactNode;
-  trailing?: ReactNode;
-}
-
-export function GeneralNotesSection({ leading, trailing }: Props) {
+export function GeneralNotesSection() {
   const qc = useQueryClient();
   const notes = useGeneralNotes();
   const [open, setOpen] = useState<{ id: string; createdHere: boolean } | null>(
@@ -88,37 +82,34 @@ export function GeneralNotesSection({ leading, trailing }: Props) {
   const list = notes.data ?? [];
   return (
     <>
-      <Card className="shrink-0" body="fill">
-        <div
-          data-panel-header
-          className="flex h-10 min-w-0 shrink-0 items-center gap-1 px-1.5"
-        >
-          {leading}
-          <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-semibold tracking-tight">
-            General notes
-          </h2>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                ref={newButton}
-                variant="ghost"
-                size="icon"
-                className="size-7 shrink-0"
-                aria-label="New general note"
-                onClick={() => void create()}
-              >
-                <Plus size={16} aria-hidden />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>New general note</TooltipContent>
-          </Tooltip>
-          {trailing}
-        </div>
-      </Card>
       <Card
         id="home-general-notes-body"
         className="flex-1"
         bodyClassName="px-3 py-2"
+        header={
+          <div
+            className="flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-strong-border px-1.5"
+          >
+            <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-semibold tracking-tight">
+              General notes
+            </h2>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  ref={newButton}
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 shrink-0"
+                  aria-label="New general note"
+                  onClick={() => void create()}
+                >
+                  <Plus size={16} aria-hidden />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>New general note</TooltipContent>
+            </Tooltip>
+          </div>
+        }
       >
         <p className="pb-1.5 text-xs text-text-muted">
           Scratchpad for quick thoughts that don't belong to a class. Lecture

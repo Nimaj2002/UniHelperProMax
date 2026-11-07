@@ -5,7 +5,7 @@
  */
 import { ArrowSquareOut, Graph as GraphIcon, ListBullets, X } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Card } from "@/app/shell/Card";
@@ -160,7 +160,7 @@ function usePositions(graph: Graph | undefined): Map<string, Pos> {
   );
 }
 
-export function GraphSection({ leading, trailing }: { leading?: ReactNode; trailing?: ReactNode }) {
+export function GraphSection() {
   const graph = useGraph();
   const [q, setQ] = useState("");
   const [mode, setMode] = useState<"graph" | "list">("graph");
@@ -180,14 +180,17 @@ export function GraphSection({ leading, trailing }: { leading?: ReactNode; trail
   const empty = graph.isSuccess && !graph.data.ideas.length;
   return (
     <>
-      <Card className="shrink-0" body="fill">
-        <div data-panel-header className="flex h-10 min-w-0 shrink-0 items-center gap-1 px-1.5">
-          {leading}
-          <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-semibold tracking-tight">Knowledge graph</h2>
-          {trailing}
-        </div>
-      </Card>
-      <Card id="home-knowledge-graph-body" className="flex-1" body="fill" bodyClassName="flex min-h-0 flex-col gap-2 p-2">
+      <Card
+        id="home-knowledge-graph-body"
+        className="flex-1"
+        body="fill"
+        bodyClassName="flex min-h-0 flex-col gap-2 p-2"
+        header={
+          <div className="flex h-10 min-w-0 shrink-0 items-center gap-1 border-b border-strong-border px-1.5">
+            <h2 className="min-w-0 flex-1 truncate px-1 text-sm font-semibold tracking-tight">Knowledge graph</h2>
+          </div>
+        }
+      >
         {empty ? (
           <p className="p-2 text-sm text-text-muted">Ideas appear here as lessons are taught.</p>
         ) : (
