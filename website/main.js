@@ -197,6 +197,11 @@ function detectOS() {
   return 'linux';
 }
 const os = detectOS();
+// Phones can't run the installers, so chapter 4 only offers the email form there.
+// iPadOS reports itself as a Mac, so a touch-capable "Mac" counts as mobile too.
+const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+  || (/Mac/.test(navigator.platform) && navigator.maxTouchPoints > 1);
+if (isMobile) document.querySelectorAll('#download .actions, #download .meta').forEach((el) => { el.hidden = true; });
 osTabs.select(osTabs.tabs.findIndex((t) => t.dataset.os === os), { animate: false });
 
 const mb = (bytes) => `${(bytes / 1048576).toFixed(0)} MB`;
