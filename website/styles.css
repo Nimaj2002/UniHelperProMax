@@ -234,3 +234,6 @@ h1, h2, h3, p { margin: 0; }
   html { scroll-behavior: auto; }
   .btn, .btn:active { transition: none; transform: none; }
 }
+
+/* Brevo "email me the link" form */
+.mail-frame { display: block; width: 100%; max-width: 540px; height: 305px; border: 0; }
