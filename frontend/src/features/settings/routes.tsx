@@ -11,6 +11,7 @@ import { SettingsLayout } from "./SettingsLayout";
 import { KeymapSync } from "@/lib/keymap";
 import { ThemeSync } from "./ThemeSync";
 import { TranscriptionSettingsPage } from "./transcription/TranscriptionSettings";
+import { UpdateNotifier, VersionSettings } from "./version/VersionSettings";
 
 // the theme editor and its colour maths load only when Appearance is opened
 const AppearanceSettings = lazy(() => import("./themes/AppearanceSettings").then((m) => ({ default: m.AppearanceSettings })));
@@ -50,6 +51,7 @@ registerAccountMenuItem({ id: "settings", label: "Settings", priority: 0, onSele
 registerGlobalHost({ id: "theme-sync", component: ThemeSync });
 registerGlobalHost({ id: "keymap-sync", component: KeymapSync }); // 019: custom shortcuts
 registerGlobalHost({ id: "restore-host", component: RestoreHost }); // 016: restore overlay, reload
+registerGlobalHost({ id: "update-notifier", component: UpdateNotifier }); // desktop: new-version toast
 
 export const routes: RouteObject[] = [
   {
@@ -69,6 +71,7 @@ export const routes: RouteObject[] = [
       { path: "backup", element: loading(<BackupPage />) },
       { path: "trash", element: loading(<TrashPage />) },
       { path: "account", element: <AccountSettings /> },
+      { path: "version", element: <VersionSettings /> },
     ],
   },
 ];

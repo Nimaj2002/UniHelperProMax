@@ -23,6 +23,10 @@ The preload script exposes one frozen object, `window.uhDesktop`, through
 | `microphone.status()` | → `"granted"\|"denied"\|"restricted"\|"not-determined"\|"unknown"` | macOS/Windows via `systemPreferences.getMediaAccessStatus`; Linux `unknown` |
 | `microphone.request()` | → `"granted"\|"denied"\|"unknown"` | macOS `askForMediaAccess`; elsewhere returns status |
 | `microphone.markExplained()` | → void | `desktop.json` `micExplained = true` (FR-042) |
+| `updates.state()` | → `UpdateState` | Settings → Version. `UpdateState = {status: "unsupported"\|"idle"\|"checking"\|"none"\|"available"\|"downloading"\|"ready"\|"error", current, version, percent, error, selfInstall}` |
+| `updates.check()` | → void | Runs a check now (ignored while checking or downloading) |
+| `updates.download()` | → void | Windows/AppImage: download (retry after an error); macOS/.deb: opens the GitHub release page |
+| `updates.install()` | → void | Only when `ready`: runs the close guard, then `quitAndInstall` |
 
 ## Main → renderer (events)
 
@@ -35,6 +39,7 @@ The renderer subscribes with `uhDesktop.onCloseRequested(fn)`, `onNavigate(fn)` 
 | `close-requested` | `{reason: "window"\|"quit"\|"relaunch"}` | `DesktopCloseGuard` shows the dialog (contracts/ui-contract.md) or answers `quit` at once |
 | `navigate` | `{path}` (same origin, path + query + hash) | `router.navigate(path)` (internal `target=_blank` links) |
 | `data-folder-progress` | `{state, copiedBytes, totalBytes}` | Settings progress bar |
+| `update-state` (`uh:update.state`, `onUpdateState(fn)`) | `UpdateState` | Settings → Version; `UpdateNotifier` toasts once per found/ready version, linking to Settings → Version |
 
 ## Close protocol timing
 

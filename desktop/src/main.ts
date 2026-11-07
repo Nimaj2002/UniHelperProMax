@@ -8,7 +8,7 @@ import { log, openMainLog } from "./logs";
 import { applyProfileOverride, resolvePaths, type Paths } from "./paths";
 import { registerMicrophoneIpc, registerPermissions } from "./permissions";
 import { SettingsStore } from "./settingsStore";
-import { checkForUpdates } from "./updates";
+import { checkForUpdates, registerUpdates } from "./updates";
 
 import { appSession, createWindow, injectClientSecret, startupPage, titleBarColors } from "./window";
 
@@ -233,6 +233,11 @@ function run(): void {
       win?.setTitleBarOverlay(titleBarColors(theme));
     });
     registerMicrophoneIpc(isMain, () => store.update({ micExplained: true }));
+    registerUpdates(() => win, isMain, async () => {
+      const ok = await guard.confirmQuit("quit");
+      if (ok) approved = true;
+      return ok;
+    });
   }
 
   void app.whenReady().then(async () => {

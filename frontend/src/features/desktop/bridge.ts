@@ -36,6 +36,17 @@ export interface DataFolderProgress {
   totalBytes: number;
 }
 
+export type UpdateStatus = "unsupported" | "idle" | "checking" | "none" | "available" | "downloading" | "ready" | "error";
+export interface UpdateState {
+  status: UpdateStatus;
+  current: string;
+  version: string | null;
+  percent: number | null;
+  error: string | null;
+  /** false on macOS and .deb: "download" opens the release page instead */
+  selfInstall: boolean;
+}
+
 interface DesktopApi {
   info(): Promise<DesktopInfo | null>;
   setGuardState(state: GuardState): void;
@@ -53,6 +64,13 @@ interface DesktopApi {
     request(): Promise<"granted" | "denied" | "unknown">;
     markExplained(): Promise<void>;
   };
+  updates: {
+    state(): Promise<UpdateState | null>;
+    check(): Promise<void>;
+    download(): Promise<void>;
+    install(): Promise<void>;
+  };
+  onUpdateState(listener: (s: UpdateState) => void): () => void;
   onCloseRequested(listener: (e: { reason: string }) => void): () => void;
   onNavigate(listener: (e: { path: string }) => void): () => void;
   onDataFolderProgress(listener: (p: DataFolderProgress) => void): () => void;
@@ -90,6 +108,13 @@ export const desktop = {
     request: (): Promise<"granted" | "denied" | "unknown" | null> => api()?.microphone.request() ?? Promise.resolve(null),
     markExplained: (): Promise<void> => api()?.microphone.markExplained() ?? Promise.resolve(),
   },
+  updates: {
+    state: (): Promise<UpdateState | null> => api()?.updates.state() ?? Promise.resolve(null),
+    check: (): Promise<void> => api()?.updates.check() ?? Promise.resolve(),
+    download: (): Promise<void> => api()?.updates.download() ?? Promise.resolve(),
+    install: (): Promise<void> => api()?.updates.install() ?? Promise.resolve(),
+  },
+  onUpdateState: (listener: (s: UpdateState) => void): (() => void) => api()?.onUpdateState(listener) ?? noop,
   onCloseRequested: (listener: (e: { reason: string }) => void): (() => void) =>
     api()?.onCloseRequested(listener) ?? noop,
   onNavigate: (listener: (e: { path: string }) => void): (() => void) => api()?.onNavigate(listener) ?? noop,

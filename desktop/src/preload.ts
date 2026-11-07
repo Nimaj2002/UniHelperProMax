@@ -39,6 +39,13 @@ if (location.protocol === "file:") {
         request: () => ipcRenderer.invoke("uh:microphone.request"),
         markExplained: () => ipcRenderer.invoke("uh:microphone.markExplained"),
       }),
+      updates: Object.freeze({
+        state: () => ipcRenderer.invoke("uh:update.state"),
+        check: () => ipcRenderer.invoke("uh:update.check"),
+        download: () => ipcRenderer.invoke("uh:update.download"),
+        install: () => ipcRenderer.invoke("uh:update.install"),
+      }),
+      onUpdateState: (listener: Listener<unknown>) => on("uh:update.state", listener),
       onCloseRequested: (listener: Listener<{ reason: string }>) => on("uh:close.requested", listener),
       onNavigate: (listener: Listener<{ path: string }>) => on("uh:navigate", listener),
       onDataFolderProgress: (listener: Listener<unknown>) => on("uh:dataFolder.progress", listener),
