@@ -1,13 +1,15 @@
 /**
- * Settings → Version (desktop app): the installed version, check for updates, download and
- * restart to update. UpdateNotifier shows a toast linking here when a new version is found.
+ * Settings → Version: the installed version; in the desktop app also check for updates,
+ * download and restart to update. UpdateNotifier shows a toast linking here when a new version is found.
  */
+import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { desktop, isDesktop, type UpdateState } from "@/features/desktop/bridge";
+import { apiFetch } from "@/lib/api";
 
 export function useUpdateState(): UpdateState | null {
   const [state, setState] = useState<UpdateState | null>(null);
@@ -46,6 +48,13 @@ export function statusText(s: UpdateState): string {
 
 export function VersionSettings() {
   const s = useUpdateState();
+  const health = useQuery({
+    queryKey: ["health"],
+    queryFn: () => apiFetch<Record<string, string>>("/health"),
+    enabled: !isDesktop(),
+    staleTime: Infinity,
+  });
+  const webVersion = health.data?.version;
   return (
     <div className="grid max-w-2xl gap-6">
       <header className="grid gap-1">
@@ -58,7 +67,14 @@ export function VersionSettings() {
           ) : isDesktop() ? (
             "Loading…"
           ) : (
-            "Updates are available in the desktop app."
+            <>
+              {webVersion && (
+                <>
+                  UniHelperProMax <span className="font-medium text-foreground">{webVersion}</span>.{" "}
+                </>
+              )}
+              Updates are available in the desktop app.
+            </>
           )}
         </p>
       </header>

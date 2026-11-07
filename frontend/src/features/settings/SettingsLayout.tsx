@@ -1,7 +1,6 @@
 import { NavLink, Outlet } from "react-router";
 import { useCreditStrip } from "@/app/shell/layout";
 import { PageFrame } from "@/app/shell/PageFrame";
-import { isDesktop } from "@/features/desktop/bridge";
 import { cn } from "@/lib/utils";
 
 const SECTIONS = [
@@ -15,7 +14,7 @@ const SECTIONS = [
   { to: "/settings/backup", label: "Backup & restore" },
   { to: "/settings/trash", label: "Trash" },
   { to: "/settings/account", label: "Account" },
-  { to: "/settings/version", label: "Version", desktop: true },
+  { to: "/settings/version", label: "Version" },
 ];
 
 /** Settings area (005 FR-001): section nav + content. */
@@ -27,7 +26,7 @@ export function SettingsLayout() {
         <div className="grid content-start gap-3">
           <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
           <nav aria-label="Settings sections" className="flex gap-1 md:flex-col">
-            {SECTIONS.filter((s) => !s.desktop || isDesktop()).map((s) => (
+            {SECTIONS.map((s) => (
               <NavLink
                 key={s.to}
                 to={s.to}
