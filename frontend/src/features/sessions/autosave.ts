@@ -12,6 +12,7 @@
  */
 import { useSyncExternalStore } from "react";
 import { ApiError } from "@/lib/api";
+import { tourEvents } from "@/features/tour/events";
 
 export type SaveStatus = "saved" | "dirty" | "saving" | "error" | "conflict";
 
@@ -229,6 +230,7 @@ export class NoteSaver {
         this.savedContent = text;
         this.backoff = 1000;
         this.lastSavedAt = Date.now();
+        tourEvents.emit("note.saved"); // 023: Yuii cheers the first autosave
         this.applyPendingAppends(); // an append based on what was just saved
       } catch (err) {
         if (err instanceof ApiError && (err.status === 412 || err.status === 409)) {

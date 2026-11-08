@@ -16,7 +16,7 @@ export function NewClassButton({ variant = "full" }: PanelActionProps) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-7" aria-label="New class" onClick={() => navigate("/classes/new", { state })}>
+          <Button variant="ghost" size="icon" className="size-7" aria-label="New class" data-tour="new-class" onClick={() => navigate("/classes/new", { state })}>
             <Plus size={14} weight="bold" />
           </Button>
         </TooltipTrigger>
@@ -24,7 +24,7 @@ export function NewClassButton({ variant = "full" }: PanelActionProps) {
       </Tooltip>
     );
   return (
-    <Button size="sm" onClick={() => navigate("/classes/new", { state })} aria-keyshortcuts={aria}>
+    <Button size="sm" data-tour="new-class" onClick={() => navigate("/classes/new", { state })} aria-keyshortcuts={aria}>
       <Plus size={16} weight="bold" aria-hidden />
       New class
     </Button>

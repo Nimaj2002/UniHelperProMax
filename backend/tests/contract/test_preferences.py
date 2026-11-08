@@ -39,6 +39,7 @@ def test_preferences(owner_client: TestClient) -> None:
             "timerBarStyle": "full",
             "dailyGoalMin": None,
         },
+        "tour": {"status": "not_seen", "chapter": None},  # 023
     }
     check(r.json(), "Preferences", spec="002")
     r = c.patch(f"{API}/preferences", json={"editorMode": "raw"})
@@ -147,3 +148,57 @@ def test_time_preferences_patch_nested(owner_client: TestClient) -> None:
     for bad in ({"pomodoroWorkMin": 0}, {"pomodoroPeriods": 9}, {"longRunningHours": 13},
                 {"indicatorCombo": "both"}, {"timerBarStyle": "tiny"}):  # fmt: skip
         assert c.patch(f"{API}/preferences", json={"time": bad}).status_code == 422
+
+
+NOT_SEEN = {"status": "not_seen", "chapter": None}
+
+
+def test_preferences_023_tour(owner_client: TestClient, make_member, app) -> None:  # type: ignore[no-untyped-def]
+    """023: every account starts at not_seen; a PATCH replaces the object; users are separate."""
+    c = owner_client
+    assert c.get(f"{API}/preferences").json()["tour"] == NOT_SEEN
+    started = {"status": "in_progress", "chapter": "first_course"}
+    r = c.patch(f"{API}/preferences", json={"tour": started})
+    assert r.status_code == 200, r.text
+    assert r.json()["tour"] == started
+    check(r.json(), "Preferences", spec="002")
+    assert c.get(f"{API}/preferences").json()["tour"] == started
+    # another key keeps it; a new object replaces it whole (chapter back to null)
+    assert c.patch(f"{API}/preferences", json={"theme": "dark"}).json()["tour"] == started
+    done = c.patch(f"{API}/preferences", json={"tour": {"status": "completed"}}).json()["tour"]
+    assert done == {"status": "completed", "chapter": None}
+    # a second account is independent
+    assert make_member().get(f"{API}/preferences").json()["tour"] == NOT_SEEN
+
+
+def test_preferences_023_tour_default_for_old_rows(owner_client: TestClient, app) -> None:  # type: ignore[no-untyped-def]
+    """Stored preferences from before 023 have no `tour`: the default applies (FR-022)."""
+    import json
+
+    from unihelper.models import UiPreferences
+
+    owner_client.patch(f"{API}/preferences", json={"theme": "dark"})
+    with app.state.sessionmaker() as db:
+        row = db.query(UiPreferences).one()
+        data = json.loads(row.data)
+        data.pop("tour", None)
+        row.data = json.dumps(data)
+        db.commit()
+    assert owner_client.get(f"{API}/preferences").json()["tour"] == NOT_SEEN
+
+
+@pytest.mark.parametrize(
+    ("tour", "code"),
+    [
+        ({"chapter": "welcome"}, "missing"),
+        ({"status": "done"}, "literal_error"),
+        ({"status": "in_progress", "chapter": "intro"}, "literal_error"),
+        ({"status": "completed", "step": 3}, "extra_forbidden"),
+    ],
+)
+def test_preferences_023_tour_invalid(
+    owner_client: TestClient, tour: dict[str, object], code: str
+) -> None:
+    r = owner_client.patch(f"{API}/preferences", json={"tour": tour})
+    assert r.status_code == 422
+    assert code in _codes(r)

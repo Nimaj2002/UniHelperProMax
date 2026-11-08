@@ -24,6 +24,7 @@ import { recorder, useRecorderState, type RecorderError } from "./recorder";
 import { DeleteRecordingDialog, RenameRecordingDialog } from "./RecordingDialogs";
 import { usePendingUploads } from "./uploader";
 import { useElapsed } from "./useElapsed";
+import { tourEvents } from "@/features/tour/events";
 
 const ERRORS: Record<RecorderError, string> = {
   permission: "Microphone access was blocked. Allow the microphone for this site in your browser's address bar or settings, then try again.",
@@ -55,7 +56,10 @@ function useRecordControl(sessionKey: string) {
     if (!s) return;
     unlockSound(); // this click lets the class-end chime play later
     const label = `${s.kind === "event" ? s.title : s.courseName} · ${formatDay(s.date, "EEE d MMM")}`;
-    if (await rec.start({ sessionKey, courseId: s.courseId, label })) refresh();
+    if (await rec.start({ sessionKey, courseId: s.courseId, label })) {
+      refresh();
+      tourEvents.emit("recording.started"); // 023
+    } else tourEvents.emit("action.failed", { kind: "recording" }); // 023: e.g. microphone denied
   };
   const stop = async () => {
     await rec.stop();
@@ -70,7 +74,7 @@ export function RecordingHeaderActions({ sessionKey }: WorkspacePanelProps) {
   return (
     <>
       {!rec.active && (
-        <Button size="sm" className="h-7" onClick={() => void start()} disabled={!canStart}>
+        <Button size="sm" className="h-7" data-tour="record" onClick={() => void start()} disabled={!canStart}>
           <Microphone size={14} weight="fill" aria-hidden /> Record
         </Button>
       )}
@@ -108,7 +112,7 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
           </div>
           <span className="sr-only" aria-live="polite">{`Recording, ${spokenDuration(Math.floor(elapsed / 60000) * 60000)}`}</span>
           <LevelMeter />
-          <Button variant="destructive" onClick={() => void stopRec()} disabled={state.status !== "recording"}>
+          <Button variant="destructive" data-tour="record-stop" onClick={() => void stopRec()} disabled={state.status !== "recording"}>
             <StopCircle size={16} weight="fill" aria-hidden /> {state.status === "stopping" ? "Stopping…" : "Stop"}
           </Button>
         </div>

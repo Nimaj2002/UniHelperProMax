@@ -357,3 +357,13 @@ components:
                   properties:
                     chord: { type: string, pattern: '^(Ctrl\+)?(Meta\+)?(Alt\+)?(Shift\+)?[A-Za-z0-9]{1,24}$' }
                     label: { type: string, minLength: 1, maxLength: 32 }
+        tour:
+          type: object
+          description: "added by feature 023: Yuii tour progress; a PATCH replaces it whole"
+          additionalProperties: false
+          required: [status]
+          properties:
+            status: { type: string, enum: [not_seen, in_progress, skipped, completed] }
+            chapter:
+              type: [string, "null"]
+              enum: [welcome, first_course, first_note, pdf_recording, ai, settings, goodbye, null]

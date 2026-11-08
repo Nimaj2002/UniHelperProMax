@@ -74,31 +74,36 @@ export function HierarchyPicker({ value, onChange, errors, levels = "course", di
     <fieldset className="grid gap-4">
       <legend className="mb-3 text-sm font-medium">{levels === "semester" ? "Year and semester" : "Course"}</legend>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Year" error={errors.year}>
-          <CreatableCombobox
-            noun="year"
-            placeholder="Choose or create a year"
-            items={years.data ?? []}
-            loading={years.isPending}
-            disabled={disabled}
-            value={value.year}
-            onChange={(year) => onChange({ ...value, year, semester: null, course: null })}
-          />
-        </Field>
-        <Field label="Semester" error={errors.semester}>
-          <CreatableCombobox
-            noun="semester"
-            placeholder={value.year ? "Choose or create a semester" : "Choose a year first"}
-            disabled={disabled || !value.year}
-            items={semesters.data ?? []}
-            loading={!!yearId && semesters.isPending}
-            value={value.semester}
-            onChange={(semester) => onChange({ ...value, semester, course: null })}
-          />
-        </Field>
+        {/* 023: Yuii points here; data-filled tells the tour this level is chosen */}
+        <div data-tour="class-year" data-filled={!!value.year}>
+          <Field label="Year" error={errors.year}>
+            <CreatableCombobox
+              noun="year"
+              placeholder="Choose or create a year"
+              items={years.data ?? []}
+              loading={years.isPending}
+              disabled={disabled}
+              value={value.year}
+              onChange={(year) => onChange({ ...value, year, semester: null, course: null })}
+            />
+          </Field>
+        </div>
+        <div data-tour="class-semester" data-filled={!!value.semester}>
+          <Field label="Semester" error={errors.semester}>
+            <CreatableCombobox
+              noun="semester"
+              placeholder={value.year ? "Choose or create a semester" : "Choose a year first"}
+              disabled={disabled || !value.year}
+              items={semesters.data ?? []}
+              loading={!!yearId && semesters.isPending}
+              value={value.semester}
+              onChange={(semester) => onChange({ ...value, semester, course: null })}
+            />
+          </Field>
+        </div>
       </div>
       {value.semester?.kind === "new" && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2" data-tour="class-semester-dates" data-filled={!!(value.semesterStart && value.semesterEnd)}>
           <Field label="Semester starts (optional)">
             <Input type="date" value={value.semesterStart} onChange={(e) => onChange({ ...value, semesterStart: e.target.value })} />
           </Field>
@@ -108,17 +113,19 @@ export function HierarchyPicker({ value, onChange, errors, levels = "course", di
         </div>
       )}
       {levels === "course" && (
-        <Field label="Course" error={errors.course}>
-          <CreatableCombobox
-            noun="course"
-            placeholder={value.semester ? "Choose or create a course" : "Choose a semester first"}
-            disabled={disabled || !value.semester}
-            items={courses.data ?? []}
-            loading={!!semesterId && courses.isPending}
-            value={value.course}
-            onChange={(course) => onChange({ ...value, course })}
-          />
-        </Field>
+        <div data-tour="class-course" data-filled={!!value.course}>
+          <Field label="Course" error={errors.course}>
+            <CreatableCombobox
+              noun="course"
+              placeholder={value.semester ? "Choose or create a course" : "Choose a semester first"}
+              disabled={disabled || !value.semester}
+              items={courses.data ?? []}
+              loading={!!semesterId && courses.isPending}
+              value={value.course}
+              onChange={(course) => onChange({ ...value, course })}
+            />
+          </Field>
+        </div>
       )}
     </fieldset>
   );

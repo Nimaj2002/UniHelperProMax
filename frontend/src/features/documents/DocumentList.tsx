@@ -126,7 +126,7 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
       <FileDropZone sessionKey={sessionKey} queue={queue} label="Drop PDF files to add them" testId="documents-drop-zone">
         <div className="grid gap-2">
           <div className="px-2">
-            <Button size="sm" variant="outline" className="w-full justify-start" onClick={() => input.current?.click()}>
+            <Button size="sm" variant="outline" className="w-full justify-start" data-tour="upload-document" onClick={() => input.current?.click()}>
               <UploadSimple aria-hidden /> Upload PDF
             </Button>
             <input

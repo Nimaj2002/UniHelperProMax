@@ -16,6 +16,7 @@ import { recordingsKey } from "./api";
 import { recorder, useRecorderState } from "./recorder";
 import { RecordingBar } from "./RecordingBar";
 import { RecordingHeaderActions, RecordingPanel } from "./RecordingPanel";
+import { tourEvents } from "@/features/tour/events";
 
 let pendingSignOut: (() => void) | null = null;
 const signOutListeners = new Set<() => void>();
@@ -63,6 +64,7 @@ function RecordingLifecycle() {
     rec.onFinished = (_r, sessionKey) => {
       void qc.invalidateQueries({ queryKey: recordingsKey(sessionKey) });
       void qc.invalidateQueries({ queryKey: ["timeline"] });
+      tourEvents.emit("recording.saved"); // 023
     };
     void rec.recover();
     const beforeUnload = (e: BeforeUnloadEvent) => {

@@ -129,6 +129,20 @@ class TimePreferences(ApiModel):
     daily_goal_min: int | None = Field(default=None, ge=1, le=1440)  # null = no goal
 
 
+TourChapter = Literal[
+    "welcome", "first_course", "first_note", "pdf_recording", "ai", "settings", "goodbye"
+]
+
+
+class TourState(ApiModel):
+    """023: the Yuii tour's progress for this account; a PATCH replaces it whole."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    status: Literal["not_seen", "in_progress", "skipped", "completed"]
+    chapter: TourChapter | None = None
+
+
 class Preferences(ApiModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -149,3 +163,4 @@ class Preferences(ApiModel):
         default=None, max_length=200
     )
     time: TimePreferences | None = None  # 020
+    tour: TourState | None = None  # 023

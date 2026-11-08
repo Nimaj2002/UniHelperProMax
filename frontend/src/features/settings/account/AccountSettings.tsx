@@ -5,6 +5,7 @@ import { signOutAllowed } from "@/app/shell/registry";
 import { Button } from "@/components/ui/button";
 import { useIsDesktop, useLogout, useMe } from "@/features/auth/api";
 import { TimeZoneDialog } from "@/features/auth/TimeZoneDialog";
+import { startTour } from "@/features/tour/store";
 
 function Row({ title, detail, children }: { title: string; detail?: ReactNode; children: ReactNode }) {
   return (
@@ -50,6 +51,9 @@ export function AccountSettings() {
         )}
         <Row title="Time zone" detail={me?.timezone.replaceAll("_", " ")}>
           <Button variant="outline" size="sm" onClick={() => setTzOpen(true)}>Change…</Button>
+        </Row>
+        <Row title="Tour" detail="Yuii shows you around the app again">
+          <Button variant="outline" size="sm" onClick={() => startTour()}>Replay tour with Yuii</Button>
         </Row>
         {!desktop && me?.role === "owner" && (
           <Row title="Accounts" detail="Create, disable and reset accounts">

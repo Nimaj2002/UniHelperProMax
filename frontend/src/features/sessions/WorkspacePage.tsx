@@ -88,6 +88,7 @@ import {
   useSessionRail,
 } from "./SessionPanel";
 import { SessionTimeDialog } from "@/features/time/SessionTime";
+import { tourEvents } from "@/features/tour/events";
 import { SessionTimeline, type TimelineItem } from "./SessionTimeline";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
 import { SessionChip } from "./SessionChip";
@@ -220,7 +221,7 @@ function NotePane({ noteId, meta, visible, mode, editorRef }: NotePaneProps) {
           This note's file is missing on disk. Typing will save it again.
         </p>
       )}
-      <div className="min-h-0 flex-1">
+      <div className="min-h-0 flex-1" data-tour="note-editor">
         <MarkdownEditor
           ref={editorRef}
           noteId={noteId}
@@ -793,6 +794,7 @@ export function WorkspacePage() {
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
           <button
             type="button"
+            data-tour="new-note"
             onClick={() => setDialog({ kind: "new" })}
             className="text-sm font-medium text-primary underline underline-offset-4"
           >
@@ -1029,6 +1031,7 @@ export function WorkspacePage() {
           onClose={() => setDialog(null)}
           onSubmit={async (name) => {
             const note = await createNote.mutateAsync({ name });
+            tourEvents.emit("note.created", { noteId: note.id }); // 023
             ensureSaver(
               note.id,
               { content: note.content, version: note.version, hash: note.hash },

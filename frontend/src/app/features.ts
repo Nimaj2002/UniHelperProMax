@@ -16,6 +16,7 @@ import "@/features/teacher/routes"; // 022
 import { routes as sessionRoutes } from "@/features/sessions/routes";
 import { routes as settingsRoutes } from "@/features/settings/routes";
 import "@/features/time/routes";
+import "@/features/tour/routes"; // 023
 import "@/features/transcription/routes";
 
 export const featureRoutes: RouteObject[] = [

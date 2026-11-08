@@ -21,7 +21,7 @@ export function StatusLabel({ noteId, className, iconOnly = false }: { noteId: s
   const status = snap?.status ?? "saved";
   const Icon = status === "saved" ? CheckCircle : status === "error" || status === "conflict" ? WarningCircle : CircleNotch;
   return (
-    <span className={cn("inline-flex items-center gap-1", status === "error" || status === "conflict" ? "text-danger" : "text-muted-foreground", className)}>
+    <span data-tour="save-status" className={cn("inline-flex items-center gap-1", status === "error" || status === "conflict" ? "text-danger" : "text-muted-foreground", className)}>
       <Icon size={iconOnly ? 12 : 14} aria-hidden className={status === "saving" || status === "dirty" ? "animate-spin [animation-duration:1.5s] motion-reduce:animate-none" : undefined} />
       <span className={iconOnly ? "sr-only" : undefined}>{STATUS[status]}</span>
     </span>

@@ -28,7 +28,7 @@ export function NoteList({ notes, openIds, activeId, loading, onNew, onImport, i
   return (
     <div className="grid gap-2">
       <div className="mx-2 grid grid-cols-2 gap-2">
-        <Button size="sm" variant="outline" className="justify-start" onClick={onNew} aria-keyshortcuts={hintOf(keymap, "workspace.newNote").aria}>
+        <Button size="sm" variant="outline" className="justify-start" data-tour="new-note" onClick={onNew} aria-keyshortcuts={hintOf(keymap, "workspace.newNote").aria}>
           <Plus size={14} aria-hidden /> New note
         </Button>
         {onImport && (

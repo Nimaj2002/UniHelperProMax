@@ -8,6 +8,7 @@ import { isApiError, type ApiError } from "@/lib/api";
 import { parseTimeHHmm } from "@/lib/dates";
 import type { ColorKey } from "@/lib/palette";
 import { ColorPicker } from "./ColorPicker";
+import { tourEvents } from "@/features/tour/events";
 import { courseRef, emptyHierarchy, HierarchyPicker, useSemesterEnd, type HierarchyValue } from "./HierarchyPicker";
 import { isValidUrl, LinksEditor, MAX_LINKS, type LinkValue } from "./LinksEditor";
 import { defaultRecurrence, recurrencePayload, RecurrenceFields, type RecurrenceValue } from "./RecurrenceFields";
@@ -191,6 +192,7 @@ export function ClassForm({ initial, mode = "create", fixedSemesterEnd, submitLa
     setErrors(local);
     if (Object.keys(local).length) {
       setAttempt((a) => a + 1);
+      tourEvents.emit("action.failed", { kind: "class" }); // 023: Yuii hints at the form errors
       return;
     }
     try {
@@ -199,6 +201,7 @@ export function ClassForm({ initial, mode = "create", fixedSemesterEnd, submitLa
       // keep every input (FR-026); show server errors next to the fields
       setErrors(isApiError(err) ? serverErrors(err) : { form: "Couldn't save the class. Please retry." });
       setAttempt((a) => a + 1);
+      tourEvents.emit("action.failed", { kind: "class" });
     }
   };
 
@@ -251,7 +254,7 @@ export function ClassForm({ initial, mode = "create", fixedSemesterEnd, submitLa
       )}
       <div className="flex justify-end gap-2 border-t border-divider pt-4">
         <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" disabled={pending}>{pending ? "Saving…" : submitLabel}</Button>
+        <Button type="submit" disabled={pending} data-tour="class-save">{pending ? "Saving…" : submitLabel}</Button>
       </div>
     </form>
   );

@@ -5,6 +5,7 @@ import { calendarPath, lastCalendar, lastCalendarPath } from "@/features/calenda
 import type { CourseDetail } from "@/features/courses/api";
 import { hierarchyFrom, usePreselectedSemester } from "@/features/events/usePreselectedSemester";
 import { useUpdatePreferences } from "@/features/sessions/api";
+import { tourEvents } from "@/features/tour/events";
 import { apiFetch } from "@/lib/api";
 import { useCreateClass, type ClassCreate, type ClassCreated } from "./api";
 import { ClassForm, classPayload, initialClassForm, type ClassFormValue } from "./ClassForm";
@@ -65,6 +66,7 @@ export function NewClassDialog() {
             onSubmit={async (value) => {
               const made = await create.mutateAsync(classPayload(value) as ClassCreate);
               toast.success("Class saved");
+              tourEvents.emit("class.created", { courseId: made.courseId }); // 023
               void semesterOf(value, made).then((id) => updatePrefs.mutate({ lastSemesterId: id }), () => undefined);
               navigate(calendarPath(lastCalendar().view ?? "week", value.startDate));
             }}

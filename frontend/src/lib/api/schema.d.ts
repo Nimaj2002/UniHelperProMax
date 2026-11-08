@@ -4766,6 +4766,7 @@ export interface components {
                 ];
             } | null;
             time?: components["schemas"]["TimePreferences"] | null;
+            tour?: components["schemas"]["TourState"] | null;
         };
         /** PreflightItem */
         PreflightItem: {
@@ -6342,6 +6343,19 @@ export interface components {
             undo: components["schemas"]["Undo"];
             /** Timerversion */
             timerVersion?: number | null;
+        };
+        /**
+         * TourState
+         * @description 023: the Yuii tour's progress for this account; a PATCH replaces it whole.
+         */
+        TourState: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "not_seen" | "in_progress" | "skipped" | "completed";
+            /** Chapter */
+            chapter?: ("welcome" | "first_course" | "first_note" | "pdf_recording" | "ai" | "settings" | "goodbye") | null;
         };
         /** TranscriptionJob */
         TranscriptionJob: {

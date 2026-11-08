@@ -34,6 +34,7 @@ import { isActiveStatus, runStore, useChatGenerating } from "./runStore";
 import {
   boxId, setPanelChat, setSearchOpen, useChatPlacement, useChatTabs, usePanelChat, useSearchOpen, type ChatView,
 } from "./chatPlacement";
+import { tourEvents } from "@/features/tour/events";
 
 // ---- small header buttons ---------------------------------------------------------------------
 
@@ -259,6 +260,7 @@ export function ChatBody(props: ChatBodyProps) {
           newChatModels.delete(sessionKey);
           onStarted(res.chat.id);
         }
+        tourEvents.emit("chat.sent"); // 023
         return true;
       } catch (err) {
         if (isApiError(err, "privacy_ack_required")) {
