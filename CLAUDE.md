@@ -31,6 +31,10 @@ corepack pnpm exec vitest run tests/unit/TaskCard.test.tsx   # single test file
 corepack pnpm e2e           # Playwright (starts its own backend/frontend/fake transcriber)
 # ports busy? E2E_BACKEND_PORT=8010 E2E_FRONTEND_PORT=5183 E2E_TRANSCRIBER_PORT=8021 corepack pnpm e2e
 corepack pnpm gen:api       # regenerate src/lib/api/schema.d.ts from frontend/openapi.json
+corepack pnpm dev:demo      # 024 browser demo on :5174 (no backend; MSW answers /api/v1)
+corepack pnpm build:demo    # static demo site in dist-demo/ (deployed by frontend/vercel.json)
+corepack pnpm check:no-demo # fails if the normal dist/ contains demo code (desktop/Docker builds run it)
+corepack pnpm e2e:demo      # Playwright against the built demo (build:demo first)
 ```
 
 Desktop (`desktop/`, npm): `npm run dev` runs the backend from source (`backend/.venv`) with its own
@@ -76,6 +80,11 @@ and `schema.d.ts`.
 domain, `components/ui/` shadcn primitives, `lib/api/client.ts` (typed fetch wrapper → `ApiError`)
 with TanStack Query on top. `src/sandbox/` is a separately built script (`vite.sandbox.config.ts`)
 that renders Mermaid inside a sandboxed iframe; `dev`/`build` build it first.
+
+**Demo mode (`src/demo/`, spec 024)**: a `--mode demo` build where MSW answers every `/api/v1`
+request in the browser from an in-memory store seeded with sample data. It is reachable only through
+the guarded `import.meta.env.MODE === "demo"` block in `main.tsx`, so normal builds never contain it.
+When you change an endpoint, update its demo handler in `src/demo/handlers/` too (`tsc` flags shape drift).
 
 **Desktop (`desktop/src/`)**: Electron main process that launches a PyInstaller-bundled backend
 (`backend/packaging/unihelper-backend.spec`) bound to 127.0.0.1 and loads the built frontend from it.

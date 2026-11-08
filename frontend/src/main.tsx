@@ -15,13 +15,19 @@ window.addEventListener("vite:preloadError", (event) => {
 });
 window.addEventListener("load", () => setTimeout(() => sessionStorage.removeItem("chunk-reload"), 10_000));
 
-const queryClient = createQueryClient();
-const router = createAppRouter();
+function render() {
+  const queryClient = createQueryClient();
+  const router = createAppRouter();
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <Providers client={queryClient}>
-      <RouterProvider router={router} />
-    </Providers>
-  </StrictMode>,
-);
+  createRoot(document.getElementById("root")!).render(
+    <StrictMode>
+      <Providers client={queryClient}>
+        <RouterProvider router={router} />
+      </Providers>
+    </StrictMode>,
+  );
+}
+
+// 024: the browser demo build answers /api/v1 in the page; Vite drops this branch from normal builds
+if (import.meta.env.MODE === "demo") void import("./demo/start").then((m) => m.startDemo()).then(render);
+else render();

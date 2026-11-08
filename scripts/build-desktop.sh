@@ -33,7 +33,7 @@ done
 step() { printf '\n==> %s\n' "$*"; }
 
 step "1/3 frontend"
-(cd "$root/frontend" && pnpm install --frozen-lockfile && pnpm run build)
+(cd "$root/frontend" && pnpm install --frozen-lockfile && pnpm run build && pnpm run check:no-demo)
 
 step "2/3 backend (PyInstaller onedir) + smoke test"
 (

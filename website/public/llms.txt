@@ -16,6 +16,7 @@ Key facts:
 ## Links
 
 - [Website](https://www.unihelperpromax.tech/): overview, features and install instructions
+- [Live demo](https://demo.unihelperpromax.tech/): try the app in your browser with a sample student workspace; nothing is saved
 - [Download (latest release)](https://github.com/Nimaj2002/UniHelperProMax/releases/latest): desktop installers for Windows, macOS and Linux
 - [Source code](https://github.com/Nimaj2002/UniHelperProMax): GitHub repository with README and setup guide
 - [License](https://github.com/Nimaj2002/UniHelperProMax/blob/main/LICENSE): AGPL-3.0

@@ -8,6 +8,7 @@
   --pink-wash: #ffe3ef;
   --pink-paper: #fff7fb;
   --ink-blue: #3b4a8c;
+  --ink-blue-press: #2a3566;  /* darker edge under blue "sticker" buttons (demo) */
   --line: #e5e5e5;             /* hairline borders on white */
   --font-display: 'Nunito', var(--font-feather);
   --font-body: 'Nunito Sans', var(--font-duolingo-sans);
@@ -58,6 +59,9 @@ h1, h2, h3, p { margin: 0; }
 .btn-ghost { background: var(--color-paper-white); color: var(--ink-blue); border-color: var(--line); border-bottom: 4px solid var(--line); }
 .btn-ghost:hover { background: #f7f7f7; }
 .btn-ghost:active { border-bottom-width: 2px; }
+.btn-demo { background: var(--ink-blue); color: var(--color-paper-white); border-bottom: 4px solid var(--ink-blue-press); }
+.btn-demo:hover { filter: brightness(1.12); }
+.btn-demo:active { border-bottom-width: 2px; }
 .btn-sm { min-height: 40px; padding: 8px 16px; font-size: var(--text-caption); }
 .btn-lg { min-height: 60px; padding: 16px 32px; font-size: var(--text-subheading); }
 .btn-round { width: 52px; padding: 0; font-size: 20px; letter-spacing: 0; }
@@ -154,6 +158,13 @@ h1, h2, h3, p { margin: 0; }
 .tour-head { display: grid; justify-items: center; gap: 12px; text-align: center; }
 .chapter-stack .display { font-size: clamp(30px, 3.6vw, 46px); }
 .carousel { width: 100%; }
+/* 024: live demo button on a PC; phones get embarrassed Yuii and a note (same rule as the demo) */
+.demo-phone { display: none; }
+@media (max-width: 480px), (hover: none) and (pointer: coarse) and (max-height: 480px) {
+  .demo-pc { display: none; }
+  .demo-phone { display: block; }
+}
+
 .carousel-tabs { display: flex; gap: 8px; overflow-x: auto; padding: 4px 4px 12px; scrollbar-width: thin; }
 .carousel-tabs button, .segmented button {
   flex: none; min-height: 44px; padding: 10px 16px; cursor: pointer;

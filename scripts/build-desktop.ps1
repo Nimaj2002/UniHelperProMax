@@ -32,7 +32,7 @@ function Run {
 
 Step "1/3 frontend"
 Push-Location "$root\frontend"
-try { Run pnpm install --frozen-lockfile; Run pnpm run build } finally { Pop-Location }
+try { Run pnpm install --frozen-lockfile; Run pnpm run build; Run pnpm run check:no-demo } finally { Pop-Location }
 
 Step "2/3 backend (PyInstaller onedir) + smoke test"
 Push-Location "$root\backend"

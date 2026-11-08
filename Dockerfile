@@ -20,7 +20,7 @@ COPY frontend/package.json frontend/pnpm-lock.yaml frontend/.npmrc ./
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 COPY frontend/ ./
-RUN pnpm build
+RUN pnpm build && pnpm check:no-demo
 
 # ---------- 2. Backend: virtualenv in /opt/venv ----------
 FROM python:${PYTHON_VERSION}-alpine AS backend

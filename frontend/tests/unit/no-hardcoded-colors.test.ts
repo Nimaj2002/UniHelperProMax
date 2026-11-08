@@ -7,7 +7,11 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const SRC = path.resolve(import.meta.dirname, "../../src");
-const ALLOWED = new Set([path.join(SRC, "styles", "tokens.css")]);
+const ALLOWED = new Set([
+  path.join(SRC, "styles", "tokens.css"),
+  // 024: sample PDF highlights stored as data (EmbedPDF's saved colour), never used for UI styling
+  path.join(SRC, "demo", "handlers", "documents.ts"),
+]);
 
 const TW_COLORS =
   "slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|black|white";

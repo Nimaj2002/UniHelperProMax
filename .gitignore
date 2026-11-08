@@ -15,10 +15,12 @@ venv/
 # Node / frontend
 node_modules/
 dist/
+dist-demo/
 build/
 coverage/
 frontend/openapi.json
 playwright-report/
+playwright-report-demo/
 test-results/
 *.log
 .env*
