@@ -102,6 +102,8 @@ h1, h2, h3, p { margin: 0; }
 .chapter-text { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
 
 .chip { display: inline-block; padding: 8px 14px; border: 2px solid var(--line); border-radius: 999px; color: var(--color-pencil-gray); font: var(--font-weight-bold) var(--text-caption)/1 var(--font-body); letter-spacing: var(--tracking-nav-label); text-transform: uppercase; }
+/* The hero pill is the page H1 (brand + category for search); it can wrap on narrow screens. */
+.chapter-hero .chip { line-height: 1.4; border-radius: 18px; }
 .display {
   font: 900 clamp(36px, 4.6vw, 60px)/1.08 var(--font-display);
   letter-spacing: -0.02em; color: var(--pink-bright); text-wrap: balance;

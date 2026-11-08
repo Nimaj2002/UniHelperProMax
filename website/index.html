@@ -3,12 +3,98 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>UniHelperProMax · Yuii's semester, sorted</title>
-  <meta name="description" content="Meet Yuii. She used to lose her semester across five apps. Now her timetable, notes, slides, recordings, transcripts, AI tutor and tasks live in one free, open-source app.">
+  <title>UniHelperProMax: Free Open-Source AI Study App for University Students</title>
+  <meta name="description" content="UniHelperProMax is a free, open-source study app for university students: timetable, notes, slides, lecture transcription and a Socratic AI tutor in one place.">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="author" content="Nimaj2002">
+  <link rel="canonical" href="https://www.unihelperpromax.tech/">
   <meta name="theme-color" content="#ffffff">
+
+  <!-- Social preview (Open Graph + X/Twitter) -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="UniHelperProMax">
+  <meta property="og:url" content="https://www.unihelperpromax.tech/">
+  <meta property="og:title" content="UniHelperProMax: Free Open-Source AI Study App for University Students">
+  <meta property="og:description" content="Timetable, notes, slides, lecture recordings, transcripts, a Socratic AI tutor and tasks in one free, open-source app for Windows, macOS and Linux.">
+  <meta property="og:image" content="https://www.unihelperpromax.tech/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="UniHelperProMax: your whole semester in one calm place. Free, open-source study app, with the mascot Yuii waving.">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="UniHelperProMax: Free Open-Source AI Study App for University Students">
+  <meta name="twitter:description" content="Timetable, notes, slides, lecture recordings, transcripts, a Socratic AI tutor and tasks in one free, open-source app.">
+  <meta name="twitter:image" content="https://www.unihelperpromax.tech/og-image.png">
+  <meta name="twitter:image:alt" content="UniHelperProMax: free, open-source study app, with the mascot Yuii waving.">
+
   <link rel="icon" href="/assets/icons/favicon.svg" type="image/svg+xml">
   <link rel="icon" href="/assets/icons/favicon.ico" sizes="any">
   <link rel="apple-touch-icon" href="/assets/icons/apple-touch-icon.png">
+  <link rel="preload" as="image" href="/assets/yuii/greeting.webp" type="image/webp" fetchpriority="high">
+
+  <!-- Structured data. %APP_VERSION% is filled in at build time from desktop/package.json (see vite.config.js). -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": "https://www.unihelperpromax.tech/#website",
+        "url": "https://www.unihelperpromax.tech/",
+        "name": "UniHelperProMax",
+        "description": "Free, open-source study app for university students: timetable, notes, slides, lecture recordings, transcripts, an AI tutor and tasks in one place.",
+        "inLanguage": "en",
+        "publisher": { "@id": "https://www.unihelperpromax.tech/#maker" }
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://www.unihelperpromax.tech/#webpage",
+        "url": "https://www.unihelperpromax.tech/",
+        "name": "UniHelperProMax: Free Open-Source AI Study App for University Students",
+        "description": "UniHelperProMax is a free, open-source study app for university students: timetable, notes, slides, lecture transcription and a Socratic AI tutor in one place.",
+        "isPartOf": { "@id": "https://www.unihelperpromax.tech/#website" },
+        "about": { "@id": "https://www.unihelperpromax.tech/#app" },
+        "primaryImageOfPage": { "@type": "ImageObject", "url": "https://www.unihelperpromax.tech/og-image.png", "width": 1200, "height": 630 },
+        "inLanguage": "en"
+      },
+      {
+        "@type": "Person",
+        "@id": "https://www.unihelperpromax.tech/#maker",
+        "name": "Nimaj2002",
+        "url": "https://github.com/Nimaj2002",
+        "sameAs": ["https://github.com/Nimaj2002"]
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://www.unihelperpromax.tech/#app",
+        "name": "UniHelperProMax",
+        "alternateName": "UniHelper Pro Max",
+        "description": "Free, open-source desktop and self-hosted study app for university students. It combines a semester timetable, Markdown notes, a PDF slide reader, lecture recording and transcription, AI chat, a Socratic AI tutor and a task board, all stored as plain files you own. The mascot is Yuii.",
+        "url": "https://www.unihelperpromax.tech/",
+        "image": "https://www.unihelperpromax.tech/og-image.png",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Windows 10+, macOS 13+, Linux",
+        "softwareVersion": "%APP_VERSION%",
+        "featureList": ["Semester timetable and calendar with .ics import and export", "Markdown notes with LaTeX math and Mermaid diagrams", "PDF slide reader with highlights and comments", "Lecture recording and transcription", "AI chat with OpenAI, Anthropic, Gemini, Ollama or LM Studio", "Socratic AI tutor with a knowledge graph", "Task board", "18 themes", "One-click backup"],
+        "downloadUrl": "https://github.com/Nimaj2002/UniHelperProMax/releases/latest",
+        "installUrl": "https://github.com/Nimaj2002/UniHelperProMax/releases/latest",
+        "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+        "isAccessibleForFree": true,
+        "inLanguage": "en",
+        "sameAs": ["https://github.com/Nimaj2002/UniHelperProMax"],
+        "author": { "@id": "https://www.unihelperpromax.tech/#maker" },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD",
+          "availability": "https://schema.org/InStock",
+          "url": "https://github.com/Nimaj2002/UniHelperProMax/releases/latest"
+        }
+      }
+    ]
+  }
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@800;900&family=Nunito+Sans:opsz,wght@6..12,500;6..12,700;6..12,800&family=JetBrains+Mono:wght@400&display=swap">
@@ -22,7 +108,7 @@
   <header class="nav-wrap">
     <nav class="nav" aria-label="Main">
       <a class="brand" href="#hello" aria-label="UniHelperProMax home">
-        <img src="/assets/icons/app-icon-192.png" alt="" width="32" height="32">
+        <img src="/assets/icons/app-icon-80.png" alt="" width="32" height="32">
         <span>UniHelperProMax</span>
       </a>
       <ul class="nav-links">
@@ -43,7 +129,8 @@
         <img class="yuii" data-amber-speed="0.9" data-reveal="pop" src="/assets/yuii/greeting.webp" alt="Yuii, a pink-haired student in a sailor uniform, waving hello" width="814" height="900" fetchpriority="high">
       </div>
       <div class="chapter-text">
-        <h1 id="hello-title" class="display" data-reveal>Helllooo<br>I'm Yuii.</h1>
+        <h1 id="hello-title" class="chip" data-reveal>UniHelperProMax · Free study app for university students</h1>
+        <p class="display" data-reveal>Helllooo <br>I'm Yuii.</p>
         <div class="bubble" data-reveal>
           <p>I'm a university student, just like you. Lectures, slides, labs, deadlines… it used to be a lot. Want to hear what changed?</p>
         </div>
@@ -312,7 +399,7 @@
           <a class="btn btn-primary btn-lg" id="dl-main" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest">Download the app</a>
           <a class="btn btn-ghost" href="#install">Other ways to install</a>
         </div>
-        <p class="meta" data-reveal><span id="dl-version">Latest release</span> · Windows · macOS · Linux · Docker</p>
+        <p class="meta" data-reveal><span id="dl-version">Latest: v%APP_VERSION%</span> · Windows · macOS · Linux · Docker</p>
         <!-- Brevo subscription form (hosted by Brevo, so signups and the confirmation email are handled there). -->
         <iframe class="mail-frame" data-reveal title="Get the download link by email" loading="lazy" src="https://90f9d1f0.sibforms.com/v2/serve/MUIFABqr2cSzqTSuMl7xr6NZ0hPtdFqSD5vvEflRrb74gLlaZ7Br3Bn6hpwMMN64OcMsdlXbMpABJ_qF9zv8CtGoh-9exhFrabA6uw45M3D7LR5FiSAPvLQlAHn7lAKYjlXxwGUHwTXNxetpC_voGNmlTcSbCS42g5RXGbTJWAhf4jqFy1H7I_OLAu8_ueoxoW2jsHVBviGp1se45g=="></iframe>
       </div>
@@ -346,7 +433,7 @@
             <p class="tag">Easiest · desktop app</p>
             <h3>Download the installer</h3>
             <p>Windows 10 or newer (x64). It brings its own server, works offline and needs no login.</p>
-            <div class="assets" data-assets="windows"><a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">UniHelperProMax-Setup-&lt;version&gt;-x64.exe</span></a></div>
+            <div class="assets" data-assets="windows"><a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">UniHelperProMax-Setup-%APP_VERSION%-x64.exe</span></a></div>
             <p class="note">Not code-signed yet: on "Windows protected your PC" click <strong>More info → Run anyway</strong>.</p>
           </article>
           <article class="card">
@@ -363,7 +450,7 @@ cd UniHelperProMax; .\start.ps1</pre><button class="copy" type="button" data-cop
             <p class="tag">Easiest · desktop app</p>
             <h3>Download the disk image</h3>
             <p>macOS 13 or newer (Apple Silicon). Open the <code>.dmg</code> and drag the app to Applications.</p>
-            <div class="assets" data-assets="macos"><a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">UniHelperProMax-&lt;version&gt;-arm64.dmg</span></a></div>
+            <div class="assets" data-assets="macos"><a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">UniHelperProMax-%APP_VERSION%-arm64.dmg</span></a></div>
             <p class="note">Not notarized yet: use <strong>System Settings → Privacy &amp; Security → Open Anyway</strong>, or run <code>xattr -dr com.apple.quarantine /Applications/UniHelperProMax.app</code>.</p>
           </article>
           <article class="card">
@@ -381,8 +468,8 @@ cd UniHelperProMax &amp;&amp; ./start.sh</pre><button class="copy" type="button"
             <h3>AppImage or .deb</h3>
             <p>Linux x64, any distribution. The AppImage needs <code>libfuse2</code> (<code>libfuse2t64</code> on Ubuntu 24.04).</p>
             <div class="assets" data-assets="linux">
-              <a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">UniHelperProMax-&lt;version&gt;-x86_64.AppImage</span></a>
-              <a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">unihelperpromax_&lt;version&gt;_amd64.deb</span></a>
+              <a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">UniHelperProMax-%APP_VERSION%-x86_64.AppImage</span></a>
+              <a class="asset" href="https://github.com/Nimaj2002/UniHelperProMax/releases/latest"><span class="mono">unihelperpromax_%APP_VERSION%_amd64.deb</span></a>
             </div>
           </article>
           <article class="card">
@@ -449,7 +536,7 @@ cd ../backend &amp;&amp; UNIHELPER_DATA_DIR=./data UNIHELPER_STATIC_DIR=../front
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <img src="/assets/icons/app-icon-192.png" alt="" width="40" height="40">
+        <img src="/assets/icons/app-icon-80.png" alt="" width="40" height="40">
         <p><strong>UniHelperProMax</strong><br>Your whole semester in one calm place.</p>
       </div>
       <ul class="footer-links">

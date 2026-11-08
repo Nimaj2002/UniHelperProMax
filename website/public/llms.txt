@@ -1,0 +1,22 @@
+# UniHelperProMax
+
+> UniHelperProMax is a free, open-source (AGPL-3.0) study app for university students. It puts a semester timetable, Markdown notes, a PDF slide reader, lecture recording and transcription, AI chat, a Socratic AI tutor and a task board in one place, and keeps everything as plain files on your own disk. It runs as a desktop app on Windows, macOS and Linux, or self-hosted with Docker. Yuii, the pink-haired student on the website, is the app's mascot.
+
+Key facts:
+
+- Price: free, no subscription, no account, no tracking
+- License: GNU AGPL-3.0; source code on GitHub
+- Platforms: Windows 10+ (x64), macOS 13+ (Apple Silicon), Linux x64 (AppImage, .deb), Docker
+- Storage: notes are `.md` files, slides are `.pdf`, recordings are audio files, chats are saved as `.md`
+- AI providers: OpenAI, Anthropic, Gemini, or local models through Ollama / LM Studio (fully offline)
+- Transcription: any OpenAI-compatible speech API; the transcript is appended to a note and never overwrites what you wrote
+- AI tutor: asks questions first (Socratic method), checks how sure you are, keeps a lesson plan and a knowledge graph
+- Maker: Nimaj2002 (GitHub)
+
+## Links
+
+- [Website](https://www.unihelperpromax.tech/): overview, features and install instructions
+- [Download (latest release)](https://github.com/Nimaj2002/UniHelperProMax/releases/latest): desktop installers for Windows, macOS and Linux
+- [Source code](https://github.com/Nimaj2002/UniHelperProMax): GitHub repository with README and setup guide
+- [License](https://github.com/Nimaj2002/UniHelperProMax/blob/main/LICENSE): AGPL-3.0
+- [Issues and ideas](https://github.com/Nimaj2002/UniHelperProMax/issues)
