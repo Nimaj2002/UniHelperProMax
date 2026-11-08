@@ -135,6 +135,15 @@ h1, h2, h3, p { margin: 0; }
 .s3 { top: 46%; left: -4%; rotate: 5deg; }
 .s4 { bottom: 10%; right: -2%; rotate: -5deg; }
 .s5 { bottom: 0; left: 18%; rotate: 3deg; background: #ffe3e3; border-color: #f5c2c2; }
+/* Chapter 1½: one sticky per app she juggled */
+.a1 { top: 2%; left: 2%; rotate: -7deg; }
+.a2 { top: 0; right: 6%; rotate: 5deg; }
+.a3 { top: 24%; left: -4%; rotate: 4deg; }
+.a4 { top: 22%; right: -3%; rotate: -6deg; }
+.a5 { top: 50%; left: -6%; rotate: -3deg; }
+.a6 { top: 52%; right: -5%; rotate: 7deg; }
+.a7 { bottom: 6%; left: 2%; rotate: 5deg; background: #ffe3e3; border-color: #f5c2c2; }
+.a8 { bottom: 2%; right: 4%; rotate: -4deg; }
 .pain { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .pain li { position: relative; padding-left: 34px; color: var(--color-pencil-gray); }
 .pain li::before { content: '✗'; position: absolute; left: 0; top: 0; width: 24px; height: 24px; border-radius: 50%; background: #ffe3e3; color: #d33; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
@@ -228,7 +237,7 @@ h1, h2, h3, p { margin: 0; }
   .says .bubble::before, .says .bubble::after { top: 16px; left: -26px; border: 12px solid transparent; border-right: 14px solid var(--line); }
   .says .bubble::after { left: -21px; border-right-color: var(--color-paper-white); }
 }
-@media (max-width: 480px) { .facts { grid-template-columns: 1fr; } .sticky.s3, .sticky.s4 { display: none; } }
+@media (max-width: 480px) { .facts { grid-template-columns: 1fr; } .sticky.s3, .sticky.s4, .sticky.a3, .sticky.a4 { display: none; } }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
