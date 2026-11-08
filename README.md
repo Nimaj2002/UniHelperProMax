@@ -11,6 +11,8 @@
 makes you think.** Plus your timetable, notes, slides, AI chat and tasks, organised by class and
 stored as plain files you own.
 
+🌐 **[unihelperpromax.tech](https://unihelperpromax.tech)**
+
 [![Latest release](https://img.shields.io/github/v/release/Nimaj2002/UniHelperProMax?color=7A3DB8&label=download)](https://github.com/Nimaj2002/UniHelperProMax/releases/latest)
 [![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-7A3DB8)](LICENSE)
 [![GitHub stars](https://img.shields.io/github/stars/Nimaj2002/UniHelperProMax?style=flat&logo=github&color=C49BFF)](https://github.com/Nimaj2002/UniHelperProMax/stargazers)
@@ -146,6 +148,8 @@ the answer. It first asks what you already know, plans the shortest path to the 
 teaches one reasoning step at a time and checks each step with a question. You answer, say how
 sure you are, and it fixes a gap before building on it. Switch to **Practice** for fresh problems
 with hints. ([More](#ai-teacher))
+
+The teaching method is inspired by [LearnHarness](https://github.com/amosblomqvist/learnharness).
 
 <img src="docs/screenshots/teacher.png" alt="AI Teacher lesson in three columns: your questions, the teacher's explanation, and the current question with an answer box and a How sure are you slider" width="100%">
 
@@ -809,7 +813,7 @@ The owner must choose a new password at the next sign-in.
 
 ## Website
 
-The project website in [`website/`](website/) tells the story of **Yuii**, our mascot: a
+Live at **[unihelperpromax.tech](https://unihelperpromax.tech)**. The project website in [`website/`](website/) tells the story of **Yuii**, our mascot: a
 student whose semester was a mess until she found UniHelperProMax. It's a static page built with
 [Vite](https://vite.dev), [`amber-scroll`](https://www.npmjs.com/package/amber-scroll) (smooth
 scrolling, one chapter per mouse-wheel spin) and
