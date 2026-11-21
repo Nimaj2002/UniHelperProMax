@@ -95,7 +95,35 @@ const components: Components = {
   },
 };
 
-const PLUGINS = [remarkGfm, remarkUhMath];
+// Models emit a few inline HTML tags (`V<sub>DD</sub>`); raw HTML stays off, so pair up
+// `<tag>`…`</tag>` sibling nodes for this allowlist and render them as that element.
+const INLINE_TAGS = new Set(["sub", "sup", "u", "ins", "del", "s", "strike", "mark", "b", "i", "em", "strong", "kbd", "small"]);
+
+type MdNode = { type: string; value?: string; children?: MdNode[]; data?: Record<string, unknown> };
+
+function tagOf(n: MdNode, closing: boolean): string | null {
+  const m = n.type === "html" ? /^<(\/?)([a-z]+)>$/i.exec(n.value ?? "") : null;
+  const tag = m?.[2]?.toLowerCase();
+  return m && tag && !!m[1] === closing && INLINE_TAGS.has(tag) ? tag : null;
+}
+
+function pairInlineTags(node: MdNode) {
+  const kids = node.children;
+  if (!kids) return;
+  for (let i = 0; i < kids.length; i++) {
+    const tag = tagOf(kids[i], false);
+    const end = tag ? kids.findIndex((k, j) => j > i && tagOf(k, true) === tag) : -1;
+    if (tag && end > i) {
+      const inner = kids.slice(i + 1, end);
+      kids.splice(i, end - i + 1, { type: "emphasis", children: inner, data: { hName: tag } });
+    }
+  }
+  kids.forEach(pairInlineTags);
+}
+
+const remarkInlineHtml = () => pairInlineTags;
+
+const PLUGINS = [remarkGfm, remarkUhMath, remarkInlineHtml];
 
 const Block = memo(function Block({ text }: { text: string }) {
   return (
