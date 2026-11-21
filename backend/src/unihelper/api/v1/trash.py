@@ -18,7 +18,7 @@ def list_trash(
     user: CurrentUser,
     db: DbSession,
     storage: Storage,
-    kind: Literal["class", "event"] | None = Query(default=None),
+    kind: Literal["class", "event", "recording"] | None = Query(default=None),
 ) -> Any:
     return trash_service.list_entries(db, storage, user, kind)
 

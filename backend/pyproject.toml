@@ -21,6 +21,7 @@ dependencies = [
     "keyring>=25.7.0,<26",
     "platformdirs==4.12.3",
     "pypdf==6.19.0",
+    "av>=19.0.2,<20",
 ]
 
 [project.scripts]

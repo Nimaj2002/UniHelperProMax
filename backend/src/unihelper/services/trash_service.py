@@ -55,7 +55,7 @@ from unihelper.models import (
 )
 from unihelper.services import hierarchy_service as hs
 from unihelper.services import lineage as lineage_mod
-from unihelper.services import task_link_service
+from unihelper.services import task_link_service, trash_recording_service
 from unihelper.services.class_service import _scope_api_error
 from unihelper.services.lineage import Lineage
 from unihelper.services.series_apply import apply_changeset
@@ -560,6 +560,8 @@ def _missing_files(
 def entry_out(
     db: Session, storage: StorageService, user: User, entry: TrashEntry
 ) -> dict[str, Any]:
+    if entry.kind == "recording":  # 025
+        return trash_recording_service.entry_out(db, storage, user, entry)
     payload = TrashPayloadV1.from_json(entry.payload_json)
     folders = _entry_folders(db, entry)
     counts = content_counts(db, [f.id for f in folders])
@@ -840,6 +842,8 @@ def restore(
 ) -> dict[str, Any]:
     entry = _get_entry(db, user, entry_id)
     check_version(version, entry.version)
+    if entry.kind == "recording":  # 025
+        return trash_recording_service.restore(db, storage, user, entry)
     p = TrashPayloadV1.from_json(entry.payload_json)
     lin = lineage_mod.load(db, user, p.lineage_id, p.kind)
     owner, recreated = _resolve_owner(db, storage, user, p, lin)
@@ -877,6 +881,8 @@ def purge(db: Session, storage: StorageService, user: User, entry_id: str, versi
     paths, so the user can retry; nothing is half-forgotten."""
     entry = _get_entry(db, user, entry_id)
     check_version(version, entry.version)
+    if entry.kind == "recording":  # 025
+        return trash_recording_service.purge(db, storage, user, entry)
     folders = _entry_folders(db, entry)
     failed: list[str] = []
     for f in folders:

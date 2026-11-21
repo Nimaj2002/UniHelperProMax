@@ -1,4 +1,6 @@
 import { Graph, Kanban, NotePencil, Timer } from "@phosphor-icons/react";
+import { useNavigate } from "react-router";
+import { MEDIA_EDITOR_HREF, MediaEditorIcon } from "@/features/media-editor/open";
 import { GraphSection } from "@/features/graph/GraphSection";
 import {
   useCallback,
@@ -132,14 +134,15 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
 
   // ---- Tasks or General notes (018) --------------------------------------------------------
   const { section, setSection } = column;
+  const navigate = useNavigate();
   const sectionSwitch = (
     <ToggleGroup
       type="single"
       variant="outline"
       size="sm"
       value={section}
-      onValueChange={(v) => v && setSection(v as ColumnSection)}
-      aria-label="Tasks, general notes, time or knowledge graph"
+      onValueChange={(v) => (v === "media-editor" ? navigate(MEDIA_EDITOR_HREF) : v && setSection(v as ColumnSection))}
+      aria-label="Tasks, general notes, time, knowledge graph or media editor"
       className="h-7 shrink-0"
     >
       <ToggleGroupItem
@@ -177,6 +180,10 @@ export function TasksPanel({ open, leading, trailing, column }: Props) {
         className="h-7 px-2"
       >
         <Graph size={14} aria-hidden />
+      </ToggleGroupItem>
+      {/* opens the Media Editor page; never becomes the selected section */}
+      <ToggleGroupItem value="media-editor" aria-label="Media editor" title="Media editor" className="h-7 px-2">
+        <MediaEditorIcon size={14} aria-hidden />
       </ToggleGroupItem>
     </ToggleGroup>
   );

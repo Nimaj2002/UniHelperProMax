@@ -12,7 +12,7 @@
 import sys
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_submodules, copy_metadata
+from PyInstaller.utils.hooks import collect_dynamic_libs, collect_submodules, copy_metadata
 
 ROOT = Path(SPECPATH).parent  # noqa: F821 - PyInstaller provides SPECPATH
 SRC = ROOT / "src"
@@ -28,6 +28,7 @@ hiddenimports = [
     *collect_submodules("keyring.backends"),
     *collect_submodules("unihelper"),
     *collect_submodules("socksio"),  # 021: SOCKS5 proxies (httpx[socks])
+    *collect_submodules("av"),  # 025: audio trim / waveform (FFmpeg bindings)
 ]
 if sys.platform.startswith("linux"):
     hiddenimports += collect_submodules("jeepney")  # Secret Service (keyring) over D-Bus
@@ -41,6 +42,7 @@ datas = [
 a = Analysis(  # noqa: F821
     [str(SRC / "unihelper" / "desktop" / "serve.py")],
     pathex=[str(SRC)],
+    binaries=collect_dynamic_libs("av"),  # 025: bundled FFmpeg libraries
     datas=datas,
     hiddenimports=hiddenimports,
     excludes=["tkinter", "pytest", "mypy", "ruff"],

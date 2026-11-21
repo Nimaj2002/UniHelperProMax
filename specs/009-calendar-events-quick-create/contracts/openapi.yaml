@@ -84,7 +84,7 @@ paths:
       tags: [trash]
       summary: Trash entries, newest first, split by kind on the client
       parameters:
-        - { name: kind, in: query, schema: { type: string, enum: [class, event] } }
+        - { name: kind, in: query, schema: { type: string, enum: [class, event, recording] } }
       responses:
         "200":
           description: OK
@@ -325,7 +325,7 @@ components:
       required: [id, kind, label, yearName, semesterName, firstDate, lastDate, occurrenceCount, noteCount, recordingCount, documentCount, deletedAt, version]
       properties:
         id: { type: string }
-        kind: { type: string, enum: [class, event] }
+        kind: { type: string, enum: [class, event, recording] }
         label: { type: string }
         yearName: { type: string }
         semesterName: { type: string }
@@ -347,7 +347,7 @@ components:
       type: object
       required: [kind, lineageId, firstSessionKey, recreated]
       properties:
-        kind: { type: string, enum: [class, event] }
+        kind: { type: string, enum: [class, event, recording] }
         lineageId: { type: string }
         firstSessionKey: { type: string }
         recreated:

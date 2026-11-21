@@ -10,6 +10,7 @@ import { routes as courseRoutes } from "@/features/courses/routes";
 import "@/features/documents/routes";
 import { routes as eventRoutes } from "@/features/events/routes";
 import { routes as homeRoutes } from "@/features/home/routes";
+import { routes as mediaEditorRoutes } from "@/features/media-editor/routes"; // 025
 import "@/features/imports/routes";
 import "@/features/recordings/routes";
 import "@/features/teacher/routes"; // 022
@@ -25,6 +26,7 @@ export const featureRoutes: RouteObject[] = [
   ...courseRoutes,
   ...eventRoutes,
   ...sessionRoutes,
+  ...mediaEditorRoutes,
   ...settingsRoutes,
   ...adminRoutes,
 ];

@@ -1,0 +1,112 @@
+openapi: 3.1.0
+info: {title: Media Editor (025), version: 1.0.0}
+servers:
+  - url: /api/v1
+paths:
+  /media/recordings:
+    get:
+      operationId: listMediaRecordings
+      summary: All the user's recordings grouped by class, then session
+      responses:
+        "200":
+          description: Tree
+          content:
+            application/json:
+              schema: {type: array, items: {$ref: "#/components/schemas/MediaClassGroup"}}
+  /recordings/{recordingId}/peaks:
+    get:
+      operationId: getRecordingPeaks
+      summary: Waveform peaks for the editor
+      parameters:
+        - {name: recordingId, in: path, required: true, schema: {type: string}}
+        - {name: buckets, in: query, schema: {type: integer, minimum: 50, maximum: 8000, default: 2000}}
+      responses:
+        "200":
+          description: Peaks
+          content:
+            application/json: {schema: {$ref: "#/components/schemas/Peaks"}}
+        "404": {$ref: "#/components/responses/Problem"}
+        "422": {description: Audio can't be read, $ref: "#/components/responses/Problem"}
+  /recordings/{recordingId}/trim:
+    post:
+      operationId: trimRecording
+      summary: Keep [startMs,endMs]; save as a new recording or overwrite the source
+      parameters:
+        - {name: recordingId, in: path, required: true, schema: {type: string}}
+        - {name: If-Match, in: header, required: false, description: "Required when mode=overwrite", schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: "#/components/schemas/TrimRequest"}}
+      responses:
+        "200": {description: Overwritten, content: {application/json: {schema: {$ref: "#/components/schemas/TrimResult"}}}}
+        "201": {description: Saved as new, content: {application/json: {schema: {$ref: "#/components/schemas/TrimResult"}}}}
+        "404": {$ref: "#/components/responses/Problem"}
+        "409": {description: "name_taken | recording_in_progress | recording_transcribing", $ref: "#/components/responses/Problem"}
+        "412": {description: "version_conflict (overwrite)", $ref: "#/components/responses/Problem"}
+        "422": {description: "invalid_range | name_required | overwrite_needs_merge | unreadable_audio", $ref: "#/components/responses/Problem"}
+        "428": {$ref: "#/components/responses/Problem"}
+components:
+  responses:
+    Problem:
+      description: RFC 9457 problem document
+      content: {application/problem+json: {schema: {type: object}}}
+  schemas:
+    MediaRecording:
+      type: object
+      required: [id, name, durationMs, version, hasTranscript, missing, mimeType]
+      properties:
+        id: {type: string}
+        name: {type: string}
+        durationMs: {type: integer}
+        version: {type: integer}
+        hasTranscript: {type: boolean}
+        missing: {type: boolean}
+        mimeType: {type: string}
+    MediaSession:
+      type: object
+      required: [sessionKey, title, date, recordings]
+      properties:
+        sessionKey: {type: string}
+        title: {type: string}
+        date: {type: string}
+        recordings: {type: array, items: {$ref: "#/components/schemas/MediaRecording"}}
+    MediaClassGroup:
+      type: object
+      required: [id, name, context, sessions]
+      properties:
+        id: {type: [string, "null"]}
+        name: {type: string}
+        context: {type: string}
+        sessions: {type: array, items: {$ref: "#/components/schemas/MediaSession"}}
+    Peaks:
+      type: object
+      required: [durationMs, peaks]
+      properties:
+        durationMs: {type: integer}
+        peaks: {type: array, items: {type: number, minimum: 0, maximum: 1}, description: "One value per bucket: the loudest sample, 0..1"}
+    TrimRange:
+      type: object
+      required: [startMs, endMs]
+      properties:
+        startMs: {type: integer, minimum: 0}
+        endMs: {type: integer, minimum: 1}
+    TrimRequest:
+      type: object
+      required: [mode]
+      description: "One window (startMs + endMs) or several (ranges, 1-20, sorted by the server, no overlaps); exactly one form."
+      properties:
+        startMs: {type: [integer, "null"], minimum: 0}
+        endMs: {type: [integer, "null"], minimum: 1}
+        ranges: {type: [array, "null"], minItems: 1, maxItems: 20, items: {$ref: "#/components/schemas/TrimRange"}}
+        mode: {type: string, enum: [new, overwrite]}
+        name: {type: [string, "null"], minLength: 1, maxLength: 120, description: "Required when mode=new; with combine=separate the results are '<name> 1', '<name> 2', ..."}
+        combine: {type: string, enum: [merge, separate], default: merge, description: "separate is only valid with mode=new"}
+    TrimResult:
+      type: object
+      required: [recording, mode]
+      properties:
+        mode: {type: string, enum: [new, overwrite]}
+        recording: {$ref: "#/components/schemas/MediaRecording"}
+        recordings: {type: array, items: {$ref: "#/components/schemas/MediaRecording"}, description: "Every result; several when saved separately"}
+        transcriptStale: {type: boolean, description: "true when overwrite kept a transcript that no longer aligns"}

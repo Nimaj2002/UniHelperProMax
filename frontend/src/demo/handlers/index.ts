@@ -9,6 +9,7 @@ import { handlers as chat } from "./chat";
 import { handlers as documents } from "./documents";
 import { handlers as exportsHandlers } from "./exports";
 import { handlers as fallback } from "./fallback";
+import { handlers as media } from "./media";
 import { handlers as notes } from "./notes";
 import { handlers as recordings } from "./recordings";
 import { handlers as settings } from "./settings";
@@ -26,6 +27,7 @@ export const handlers: HttpHandler[] = [
   ...notes,
   ...documents,
   ...recordings,
+  ...media, // 025
   ...transcription,
   ...chat,
   ...teacher,

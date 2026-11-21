@@ -22,6 +22,7 @@ function plural(n: number, word: string) {
 /** "Thu 15 Oct 2026, 14:00–15:30" for one occurrence, "12 occurrences, 2 Oct – 18 Dec 2026"
  * for several. */
 export function entryDates(e: TrashEntry): string {
+  if (e.kind === "recording") return `Session on ${formatDay(e.firstDate, "EEE d MMM yyyy")}`;
   if (e.occurrenceCount === 1 && e.firstDate === e.lastDate) {
     const day = formatDay(e.firstDate, "EEE d MMM yyyy");
     return e.startTime && e.endTime ? `${day}, ${e.startTime}–${e.endTime}` : day;
@@ -43,11 +44,12 @@ export function entryContent(e: TrashEntry): string {
   return parts.length ? parts.join(" · ") : "No notes, recordings or documents";
 }
 
-function deletedAgo(iso: string): string {
+function deletedAgo(iso: string, kind?: TrashEntry["kind"]): string {
+  const verb = kind === "recording" ? "Replaced" : "Deleted";
   try {
-    return `Deleted ${formatDistanceToNow(parseISO(iso), { addSuffix: true })}`;
+    return `${verb} ${formatDistanceToNow(parseISO(iso), { addSuffix: true })}`;
   } catch {
-    return "Deleted";
+    return verb;
   }
 }
 
@@ -76,7 +78,7 @@ function EntryCard({ entry: e, onRestore, onDelete, busy }: EntryProps) {
         <p className="text-sm text-muted-foreground">{where}</p>
         <p className="text-sm">{entryDates(e)}</p>
         <p className="text-sm text-muted-foreground">
-          {deletedAgo(e.deletedAt)} · {entryContent(e)}
+          {deletedAgo(e.deletedAt, e.kind)} · {e.kind === "recording" ? "Old audio, kept by an edit" : entryContent(e)}
         </p>
         {!!e.missingFiles && (
           <p className="text-sm text-muted-foreground">
@@ -151,12 +153,13 @@ export function TrashPage() {
   const entries = trash.data ?? [];
   const classes = entries.filter((e) => e.kind === "class");
   const events = entries.filter((e) => e.kind === "event");
+  const recordings = entries.filter((e) => e.kind === "recording"); // 025
 
   /** After an entry leaves the list: focus the next entry's Restore button, else the heading. */
   const focusAfter = (e: TrashEntry) => {
-    const list = e.kind === "class" ? classes : events;
+    const list = e.kind === "class" ? classes : e.kind === "event" ? events : recordings;
     const next = list[list.findIndex((x) => x.id === e.id) + 1] ?? list[list.findIndex((x) => x.id === e.id) - 1];
-    const heading = e.kind === "class" ? "trash-classes" : "trash-events";
+    const heading = e.kind === "class" ? "trash-classes" : e.kind === "event" ? "trash-events" : "trash-recordings";
     requestAnimationFrame(() => {
       const target = next
         ? rootRef.current?.querySelector<HTMLElement>(`[data-entry-id="${next.id}"] button`)
@@ -170,6 +173,10 @@ export function TrashPage() {
     restore.mutate(e, {
       onSuccess: (r) => {
         focusAfter(e);
+        if (e.kind === "recording") {
+          toast.success(`Restored ${e.label}`, { description: "Added back to its session as a new recording." });
+          return;
+        }
         toast.success(`Restored ${e.label}`, {
           description: recreatedText(r, e),
           action: { label: "Show in calendar", onClick: () => navigate(calendarPath("week", r.firstSessionKey.slice(-10))) },
@@ -213,7 +220,8 @@ export function TrashPage() {
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">Trash</h2>
         <p className="text-sm text-muted-foreground">
-          Deleted classes and events keep their notes, recordings and documents until you delete them here.
+          Deleted classes and events keep their notes, recordings and documents until you delete them here. Audio replaced
+          by the Media Editor is kept here too.
         </p>
       </div>
       <FormError message={error} />
@@ -225,6 +233,7 @@ export function TrashPage() {
         <>
           <Section id="trash-classes" title="Deleted classes" entries={classes} onRestore={onRestore} onDelete={setConfirming} busy={busy} />
           <Section id="trash-events" title="Deleted events" entries={events} onRestore={onRestore} onDelete={setConfirming} busy={busy} />
+          <Section id="trash-recordings" title="Replaced recordings" entries={recordings} onRestore={onRestore} onDelete={setConfirming} busy={busy} />
         </>
       )}
       <AlertDialog open={!!confirming} onOpenChange={(o) => !o && setConfirming(null)}>
@@ -232,7 +241,10 @@ export function TrashPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
+              {confirming?.kind === "recording" &&
+                `The old audio of “${confirming.label}” will be removed from the app and from disk. The trimmed recording in the session isn't affected. This can't be undone.`}
               {confirming &&
+                confirming.kind !== "recording" &&
                 `${confirming.label} (${entryDates(confirming)}) and ${
                   entryContent(confirming) === "No notes, recordings or documents"
                     ? "its folder"

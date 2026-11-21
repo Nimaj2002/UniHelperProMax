@@ -70,12 +70,12 @@ function RightRail({ card, onOpen }: { card: RightCard; onOpen: () => void }) {
       reopen={{
         id: SHOW_RIGHT_ID,
         label: rail.reopenLabel,
-        shortcut: hint.aria,
-        shortcutHint: hint.label,
-        icon: SidebarSimple,
-        mirrored: true,
-        controls: RIGHT_CARD_ID,
-        onActivate: onOpen,
+        shortcut: rail.current ? undefined : hint.aria,
+        shortcutHint: rail.current ? undefined : hint.label,
+        icon: rail.icon ?? SidebarSimple,
+        mirrored: !rail.icon,
+        controls: rail.current ? undefined : RIGHT_CARD_ID,
+        onActivate: rail.current ? () => {} : onOpen,
       }}
       items={rail.items.map((item) => ({
         ...item,

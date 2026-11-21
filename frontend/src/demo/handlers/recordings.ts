@@ -16,6 +16,9 @@ import { attachedTo, cleanName, nameTaken, uniqueFileName } from "./notes";
 let recordings: Schemas["Recording"][] = [];
 
 export const findRecording = (id: string) => recordings.find((r) => r.id === id);
+/** 025: the Media Editor handlers read and add recordings. */
+export const allRecordings = () => recordings;
+export const addRecording = (r: Schemas["Recording"]) => void recordings.push(r);
 
 /** Set by transcription.ts (kept out of this module's imports to avoid a cycle). */
 export const guards = { transcribing: (_recordingId: string): boolean => false };

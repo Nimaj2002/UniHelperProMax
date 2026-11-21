@@ -1,7 +1,8 @@
 import { DotsThree, Microphone, StopCircle, WarningCircle } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { mediaEditorHref } from "@/features/media-editor/open";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -88,6 +89,7 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
   const { rec, state, stop: stopRec, refresh } = useRecordControl(sessionKey);
   const pending = usePendingUploads(rec.uploader);
   const recordings = useRecordings(sessionKey);
+  const navigate = useNavigate();
   const elapsed = useElapsed(state.status === "recording" ? state.startedAt : null);
   const [selected, setSelected] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ kind: "rename" | "delete"; recording: Recording } | null>(null);
@@ -186,6 +188,9 @@ export function RecordingPanel({ sessionKey }: WorkspacePanelProps) {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem disabled={r.status === "recording" || r.missing} onSelect={() => navigate(mediaEditorHref(r.id))}>
+                        Edit…
+                      </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => setDialog({ kind: "rename", recording: r })}>Rename…</DropdownMenuItem>
                       <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => setDialog({ kind: "delete", recording: r })}>
                         Delete…

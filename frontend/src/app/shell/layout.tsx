@@ -18,6 +18,10 @@ export interface RailSpec {
   reopenLabel: string;
   /** Each item reopens the card (the shell opens it after `onActivate`, unless `keepClosed`). */
   items: SideRailItem[];
+  /** 025: the reopen button's icon instead of the side-panel icon (a page whose rail is just its mark). */
+  icon?: SideRailItem["icon"];
+  /** 025: the rail only marks the current page; its button doesn't open a card. */
+  current?: boolean;
 }
 
 /** A page's right card (shown while the page is mounted). */

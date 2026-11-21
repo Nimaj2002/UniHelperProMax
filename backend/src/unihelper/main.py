@@ -31,6 +31,7 @@ from unihelper.api.v1 import (
     health,
     hierarchy,
     knowledge_graph,
+    media,
     notes,
     recordings,
     secrets,
@@ -103,6 +104,7 @@ def build_api_router() -> APIRouter:
         time,  # 020
         teacher,  # 022
         knowledge_graph,
+        media,  # 025
     ):
         api.include_router(module.router)
     for router in tasks.routers:  # 012: /task-columns, /tasks, /quick-notes

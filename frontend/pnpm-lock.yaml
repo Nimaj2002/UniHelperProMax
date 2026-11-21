@@ -77,6 +77,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.104.1
         version: 5.104.1(react@19.3.0)
+      '@wavesurfer/react':
+        specifier: 1.0.14
+        version: 1.0.14(react@19.3.0)(wavesurfer.js@8.1.0)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -149,6 +152,9 @@ importers:
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
+      wavesurfer.js:
+        specifier: 8.1.0
+        version: 8.1.0
     devDependencies:
       '@axe-core/playwright':
         specifier: ^4.13.0
@@ -2543,6 +2549,12 @@ packages:
   '@vue/shared@3.5.43':
     resolution: {integrity: sha512-uksS7YGMR5NZyr4JNq0Rp+QyLns0ueaz20KwzIPW9R0LH1Vnt4E+XUM29PNseEbf1www2gOuhuDi5AKOIXag9Q==}
 
+  '@wavesurfer/react@1.0.14':
+    resolution: {integrity: sha512-BeCy0LW5yR5vJTm0bwe3j8W5YuIlzZI8RSTOGu75ddzBHVs/zCEmSAxaRmNJNuda097gaWYgZrpYgRjXfwOVHA==}
+    peerDependencies:
+      react: ^18.2.0 || ^19.0.0
+      wavesurfer.js: '>=7.7.14'
+
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
@@ -4871,6 +4883,9 @@ packages:
   w3c-xmlserializer@6.0.0:
     resolution: {integrity: sha512-4Nsy8K5Tr6SPDH9jhKJOHf7ChDrc1zufZTVSF7x72hwuEXBqxqk9G6cK+K2NRUtB3iELRJqjXb4JPDMBjMTl2Q==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
+
+  wavesurfer.js@8.1.0:
+    resolution: {integrity: sha512-7/FFjqZxrtZ5pYyjTbb5HPmMAwq5vx4qZRKFsMz1E1wLDVVkueKatR9RW3FjpKQTHFgCpc7VUYUpwTjyIZKLwQ==}
 
   webidl-conversions@8.0.1:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
@@ -7705,6 +7720,11 @@ snapshots:
 
   '@vue/shared@3.5.43': {}
 
+  '@wavesurfer/react@1.0.14(react@19.3.0)(wavesurfer.js@8.1.0)':
+    dependencies:
+      react: 19.3.0
+      wavesurfer.js: 8.1.0
+
   acorn-jsx@5.3.2(acorn@8.18.0):
     dependencies:
       acorn: 8.18.0
@@ -10527,6 +10547,8 @@ snapshots:
   w3c-xmlserializer@6.0.0:
     dependencies:
       xml-name-validator: 5.0.0
+
+  wavesurfer.js@8.1.0: {}
 
   webidl-conversions@8.0.1: {}
 

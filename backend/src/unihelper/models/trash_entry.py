@@ -9,14 +9,15 @@ from unihelper.models.base import Base, IdMixin, VersionMixin, now_iso
 
 
 class TrashEntry(IdMixin, VersionMixin, Base):
-    """One deleted class or event lineage (009 research R6). Holds the before-images needed for
+    """One deleted class or event lineage (009 research R6), or (025, kind 'recording') one audio
+    replaced by a Media Editor overwrite. Holds the before-images needed for
     an exact restore (`payload_json`, schema `TrashPayloadV1`); its content folders point here
     through `session_folders.trash_entry_id`. Files are never touched until a permanent delete."""
 
     __tablename__ = "trash_entries"
     __table_args__ = (
-        CheckConstraint("kind IN ('class', 'event')", name="kind"),
-        CheckConstraint("reason IN ('delete', 'hierarchy_delete')", name="reason"),
+        CheckConstraint("kind IN ('class', 'event', 'recording')", name="kind"),
+        CheckConstraint("reason IN ('delete', 'hierarchy_delete', 'overwrite')", name="reason"),
         CheckConstraint("occurrence_count >= 1", name="occurrence_count"),
         CheckConstraint(
             "note_count >= 0 AND recording_count >= 0 AND document_count >= 0", name="counts"
@@ -27,7 +28,7 @@ class TrashEntry(IdMixin, VersionMixin, Base):
     user_id: Mapped[str] = mapped_column(
         String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
     )
-    kind: Mapped[str] = mapped_column(String(8), nullable=False)
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
     lineage_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     label: Mapped[str] = mapped_column(String, nullable=False)
     year_name: Mapped[str] = mapped_column(String, nullable=False)

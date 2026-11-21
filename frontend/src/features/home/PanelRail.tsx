@@ -1,5 +1,7 @@
 import { CalendarBlank, Graph, Kanban, NotePencil, SidebarSimple, Timer } from "@phosphor-icons/react";
+import { useNavigate } from "react-router";
 import { SideRail } from "@/app/shell/SideRail";
+import { MEDIA_EDITOR_HREF, MediaEditorIcon } from "@/features/media-editor/open";
 import { formatCount } from "@/features/tasks/model/counts";
 import { RailTimeBadge } from "@/features/time/RailTimeBadge";
 import { useShortcut } from "@/lib/keymap";
@@ -42,6 +44,7 @@ export function railLabel(panel: Panel, openCount?: number, overdueCount?: numbe
  */
 export function PanelRail({ panel, onOpen, openCount, overdueCount, onOpenSection }: Props) {
   const name = PANEL_NAME[panel];
+  const navigate = useNavigate();
   const hint = useShortcut(PANEL_COMMAND[panel]);
   const counts = (
     <>
@@ -80,6 +83,7 @@ export function PanelRail({ panel, onOpen, openCount, overdueCount, onOpenSectio
           { id: "notes", icon: NotePencil, name: "General notes", onActivate: () => onOpenSection("notes") },
           { id: "time", icon: Timer, name: "Time", onActivate: () => onOpenSection("time"), content: <RailTimeBadge /> },
           { id: "graph", icon: Graph, name: "Knowledge graph", onActivate: () => onOpenSection("graph") },
+          { id: "media-editor", icon: MediaEditorIcon, name: "Media editor", onActivate: () => navigate(MEDIA_EDITOR_HREF), keepClosed: true },
         ]}
       />
     );

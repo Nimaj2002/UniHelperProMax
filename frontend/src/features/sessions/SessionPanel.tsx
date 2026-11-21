@@ -6,6 +6,8 @@
  * convenience in localStorage (FR-009).
  */
 import { ChatCircleText, Clock, GraduationCap, SidebarSimple, Waveform } from "@phosphor-icons/react";
+import { useNavigate } from "react-router";
+import { MEDIA_EDITOR_HREF, MediaEditorIcon } from "@/features/media-editor/open";
 import {
   useCallback,
   useEffect,
@@ -178,6 +180,7 @@ export function useSessionRail(
   watchers: ReactNode;
 } {
   const signals = useActivitySignals();
+  const navigate = useNavigate();
   const [running, setRunning] = useState<Record<string, boolean>>({});
   const onChange = useCallback(
     (id: string, on: boolean) =>
@@ -216,9 +219,10 @@ export function useSessionRail(
         item("chat", ChatCircleText, ch),
         item("teacher", GraduationCap, te),
         { id: "time", icon: Clock, name: "Time", onActivate: openTime, keepClosed: true },
+        { id: "media-editor", icon: MediaEditorIcon, name: "Media editor", onActivate: () => navigate(MEDIA_EDITOR_HREF), keepClosed: true },
       ],
     };
-  }, [key, expand, openTime]);
+  }, [key, expand, openTime, navigate]);
   const watchers = signals.map((s) => (
     <SignalWatch key={s.id} signal={s} onChange={onChange} />
   ));
@@ -282,6 +286,7 @@ interface Props {
 /** The panel's body: the switch card, then Recordings or Chat with their own headers (FR-001–FR-004). */
 export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props) {
   const panels = useWorkspacePanels();
+  const navigate = useNavigate();
   const chat = useChatSection();
   const { section } = layout;
   const ChatBody = chat?.component;
@@ -312,9 +317,13 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
             size="sm"
             value={section}
             onValueChange={(v) =>
-              v === "time" ? openTime() : v && setSection(v as SessionSection)
+              v === "time"
+                ? openTime()
+                : v === "media-editor"
+                  ? navigate(MEDIA_EDITOR_HREF)
+                  : v && setSection(v as SessionSection)
             }
-            aria-label="Recordings, chat or AI teacher"
+            aria-label="Recordings, chat, AI teacher, time or media editor"
             className="h-7 shrink-0"
           >
             <ToggleGroupItem
@@ -352,6 +361,15 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
               className="h-7 px-2"
             >
               <Clock size={14} aria-hidden />
+            </ToggleGroupItem>
+            {/* opens the Media Editor page; never becomes the selected section */}
+            <ToggleGroupItem
+              value="media-editor"
+              aria-label="Media editor"
+              title="Media editor"
+              className="h-7 px-2"
+            >
+              <MediaEditorIcon size={14} aria-hidden />
             </ToggleGroupItem>
           </ToggleGroup>
           <div className="flex-1" />

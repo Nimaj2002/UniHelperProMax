@@ -2651,6 +2651,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/media/recordings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Media Recordings */
+        get: operations["list_media_recordings_api_v1_media_recordings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recordings/{recording_id}/peaks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Peaks */
+        get: operations["get_peaks_api_v1_recordings__recording_id__peaks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recordings/{recording_id}/trim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Trim Recording */
+        post: operations["trim_recording_api_v1_recordings__recording_id__trim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/task-columns": {
         parameters: {
             query?: never;
@@ -4535,6 +4586,45 @@ export interface components {
             /** Timezone */
             timezone: string;
         };
+        /** MediaClassGroup */
+        MediaClassGroup: {
+            /** Id */
+            id: string | null;
+            /** Name */
+            name: string;
+            /** Context */
+            context: string;
+            /** Sessions */
+            sessions: components["schemas"]["MediaSession"][];
+        };
+        /** MediaRecording */
+        MediaRecording: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Durationms */
+            durationMs: number;
+            /** Version */
+            version: number;
+            /** Hastranscript */
+            hasTranscript: boolean;
+            /** Missing */
+            missing: boolean;
+            /** Mimetype */
+            mimeType: string;
+        };
+        /** MediaSession */
+        MediaSession: {
+            /** Sessionkey */
+            sessionKey: string;
+            /** Title */
+            title: string;
+            /** Date */
+            date: string;
+            /** Recordings */
+            recordings: components["schemas"]["MediaRecording"][];
+        };
         /** ModelOnly */
         ModelOnly: {
             model: components["schemas"]["ModelRef"];
@@ -4710,6 +4800,13 @@ export interface components {
             startTime: string;
             /** Endtime */
             endTime: string;
+        };
+        /** Peaks */
+        Peaks: {
+            /** Durationms */
+            durationMs: number;
+            /** Peaks */
+            peaks: number[];
         };
         /** PlanOut */
         PlanOut: {
@@ -5215,7 +5312,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "class" | "event";
+            kind: "class" | "event" | "recording";
             /** Lineageid */
             lineageId: string;
             /** Firstsessionkey */
@@ -6466,7 +6563,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "class" | "event";
+            kind: "class" | "event" | "recording";
             /** Label */
             label: string;
             /** Yearname */
@@ -6515,6 +6612,57 @@ export interface components {
              * @default 0
              */
             chatCount: number;
+        };
+        /** TrimRange */
+        TrimRange: {
+            /** Startms */
+            startMs: number;
+            /** Endms */
+            endMs: number;
+        };
+        /**
+         * TrimRequest
+         * @description One window (`startMs`/`endMs`) or several (`ranges`, at most 20); exactly one form.
+         */
+        TrimRequest: {
+            /** Startms */
+            startMs?: number | null;
+            /** Endms */
+            endMs?: number | null;
+            /** Ranges */
+            ranges?: components["schemas"]["TrimRange"][] | null;
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "new" | "overwrite";
+            /** Name */
+            name?: string | null;
+            /**
+             * Combine
+             * @default merge
+             * @enum {string}
+             */
+            combine: "merge" | "separate";
+        };
+        /** TrimResult */
+        TrimResult: {
+            /**
+             * Mode
+             * @enum {string}
+             */
+            mode: "new" | "overwrite";
+            recording: components["schemas"]["MediaRecording"];
+            /**
+             * Recordings
+             * @default []
+             */
+            recordings: components["schemas"]["MediaRecording"][];
+            /**
+             * Transcriptstale
+             * @default false
+             */
+            transcriptStale: boolean;
         };
         /** TurnOut */
         TurnOut: {
@@ -9918,7 +10066,7 @@ export interface operations {
     list_trash_api_v1_trash_get: {
         parameters: {
             query?: {
-                kind?: ("class" | "event") | null;
+                kind?: ("class" | "event" | "recording") | null;
             };
             header?: never;
             path?: never;
@@ -12787,6 +12935,96 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_media_recordings_api_v1_media_recordings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MediaClassGroup"][];
+                };
+            };
+        };
+    };
+    get_peaks_api_v1_recordings__recording_id__peaks_get: {
+        parameters: {
+            query?: {
+                buckets?: number;
+            };
+            header?: never;
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Peaks"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trim_recording_api_v1_recordings__recording_id__trim_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+            };
+            path: {
+                recording_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrimRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrimResult"];
+                };
             };
             /** @description Validation Error */
             422: {

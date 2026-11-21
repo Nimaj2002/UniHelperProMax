@@ -357,6 +357,51 @@ class StorageService:
 
         return undo
 
+    def swap_in_upload(
+        self, path: Path, parts: Sequence[str], keep_parts: Sequence[str] | None = None
+    ) -> tuple[Callable[[], None], Callable[[], None]]:
+        """Replace the existing file at `parts` with a complete staging file (025). The original is
+        kept aside until `finalize()` (deleted then) or, with `keep_parts`, moved there for good
+        (the Trash keeps it). `undo()` puts it back. Returns (finalize, undo)."""
+        staged = self._check_staged(path)
+        target = self.path_for(parts)
+        if not target.is_file():
+            raise FileNotFoundError(str(target))
+        with open(staged, "rb") as fh:
+            os.fsync(fh.fileno())
+        if keep_parts is not None:
+            backup = self.path_for(keep_parts)
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            if backup.exists():
+                raise FileExistsError(str(backup))
+        else:
+            backup = target.with_name(f".{target.name}.bak-{secrets.token_hex(4)}")
+        _replace_with_retry(target, backup)
+        try:
+            _replace_with_retry(staged, target)
+        except BaseException:
+            os.replace(backup, target)
+            raise
+        _fsync_dir(target.parent)
+
+        def finalize() -> None:
+            if keep_parts is None:
+                backup.unlink(missing_ok=True)
+
+        def undo() -> None:
+            if backup.exists():
+                os.replace(backup, target)
+
+        return finalize, undo
+
+    def delete_trashed_audio(self, parts: Sequence[str]) -> None:
+        """025: remove one audio the Trash keeps in a session's `audios/.trash/` folder.
+        Anything else is refused."""
+        path = self.path_for(parts)
+        if path.parent.name != ".trash" or path.parent.parent.name != "audios" or path.is_dir():
+            raise StoragePathError("Only trashed audio files can be deleted here")
+        path.unlink(missing_ok=True)
+
     def sweep_uploads(self, older_than: timedelta) -> int:
         """Delete staging files left by an interrupted server. Returns how many."""
         if not self.uploads_dir.is_dir():

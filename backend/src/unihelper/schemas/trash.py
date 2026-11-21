@@ -8,6 +8,7 @@ from typing import Literal
 from unihelper.schemas.common import ApiModel
 
 Kind = Literal["class", "event"]
+TrashKind = Literal["class", "event", "recording"]  # 025: + an audio replaced by an overwrite
 
 
 class SessionDeletionImpact(ApiModel):
@@ -27,7 +28,7 @@ class SessionDeletionImpact(ApiModel):
 
 class TrashEntryOut(ApiModel):
     id: str
-    kind: Kind
+    kind: TrashKind
     label: str
     year_name: str
     semester_name: str
@@ -55,7 +56,7 @@ class Recreated(ApiModel):
 
 
 class RestoreResult(ApiModel):
-    kind: Kind
+    kind: TrashKind
     lineage_id: str
     first_session_key: str
     recreated: Recreated

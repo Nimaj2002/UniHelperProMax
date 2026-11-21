@@ -136,3 +136,8 @@ and stops (`finish_reason: length`) before writing any answer.
 example OpenRouter's `reasoning: {effort: "low"}`), or let Settings choose a separate model for
 graph extraction. Both are beyond 022's spec. Until then, models without long hidden reasoning,
 or with a larger output budget, work best for the teacher.
+
+## 025 Media Editor
+
+- **Desktop bundle not yet verified**: the PyInstaller spec now collects PyAV (`av`) and its FFmpeg libraries, but a built desktop backend has not been run to confirm trim and waveform work there (tasks T043).
+- **First e2e run can be slow**: the lazily loaded editor page makes the first Playwright test after a cold Vite start occasionally exceed its timeout; a rerun passes.
