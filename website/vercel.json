@@ -20,7 +20,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://nicklaunches.com; connect-src 'self' https://api.github.com; frame-src https://*.sibforms.com; frame-ancestors 'self' https://nicklaunches.com; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
+          "value": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://nicklaunches.com https://twelve.tools https://saasearch.io https://api.producthunt.com https://findly.tools; connect-src 'self' https://api.github.com; frame-src https://*.sibforms.com; frame-ancestors 'self' https://nicklaunches.com; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests"
         },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
