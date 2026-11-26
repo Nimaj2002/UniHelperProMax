@@ -222,6 +222,8 @@ h1, h2, h3, p { margin: 0; }
 .steps li { counter-increment: s; display: flex; align-items: center; gap: 12px; color: var(--color-charcoal); font-weight: 700; }
 .steps li::before { content: counter(s); flex: none; width: 32px; height: 32px; border-radius: 50%; background: var(--pink); color: #fff; display: grid; place-items: center; font: 900 16px/1 var(--font-display); }
 
+.badges { max-width: var(--page-max-width); margin: 0 auto; padding: var(--spacing-48) var(--gutter); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 16px 24px; }
+
 /* ---------- Footer: the pink band ---------- */
 .footer { background: var(--pink); color: var(--color-paper-white); }
 .footer-inner { max-width: var(--page-max-width); margin: 0 auto; padding: var(--spacing-48) var(--gutter); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 24px; }
