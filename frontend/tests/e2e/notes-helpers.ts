@@ -16,7 +16,7 @@ export function workspaceUrl(courseId: string, lineageId: string, date: string) 
 }
 
 export async function newNote(page: Page, name: string) {
-  await expect(page.getByRole("button", { name: "New note" }).first()).toBeVisible(); // workspace loaded
+  await expect(page.getByRole("button", { name: "Add a note" }).first()).toBeVisible(); // workspace loaded
   await page.keyboard.press("Alt+n");
   const dialog = page.getByRole("dialog", { name: "New note" });
   await dialog.getByLabel("Note name").fill(name);

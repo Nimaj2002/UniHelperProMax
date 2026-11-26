@@ -162,5 +162,6 @@ class Preferences(ApiModel):
     shortcuts: dict[CommandId, tuple[Chord | None, Chord | None]] | None = Field(
         default=None, max_length=200
     )
+    ui_mode: Literal["ultimate", "simple"] | None = None  # 026
     time: TimePreferences | None = None  # 020
     tour: TourState | None = None  # 023

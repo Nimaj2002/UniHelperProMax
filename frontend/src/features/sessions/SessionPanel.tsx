@@ -281,14 +281,17 @@ interface Props {
   layout: SessionPanelLayout;
   setSection: (section: SessionSection) => void;
   openTime: () => void;
+  /** 026 Simple: no switch card (the sidebar picks the section) and `shown` null hides every section. */
+  bare?: boolean;
+  shown?: SessionSection | null;
 }
 
 /** The panel's body: the switch card, then Recordings or Chat with their own headers (FR-001–FR-004). */
-export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props) {
+export function SessionPanel({ sessionKey, layout, setSection, openTime, bare, shown }: Props) {
   const panels = useWorkspacePanels();
   const navigate = useNavigate();
   const chat = useChatSection();
-  const { section } = layout;
+  const section = bare ? shown : layout.section;
   const ChatBody = chat?.component;
   const ChatActions = chat?.headerActions;
   const teacher = useTeacherSection();
@@ -308,14 +311,14 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-2">
-      <Card className="shrink-0" body="fill">
+    <div className={cn("flex min-h-0 flex-1 flex-col gap-2", bare && !section && "hidden")}>
+      {!bare && <Card className="shrink-0" body="fill">
         <div className="flex h-10 min-w-0 shrink-0 items-center px-1.5">
           <ToggleGroup
             type="single"
             variant="outline"
             size="sm"
-            value={section}
+            value={layout.section}
             onValueChange={(v) =>
               v === "time"
                 ? openTime()
@@ -375,7 +378,7 @@ export function SessionPanel({ sessionKey, layout, setSection, openTime }: Props
           <div className="flex-1" />
           <CloseButton />
         </div>
-      </Card>
+      </Card>}
       <Card
         as="section"
         id={SECTIONS.recordings.id}

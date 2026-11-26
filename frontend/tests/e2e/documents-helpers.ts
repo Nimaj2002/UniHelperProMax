@@ -16,7 +16,7 @@ export async function openSession(page: Page, testInfo: { project: { name: strin
   const url = workspaceUrl(cls.courseId as string, cls.lineageId as string, date);
   await page.goto(url);
   const docs = page.getByRole("region", { name: "Documents" });
-  await expect(docs.getByRole("button", { name: "Upload PDF" })).toBeVisible();
+  await expect(docs.getByRole("button", { name: "Upload a PDF" })).toBeVisible();
   return { docs, url };
 }
 

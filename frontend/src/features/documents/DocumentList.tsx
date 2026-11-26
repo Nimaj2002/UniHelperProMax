@@ -1,14 +1,16 @@
-import { CaretRight, DotsThree, FilePdf, UploadSimple } from "@phosphor-icons/react";
+import { CaretRight, DotsThree, FilePdf } from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { File } from "@/components/ui/file-tree";
 import { useSession } from "@/features/classes/api";
 import { FileDropZone } from "@/features/imports/AudioDropZone";
 import { formatBytes } from "@/features/imports/audioFiles";
 import { UploadList } from "@/features/imports/UploadList";
+import { AddCircleButton, FileTreeList } from "@/features/sessions/FileTreeList";
 import type { SidePanelSectionProps } from "@/features/sessions/workspace-panels";
 import { formatDay } from "@/lib/dates";
 import { cn } from "@/lib/utils";
@@ -125,10 +127,8 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
       )}
       <FileDropZone sessionKey={sessionKey} queue={queue} label="Drop PDF files to add them" testId="documents-drop-zone">
         <div className="grid gap-2">
-          <div className="px-2">
-            <Button size="sm" variant="outline" className="w-full justify-start" data-tour="upload-document" onClick={() => input.current?.click()}>
-              <UploadSimple aria-hidden /> Upload PDF
-            </Button>
+          <div className="flex justify-end px-2">
+            <AddCircleButton label="Upload a PDF" data-tour="upload-document" onClick={() => input.current?.click()} />
             <input
               ref={input}
               type="file"
@@ -150,48 +150,50 @@ export function DocumentList({ sessionKey, openDocument, closeDocument }: SidePa
           </div>
           {docs.isPending && <p className="px-2 text-sm text-muted-foreground">Loading…</p>}
           {docs.isSuccess && list.length === 0 && <p className="px-2 text-sm text-muted-foreground">No documents yet.</p>}
-          <ul className="grid gap-0.5">
-            {list.map((d) => (
-              <li key={d.id} className="group flex items-center gap-0.5 px-1">
-                <button
-                  type="button"
-                  onClick={() => openDocument(d.id)}
-                  className="grid min-w-0 flex-1 gap-0.5 rounded-md px-2 py-1.5 text-left hover:bg-accent"
-                  title={d.name}
-                >
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    <FilePdf size={14} className="shrink-0" aria-hidden />
-                    <span className="truncate text-sm">{d.name}</span>
-                  </span>
-                  <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-                    {formatBytes(d.size)} · {uploadedOn(d.uploadedAt)}
-                    {d.sessionKey !== sessionKey && <span>· from {sessionDay(d.sessionKey)}</span>}
-                    {d.missing && <Badge variant="outline">File missing</Badge>}
-                    {d.encrypted && <Badge variant="outline">Protected</Badge>}
-                  </span>
-                </button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-7 opacity-70 hover:opacity-100" aria-label={`Actions for ${d.name}`}>
-                      <DotsThree size={18} weight="bold" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {d.sessionKey === sessionKey ? (
-                      <>
-                        <DropdownMenuItem onSelect={() => onRename(d)}>Rename…</DropdownMenuItem>
-                        <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => onDelete(d)}>
-                          Delete…
-                        </DropdownMenuItem>
-                      </>
-                    ) : (
-                      <DropdownMenuItem onSelect={() => void onRemove(d)}>Remove from this and later sessions</DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </li>
-            ))}
-          </ul>
+          {list.length > 0 && (
+            <FileTreeList label="PDFs" count={list.length} tall>
+              {list.map((d) => (
+                <div key={d.id} className="group flex items-center gap-0.5">
+                  <File
+                    value={d.id}
+                    fileIcon={<FilePdf size={16} aria-hidden />}
+                    handleSelect={() => openDocument(d.id)}
+                    title={d.name}
+                    className="w-full min-w-0 flex-1 py-1 pl-1 hover:bg-accent"
+                  >
+                    <span className="grid min-w-0 flex-1 text-left">
+                      <span className="truncate">{d.name}</span>
+                      <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                        {formatBytes(d.size)} · {uploadedOn(d.uploadedAt)}
+                        {d.sessionKey !== sessionKey && <span>· from {sessionDay(d.sessionKey)}</span>}
+                        {d.missing && <Badge variant="outline">File missing</Badge>}
+                        {d.encrypted && <Badge variant="outline">Protected</Badge>}
+                      </span>
+                    </span>
+                  </File>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="size-7 shrink-0 opacity-70 hover:opacity-100" aria-label={`Actions for ${d.name}`}>
+                        <DotsThree size={18} weight="bold" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {d.sessionKey === sessionKey ? (
+                        <>
+                          <DropdownMenuItem onSelect={() => onRename(d)}>Rename…</DropdownMenuItem>
+                          <DropdownMenuItem className="text-danger focus:text-danger" onSelect={() => onDelete(d)}>
+                            Delete…
+                          </DropdownMenuItem>
+                        </>
+                      ) : (
+                        <DropdownMenuItem onSelect={() => void onRemove(d)}>Remove from this and later sessions</DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              ))}
+            </FileTreeList>
+          )}
           {hiddenList.length > 0 && (
             <div className="grid gap-0.5 px-1">
               <button

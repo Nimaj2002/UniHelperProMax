@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useUiMode } from "@/app/uiMode";
 import { useIsDesktop, useLogout, useMe } from "@/features/auth/api";
 import { signOutAllowed, useAccountMenuItems } from "./registry";
 
@@ -23,6 +24,7 @@ export function AccountMenu({ variant = "full" }: { variant?: "full" | "icon" })
   const logout = useLogout();
   const navigate = useNavigate();
   const desktop = useIsDesktop();
+  const ui = useUiMode(); // 026: switch between Ultimate and Simple from either interface
   const items = accountItems.filter((item) => (!item.ownerOnly || me?.role === "owner") && !(desktop && item.webOnly));
 
   const trigger =
@@ -64,6 +66,9 @@ export function AccountMenu({ variant = "full" }: { variant?: "full" | "icon" })
             {item.label}
           </DropdownMenuItem>
         ))}
+        <DropdownMenuItem onSelect={() => ui.setMode(ui.mode === "simple" ? "ultimate" : "simple")}>
+          Switch to {ui.mode === "simple" ? "Ultimate" : "Simple"}
+        </DropdownMenuItem>
         {!desktop && items.length > 0 && <DropdownMenuSeparator />}
         {!desktop && (
           <DropdownMenuItem

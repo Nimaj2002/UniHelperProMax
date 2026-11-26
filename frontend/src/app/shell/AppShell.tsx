@@ -9,6 +9,8 @@ import { readLocal, writeLocal } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { ActivityPills } from "./ActivityPills";
 import { Card } from "./Card";
+import { useUiMode } from "@/app/uiMode";
+import { SimpleShell } from "@/app/simple/SimpleShell";
 import { LayoutProvider, LEFT_CARD_ID, RIGHT_CARD_ID, SHOW_LEFT_ID, SHOW_RIGHT_ID, useLayout, type RightCard } from "./layout";
 import { LeftCard } from "./LeftCard";
 import { CreditStrip } from "./MadeBy";
@@ -22,7 +24,7 @@ import {
 
 const LEFT_WIDTH_KEY = "uh.panel.width";
 
-function GlobalHosts() {
+export function GlobalHosts() {
   const hosts = useGlobalHosts();
   return (
     <>
@@ -33,7 +35,7 @@ function GlobalHosts() {
   );
 }
 
-function useViewportWidth() {
+export function useViewportWidth() {
   return useSyncExternalStore(
     (onChange) => {
       window.addEventListener("resize", onChange);
@@ -51,7 +53,7 @@ function focusWhenMounted(id: string, frames = 12) {
   if (frames > 0) requestAnimationFrame(() => focusWhenMounted(id, frames - 1));
 }
 
-function RightCardView({ card, className }: { card: RightCard; className?: string }) {
+export function RightCardView({ card, className }: { card: RightCard; className?: string }) {
   return (
     <Card as="aside" id={RIGHT_CARD_ID} label={card.label} header={card.header} body={card.header ? "scroll" : "fill"} chrome={card.chrome} className={cn("h-full", className)}>
       {card.body}
@@ -94,12 +96,12 @@ function RightRail({ card, onOpen }: { card: RightCard; onOpen: () => void }) {
  * control that opened it, or to the card's opener button (FR-030, US7).
  */
 let overlayOpener: HTMLElement | null = null;
-const focusSheet = (e: Event) => {
+export const focusSheet = (e: Event) => {
   e.preventDefault();
   overlayOpener = document.activeElement instanceof HTMLElement && document.activeElement !== document.body ? document.activeElement : null;
   (e.currentTarget as HTMLElement | null)?.focus();
 };
-const returnFocus = (fallbackId: string) => (e: Event) => {
+export const returnFocus = (fallbackId: string) => (e: Event) => {
   e.preventDefault();
   const target = overlayOpener?.isConnected ? overlayOpener : document.getElementById(fallbackId);
   overlayOpener = null;
@@ -107,7 +109,7 @@ const returnFocus = (fallbackId: string) => (e: Event) => {
 };
 
 /** Narrow windows: a side card floats over the main card (008 FR-030). */
-const OVERLAY_CARD =
+export const OVERLAY_CARD =
   "inset-y-2 h-auto max-w-none gap-0 border-0 bg-transparent p-0 shadow-xl sm:max-w-none data-[state=closed]:duration-200 data-[state=open]:duration-200";
 
 function Shell() {
@@ -291,9 +293,10 @@ function Shell() {
  * card (the session panel, or its rail), with the page's activity floating over the main card.
  */
 export function AppShell() {
+  const { mode } = useUiMode(); // 026: Ultimate (this shell) or Simple; Ultimate until the choice is known
   return (
     <LayoutProvider>
-      <Shell />
+      {mode === "simple" ? <SimpleShell /> : <Shell />}
     </LayoutProvider>
   );
 }

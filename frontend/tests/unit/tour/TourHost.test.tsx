@@ -18,7 +18,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const prefs = (tour: unknown) => mockFetch(on("GET", "/api/v1/preferences", () => json({ tour })));
+const prefs = (tour: unknown) => mockFetch(on("GET", "/api/v1/preferences", () => json({ tour, uiMode: "ultimate" })));
 
 describe("TourHost (023 R13)", () => {
   it("starts on first run", async () => {

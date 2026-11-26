@@ -1,10 +1,11 @@
-import { FilePdf, NotePencil, Plus, UploadSimple } from "@phosphor-icons/react";
+import { ChatCircleText, FilePdf, GraduationCap, NotePencil, Plus, UploadSimple } from "@phosphor-icons/react";
 import { useEffect, useRef, useState } from "react";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { PDF_ACCEPT } from "@/features/documents/pdfFiles";
 import { documentQueue } from "@/features/documents/queue";
+import type { TeacherKind } from "@/features/teacher/api";
 
 type Kind = "document" | "note";
 
@@ -22,6 +23,10 @@ interface Props {
   onOpen: (kind: Kind, id: string) => void;
   onNewNote: () => void;
   onImportNote: () => void;
+  /** Opens a new chat tab. */
+  onNewChat: () => void;
+  /** Opens a new AI Teacher lesson or practice tab. */
+  onNewTeacher: (kind: TeacherKind) => void;
 }
 
 const LABEL: Record<Kind, { title: string; empty: string; search: string }> = {
@@ -33,7 +38,7 @@ const LABEL: Record<Kind, { title: string; empty: string; search: string }> = {
  * "+" at the end of the tab row: choose PDF or note, then pick one of this session's to open in a
  * tab — or add a new one (new/imported note, uploaded PDF), which opens once it exists.
  */
-export function AddTabButton({ sessionKey, notes, documents, openIds, onOpen, onNewNote, onImportNote }: Props) {
+export function AddTabButton({ sessionKey, notes, documents, openIds, onOpen, onNewNote, onImportNote, onNewChat, onNewTeacher }: Props) {
   const [picking, setPicking] = useState<Kind | null>(null);
   const items = picking === "document" ? documents : notes;
   const Icon = picking === "document" ? FilePdf : NotePencil;
@@ -73,7 +78,7 @@ export function AddTabButton({ sessionKey, notes, documents, openIds, onOpen, on
               </button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent>Open a PDF or note</TooltipContent>
+          <TooltipContent>Open a tab</TooltipContent>
         </Tooltip>
         <DropdownMenuContent align="start">
           <DropdownMenuItem onSelect={() => setPicking("document")}>
@@ -81,6 +86,15 @@ export function AddTabButton({ sessionKey, notes, documents, openIds, onOpen, on
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setPicking("note")}>
             <NotePencil aria-hidden /> Note
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={onNewChat}>
+            <ChatCircleText aria-hidden /> Chat
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => onNewTeacher("lesson")}>
+            <GraduationCap aria-hidden /> AI Teacher lesson
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => onNewTeacher("practice")}>
+            <GraduationCap aria-hidden /> AI Teacher practice
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

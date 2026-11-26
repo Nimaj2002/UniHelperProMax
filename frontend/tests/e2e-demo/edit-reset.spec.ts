@@ -12,7 +12,8 @@ test("a new note is kept while browsing and gone after reload", async ({ page })
   })();
   await openDemo(page, lecture.url);
   const notes = page.getByRole("region", { name: "Notes" });
-  await notes.getByRole("button", { name: "New note" }).first().click();
+  await notes.getByRole("button", { name: "Add a note" }).first().click();
+  await page.getByRole("button", { name: "New note" }).click();
   const dialog = page.getByRole("dialog", { name: "New note" });
   await dialog.getByLabel("Note name").fill("Demo scratch");
   await dialog.getByLabel("Note name").press("Enter");

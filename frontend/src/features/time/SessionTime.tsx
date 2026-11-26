@@ -20,10 +20,11 @@ interface Props {
   onOpenChange: (open: boolean) => void;
 }
 
-export function SessionTimeDialog({ sessionKey, courseName, open, onOpenChange }: Props) {
+/** The time card's content: total, timer and course tag. Shown in the dialog (Ultimate) or the main area (Simple). */
+export function SessionTimeBody({ sessionKey, courseName, active = true, titleAs: Title = "h2" }: { sessionKey: string; courseName?: string | null; active?: boolean; titleAs?: React.ElementType }) {
   // a session's study time can be logged long after it; the API allows up to 400 days at once
   const [now] = useState(() => Math.floor(Date.now() / DAY) * DAY);
-  const entries = useEntries(new Date(now - 398 * DAY).toISOString(), new Date(now + 2 * DAY).toISOString(), sessionKey, open);
+  const entries = useEntries(new Date(now - 398 * DAY).toISOString(), new Date(now + 2 * DAY).toISOString(), sessionKey, active);
   const timer = useTimer().data ?? null;
   const actions = useTimerActions();
   const name = courseName?.trim().toLowerCase();
@@ -31,25 +32,37 @@ export function SessionTimeDialog({ sessionKey, courseName, open, onOpenChange }
   const total = (entries.data ?? []).reduce((s, e) => s + e.durationSeconds, 0);
   const running = timer?.sessionKey === sessionKey;
   return (
+    <>
+      <div className="grid gap-1.5">
+        <Title className="text-lg font-semibold">Time</Title>
+        <p className="text-sm text-muted-foreground">
+          Time tracked: <span className="tabular-nums">{formatDuration(total)}</span>
+          {running && " · timer running"}
+        </p>
+      </div>
+      {tag && <TagLabel tag={tag} className="text-sm" />}
+      {running ? (
+        <Button size="sm" variant="outline" className="h-8 gap-1.5 self-start" onClick={() => void actions.stop()}>
+          <Stop size={14} aria-hidden /> Stop timer
+        </Button>
+      ) : (
+        <Button size="sm" className="h-8 gap-1.5 self-start" onClick={() => void actions.start({ style: "track", sessionKey, tagId: tag?.id ?? null })}>
+          <Play size={14} aria-hidden /> Start timer
+        </Button>
+      )}
+    </>
+  );
+}
+
+export function SessionTimeDialog({ sessionKey, courseName, open, onOpenChange }: Props) {
+  return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
-        <DialogHeader>
+        <DialogHeader className="sr-only">
           <DialogTitle>Time</DialogTitle>
-          <DialogDescription>
-            Time tracked: <span className="tabular-nums">{formatDuration(total)}</span>
-            {running && " · timer running"}
-          </DialogDescription>
+          <DialogDescription>Time tracked and timer for this session</DialogDescription>
         </DialogHeader>
-        {tag && <TagLabel tag={tag} className="text-sm" />}
-        {running ? (
-          <Button size="sm" variant="outline" className="h-8 gap-1.5 self-start" onClick={() => void actions.stop()}>
-            <Stop size={14} aria-hidden /> Stop timer
-          </Button>
-        ) : (
-          <Button size="sm" className="h-8 gap-1.5 self-start" onClick={() => void actions.start({ style: "track", sessionKey, tagId: tag?.id ?? null })}>
-            <Play size={14} aria-hidden /> Start timer
-          </Button>
-        )}
+        <SessionTimeBody sessionKey={sessionKey} courseName={courseName} active={open} titleAs="p" />
       </DialogContent>
     </Dialog>
   );

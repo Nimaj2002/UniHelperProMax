@@ -1,0 +1,37 @@
+openapi: 3.1.0
+info: {title: Simple UI Mode (026), version: 1.0.0}
+servers:
+  - url: /api/v1
+paths:
+  /preferences:
+    get:
+      operationId: getPreferences
+      summary: The signed-in user's UI preferences (now includes uiMode)
+      responses:
+        "200":
+          description: Preferences
+          content:
+            application/json: {schema: {$ref: "#/components/schemas/Preferences"}}
+    patch:
+      operationId: patchPreferences
+      summary: Merge preference changes; uiMode selects the interface
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: "#/components/schemas/Preferences"}}
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json: {schema: {$ref: "#/components/schemas/Preferences"}}
+        "422": {description: Invalid value (e.g. uiMode not ultimate|simple)}
+components:
+  schemas:
+    Preferences:
+      type: object
+      description: Existing fields unchanged (see 005/009/018/019/020/023); only uiMode is new in 026.
+      properties:
+        uiMode:
+          type: string
+          enum: [ultimate, simple]
+          description: Defaults to ultimate. Merged into spec 002's Preferences (the schema contract tests validate against).

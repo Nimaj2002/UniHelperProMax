@@ -1,6 +1,7 @@
 /** 023 research R13: starts the tour on first run (or offers to continue) and lazy-loads it. */
 import { lazy, Suspense, useEffect, useRef } from "react";
 import { useLocation } from "react-router";
+import { useUiMode } from "@/app/uiMode";
 import { usePreferences } from "@/features/sessions/api";
 import { closeTour, requestTour, useTourRequest } from "./store";
 
@@ -12,7 +13,7 @@ const NO_AUTO = ["/setup", "/login", "/account/password"];
  * shortcut: browser automation (Playwright) does not get the auto-start, so existing e2e specs
  * are not covered by Yuii; a spec opts in with localStorage "uh.tour.e2e" = "1".
  */
-function automated(): boolean {
+export function automated(): boolean {
   try {
     return navigator.webdriver && localStorage.getItem("uh.tour.e2e") !== "1";
   } catch {
@@ -25,15 +26,16 @@ export function TourHost() {
   const request = useTourRequest();
   const { pathname } = useLocation();
   const decided = useRef(false);
+  const { chosen } = useUiMode();
 
   useEffect(() => {
-    if (decided.current || !prefs.data || NO_AUTO.some((p) => pathname.startsWith(p))) return;
+    if (decided.current || !prefs.data || !chosen || NO_AUTO.some((p) => pathname.startsWith(p))) return;
     decided.current = true;
     const tour = prefs.data.tour;
     if (!tour || automated()) return;
     if (tour.status === "not_seen") requestTour({ chapter: "welcome", firstRun: true });
     else if (tour.status === "in_progress" && tour.chapter) requestTour({ chapter: tour.chapter, resume: true });
-  }, [prefs.data, pathname]);
+  }, [prefs.data, pathname, chosen]);
 
   if (!request) return null;
   return (

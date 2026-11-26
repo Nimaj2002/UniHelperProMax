@@ -211,7 +211,7 @@ test("Accessibility (007): documents, reader, search, annotations and split view
   const docs = p.getByRole("region", { name: "Documents" });
 
   // keyboard only: upload, open, read, search, annotate, split (freehand excluded, SC-008)
-  await docs.getByRole("button", { name: "Upload PDF" }).focus();
+  await docs.getByRole("button", { name: "Upload a PDF" }).focus();
   const chooser = p.waitForEvent("filechooser");
   await p.keyboard.press("Enter");
   await (await chooser).setFiles({ name: "Readable.pdf", mimeType: "application/pdf", buffer: textPdf(5) });

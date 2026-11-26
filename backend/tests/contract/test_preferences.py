@@ -25,6 +25,7 @@ def test_preferences(owner_client: TestClient) -> None:
         "recordingBarStyle": "full",
         "generalNotesCollapsed": False,  # 018
         "shortcuts": {},  # 019
+        "uiMode": None,  # 026
         "time": {  # 020
             "pomodoroWorkMin": 25,
             "pomodoroShortMin": 5,
@@ -202,3 +203,18 @@ def test_preferences_023_tour_invalid(
     r = owner_client.patch(f"{API}/preferences", json={"tour": tour})
     assert r.status_code == 422
     assert code in _codes(r)
+
+
+def test_preferences_026_ui_mode(owner_client: TestClient) -> None:
+    c = owner_client
+    assert c.get(f"{API}/preferences").json()["uiMode"] is None  # not chosen yet
+    r = c.patch(f"{API}/preferences", json={"uiMode": "simple"})
+    assert r.status_code == 200, r.text
+    assert r.json()["uiMode"] == "simple"
+    check(r.json(), "Preferences", spec="002")
+    # other changes keep it; null and unknown values
+    assert c.patch(f"{API}/preferences", json={"theme": "dark"}).json()["uiMode"] == "simple"
+    assert c.patch(f"{API}/preferences", json={"uiMode": None}).json()["uiMode"] == "simple"
+    assert c.get(f"{API}/preferences").json()["uiMode"] == "simple"
+    assert c.patch(f"{API}/preferences", json={"uiMode": "ultimate"}).json()["uiMode"] == "ultimate"
+    assert c.patch(f"{API}/preferences", json={"uiMode": "fancy"}).status_code == 422

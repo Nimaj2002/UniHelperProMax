@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { UiModeSwitch } from "@/app/simple/UiModeSwitch";
 import { RecordingPill, type RecordingBarStyle } from "@/features/recordings/RecordingBar";
 import { usePreferences, useUpdatePreferences } from "@/features/sessions/api";
 import { isApiError } from "@/lib/api";
@@ -142,6 +143,11 @@ export function AppearanceSettings() {
         <h2 className="text-lg font-semibold">Appearance</h2>
         <p className="text-sm text-muted-foreground">Saved to your account and used on every device.</p>
       </header>
+
+      <section aria-labelledby="ui-mode-heading" className="grid gap-4 rounded-xl border border-divider p-4 sm:p-6">
+        <h3 id="ui-mode-heading" className="font-medium">Interface</h3>
+        <UiModeSwitch />
+      </section>
 
       <section aria-labelledby="recording-bar-style" className="grid gap-4 rounded-xl border border-divider p-4 sm:p-6">
         <div className="grid gap-1">

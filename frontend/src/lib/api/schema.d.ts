@@ -4862,6 +4862,8 @@ export interface components {
                     components["schemas"]["Chord"] | null
                 ];
             } | null;
+            /** Uimode */
+            uiMode?: ("ultimate" | "simple") | null;
             time?: components["schemas"]["TimePreferences"] | null;
             tour?: components["schemas"]["TourState"] | null;
         };

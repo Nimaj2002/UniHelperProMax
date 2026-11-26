@@ -36,6 +36,7 @@ DEFAULT_PREFERENCES: dict[str, Any] = {
     "recording_bar_style": "full",  # floating recording pill: full | compact | minimal
     "general_notes_collapsed": False,  # 018: home page General notes section
     "shortcuts": {},  # 019: custom shortcuts {commandId: [main, alternate]}
+    "ui_mode": None,  # 026: ultimate | simple; None = not chosen yet (acts as Ultimate)
     "tour": {"status": "not_seen", "chapter": None},  # 023: Yuii tour, replaced whole on PATCH
     "time": {  # 020: timer settings
         "pomodoro_work_min": 25,

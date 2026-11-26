@@ -30,7 +30,8 @@ import {
   useChatPlacement,
 } from "@/features/chat/chatPlacement";
 import { ChatTab } from "@/features/chat/ChatTab";
-import { isNewTeacherId, kindOfNew, requestGraphUpdate, useTeacherChats } from "@/features/teacher/api";
+import { isNewTeacherId, kindOfNew, newTeacherId, requestGraphUpdate, useTeacherChats, type TeacherKind } from "@/features/teacher/api";
+import { useUiMode } from "@/app/uiMode";
 import { TeacherTab } from "@/features/teacher/TeacherTab";
 import { setTeacherTabsHost } from "@/features/teacher/teacherTabs";
 import { useSession } from "@/features/classes/api";
@@ -46,7 +47,6 @@ import {
 import { useNoteImporter } from "@/features/imports/useNoteImporter";
 import { isApiError } from "@/lib/api";
 import { formatDay, wallTime } from "@/lib/dates";
-import { ShortcutKbd } from "@/lib/keymap";
 import { cn } from "@/lib/utils";
 import {
   fetchNote,
@@ -74,6 +74,7 @@ import {
   type SaveFn,
 } from "./autosave";
 import { AddTabButton } from "./AddTabButton";
+import { EmptyStart } from "./EmptyStart";
 import { ConflictDialog } from "./ConflictDialog";
 import {
   MarkdownEditor,
@@ -86,8 +87,9 @@ import {
   SessionPanel,
   useSessionPanelLayout,
   useSessionRail,
+  type SessionSection,
 } from "./SessionPanel";
-import { SessionTimeDialog } from "@/features/time/SessionTime";
+import { SessionTimeBody, SessionTimeDialog } from "@/features/time/SessionTime";
 import { tourEvents } from "@/features/tour/events";
 import { SessionTimeline, type TimelineItem } from "./SessionTimeline";
 import { useWorkspaceKeyboard } from "./useWorkspaceKeyboard";
@@ -299,6 +301,11 @@ export function WorkspacePage() {
   >(null);
   const [deleteError, setDeleteError] = useState<string>();
 
+  // 026 Simple: a session tool (Recordings, Chat, Teacher, Time) shown in the main area instead of the
+  // tabs; the tabs and the tools all stay mounted, so going back and forth keeps each one as it was
+  const simple = useUiMode().mode === "simple";
+  const [tool, setTool] = useState<SessionSection | "time" | null>(null);
+  const toolShown = simple ? tool : null;
   const mode: EditorMode = prefs.data?.editorMode ?? "live";
   // notes, documents and sessions are collapsible sections of the side panel card, docked or
   // opened over the page on narrow windows
@@ -314,10 +321,10 @@ export function WorkspacePage() {
   const leftSections = useMemo<PanelSection[]>(
     () => [
       { id: "notes", title: "Notes" },
-      ...sideSections.map(({ id, title }) => ({ id, title })),
-      { id: "sessions", title: sessionsTitle },
+      ...sideSections.filter((s) => !simple || s.id === "documents").map(({ id, title }) => ({ id, title })),
+      ...(simple ? [] : [{ id: "sessions", title: sessionsTitle }]),
     ],
-    [sideSections, sessionsTitle],
+    [sideSections, sessionsTitle, simple],
   );
   const sidePanel = usePanelSections(leftSections);
   const leftIds = useMemo(() => leftSections.map((s) => s.id), [leftSections]);
@@ -330,7 +337,10 @@ export function WorkspacePage() {
   const activeId = ws.active?.kind === "note" ? ws.active.id : null;
   const openIds = ws.tabs.filter((t) => t.kind === "note").map((t) => t.id);
   const act = useCallback(
-    (a: TabAction) => setTabState((t) => ({ ...t, ws: reduceTabs(t.ws, a) })),
+    (a: TabAction) => {
+      if (a.type === "open") setTool(null);
+      setTabState((t) => ({ ...t, ws: reduceTabs(t.ws, a) }));
+    },
     [],
   );
   const chats = useChats(sessionKey);
@@ -449,8 +459,22 @@ export function WorkspacePage() {
     prefs.isSuccess ? !!prefs.data.workspaceRightCollapsed : undefined,
   );
   const [timeOpen, setTimeOpen] = useState(false);
-  const openTime = useCallback(() => setTimeOpen(true), [setTimeOpen]);
-  const { rail, watchers: railWatchers } = useSessionRail(setSection, openTime);
+  const openTime = useCallback(() => (simple ? setTool("time") : setTimeOpen(true)), [simple, setTimeOpen]);
+  const expandSection = useCallback(
+    (section: SessionSection) => {
+      setSection(section);
+      if (simple) setTool(section);
+    },
+    [setSection, simple],
+  );
+  const { rail, watchers: railWatchers } = useSessionRail(expandSection, openTime);
+  const setPanelOpenHere = useCallback(
+    (open: boolean) => {
+      setPanelOpen(open);
+      if (simple && !open) setTool(null); // a chat expanded into a tab leaves the tool view
+    },
+    [setPanelOpen, simple],
+  );
   const sessionPanel = useMemo<RightCard>(
     () => ({
       label: "Session panel",
@@ -465,14 +489,22 @@ export function WorkspacePage() {
       ),
       chrome: false,
       open: panelLayout.open,
-      setOpen: setPanelOpen,
+      setOpen: setPanelOpenHere,
       width: panelLayout.width,
       setWidth: setPanelWidth,
       rail,
     }),
-    [sessionKey, panelLayout, setSection, openTime, setPanelOpen, setPanelWidth, rail],
+    [sessionKey, panelLayout, setSection, openTime, setPanelOpenHere, setPanelWidth, rail],
   );
   useRightCard(session.isError ? null : sessionPanel);
+
+  const rightWanted = layout.overlay === "right";
+  useEffect(() => {
+    if (!simple || !rightWanted) return;
+    layout.setOverlay("none");
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- Simple has no right panel: show its section in the main area
+    setTool(panelLayout.section);
+  }, [simple, rightWanted, layout, panelLayout.section]);
 
   const noteImporter = useNoteImporter({
     sessionKey,
@@ -484,9 +516,15 @@ export function WorkspacePage() {
   const placeChat = useChatPlacement(sessionKey);
   const showChatInPanel = useCallback(() => {
     setSection("chat");
-    layout.showRight();
+    if (simple) setTool("chat");
+    else layout.showRight();
     requestAnimationFrame(() => focusBox({ place: "panel" }));
-  }, [setSection, layout]);
+  }, [setSection, layout, simple]);
+  const showRecordings = useCallback(() => {
+    setSection("recordings");
+    if (simple) setTool("recordings");
+    else layout.showRight();
+  }, [setSection, layout, simple]);
   const focusChat = useCallback(() => {
     const active = ws.active;
     if (active?.kind === "chat")
@@ -788,33 +826,19 @@ export function WorkspacePage() {
       <div className="grid max-w-sm gap-3">
         <p className="text-sm text-muted-foreground">
           {noteList.length || docList.length
-            ? "Choose a note or document on the left, or start a new note."
+            ? "Choose a note or document on the left, or add something new."
             : "No notes for this session yet."}
         </p>
-        <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
-          <button
-            type="button"
-            data-tour="new-note"
-            onClick={() => setDialog({ kind: "new" })}
-            className="text-sm font-medium text-primary underline underline-offset-4"
-          >
-            New note{" "}
-            <ShortcutKbd
-              id="workspace.newNote"
-              className="text-xs text-muted-foreground"
-            />
-          </button>
-          <button
-            type="button"
-            onClick={noteImporter.pick}
-            className="text-sm font-medium text-primary underline underline-offset-4"
-          >
-            Import note{" "}
-            <ShortcutKbd
-              id="workspace.importNote"
-              className="text-xs text-muted-foreground"
-            />
-          </button>
+        <div className="flex justify-center">
+          <EmptyStart
+            sessionKey={sessionKey}
+            onNewNote={() => setDialog({ kind: "new" })}
+            onImportNote={noteImporter.pick}
+            onOpenDocument={openDocument}
+            onNewChat={() => act({ type: "open", tab: { kind: "chat", id: newChatId() } })}
+            onNewTeacher={(kind: TeacherKind) => act({ type: "open", tab: { kind: "teacher", id: newTeacherId(kind) } })}
+            onRecorder={showRecordings}
+          />
         </div>
       </div>
     </div>
@@ -899,6 +923,8 @@ export function WorkspacePage() {
               }
               onNewNote={() => setDialog({ kind: "new" })}
               onImportNote={noteImporter.pick}
+              onNewChat={() => act({ type: "open", tab: { kind: "chat", id: newChatId() } })}
+              onNewTeacher={(kind: TeacherKind) => act({ type: "open", tab: { kind: "teacher", id: newTeacherId(kind) } })}
             />
           }
           actions={<>{session.data && <SessionChip session={session.data} />}</>}
@@ -909,7 +935,26 @@ export function WorkspacePage() {
           }
         />
       </Card>
-      <Card className="flex-1" body="fill">
+      {simple && (
+        <>
+          <div className={cn("flex min-h-0 flex-1 flex-col", (toolShown === null || toolShown === "time") && "hidden")}>
+            <SessionPanel
+              bare
+              shown={toolShown === "time" ? null : toolShown}
+              sessionKey={sessionKey}
+              layout={panelLayout}
+              setSection={setSection}
+              openTime={openTime}
+            />
+          </div>
+          <Card as="section" label="Time" className={cn("flex-1", toolShown !== "time" && "hidden")} body="fill">
+            <div className="grid content-start gap-3 p-4">
+              <SessionTimeBody sessionKey={sessionKey} courseName={session.data?.kind === "event" ? null : session.data?.courseName} active={toolShown === "time"} />
+            </div>
+          </Card>
+        </>
+      )}
+      <Card className={cn("flex-1", toolShown !== null && "hidden")} body="fill">
         <div
           ref={panesRef}
           className="grid min-h-0 flex-1"

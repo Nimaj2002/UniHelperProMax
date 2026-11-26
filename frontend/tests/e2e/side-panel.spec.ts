@@ -17,8 +17,8 @@ test("Side panel: courses, notes, documents and sessions are collapsible, resiza
   const docs = side.getByRole("region", { name: "Documents" });
   const sessions = side.getByRole("region", { name: "Sessions" });
   await expect(years.getByRole("navigation", { name: "Courses" })).toBeVisible();
-  await expect(notes.getByRole("button", { name: "New note" })).toBeVisible();
-  await expect(docs.getByRole("button", { name: "Upload PDF" })).toBeVisible();
+  await expect(notes.getByRole("button", { name: "Add a note" })).toBeVisible();
+  await expect(docs.getByRole("button", { name: "Upload a PDF" })).toBeVisible();
   await expect(sessions.getByRole("navigation", { name: "Sessions of this course" })).toBeVisible();
 
   // long section content scrolls inside the panel, never the page
@@ -43,7 +43,7 @@ test("Side panel: courses, notes, documents and sessions are collapsible, resiza
   }
   const notesHeader = notes.getByRole("button", { name: "Notes", exact: true });
   await notesHeader.click();
-  await expect(notes.getByRole("button", { name: "New note" })).toBeHidden();
+  await expect(notes.getByRole("button", { name: "Add a note" })).toBeHidden();
   await expect(splitter).toHaveCount(0);
   await shot("section-collapsed");
   await notesHeader.click();

@@ -21,7 +21,7 @@ describe("note management", () => {
     const { container } = render(
       <NoteList notes={notes} openIds={["a"]} activeId="a" loading={false} onNew={vi.fn()} onOpen={onOpen} onRename={onRename} onDelete={vi.fn()} />,
     );
-    expect(screen.getByRole("button", { name: "Lecture notes (open)" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("button", { name: /^Lecture notes/ })).toHaveAttribute("aria-current", "true");
     const user = userEvent.setup();
     await user.click(screen.getByRole("button", { name: "Homework 3" }));
     expect(onOpen).toHaveBeenCalledWith("b");

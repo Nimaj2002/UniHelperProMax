@@ -61,7 +61,7 @@ test("US1: the session workspace is three floating cards with one 40 px tab row"
   await expect(left.getByRole("button", { name: "Courses" })).toBeVisible();
   await expect(left.getByRole("button", { name: "New class" })).toBeVisible();
   await expect(
-    left.getByRole("button", { name: "New note" }).first(),
+    left.getByRole("button", { name: "Add a note" }).first(),
   ).toBeVisible();
   await expect(
     left.getByRole("navigation", { name: "Sessions of this course" }),

@@ -357,6 +357,7 @@ components:
                   properties:
                     chord: { type: string, pattern: '^(Ctrl\+)?(Meta\+)?(Alt\+)?(Shift\+)?[A-Za-z0-9]{1,24}$' }
                     label: { type: string, minLength: 1, maxLength: 32 }
+        uiMode: { type: [string, "null"], enum: [ultimate, simple, null], description: "added by feature 026: the chosen interface; null until the account picks one (acts as Ultimate)" }
         tour:
           type: object
           description: "added by feature 023: Yuii tour progress; a PATCH replaces it whole"

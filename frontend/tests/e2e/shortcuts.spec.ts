@@ -22,8 +22,9 @@ test("US1: change New note to Alt+Shift+M", async ({ page }, testInfo) => {
     await expect(page.getByRole("button", { name: /^Key for New note: Alt \+ Shift \+ M\./ })).toBeVisible();
 
     await page.goto(workspaceUrl(courseId, lineageId, "2026-09-28"));
-    const newNoteButton = page.getByRole("button", { name: "New note" }).first();
-    await expect(newNoteButton).toHaveAttribute("aria-keyshortcuts", "Alt+Shift+M");
+    await page.getByRole("button", { name: "Add a note" }).first().click();
+    await expect(page.getByRole("button", { name: "New note" })).toHaveAttribute("aria-keyshortcuts", "Alt+Shift+M");
+    await page.keyboard.press("Escape");
     const dialog = page.getByRole("dialog", { name: "New note" });
     await page.keyboard.press("Alt+KeyN");
     await expect(dialog).toBeHidden(); // the old key does nothing
@@ -32,7 +33,8 @@ test("US1: change New note to Alt+Shift+M", async ({ page }, testInfo) => {
     await page.keyboard.press("Escape");
 
     await page.reload();
-    await expect(page.getByRole("button", { name: "New note" }).first()).toHaveAttribute("aria-keyshortcuts", "Alt+Shift+M");
+    await page.getByRole("button", { name: "Add a note" }).first().click();
+    await expect(page.getByRole("button", { name: "New note" })).toHaveAttribute("aria-keyshortcuts", "Alt+Shift+M");
   } finally {
     await resetShortcuts(page);
   }
